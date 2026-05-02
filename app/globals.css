@@ -1,0 +1,29 @@
+/* app/globals.css */
+:root {
+  --brand: #2563eb;
+  --brand-dark: #1d4ed8;
+  --brand-soft: #eff6ff;
+  --gold: #f7d68a;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --shadow: 0 20px 60px rgba(15, 23, 42, 0.1);
+  --radius: 18px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+img { max-width: 100%; }
+

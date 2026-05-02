@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(python3 -c \"import sys,re; html=sys.stdin.read\\(\\); m=re.search\\(r'\\\\\"message\\\\\":\\\\\"\\([^\\\\\"]{0,300}\\)\\\\\"', html\\); print\\(m.group\\(1\\) if m else 'no match'\\)\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(npm run *)",
+      "Bash(python3 -c ' *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(node *)",
+      "Bash(curl -s http://localhost:3000/rick.jpg -o /dev/null -w \"%{http_code}\")"
+    ]
+  }
+}

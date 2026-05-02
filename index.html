@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InRecord｜流行鋼琴零基礎入門課</title>
+  <style>
+    :root {
+      --red: #2563eb;
+      --red-dark: #1d4ed8;
+      --gold: #f7d68a;
+      --black: #0b0b0c;
+      --ink: #151515;
+      --muted: #666;
+      --line: #e8e8e8;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --shadow: 0 20px 60px rgba(0,0,0,.12);
+      --radius: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--bg); line-height: 1.65; }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(1120px, calc(100% - 44px)); margin: 0 auto; }
+
+    /* ── NAV ── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      height: 72px; display: flex;
+      justify-content: space-between; align-items: center; gap: 24px;
+    }
+    .logo { display: inline-flex; align-items: center; min-width: 138px; }
+    .brand-wordmark {
+      display: inline-flex; align-items: center; white-space: nowrap; line-height: 1;
+      color: #303033; transform: translateX(4px);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 36px; font-weight: 800; letter-spacing: -2.2px;
+    }
+    .brand-record-o {
+      width: 25px; height: 25px; border: 4px solid currentColor; border-radius: 50%;
+      position: relative; display: inline-block; flex: 0 0 auto;
+      margin-left: 2px; transform: translateY(1px);
+    }
+    .brand-record-o::after {
+      content: ""; width: 9px; height: 9px; border-radius: 50%;
+      background: #ff2028; position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      animation: recordPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes recordPulse {
+      0%,100% { transform: translate(-50%,-50%) scale(.9); opacity: .75; }
+      50% { transform: translate(-50%,-50%) scale(1.08); opacity: 1; }
+    }
+    .nav-links { display: flex; align-items: center; gap: 32px; font-size: 15px; font-weight: 800; }
+    .nav-links a { transition: color .15s; }
+    .nav-links a:hover { color: var(--red); }
+
+    .btn {
+      display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+      border: 0; border-radius: 10px; padding: 14px 22px; font-weight: 900;
+      cursor: pointer; transition: .2s ease; font-size: 15px;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-red { background: linear-gradient(135deg, var(--red), #3b82f6); color: #fff; box-shadow: 0 14px 30px rgba(37,99,235,.28); }
+    .btn-dark { background: #111; color: #fff; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; overflow: hidden; color: white;
+      background: linear-gradient(90deg, rgba(0,0,0,.92), rgba(0,0,0,.76), rgba(0,0,0,.34)),
+        url("https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover; background-position: center;
+      padding: 68px 0 92px;
+    }
+    .hero-grid { display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: center; }
+    .eyebrow { color: var(--gold); font-size: 20px; font-weight: 900; margin-bottom: 18px; }
+    h1 { text-wrap: balance; font-size: clamp(44px,6vw,72px); line-height: 1.08; letter-spacing: -.06em; margin: 0 0 24px; }
+    h1 span { color: var(--gold); }
+    .hero-lead { text-wrap: balance; font-size: 22px; color: rgba(255,255,255,.92); max-width: 680px; margin: 0 0 38px; font-weight: 700; }
+    .hero-features { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; max-width: 720px; }
+    .hero-feature { text-align: center; color: rgba(255,255,255,.94); }
+    .hero-icon { font-size: 36px; color: var(--gold); line-height: 1; margin-bottom: 8px; }
+    .hero-feature strong { display: block; font-size: 16px; color: var(--gold); }
+    .hero-feature span { display: block; font-size: 14px; color: rgba(255,255,255,.8); }
+
+    .video-card {
+      background: rgba(20,20,20,.92); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px; padding: 18px; box-shadow: var(--shadow);
+    }
+    .video-thumb {
+      height: 160px; border-radius: 12px; display: grid; place-items: center;
+      background: linear-gradient(rgba(0,0,0,.28),rgba(0,0,0,.42)),
+        url("https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80");
+      background-size: cover; background-position: center; margin-bottom: 16px;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .video-thumb:hover { opacity: .9; }
+    .play {
+      width: 58px; height: 58px; border-radius: 999px;
+      background: white; color: var(--red);
+      display: grid; place-items: center; font-size: 24px; font-weight: 900;
+    }
+    .video-card h3 { margin: 0 0 12px; color: #fff; }
+    .check-list { padding: 0; margin: 0; list-style: none; display: grid; gap: 10px; color: rgba(255,255,255,.86); font-weight: 700; font-size: 15px; }
+    .check-list li::before { content: "✓"; color: var(--gold); margin-right: 10px; font-weight: 900; }
+
+    /* ── STATS ── */
+    .stats { transform: translateY(-52px); position: relative; z-index: 5; }
+    .stats-card {
+      background: white; border-radius: 16px; box-shadow: var(--shadow);
+      display: grid; grid-template-columns: repeat(4,1fr); overflow: hidden; padding: 26px 20px;
+    }
+    .stat { text-align: center; border-right: 1px solid var(--line); }
+    .stat:last-child { border-right: 0; }
+    .stat-icon { font-size: 30px; color: var(--red); font-weight: 900; }
+    .stat strong { display: block; font-size: 32px; line-height: 1.1; }
+    .stat span { color: #555; font-weight: 700; }
+
+    /* ── SECTIONS ── */
+    section { padding: 70px 0; }
+    .section-head { text-align: center; margin-bottom: 34px; }
+    .section-head small { color: var(--red); font-weight: 900; display: block; margin-bottom: 8px; }
+    .section-head h2 { text-wrap: balance; font-size: clamp(30px,4vw,46px); line-height: 1.15; letter-spacing: -.04em; margin: 0 0 12px; }
+    .section-head p { text-wrap: balance; max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 18px; }
+
+    /* ── INTRO ── */
+    .intro-grid { display: grid; grid-template-columns: 1fr 190px 380px; gap: 44px; align-items: center; }
+    .intro-copy small { color: var(--red); font-weight: 900; }
+    .intro-copy h2 { text-wrap: balance; font-size: clamp(30px,4vw,42px); line-height: 1.2; letter-spacing: -.04em; margin: 8px 0 20px; }
+    .intro-copy p { max-width: 620px; color: var(--muted); }
+    .outcomes { list-style: none; padding: 0; display: grid; gap: 12px; margin-top: 24px; font-weight: 800; }
+    .outcomes li::before { content: "●"; color: var(--red); margin-right: 10px; }
+    .piano-photo { min-height: 390px; border-radius: 18px; background: url("https://images.unsplash.com/photo-1519683109079-d5f539e1542f?auto=format&fit=crop&w=700&q=80"); background-size: cover; background-position: center; }
+
+    /* ── PRICING ── */
+    .price-panel { background: white; border-radius: 18px; box-shadow: 0 16px 46px rgba(0,0,0,.08); padding: 24px; border: 1px solid var(--line); }
+    .price-panel h3 { font-size: 24px; margin: 0 0 16px; }
+    .price-row {
+      display: grid; grid-template-columns: 1fr 70px 90px;
+      gap: 10px; align-items: center; padding: 13px 0;
+      border-bottom: 1px solid var(--line); font-weight: 850;
+      cursor: pointer; transition: background .15s; border-radius: 8px;
+    }
+    .price-row:hover { background: #f0f7ff; }
+    .price-row.selected { background: #eff6ff; border: 1.5px solid var(--red); border-radius: 10px; padding: 13px; margin-bottom: 2px; }
+    .price-row:last-of-type { border-bottom: 0; }
+    .discount { background: var(--red); color: #fff; font-size: 12px; padding: 4px 7px; border-radius: 999px; text-align: center; font-weight: 900; }
+    .price-row .amount { text-align: right; font-size: 20px; font-weight: 950; }
+    .price-row.featured { border: 1px solid var(--red); border-radius: 10px; padding: 13px; margin-bottom: 8px; background: #eff6ff; }
+    .price-row.strikethrough .amount { text-decoration: line-through; color: #999; }
+
+    .pricing-cta-wrap { margin-top: 18px; }
+    .pricing-cta-wrap .selected-label { font-size: 13px; color: #555; font-weight: 700; text-align: center; margin-bottom: 10px; min-height: 20px; }
+    .pricing-cta-wrap .btn { width: 100%; font-size: 17px; padding: 16px; }
+    .pricing-cta-wrap .btn-loading::after { content: " ..."; }
+
+    /* ── CURRICULUM ── */
+    .curriculum { background: #fff; }
+    .module-list { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: white; box-shadow: 0 14px 36px rgba(0,0,0,.04); }
+    .module { display: grid; grid-template-columns: 120px 54px 1.15fr .9fr .9fr 38px; gap: 18px; align-items: center; padding: 18px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s; }
+    .module:last-child { border-bottom: 0; }
+    .module:hover { background: #f9fafb; }
+    .module-img { height: 74px; border-radius: 10px; background-size: cover; background-position: center; }
+    .num { width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center; background: var(--red); color: white; font-weight: 900; }
+    .module h3 { margin: 0 0 4px; font-size: 18px; }
+    .module p { margin: 0; color: var(--muted); font-size: 14px; }
+    .meta { color: #333; font-size: 14px; font-weight: 800; }
+    .meta span { color: var(--red); margin-right: 8px; }
+    .more { display: grid; place-items: center; color: #666; font-size: 20px; transition: transform .2s; }
+    .module.open .more { transform: rotate(180deg); }
+    .module-detail { display: none; padding: 0 18px 18px; background: #f9fafb; border-bottom: 1px solid var(--line); font-size: 15px; color: #444; }
+    .module-detail.open { display: block; }
+
+    /* ── FEATURES ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; }
+    .feature-card { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 24px; box-shadow: 0 12px 34px rgba(0,0,0,.04); }
+    .feature-card .icon { font-size: 34px; color: var(--red); margin-bottom: 12px; }
+    .feature-card h3 { margin: 0 0 8px; font-size: 20px; }
+    .feature-card p { margin: 0; color: var(--muted); }
+
+    /* ── FAQ ── */
+    .faq { display: grid; gap: 12px; max-width: 860px; margin: 0 auto; }
+    details { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+    summary { cursor: pointer; font-weight: 900; font-size: 18px; }
+    details p { color: var(--muted); margin: 12px 0 0; }
+
+    /* ── DEMO SECTION ── */
+    #courseDemo { display: none; padding: 72px 0; background: #f2f6ff; border-top: 1px solid #dbeafe; border-bottom: 1px solid #dbeafe; }
+    #courseDemo.active { display: block; }
+    .demo-watch-card { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; align-items: stretch; background: #fff; border-radius: 26px; border: 1px solid #dbeafe; box-shadow: 0 18px 50px rgba(37,99,235,.12); padding: 24px; }
+    .demo-video { min-height: 340px; border-radius: 20px; background: linear-gradient(135deg,rgba(0,0,0,.74),rgba(37,99,235,.42)), url("https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1400&q=80"); background-size: cover; background-position: center; color: white; display: grid; place-items: center; text-align: center; padding: 28px; position: relative; overflow: hidden; }
+    .demo-video::after { content: "試看影片"; position: absolute; top: 18px; left: 18px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); padding: 7px 10px; border-radius: 999px; font-size: 13px; font-weight: 900; backdrop-filter: blur(8px); }
+    .demo-play { width: 76px; height: 76px; border-radius: 999px; background: #fff; color: var(--red); display: grid; place-items: center; font-size: 30px; font-weight: 900; margin: 0 auto 16px; cursor: pointer; transition: transform .2s; }
+    .demo-play:hover { transform: scale(1.1); }
+    .demo-side { padding: 12px; display: flex; flex-direction: column; justify-content: center; }
+    .demo-side h2 { font-size: clamp(28px,4vw,42px); line-height: 1.1; letter-spacing: -.04em; margin: 0 0 14px; text-wrap: balance; }
+    .demo-side p { color: #555; margin: 0 0 20px; }
+    .demo-timer { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; border-radius: 14px; padding: 12px 14px; font-weight: 900; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+    .demo-timer-dot { width: 10px; height: 10px; border-radius: 50%; background: #2563eb; animation: blink 1s ease-in-out infinite; flex-shrink: 0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .demo-conversion { display: none; margin-top: 18px; background: #111; color: white; border-radius: 18px; padding: 18px; }
+    .demo-conversion.active { display: block; }
+    .demo-conversion p { color: rgba(255,255,255,.78); }
+
+    /* ── CTA ── */
+    .cta { background: linear-gradient(135deg,#111,#2b0d0d); color: white; border-radius: 28px; padding: 54px; text-align: center; box-shadow: var(--shadow); }
+    .cta h2 { font-size: clamp(32px,5vw,54px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.04em; }
+    .cta p { max-width: 720px; margin: 0 auto 26px; color: rgba(255,255,255,.8); font-size: 18px; }
+
+    /* ── MODAL (Email) ── */
+    .demo-modal { position: fixed; inset: 0; z-index: 999; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.42); padding: 22px; }
+    .demo-modal.active { display: flex; }
+    .demo-box { width: min(430px,100%); background: #fff; border-radius: 18px; padding: 28px; position: relative; box-shadow: 0 24px 80px rgba(0,0,0,.22); }
+    .demo-close { position: absolute; top: 12px; right: 14px; width: 34px; height: 34px; border: 0; background: transparent; font-size: 26px; line-height: 1; color: #999; cursor: pointer; }
+    .demo-box h2 { margin: 0 0 10px; font-size: 24px; letter-spacing: -0.03em; }
+    .demo-box p { margin: 0 0 20px; color: #777; font-size: 15px; }
+    .demo-input { width: 100%; border: 1px solid #b9b9b9; border-radius: 13px; padding: 15px 16px; font-size: 16px; outline: none; margin-bottom: 14px; }
+    .demo-input:focus { border-color: var(--red); box-shadow: 0 0 0 4px rgba(37,99,235,.12); }
+    .demo-submit { width: 100%; border: 0; border-radius: 13px; padding: 15px 18px; background: #000; color: #fff; font-weight: 900; font-size: 16px; cursor: pointer; }
+    .demo-submit:disabled { opacity: .65; cursor: not-allowed; }
+    .demo-note { display: block; color: #888; font-size: 12px; margin-top: 12px; text-align: center; }
+    .demo-success { display: none; background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; border-radius: 14px; padding: 14px 16px; font-size: 14px; font-weight: 800; margin-top: 14px; }
+    .demo-success.active { display: block; }
+    .demo-status { margin-top: 12px; font-size: 13px; font-weight: 800; color: var(--red); display: none; }
+
+    /* ── PURCHASE MODAL ── */
+    .purchase-modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.5); padding: 22px; }
+    .purchase-modal.active { display: flex; }
+    .purchase-box { width: min(520px,100%); background: #fff; border-radius: 22px; padding: 32px; position: relative; box-shadow: 0 32px 100px rgba(0,0,0,.28); }
+    .purchase-box h2 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.03em; }
+    .purchase-box .subtitle { color: #777; font-size: 15px; margin: 0 0 22px; }
+    .plan-select { display: grid; gap: 10px; margin-bottom: 22px; }
+    .plan-option { border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; transition: .15s; }
+    .plan-option:hover { border-color: var(--red); background: #f8fbff; }
+    .plan-option.active { border-color: var(--red); background: #eff6ff; }
+    .plan-option .plan-name { font-weight: 900; font-size: 15px; }
+    .plan-option .plan-note { font-size: 12px; color: #888; margin-top: 2px; }
+    .plan-option .plan-disc { background: var(--red); color: #fff; font-size: 11px; padding: 3px 7px; border-radius: 999px; font-weight: 900; white-space: nowrap; }
+    .plan-option .plan-price { font-size: 20px; font-weight: 950; text-align: right; }
+    .purchase-divider { border: 0; border-top: 1px solid var(--line); margin: 0 0 18px; }
+    .purchase-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .purchase-total .label { font-weight: 900; color: #444; }
+    .purchase-total .total-price { font-size: 30px; font-weight: 950; color: var(--red); }
+    .purchase-total .orig-price { font-size: 14px; color: #999; text-decoration: line-through; margin-top: 2px; text-align: right; }
+    .checkout-btn { width: 100%; border: 0; border-radius: 14px; padding: 17px; background: linear-gradient(135deg,var(--red),#3b82f6); color: #fff; font-weight: 900; font-size: 18px; cursor: pointer; transition: .2s; box-shadow: 0 10px 28px rgba(37,99,235,.30); }
+    .checkout-btn:hover { transform: translateY(-2px); }
+    .checkout-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .purchase-note { text-align: center; color: #888; font-size: 12px; margin-top: 12px; font-weight: 700; }
+    .stripe-logo { display: inline-flex; align-items: center; gap: 4px; }
+
+    /* ── FOOTER ── */
+    footer { background: #111; color: rgba(255,255,255,.75); padding: 34px 0; text-align: center; font-weight: 700; }
+    .footer-brand { display: grid; gap: 10px; justify-items: center; }
+    .footer-wordmark { color: #ffffff; font-size: 32px; }
+    .footer-wordmark .brand-record-o { width: 23px; height: 23px; border-width: 3.8px; }
+    .footer-wordmark .brand-record-o::after { width: 8px; height: 8px; }
+
+    /* ── TOAST ── */
+    .toast-bar { position: fixed; bottom: 28px; right: 28px; background: #111; color: #fff; border-radius: 14px; padding: 13px 18px; font-weight: 900; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 2000; display: none; }
+    .toast-bar.show { display: block; animation: fadeUp .25s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 980px) {
+      .nav-links { display: none; }
+      .hero-grid, .intro-grid { grid-template-columns: 1fr; }
+      .hero-features, .stats-card, .feature-grid { grid-template-columns: repeat(2,1fr); }
+      .module { grid-template-columns: 1fr; }
+      .demo-watch-card { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .hero { padding: 48px 0 80px; }
+      .hero-features, .stats-card, .feature-grid { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); padding: 16px 0; }
+      .stat:last-child { border-bottom: 0; }
+      .price-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<header class="nav">
+  <div class="container nav-inner">
+    <a class="logo" href="#top" aria-label="InRecord">
+      <span class="brand-wordmark">
+        <span>InRec</span><span class="brand-record-o" aria-hidden="true"></span><span>rd</span>
+      </span>
+    </a>
+    <nav class="nav-links">
+      <a href="#intro">課程介紹</a>
+      <a href="#curriculum">課程大綱</a>
+      <a href="#features">課程特色</a>
+      <a href="#pricing">定價方案</a>
+      <a href="#" id="previewBtn">課程試看</a>
+      <a href="admin.html">後台</a>
+    </nav>
+    <button class="btn btn-red" id="navBuyBtn">立即購買課程</button>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">流行鋼琴零基礎入門課</div>
+      <h1>從零開始彈出<br />你喜歡的<span>流行歌曲</span></h1>
+      <p class="hero-lead">10 章節系統化學習<br />搭配 AI 互動遊戲練習<br />讓學鋼琴變得有趣、有效、看得見進步！</p>
+      <div class="hero-features">
+        <div class="hero-feature"><div class="hero-icon">🎹</div><strong>零基礎可學</strong><span>從認識鍵盤開始</span></div>
+        <div class="hero-feature"><div class="hero-icon">▣</div><strong>AI 互動遊戲</strong><span>學習不再枯燥</span></div>
+        <div class="hero-feature"><div class="hero-icon">♫</div><strong>流行曲目實戰</strong><span>學完就能彈歌</span></div>
+        <div class="hero-feature"><div class="hero-icon">↗</div><strong>打好扎實基礎</strong><span>銜接進階更輕鬆</span></div>
+      </div>
+    </div>
+    <aside class="video-card">
+      <div class="video-thumb" id="heroVideoThumb">
+        <div class="play">▶</div>
+      </div>
+      <h3>課程介紹影片</h3>
+      <ul class="check-list">
+        <li>10 章節完整課程</li>
+        <li>20+ 首流行歌曲實戰</li>
+        <li>AI 互動遊戲強化學習</li>
+        <li>講義練習與樂譜下載</li>
+        <li>無限次觀看，隨時學習</li>
+        <li>專屬學員社群，老師答疑</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<section class="stats">
+  <div class="container">
+    <div class="stats-card">
+      <div class="stat"><div class="stat-icon">👥</div><strong>1,200+</strong><span>學員加入學習</span></div>
+      <div class="stat"><div class="stat-icon">📈</div><strong>96%</strong><span>學員滿意度</span></div>
+      <div class="stat"><div class="stat-icon">▶</div><strong>80+</strong><span>課程影片總數</span></div>
+      <div class="stat"><div class="stat-icon">🏆</div><strong>340+</strong><span>學員完成課程</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── INTRO ── -->
+<section id="intro">
+  <div class="container intro-grid">
+    <div class="intro-copy">
+      <small>課程定位與目標</small>
+      <h2>專為零基礎學員設計<br />學完就能彈出喜歡的歌</h2>
+      <p>從認識鍵盤、音名與基本樂理開始，循序漸進掌握流行音樂中最重要的元素：三和弦。</p>
+      <p>每堂課都包含核心知識、流行曲目實戰，以及結合 AI 技術的互動練習遊戲。</p>
+      <ul class="outcomes">
+        <li>獨立辨識鋼琴上的所有音名（ABCDEFG）</li>
+        <li>理解並彈奏全部 12 個大三和弦與 12 個小三和弦</li>
+        <li>看懂簡易的流行歌曲和弦譜</li>
+        <li>用基本伴奏方式，為自己喜愛的歌曲彈奏和弦</li>
+        <li>建立扎實基礎，為下一階段的進階學習做好準備</li>
+      </ul>
+    </div>
+    <div class="piano-photo"></div>
+    <!-- ── PRICING PANEL ── -->
+    <aside class="price-panel" id="pricing">
+      <h3>選擇適合你的方案</h3>
+      <div id="pricingRows">
+        <div class="price-row featured selected" data-plan="fan1" data-price="2200" data-orig="3500" data-label="粉絲限定【1】">
+          <div><strong>粉絲限定【1】</strong><br /><small>有購買專輯、音樂會資格</small></div>
+          <div class="discount">6.9 折</div>
+          <div class="amount">$2,200</div>
+        </div>
+        <div class="price-row" data-plan="fan2" data-price="2400" data-orig="3500" data-label="粉絲限定【2】">
+          <div><strong>粉絲限定【2】</strong><br /><small>有購買樂譜資格</small></div>
+          <div class="discount">7.5 折</div>
+          <div class="amount">$2,400</div>
+        </div>
+        <div class="price-row" data-plan="early1" data-price="2800" data-orig="3500" data-label="第一波｜早鳥【1】">
+          <div>第一波｜早鳥【1】</div>
+          <div>8.1 折</div>
+          <div class="amount">$2,800</div>
+        </div>
+        <div class="price-row" data-plan="early2" data-price="3100" data-orig="3500" data-label="第二波｜早鳥【2】">
+          <div>第二波｜早鳥【2】</div>
+          <div>8.8 折</div>
+          <div class="amount">$3,100</div>
+        </div>
+        <div class="price-row" data-plan="early3" data-price="3300" data-orig="3500" data-label="第三波｜最後早鳥【3】">
+          <div>第三波｜最後早鳥【3】</div>
+          <div>9.4 折</div>
+          <div class="amount">$3,300</div>
+        </div>
+        <div class="price-row strikethrough" data-plan="full" data-price="3500" data-orig="3500" data-label="原價">
+          <div>原價</div>
+          <div></div>
+          <div class="amount">$3,500</div>
+        </div>
+      </div>
+      <div class="pricing-cta-wrap">
+        <div class="selected-label" id="selectedLabel">已選：粉絲限定【1】— $2,200</div>
+        <button class="btn btn-red" id="pricingBuyBtn">🛒 立即購買課程</button>
+      </div>
+      <p style="text-align:center;color:#777;font-weight:700;margin-top:12px;">♡ 無限次觀看・永久有效</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ── CURRICULUM ── -->
+<section class="curriculum" id="curriculum">
+  <div class="container">
+    <div class="section-head">
+      <small>課程大綱</small>
+      <h2>10 章節系統化學習<br />從基礎到實戰，穩扎穩打</h2>
+    </div>
+    <div class="module-list" id="moduleList">
+      <!-- modules injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <small>課程特色</small>
+      <h2>為零基礎學員設計的學習體驗</h2>
+      <p>從音名、唱名、和弦到伴奏，每一步都搭配實戰曲目與互動練習。</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card"><div class="icon">🎹</div><h3>零基礎友善</h3><p>從鍵盤、中央 C、音名開始，不跳步、不硬塞。</p></div>
+      <div class="feature-card"><div class="icon">🤖</div><h3>AI 互動遊戲</h3><p>音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。</p></div>
+      <div class="feature-card"><div class="icon">🎵</div><h3>流行曲目實戰</h3><p>用熟悉歌曲練習，提升成就感與持續學習動機。</p></div>
+      <div class="feature-card"><div class="icon">🏆</div><h3>成果導向</h3><p>最後完成一首完整曲目，建立下一階段學習基礎。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DEMO SECTION ── -->
+<section id="courseDemo">
+  <div class="container">
+    <div class="demo-watch-card">
+      <div class="demo-video">
+        <div>
+          <div class="demo-play" id="demoPlayBtn">▶</div>
+          <h2 style="margin:0 0 8px;">第一章試看：踏上黑白鍵的第一步</h2>
+          <p style="margin:0;color:rgba(255,255,255,.84);">認識鍵盤佈局、中央 C、音名 ABCDEFG，建立你的第一個鋼琴地圖。</p>
+        </div>
+      </div>
+      <div class="demo-side">
+        <div class="demo-timer" id="demoTimer">
+          <span class="demo-timer-dot"></span>
+          <span id="demoTimerText">Demo 試看已開啟｜3:00</span>
+        </div>
+        <h2>試看後，開始完整學習</h2>
+        <p>完整課程包含 10 章節、流行曲目實戰、AI 互動遊戲，以及 12 個大三和弦與 12 個小三和弦練習。</p>
+        <button class="btn btn-red" onclick="openPurchaseModal()">查看課程方案</button>
+        <div class="demo-conversion" id="demoConversion">
+          <strong>Demo 試看時間已到</strong>
+          <p>如果你想繼續完整學習，可以直接加入課程，從零基礎開始一步步彈出流行歌曲。</p>
+          <button class="btn btn-red" style="width:100%;" onclick="openPurchaseModal()">立即購買課程</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+  <div class="container">
+    <div class="section-head">
+      <small>常見問題</small>
+      <h2>購買前你可能會想知道</h2>
+    </div>
+    <div class="faq">
+      <details open><summary>完全零基礎可以上嗎？</summary><p>可以。課程從鍵盤佈局、音名、唱名與基本坐姿開始，循序漸進進入三和弦與伴奏。</p></details>
+      <details><summary>我需要準備鋼琴嗎？</summary><p>AI 互動遊戲有免鍵盤練習，但鋼琴遊戲與曲目實戰建議準備鋼琴、電鋼琴或電子琴。</p></details>
+      <details><summary>這門課會教五線譜嗎？</summary><p>本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，先讓初學者能彈出流行歌曲伴奏。</p></details>
+      <details><summary>學完後可以彈哪些歌？</summary><p>課程會練習 Do-Re-Mi、Happy Birthday、稻香、告白氣球、刻在我心底的名字、Always With Me 等歌曲或片段。</p></details>
+      <details><summary>不同方案有什麼差別？</summary><p>所有方案包含完整 10 章節課程內容、AI 互動遊戲與永久觀看權。粉絲限定方案需憑購買記錄資格取得優惠碼；早鳥方案依波次時間限定。</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section>
+  <div class="container">
+    <div class="cta">
+      <h2>現在開始，彈出你的第一首流行歌曲</h2>
+      <p>從零基礎開始，透過系統化課程與 AI 互動遊戲，建立真正彈得出來的鋼琴能力。</p>
+      <button class="btn btn-red" style="font-size:18px;padding:16px 32px;" onclick="openPurchaseModal()">立即購買課程</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container footer-brand">
+    <span class="brand-wordmark footer-wordmark">
+      <span>InRec</span><span class="brand-record-o" aria-hidden="true"></span><span>rd</span>
+    </span>
+    <div>© InRecord｜流行鋼琴零基礎入門課</div>
+  </div>
+</footer>
+
+<!-- ── PREVIEW MODAL ── -->
+<div id="previewModal" class="demo-modal" aria-hidden="true">
+  <div class="demo-box" role="dialog" aria-modal="true" aria-labelledby="demoModalTitle">
+    <button class="demo-close" id="closeModal" aria-label="關閉">×</button>
+    <h2 id="demoModalTitle">🎹 體驗試看</h2>
+    <p>輸入 Gmail，我們會立即寄出課程試看 Email，同時為你開啟 Demo 試看區塊。</p>
+    <input class="demo-input" type="email" id="emailInput" placeholder="your@gmail.com" autocomplete="email" />
+    <button class="demo-submit" id="startDemo">寄送試看 Email</button>
+    <span class="demo-note">送出後會加入 Brevo 試看名單，並自動寄出課程試看 Email</span>
+    <div class="demo-status" id="demoStatus"></div>
+    <div class="demo-success" id="demoSuccess">✓ 已寄出課程試看 Email，請到信箱收信。如果沒有看到，請檢查垃圾郵件或促銷分類。</div>
+  </div>
+</div>
+
+<!-- ── PURCHASE MODAL ── -->
+<div id="purchaseModal" class="purchase-modal" aria-hidden="true">
+  <div class="purchase-box" role="dialog" aria-modal="true">
+    <button class="demo-close" id="closePurchaseModal" aria-label="關閉">×</button>
+    <h2>選擇課程方案</h2>
+    <p class="subtitle">所有方案包含完整課程・永久觀看・AI 互動遊戲</p>
+    <div class="plan-select" id="planSelect">
+      <!-- injected by JS -->
+    </div>
+    <hr class="purchase-divider" />
+    <div class="purchase-total">
+      <div>
+        <div class="label">應付金額</div>
+        <div class="orig-price" id="modalOrigPrice">原價 $3,500</div>
+      </div>
+      <div class="total-price" id="modalTotalPrice">$2,200</div>
+    </div>
+    <button class="checkout-btn" id="checkoutBtn">前往 Stripe 結帳 →</button>
+    <p class="purchase-note">🔒 安全付款由 <span class="stripe-logo">Stripe</span> 處理・支援信用卡 / Apple Pay / Google Pay</p>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast-bar" id="toastBar"></div>
+
+<script>
+  /* ══════════════════════════════════════
+     DATA
+  ══════════════════════════════════════ */
+  const PLANS = [
+    { id: "fan1",   label: "粉絲限定【1】", note: "有購買專輯、音樂會資格", disc: "6.9 折", price: 2200, orig: 3500 },
+    { id: "fan2",   label: "粉絲限定【2】", note: "有購買樂譜資格",           disc: "7.5 折", price: 2400, orig: 3500 },
+    { id: "early1", label: "第一波｜早鳥【1】", note: "",                     disc: "8.1 折", price: 2800, orig: 3500 },
+    { id: "early2", label: "第二波｜早鳥【2】", note: "",                     disc: "8.8 折", price: 3100, orig: 3500 },
+    { id: "early3", label: "第三波｜最後早鳥【3】", note: "",                 disc: "9.4 折", price: 3300, orig: 3500 },
+    { id: "full",   label: "原價",           note: "無時間限制",              disc: "",        price: 3500, orig: 3500 },
+  ];
+
+  const MODULES = [
+    { n:1, img:"https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=500&q=80", title:"第一章：踏上黑白鍵的第一步", desc:"認識鍵盤布局、中央 C 位置、基本坐姿與手型，認識七個基本音名。", song:"音階單音練習", ai:"音名快閃", detail:"這一章帶你認識 88 個琴鍵的排列規律，找到中央 C，學習正確的坐姿與手型，並背熟 ABCDEFG 七個音名。" },
+    { n:2, img:"https://images.unsplash.com/photo-1507838153414-b4b713384a76?auto=format&fit=crop&w=500&q=80", title:"第二章：音符的語言－唱名與音階", desc:"學習 Do、Re、Mi、Fa、Sol、La、Si 唱名系統與 C 大調音階。", song:"Do-Re-Mi", ai:"唱名階梯", detail:"從唱名系統出發，建立相對音感基礎，完整彈出 C 大調上行下行音階，為後續和弦學習奠定基礎。" },
+    { n:3, img:"https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=500&q=80", title:"第三章：和弦的基石－大三和弦", desc:"理解根音＋大三度＋純五度，掌握 C、F、G 三個常用大三和弦。", song:"Happy Birthday to You", ai:"和弦辨識家", detail:"進入和弦世界的第一步！學會大三和弦的公式：根音 + 往右 4 格 + 再往右 3 格，並完整彈出生日快樂歌。" },
+    { n:4, img:"https://images.unsplash.com/photo-1514119412350-e174d90d280e?auto=format&fit=crop&w=500&q=80", title:"第四章：情感的色彩－小三和弦", desc:"認識小三和弦的憂鬱、溫柔聽感，練習 Am、Em 常用小三和弦。", song:"稻香", ai:"情緒調色盤", detail:"大三和弦聽起來明亮；小三和弦聽起來憂鬱。這一章你會感受到兩種和弦帶來截然不同的情緒色彩。" },
+    { n:5, img:"https://images.unsplash.com/photo-1552422535-c45813c61732?auto=format&fit=crop&w=500&q=80", title:"第五章：12 金鑰－認識所有大三和弦", desc:"透過規律與口訣，系統性學習全部 12 個大三和弦。", song:"學貓叫", ai:"和弦俄羅斯", detail:"用系統化口訣記憶 12 個大三和弦，涵蓋升降記號，建立完整的和弦地圖。" },
+    { n:6, img:"https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=500&q=80", title:"第六章：12 種溫柔－認識所有小三和弦", desc:"系統性學習全部 12 個小三和弦，並與大三和弦對比練習。", song:"說好不哭", ai:"和弦變身術", detail:"對應第五章的大三和弦地圖，完成小三和弦地圖。大小和弦切換練習，是表達情感的核心技巧。" },
+    { n:7, img:"https://images.unsplash.com/photo-1514119412350-e174d90d280e?auto=format&fit=crop&w=500&q=80", title:"第七章：左手的魔法－基礎伴奏（一）", desc:"學習全和弦 Block Chord 伴奏法與四四拍穩定伴奏。", song:"告白氣球", ai:"節奏打點師", detail:"右手旋律 + 左手 Block Chord 伴奏，是最快能讓歌曲聽起來完整的方法，這一章讓你兩手同時動起來。" },
+    { n:8, img:"https://images.unsplash.com/photo-1507838153414-b4b713384a76?auto=format&fit=crop&w=500&q=80", title:"第八章：讓音樂動起來－基礎伴奏（二）", desc:"學習分解和弦 Arpeggio 伴奏法，讓音樂更具流動感。", song:"刻在我心底的名字", ai:"分解和弦連連看", detail:"Block Chord 穩定，Arpeggio 流動。這一章學會分解和弦後，你的彈奏會立刻多出一種層次感。" },
+    { n:9, img:"https://images.unsplash.com/photo-1552422535-c45813c61732?auto=format&fit=crop&w=500&q=80", title:"第九章：流行音樂的萬用公式", desc:"介紹經典卡農和弦進行 C-G-Am-Em-F-C-F-G。", song:"那些年、情非得已", ai:"和弦神預測", detail:"卡農和弦進行套用在數百首流行歌曲。學會這個公式，你會發現很多歌曲其實都在用同一套和弦！" },
+    { n:10, img:"https://images.unsplash.com/photo-1514119412350-e174d90d280e?auto=format&fit=crop&w=500&q=80", title:"第十章：你的第一場個人發表會", desc:"綜合運用所學，完整彈奏一首流行歌曲。", song:"Always With Me", ai:"自由創作坊", detail:"把前九章學到的所有技能整合起來，完整彈奏《Always With Me》，為自己的零基礎旅程畫下完美句點。" },
+  ];
+
+  const LEADS_STORAGE_KEY = "inrecord_course_preview_leads";
+
+  /* ══════════════════════════════════════
+     RENDER MODULES
+  ══════════════════════════════════════ */
+  document.getElementById("moduleList").innerHTML = MODULES.map(m => `
+    <div class="module" data-n="${m.n}" onclick="toggleModule(${m.n})">
+      <div class="module-img" style="background-image:url('${m.img}')"></div>
+      <div class="num">${m.n}</div>
+      <div><h3>${m.title}</h3><p>${m.desc}</p></div>
+      <div class="meta"><span>♫</span>實戰曲目<br />${m.song}</div>
+      <div class="meta"><span>⚙</span>AI 互動遊戲<br />${m.ai}</div>
+      <div class="more">⌄</div>
+    </div>
+    <div class="module-detail" id="detail-${m.n}">${m.detail}</div>
+  `).join("");
+
+  function toggleModule(n) {
+    const row = document.querySelector(`.module[data-n="${n}"]`);
+    const detail = document.getElementById(`detail-${n}`);
+    row.classList.toggle("open");
+    detail.classList.toggle("open");
+  }
+
+  /* ══════════════════════════════════════
+     PRICING — click to select
+  ══════════════════════════════════════ */
+  let selectedPlan = PLANS[0];
+
+  document.querySelectorAll(".price-row[data-plan]").forEach(row => {
+    row.addEventListener("click", () => {
+      document.querySelectorAll(".price-row[data-plan]").forEach(r => r.classList.remove("selected"));
+      row.classList.add("selected");
+      const plan = PLANS.find(p => p.id === row.dataset.plan);
+      if (plan) {
+        selectedPlan = plan;
+        document.getElementById("selectedLabel").textContent = `已選：${plan.label}— $${plan.price.toLocaleString()}`;
+      }
+    });
+  });
+
+  /* ══════════════════════════════════════
+     PURCHASE MODAL
+  ══════════════════════════════════════ */
+  function renderPlanSelect() {
+    document.getElementById("planSelect").innerHTML = PLANS.map(p => `
+      <div class="plan-option ${p.id === selectedPlan.id ? "active" : ""}" data-id="${p.id}" onclick="selectModalPlan('${p.id}')">
+        <div>
+          <div class="plan-name">${p.label}</div>
+          ${p.note ? `<div class="plan-note">${p.note}</div>` : ""}
+        </div>
+        ${p.disc ? `<div class="plan-disc">${p.disc}</div>` : "<div></div>"}
+        <div class="plan-price">$${p.price.toLocaleString()}</div>
+      </div>
+    `).join("");
+    updateModalTotal();
+  }
+
+  function selectModalPlan(id) {
+    selectedPlan = PLANS.find(p => p.id === id);
+    document.querySelectorAll(".plan-option").forEach(el => {
+      el.classList.toggle("active", el.dataset.id === id);
+    });
+    updateModalTotal();
+  }
+
+  function updateModalTotal() {
+    document.getElementById("modalTotalPrice").textContent = `$${selectedPlan.price.toLocaleString()}`;
+    document.getElementById("modalOrigPrice").textContent =
+      selectedPlan.price < selectedPlan.orig ? `原價 $${selectedPlan.orig.toLocaleString()}` : "";
+  }
+
+  function openPurchaseModal() {
+    renderPlanSelect();
+    const modal = document.getElementById("purchaseModal");
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  document.getElementById("closePurchaseModal").addEventListener("click", () => {
+    document.getElementById("purchaseModal").classList.remove("active");
+  });
+  document.getElementById("purchaseModal").addEventListener("click", e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove("active");
+  });
+
+  /* ── Stripe Checkout ── */
+  document.getElementById("checkoutBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("checkoutBtn");
+    btn.disabled = true;
+    btn.textContent = "連線中...";
+
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: selectedPlan.id })
+      });
+
+      if (!res.ok) throw new Error("checkout_failed");
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err) {
+      // Dev fallback — show toast instead of redirecting
+      showToast("⚠️ Stripe 尚未連上後端。正式上線後設定環境變數即可。");
+      btn.disabled = false;
+      btn.textContent = "前往 Stripe 結帳 →";
+    }
+  });
+
+  /* ── Nav & Pricing page buy buttons ── */
+  document.getElementById("navBuyBtn").addEventListener("click", openPurchaseModal);
+  document.getElementById("pricingBuyBtn").addEventListener("click", openPurchaseModal);
+
+  /* ══════════════════════════════════════
+     PREVIEW MODAL (Email)
+  ══════════════════════════════════════ */
+  const previewBtn = document.getElementById("previewBtn");
+  const modal = document.getElementById("previewModal");
+  const closeModalBtn = document.getElementById("closeModal");
+  const startDemo = document.getElementById("startDemo");
+  const emailInput = document.getElementById("emailInput");
+  const demoStatus = document.getElementById("demoStatus");
+  const demoSuccess = document.getElementById("demoSuccess");
+
+  let timerInterval = null;
+
+  function getPreviewLeads() {
+    try { return JSON.parse(localStorage.getItem(LEADS_STORAGE_KEY) || "[]"); } catch { return []; }
+  }
+  function savePreviewLeads(leads) { localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads)); }
+  function upsertPreviewLead(email, patch = {}) {
+    const leads = getPreviewLeads();
+    const now = new Date().toISOString();
+    const norm = email.trim().toLowerCase();
+    const existing = leads.find(l => l.email.toLowerCase() === norm);
+    const base = { email: norm, course: "零基礎流行鋼琴入門課", source: "course_preview_modal", tags: ["piano_demo_lead"], status: "requested", emailSent: false, demoOpened: false, purchased: false, requestedAt: now, updatedAt: now };
+    const next = existing ? { ...existing, ...patch, updatedAt: now } : { ...base, ...patch };
+    savePreviewLeads(existing ? leads.map(l => l.email.toLowerCase() === norm ? next : l) : [next, ...leads]);
+    return next;
+  }
+
+  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  function isGoogleEmail(email) { return /@(gmail\.com|googlemail\.com)$/i.test(email); }
+
+  previewBtn.addEventListener("click", e => {
+    e.preventDefault();
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => emailInput.focus(), 80);
+  });
+  closeModalBtn.addEventListener("click", () => {
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+  });
+  modal.addEventListener("click", e => { if (e.target === modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); } });
+
+  async function handleStartDemo() {
+    const email = emailInput.value.trim();
+    demoStatus.style.display = "none";
+    demoSuccess.classList.remove("active");
+
+    if (!isValidEmail(email)) { showFieldError("請輸入有效 Email。"); return; }
+    if (!isGoogleEmail(email)) { showFieldError("請使用 Gmail（@gmail.com）。"); return; }
+
+    startDemo.disabled = true;
+    startDemo.textContent = "寄送中...";
+    upsertPreviewLead(email, { status: "requested" });
+
+    try {
+      const res = await fetch("/api/brevo/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, tags: ["piano_demo_lead", "course_preview"], source: "course_preview_modal", course: "零基礎流行鋼琴入門課", demoUrl: location.origin + location.pathname + "#courseDemo" })
+      });
+      if (!res.ok) throw new Error("subscribe_failed");
+      upsertPreviewLead(email, { status: "email_sent", emailSent: true, emailSentAt: new Date().toISOString() });
+      demoSuccess.classList.add("active");
+      setTimeout(() => openDemoSection(email), 1200);
+    } catch (err) {
+      console.warn("Brevo fallback:", err);
+      upsertPreviewLead(email, { status: "preview_mode", previewMode: true });
+      demoStatus.textContent = "目前為前端預覽模式：尚未連上後端 API，正式上線後才會寄出 Email；這裡先開啟 Demo 試看。";
+      demoStatus.style.display = "block";
+      setTimeout(() => openDemoSection(email), 900);
+    } finally {
+      startDemo.disabled = false;
+      startDemo.textContent = "寄送試看 Email";
+    }
+  }
+
+  function showFieldError(msg) {
+    demoStatus.textContent = msg;
+    demoStatus.style.display = "block";
+  }
+
+  function openDemoSection(email) {
+    if (email) upsertPreviewLead(email, { status: "demo_opened", demoOpened: true, demoOpenedAt: new Date().toISOString() });
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+    const demoSection = document.getElementById("courseDemo");
+    demoSection.classList.add("active");
+    demoSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    startDemoCountdown(180);
+  }
+
+  startDemo.addEventListener("click", handleStartDemo);
+  emailInput.addEventListener("keydown", e => { if (e.key === "Enter") handleStartDemo(); });
+
+  /* ══════════════════════════════════════
+     DEMO COUNTDOWN
+  ══════════════════════════════════════ */
+  function startDemoCountdown(seconds) {
+    clearInterval(timerInterval);
+    document.getElementById("demoConversion").classList.remove("active");
+    let remaining = seconds;
+
+    const render = () => {
+      const m = Math.floor(remaining / 60);
+      const s = String(remaining % 60).padStart(2, "0");
+      document.getElementById("demoTimerText").textContent = `Demo 試看已開啟｜${m}:${s}`;
+    };
+    render();
+    timerInterval = setInterval(() => {
+      remaining--;
+      render();
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById("demoTimerText").textContent = "Demo 試看已結束｜請加入完整課程";
+        document.getElementById("demoConversion").classList.add("active");
+      }
+    }, 1000);
+  }
+
+  /* ══════════════════════════════════════
+     TOAST
+  ══════════════════════════════════════ */
+  function showToast(msg) {
+    const t = document.getElementById("toastBar");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(window.__toast);
+    window.__toast = setTimeout(() => t.classList.remove("show"), 3200);
+  }
+</script>
+</body>
+</html>
