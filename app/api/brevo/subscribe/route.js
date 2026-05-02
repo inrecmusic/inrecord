@@ -56,6 +56,7 @@ async function sendEmail({ email, course, demoUrl }) {
 async function saveLeadToSupabase({ email, tags, source, course }) {
   try {
     const supabase = getSupabaseAdmin();
+    if (!supabase) return;
     const { error } = await supabase.from("course_preview_leads").upsert(
       { email: email.toLowerCase(), course, source, tags, status: "email_sent", email_sent: true, email_sent_at: new Date().toISOString() },
       { onConflict: "email" }
