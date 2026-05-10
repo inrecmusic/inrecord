@@ -168,6 +168,7 @@ export default function HomePage() {
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     if (!supabase) return;
@@ -176,6 +177,15 @@ export default function HomePage() {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error")) {
+      const desc = params.get("error_description") || "登入發生問題，請重試";
+      setAuthError(decodeURIComponent(desc.replace(/\+/g, " ")));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
 
   function selectPlan(p) { setSelectedPlan(p); }
@@ -197,7 +207,7 @@ export default function HomePage() {
       {/* NAV */}
       <header className={styles.nav}>
         <div className={styles.container + " " + styles.navInner}>
-          <a href="/admin" aria-label="InRecord"><Logo /></a>
+          <a href="/" aria-label="InRecord"><Logo /></a>
           <nav className={styles.navLinks}>
             <a href="#intro">課程介紹</a>
             <a href="#curriculum">課程大綱</a>
@@ -206,8 +216,8 @@ export default function HomePage() {
             <a href="#" onClick={e => { e.preventDefault(); setPreviewOpen(true); }}>課程試看</a>
           </nav>
           {user
-            ? <a href="/portal" className={`${styles.btnLogin} ${styles.navBtn}`}>進入後台</a>
-            : <a href="/login"  className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
+            ? <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>
+            : <a href="/login"     className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
           <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => { selectPlan(PLANS[2]); setBuyOpen(true); }}>立即購買課程</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -220,11 +230,19 @@ export default function HomePage() {
             ))}
             <a href="#" onClick={e => { e.preventDefault(); setMenuOpen(false); setPreviewOpen(true); }}>課程試看</a>
             {user
-              ? <a href="/portal" onClick={() => setMenuOpen(false)}>進入後台</a>
-              : <a href="/login"  onClick={() => setMenuOpen(false)}>學員登入</a>}
+              ? <a href="/classroom" onClick={() => setMenuOpen(false)}>進入教室</a>
+              : <a href="/login"    onClick={() => setMenuOpen(false)}>學員登入</a>}
           </div>
         )}
       </header>
+
+      {authError && (
+        <div style={{ background: "#fef2f2", borderBottom: "1px solid #fecaca", padding: "10px 20px", textAlign: "center", fontSize: 14, color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          <span>⚠️ 登入失敗：{authError}</span>
+          <a href="/login" style={{ fontWeight: 700, color: "#dc2626", textDecoration: "underline" }}>重新登入</a>
+          <button onClick={() => setAuthError("")} style={{ background: "none", border: 0, cursor: "pointer", color: "#dc2626", fontSize: 16, lineHeight: 1, padding: "0 4px" }}>×</button>
+        </div>
+      )}
 
       <main id="top">
         {/* HERO */}
