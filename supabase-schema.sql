@@ -47,7 +47,7 @@ CREATE POLICY "service_role_only" ON course_preview_leads
   USING (auth.role() = 'service_role');
 
 -- ────────────────────────────────────────
--- 訂單記錄（Stripe Webhook 寫入）
+-- 訂單記錄（Payuni NotifyURL 寫入）
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS orders (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,8 +56,9 @@ CREATE TABLE IF NOT EXISTS orders (
   plan_label          TEXT,
   amount              INTEGER NOT NULL, -- 新台幣，整數
   currency            TEXT NOT NULL DEFAULT 'twd',
-  stripe_session_id   TEXT UNIQUE,
-  stripe_payment_intent TEXT,
+  mer_trade_no        TEXT UNIQUE,      -- 特店訂單編號（我方產生，格式 INREC{timestamp}）
+  payuni_trade_no     TEXT,             -- Payuni 交易編號（付款完成後由 Payuni 回傳）
+  pay_type            TEXT,             -- 付款方式：CREDIT / VACC / CVS / BARCODE 等
   status              TEXT NOT NULL DEFAULT 'pending',
   -- 狀態值：pending | paid | refunded | failed
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),

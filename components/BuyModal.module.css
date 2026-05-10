@@ -34,3 +34,28 @@
   padding: 12px 14px; font-size: 13px; color: #92400e; margin-top: 14px;
 }
 .note { color: #888; font-size: 13px; text-align: center; margin: 14px 0 0; }
+
+/* proof upload */
+.uploadSection { margin-bottom: 18px; }
+.uploadLabel { font-size: 14px; font-weight: 700; color: #374151; margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
+.uploadRequired { font-size: 12px; font-weight: 900; color: #dc2626; background: #fef2f2; padding: 2px 7px; border-radius: 999px; }
+.uploadArea {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 26px 16px;
+  cursor: pointer; transition: border-color .2s, background .2s; background: #f8fafc;
+}
+.uploadArea:hover { border-color: #2563eb; background: #eff6ff; }
+.uploadAreaOver { border-color: #2563eb; background: #eff6ff; }
+.uploadIcon { color: #94a3b8; transition: color .2s; }
+.uploadArea:hover .uploadIcon, .uploadAreaOver .uploadIcon { color: #2563eb; }
+.uploadText { font-size: 14px; font-weight: 700; color: #374151; }
+.uploadHint { font-size: 12px; color: #94a3b8; }
+.uploadPreview { }
+.uploadPreview img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; display: block; }
+.uploadRemove {
+  display: block; width: 100%; margin-top: 8px; background: none; border: 1px solid #e2e8f0;
+  border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; color: #64748b;
+  cursor: pointer; transition: .2s;
+}
+.uploadRemove:hover { border-color: #94a3b8; color: #374151; }
+.uploadNotice { font-size: 13px; color: #64748b; text-align: center; margin: 10px 0 0; }

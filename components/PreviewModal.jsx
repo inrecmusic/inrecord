@@ -35,10 +35,8 @@ export default function PreviewModal({ open, onClose, onSuccess }) {
       setStatus("ok");
       setTimeout(() => { onSuccess?.(email); onClose?.(); }, 1200);
     } catch (err) {
-      // Fallback: API 未部署時仍可開啟 Demo
       setStatus("error");
-      setMessage("Brevo API 尚未部署，預覽模式直接開啟 Demo。");
-      setTimeout(() => { onSuccess?.(email); onClose?.(); }, 900);
+      setMessage("寄送失敗，請稍後再試。");
     }
   }
 

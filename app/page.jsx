@@ -6,29 +6,89 @@ import {
   Camera, PlayCircle, MessageCircle,
   Menu, X, Check, ChevronDown,
   ShoppingCart, Heart, Mic2,
+  Hand, Sun, Moon, Shuffle, Headphones,
+  Layers, Waves, RotateCcw,
+  Zap, BarChart2, Gamepad2, Clock,
+  Video, BookOpen,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
 import styles from "./page.module.css";
+import { supabase } from "@/lib/supabase";
+
+const POINTS = [
+  {
+    n: 1,
+    title: "零基礎也能輕鬆開始",
+    items: [
+      { icon: Music2,      label: "認識鍵盤與音名",  sub: "七個基本音名，一次記住" },
+      { icon: Mic2,        label: "唱名 Do-Re-Mi",   sub: "跟著旋律唱出完整音階" },
+      { icon: Hand,        label: "基本坐姿與手型",  sub: "從第一課建立良好習慣" },
+      { icon: BarChart2,   label: "C 大調音階練習",  sub: "右手流暢指法入門" },
+    ],
+  },
+  {
+    n: 2,
+    title: "系統掌握全部 24 個三和弦",
+    items: [
+      { icon: Sun,       label: "12 個大三和弦",    sub: "開朗明亮的音色" },
+      { icon: Moon,      label: "12 個小三和弦",    sub: "柔和憂鬱的情感" },
+      { icon: Shuffle,   label: "大小和弦快速切換", sub: "豐富歌曲音樂層次" },
+      { icon: Headphones,label: "和弦耳訓練習",     sub: "聽聲辨弦，立刻反應" },
+    ],
+  },
+  {
+    n: 3,
+    title: "兩種伴奏技法全面學會",
+    items: [
+      { icon: Layers,     label: "Block Chord 全和弦", sub: "穩定扎實的節奏感" },
+      { icon: Waves,      label: "分解和弦 Arpeggio",  sub: "讓音樂流動起來" },
+      { icon: RotateCcw,  label: "卡農萬用進行",        sub: "解鎖流行歌背後的共同密碼" },
+      { icon: Heart,      label: "左右手完美配合",      sub: "彈出有感情的完整旋律" },
+    ],
+  },
+  {
+    n: 4,
+    title: "AI 互動遊戲，練習不枯燥",
+    items: [
+      { icon: Zap,      label: "音名快閃",       sub: "鍵盤反應速度大幅提升" },
+      { icon: TrendingUp,label: "唱名階梯",      sub: "音感訓練遊戲化" },
+      { icon: Gamepad2, label: "和弦俄羅斯方塊", sub: "邊玩邊記住全部和弦" },
+      { icon: Clock,    label: "節奏打點師",     sub: "穩定節拍，不再搶拍落拍" },
+    ],
+  },
+  {
+    n: 5,
+    title: "學完就能彈出喜歡的歌",
+    items: [
+      { icon: Music,       label: "20+ 首流行曲目實戰", sub: "學完即能開口唱彈" },
+      { icon: Video,       label: "完整錄製學習成果",   sub: "留下屬於你的第一首錄音" },
+      { icon: BookOpen,    label: "看得懂和弦譜",       sub: "自學更多歌曲不求人" },
+      { icon: GraduationCap,label: "扎實基礎銜接進階",  sub: "為下一階段學習鋪路" },
+    ],
+  },
+];
 
 const PLANS = [
-  { plan: "fan1",   price: 2200, label: "粉絲限定【1】", discount: "6.9 折", desc: "有購買專輯、音樂會資格", featured: true },
-  { plan: "fan2",   price: 2400, label: "粉絲限定【2】", discount: "7.5 折", desc: "有購買樂譜資格",         featured: true },
-  { plan: "early1", price: 2800, label: "第一波｜早鳥【1】", discount: "8.1 折" },
+  { plan: "fan1",   price: 2200, originalPrice: 3500, savings: 1300, label: "粉絲限定【1】",    discount: "6.9折", pillLabel: "粉絲專屬", ribbon: "最高折扣", desc: "提供專輯、演奏會購買憑證即可享有優惠資格" },
+  { plan: "fan2",   price: 2400, originalPrice: 3500, savings: 1100, label: "粉絲限定【2】",    discount: "7.5折", pillLabel: "粉絲專屬",                    desc: "提供樂譜購買憑證即可享有優惠資格" },
+  { plan: "early1", price: 2800, originalPrice: 3500, savings:  700, label: "第一波｜早鳥【1】", discount: "8.1折", pillLabel: "早鳥方案",  dark: true,        desc: "限量名額，課程上線初期最低優惠，先訂先學" },
 ];
 
 const MODULES = [
-  { n: 1,  title: "踏上黑白鍵的第一步",     desc: "認識鍵盤布局、中央 C 位置、基本坐姿與手型，認識七個基本音名。",         song: "音階單音練習",       game: "音名快閃",       img: "photo-1520523839897-bd0b52f945a0" },
-  { n: 2,  title: "音符的語言－唱名與音階",  desc: "學習 Do Re Mi Fa Sol La Si 唱名系統與 C 大調音階。",                 song: "Do-Re-Mi",           game: "唱名階梯",       img: "photo-1507838153414-b4b713384a76" },
-  { n: 3,  title: "和弦的基石－大三和弦",    desc: "理解根音＋大三度＋純五度，掌握 C、F、G 三個常用大三和弦。",           song: "Happy Birthday",     game: "和弦辨識家",     img: "photo-1520523839897-bd0b52f945a0" },
-  { n: 4,  title: "情感的色彩－小三和弦",    desc: "認識小三和弦的憂鬱、溫柔聽感，練習 Am、Em 常用小三和弦。",           song: "稻香",               game: "情緒調色盤",     img: "photo-1514119412350-e174d90d280e" },
-  { n: 5,  title: "12 金鑰－所有大三和弦",   desc: "透過規律與口訣，系統性學習全部 12 個大三和弦。",                     song: "學貓叫",             game: "和弦俄羅斯",     img: "photo-1552422535-c45813c61732"   },
-  { n: 6,  title: "12 種溫柔－所有小三和弦", desc: "系統性學習全部 12 個小三和弦，並與大三和弦對比練習。",               song: "說好不哭",           game: "和弦變身術",     img: "photo-1520523839897-bd0b52f945a0" },
-  { n: 7,  title: "左手的魔法－基礎伴奏（一）", desc: "學習全和弦 Block Chord 伴奏法與四四拍穩定伴奏。",                song: "告白氣球",           game: "節奏打點師",     img: "photo-1514119412350-e174d90d280e" },
-  { n: 8,  title: "讓音樂動起來－基礎伴奏（二）", desc: "學習分解和弦 Arpeggio 伴奏法，讓音樂更具流動感。",             song: "刻在我心底的名字",   game: "分解和弦連連看", img: "photo-1507838153414-b4b713384a76" },
-  { n: 9,  title: "流行音樂的萬用公式",      desc: "介紹經典卡農和弦進行 C-G-Am-Em-F-C-F-G。",                         song: "那些年、情非得已",   game: "和弦神預測",     img: "photo-1552422535-c45813c61732"   },
-  { n: 10, title: "你的第一場個人發表會",    desc: "綜合運用所學，完整彈奏一首流行歌曲。",                               song: "Always With Me",     game: "自由創作坊",     img: "photo-1514119412350-e174d90d280e" },
+  { n: 1,  title: "踏上黑白鍵的第一步",          desc: "認識七個基本音名（A, B, C, D, E, F, G）、鍵盤布局與基本坐姿手型，建立你的第一個鋼琴地圖。",                                              song: "音階單音練習",                                  game: "音名快閃 — 畫面隨機顯示琴鍵位置，限時點擊正確音名",                    img: "photo-1520523839897-bd0b52f945a0" },
+  { n: 2,  title: "音符的語言 — 唱名與音階",      desc: "C 大調音階的組成與指法練習，學習 Do Re Mi Fa Sol La Si 唱名系統，搭配音樂跟著彈音階與《小蜜蜂》。",                                       song: "《Do-Re-Mi》（電影《真善美》插曲）",             game: "唱名階梯 — 畫面隨機顯示琴鍵位置，限時點擊正確唱名",                    img: "photo-1507838153414-b4b713384a76" },
+  { n: 3,  title: "和弦的基石 — 大三和弦",        desc: "大三和弦定義（根音＋大三度＋純五度），掌握 C、F、G 三個最常用大三和弦，辨認和弦組成音。",                                                   song: "《Happy Birthday to You》（C、F、G 和弦進行）", game: "和弦辨識家 — 辨認大三與小三和弦，辨認和弦的組成音",                     img: "photo-1520523839897-bd0b52f945a0" },
+  { n: 4,  title: "情感的色彩 — 小三和弦",        desc: "Am、Em 常用小三和弦的指法與辨識，感受大、小和弦截然不同的情緒色彩，練習土耳其進行曲左手伴奏。",                                             song: "《稻香》（周杰倫）簡化版和弦進行",               game: "情緒調色盤 — 聆聽大、小三和弦，判斷情緒感受（開心／難過）",             img: "photo-1514119412350-e174d90d280e" },
+  { n: 5,  title: "12 金鑰 — 認識所有大三和弦",   desc: "升降記號（Sharp #、Flat b）在和弦中的應用，系統性學習全部 12 個大三和弦。",                                                               song: "《學貓叫》和弦進行練習",                         game: "和弦俄羅斯 — 從天而降的和弦方塊，彈出正確和弦消除",                     img: "photo-1552422535-c45813c61732" },
+  { n: 6,  title: "12 種溫柔 — 認識所有小三和弦", desc: "大小和弦的快速轉換技巧，系統性學習全部 12 個小三和弦，並與大三和弦對比練習。",                                                             song: "《說好不哭》（周杰倫）副歌和弦進行",             game: "和弦變身術 — 顯示大三和弦，快速彈出對應的小三和弦",                     img: "photo-1520523839897-bd0b52f945a0" },
+  { n: 7,  title: "左手的魔法 — 基礎伴奏（一）",  desc: "拍子與節奏入門，四四拍全和弦 Block Chord 穩定伴奏法，右手單音旋律搭配左手伴奏。",                                                           song: "《告白氣球》（周杰倫）右手旋律＋左手全和弦伴奏", game: "節奏打點師 — 跟隨節拍器，在正確時機點擊螢幕練習穩定性",                  img: "photo-1514119412350-e174d90d280e" },
+  { n: 8,  title: "讓音樂動起來 — 基礎伴奏（二）", desc: "分解和弦（Arpeggio）伴奏法，音型如 1-5-3-5，讓音樂更具流動感與層次。",                                                                   song: "《刻在我心底的名字》（盧廣仲）右手旋律＋左手分解和弦", game: "分解和弦連連看 — 將和弦組成音按正確分解順序連接",                   img: "photo-1507838153414-b4b713384a76" },
+  { n: 9,  title: "流行音樂的萬用公式",            desc: "卡農和弦進行（C-G-Am-Em-F-C-F-G），和弦級數概念（I-V-vi-iii-IV-I-IV-V），解鎖流行歌曲背後的共同密碼。",                                    song: "《那些年》、《情非得已》等經典歌曲片段串燒",     game: "和弦神預測 — 聆聽前三個和弦，預測並彈出第四個",                         img: "photo-1552422535-c45813c61732" },
+  { n: 10, title: "你的第一場個人發表會",          desc: "複習所有三和弦與兩種基本伴奏型態，綜合運用所學，完整彈奏一首流行歌曲，正式展現你的學習成果。",                                               song: "《Always With Me》（神隱少女片尾曲）完整版",     game: "自由創作坊 — 自由搭配旋律與伴奏並可錄製分享",                           img: "photo-1514119412350-e174d90d280e" },
+  { n: "a1", isAppendix: true, appendixLabel: "附錄一", title: "如何更有效率地練琴？",    desc: "分段練習、慢速練習、節拍器使用技巧，幫助學員建立良好練習習慣，讓每次練習的效果最大化。", img: "photo-1507838153414-b4b713384a76" },
+  { n: "a2", isAppendix: true, appendixLabel: "附錄二", title: "給初學者的器材選購建議", desc: "不同預算下的電鋼琴、電子琴選購指南，以及實用 App 和軟體推薦，幫助你找到最適合自己的學習工具。", img: "photo-1552422535-c45813c61732" },
 ];
 
 const STATS = [
@@ -105,12 +165,18 @@ function StatItem({ icon: Icon, value, suffix, label }) {
 export default function HomePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [demoActive, setDemoActive] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(180);
-  const [timerDone, setTimerDone] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
   const [menuOpen, setMenuOpen] = useState(false);
-  const timerRef = useRef(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   function selectPlan(p) { setSelectedPlan(p); }
 
@@ -123,21 +189,8 @@ export default function HomePage() {
   }
 
   function onPreviewSuccess() {
-    setDemoActive(true);
-    setTimeLeft(180);
-    setTimerDone(false);
-    setTimeout(() => document.getElementById("courseDemo")?.scrollIntoView({ behavior: "smooth" }), 200);
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) { clearInterval(timerRef.current); setTimerDone(true); return 0; }
-        return t - 1;
-      });
-    }, 1000);
+    setPreviewOpen(false);
   }
-
-  const mins = Math.floor(timeLeft / 60);
-  const secs = String(timeLeft % 60).padStart(2, "0");
 
   return (
     <>
@@ -149,21 +202,26 @@ export default function HomePage() {
             <a href="#intro">課程介紹</a>
             <a href="#curriculum">課程大綱</a>
             <a href="#instructor">講師介紹</a>
-            <a href="#features">課程特色</a>
             <a href="#pricing">課程方案</a>
             <a href="#" onClick={e => { e.preventDefault(); setPreviewOpen(true); }}>課程試看</a>
           </nav>
-          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={openBuy}>立即購買課程</button>
+          {user
+            ? <a href="/portal" className={`${styles.btnLogin} ${styles.navBtn}`}>進入後台</a>
+            : <a href="/login"  className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
+          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => { selectPlan(PLANS[2]); setBuyOpen(true); }}>立即購買課程</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
         {menuOpen && (
           <div className={styles.mobileMenu}>
-            {[["#intro","課程介紹"],["#curriculum","課程大綱"],["#instructor","講師介紹"],["#features","課程特色"],["#pricing","課程方案"]].map(([href, label]) => (
+            {[["#intro","課程介紹"],["#curriculum","課程大綱"],["#instructor","講師介紹"],["#pricing","課程方案"]].map(([href, label]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
             <a href="#" onClick={e => { e.preventDefault(); setMenuOpen(false); setPreviewOpen(true); }}>課程試看</a>
+            {user
+              ? <a href="/portal" onClick={() => setMenuOpen(false)}>進入後台</a>
+              : <a href="/login"  onClick={() => setMenuOpen(false)}>學員登入</a>}
           </div>
         )}
       </header>
@@ -222,22 +280,65 @@ export default function HomePage() {
 
         {/* INTRO */}
         <section id="intro" className={styles.introSection} data-reveal>
-          <div className={styles.container + " " + styles.introGrid}>
-            <div className={styles.introCopy}>
-              <small>課程定位與目標</small>
-              <h2>專為零基礎學員設計<br/>學完就能彈出喜歡的歌</h2>
-              <p>從認識鍵盤、音名與基本樂理開始，循序漸進掌握流行音樂中最重要的元素：三和弦。</p>
-              <ul className={styles.outcomes}>
-                {[
-                  "獨立辨識鋼琴上的所有音名（ABCDEFG）",
-                  "理解並彈奏全部 12 個大三和弦與 12 個小三和弦",
-                  "看懂簡易的流行歌曲和弦譜",
-                  "用基本伴奏方式，為自己喜愛的歌曲彈奏和弦",
-                  "建立扎實基礎，為下一階段的進階學習做好準備",
-                ].map(o => <li key={o}>{o}</li>)}
-              </ul>
+          <div className={styles.container}>
+            <div className={styles.sectionHead} style={{ marginBottom: "32px" }}>
+              <h2>課程設計與說明</h2>
             </div>
-            <div className={styles.pianoPhoto} />
+            <div className={styles.featureGrid} style={{ marginBottom: "56px" }}>
+              {[
+                [Music2, "零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
+                [Bot,    "AI 互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
+                [Music,  "流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
+                [Award,  "成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
+              ].map(([Icon, title, desc]) => (
+                <div key={title} className={styles.featureCard}>
+                  <div className={styles.featureIcon}><Icon size={22} strokeWidth={1.5} /></div>
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className={styles.introGrid}>
+              <div className={styles.introCopy}>
+                <small>課程定位與目標</small>
+                <h2>專為零基礎學員設計<br/>學完就能彈出喜歡的歌</h2>
+                <p>從認識鍵盤、音名與基本樂理開始，循序漸進掌握流行音樂中最重要的元素：三和弦。</p>
+                <ul className={styles.outcomes}>
+                  {[
+                    "獨立辨識鋼琴上的所有音名（ABCDEFG）",
+                    "理解並彈奏全部 12 個大三和弦與 12 個小三和弦",
+                    "看懂簡易的流行歌曲和弦譜",
+                    "用基本伴奏方式，為自己喜愛的歌曲彈奏和弦",
+                    "建立扎實基礎，為下一階段的進階學習做好準備",
+                  ].map(o => <li key={o}>{o}</li>)}
+                </ul>
+              </div>
+              <div className={styles.pianoPhoto} />
+            </div>
+          </div>
+        </section>
+
+        {/* POINTS */}
+        <section id="points" className={styles.pointsSection}>
+          <div className={styles.container}>
+            {POINTS.map(pt => (
+              <RevealSection key={pt.n} className={styles.pointBlock}>
+                <div className={styles.pointBadge}>POINT {pt.n}</div>
+                <h2 className={styles.pointTitle}>{pt.title}</h2>
+                <div className={styles.pointGrid}>
+                  {pt.items.map(item => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className={styles.pointCard}>
+                        <div className={styles.pointCardIcon}><Icon size={28} strokeWidth={1.5} /></div>
+                        <strong>{item.label}</strong>
+                        <span>{item.sub}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </RevealSection>
+            ))}
           </div>
         </section>
 
@@ -246,24 +347,28 @@ export default function HomePage() {
           <div className={styles.container}>
             <div className={styles.sectionHead}>
               <small>課程大綱</small>
-              <h2>10 章節系統化學習<br/>從基礎到實戰，穩扎穩打</h2>
+              <h2>10 章節 ＋ 2 附錄系統化學習<br/>從基礎到實戰，穩扎穩打</h2>
             </div>
             <div className={styles.moduleList}>
               {MODULES.map(m => (
                 <details key={m.n} className={styles.module}>
                   <summary className={styles.moduleSummary}>
-                    <div className={styles.num}>{m.n}</div>
-                    <h3>第 {CH[m.n - 1]} 章：{m.title}</h3>
+                    <div className={`${styles.num} ${m.isAppendix ? styles.numAppendix : ""}`}>
+                      {m.isAppendix ? "附" : m.n}
+                    </div>
+                    <h3>{m.isAppendix ? `${m.appendixLabel}：${m.title}` : `第 ${CH[m.n - 1]} 章：${m.title}`}</h3>
                     <span className={styles.chevron}><ChevronDown size={18} strokeWidth={2} /></span>
                   </summary>
                   <div className={styles.moduleBody}>
                     <div className={styles.moduleImg} style={{ backgroundImage: `url(https://images.unsplash.com/${m.img}?auto=format&fit=crop&w=500&q=80)` }} />
                     <div>
                       <p>{m.desc}</p>
-                      <div className={styles.moduleMetaRow}>
-                        <div className={styles.meta}><Music size={14} className={styles.metaIcon} />實戰曲目：{m.song}</div>
-                        <div className={styles.meta}><Bot size={14} className={styles.metaIcon} />AI 遊戲：{m.game}</div>
-                      </div>
+                      {!m.isAppendix && (
+                        <div className={styles.moduleMetaRow}>
+                          <div className={styles.meta}><Music size={14} className={styles.metaIcon} />實戰曲目：{m.song}</div>
+                          <div className={styles.meta}><Bot size={14} className={styles.metaIcon} />AI 遊戲：{m.game}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </details>
@@ -279,14 +384,15 @@ export default function HomePage() {
             <div className={styles.instructorCopy}>
               <small>講師介紹</small>
               <h2>Rick Chang<br/><span>張育瑞老師</span></h2>
-              <p className={styles.instructorRole}>音樂製作人・流行鋼琴老師</p>
-              <p>從小接受古典鋼琴訓練，後轉型為流行音樂製作人，擁有超過 10 年的鋼琴教學經驗。相信每一位零基礎學員，只要找到對的方法，都能彈出自己喜歡的歌曲。</p>
+              <p className={styles.instructorRole}>音樂製作人・鋼琴演奏者・流行鋼琴老師</p>
+              <p>美國波士頓 Berklee College of Music 音樂碩士，簽約碩樂國際娛樂（Universal Music Publishing 台灣授權公司），首張個人專輯《Fire!》登上 iTunes 流行榜冠軍。榮獲 Global Music Awards 銅獎；2024 巴黎奧運主題歌曲累計超過 200 萬次觀看；與布達佩斯交響樂團合作錄製管弦樂作品。</p>
               <ul className={styles.instructorCreds}>
                 {[
-                  [Mic2,        "10 年以上鋼琴教學經驗"],
-                  [Music2,      "流行音樂專輯製作人"],
-                  [Users,       "線上課程累積超過 500 位學員"],
-                  [GraduationCap,"擅長系統化拆解流行音樂元素"],
+                  [GraduationCap, "Berklee College of Music 音樂碩士"],
+                  [Award,        "iTunes 流行榜冠軍《Fire!》・Global Music Awards 銅獎"],
+                  [Mic2,         "2024 奧運主題曲 200 萬+ 觀看・布達佩斯交響樂團合作"],
+                  [Music2,       "Yamaha・桃園機場・Bechstein・誠品・衛武營 演奏會"],
+                  [Users,        "線上課程累積超過 500 位學員"],
                 ].map(([Icon, text]) => (
                   <li key={text}>
                     <span className={styles.credIcon}><Icon size={15} strokeWidth={2} /></span>
@@ -298,123 +404,53 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* FEATURES */}
-        <section id="features" className={styles.featuresSection} data-reveal>
-          <div className={styles.container}>
-            <div className={styles.sectionHead}>
-              <small>課程特色</small>
-              <h2>為零基礎學員設計的學習體驗</h2>
-              <p>從音名、唱名、和弦到伴奏，每一步都搭配實戰曲目與互動練習。</p>
-            </div>
-            <div className={styles.featureGrid}>
-              {[
-                [Music2,       "零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
-                [Bot,          "AI 互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
-                [Music,        "流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
-                [Award,        "成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
-              ].map(([Icon, title, desc]) => (
-                <div key={title} className={styles.featureCard}>
-                  <div className={styles.featureIcon}><Icon size={22} strokeWidth={1.5} /></div>
-                  <h3>{title}</h3>
-                  <p>{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* PRICING */}
         <section id="pricing" className={styles.pricingSection} data-reveal>
-          <div className={styles.container + " " + styles.pricingGrid}>
-            <div className={styles.pricingCopy}>
+          <div className={styles.container}>
+            <div className={styles.sectionHead}>
               <small>課程方案</small>
               <h2>選擇適合你的方案</h2>
               <p>粉絲限定名額有限，把握優惠價格，開始你的流行鋼琴學習之旅。</p>
             </div>
-            <aside className={styles.pricePanel}>
-              <div className={styles.plansGrid}>
-                <div className={styles.planCol}>
-                  <div className={styles.planColLabel}>粉絲限定</div>
-                  {PLANS.filter(p => p.featured).map(p => (
-                    <div
-                      key={p.plan}
-                      className={`${styles.priceRow} ${styles.featured} ${selectedPlan?.plan === p.plan ? styles.selected : ""}`}
-                      onClick={() => selectPlan(p)}
-                      role="button" tabIndex={0}
-                    >
-                      <div>
-                        <strong>{p.label}</strong>
-                        <span className={styles.fanBadge}>粉絲專屬</span>
-                        {p.desc && <><br /><small>{p.desc}</small></>}
-                      </div>
-                      <div className={styles.discount}>{p.discount}</div>
-                      <div className={styles.amount}>
-                        {selectedPlan?.plan === p.plan
-                          ? <span className={styles.priceRowCheck}><Check size={18} strokeWidth={2.5} /></span>
-                          : `$${p.price.toLocaleString()}`}
-                      </div>
-                    </div>
-                  ))}
+            <div className={styles.plansRow}>
+              {PLANS.map(p => (
+                <div
+                  key={p.plan}
+                  className={[styles.planCard, p.dark ? styles.planCardDark : "", selectedPlan?.plan === p.plan ? styles.planCardSelected : ""].join(" ")}
+                  onClick={() => selectPlan(p)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {p.ribbon && <div className={styles.planRibbon}>{p.ribbon}</div>}
+                  <div className={`${styles.planPill} ${p.dark ? styles.planPillDark : ""}`}>
+                    {p.dark && <span className={styles.planPillDot} />}
+                    {p.pillLabel}
+                  </div>
+                  <h3 className={styles.planName}>{p.label}</h3>
+                  <p className={styles.planDesc}>{p.desc}</p>
+                  <div className={styles.planPriceRow}>
+                    <span className={styles.planPrice}>${p.price.toLocaleString()}</span>
+                    <span className={styles.planOriginal}>${p.originalPrice.toLocaleString()}</span>
+                  </div>
+                  <div className={`${styles.planSavings} ${p.dark ? styles.planSavingsDark : ""}`}>
+                    省下 ${p.savings.toLocaleString()}
+                  </div>
+                  <div className={styles.planDiscount}>{p.discount}</div>
                 </div>
-                <div className={styles.planCol}>
-                  <div className={styles.planColLabel}>早鳥方案</div>
-                  {PLANS.filter(p => !p.featured).map(p => (
-                    <div
-                      key={p.plan}
-                      className={`${styles.priceRow} ${selectedPlan?.plan === p.plan ? styles.selected : ""}`}
-                      onClick={() => selectPlan(p)}
-                      role="button" tabIndex={0}
-                    >
-                      <div><strong>{p.label}</strong></div>
-                      <div className={styles.discount}>{p.discount}</div>
-                      <div className={styles.amount}>
-                        {selectedPlan?.plan === p.plan
-                          ? <span className={styles.priceRowCheck}><Check size={18} strokeWidth={2.5} /></span>
-                          : `$${p.price.toLocaleString()}`}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button className={`${styles.btnRed} ${styles.buyBtn}`} onClick={openBuy} disabled={!selectedPlan}>
+              ))}
+            </div>
+            <div className={styles.planNote}>
+              ＊購買憑證不限於照片或訂單編號，只要能夠證明曾購買過皆可享有優惠。
+            </div>
+            <div className={styles.planBuyWrap}>
+              <button className={`${styles.btnRed} ${styles.buyBtn}`} onClick={openBuy}>
                 <ShoppingCart size={18} />
-                {selectedPlan ? `購買 ${selectedPlan.label} — NT$${selectedPlan.price.toLocaleString()}` : "請先選擇方案"}
+                {`購買 ${selectedPlan.label} — NT$${selectedPlan.price.toLocaleString()}`}
               </button>
-              {!selectedPlan && <p className={styles.selectHint}>點選上方方案即可購買</p>}
               <p className={styles.buyNote}><Heart size={13} />無限次觀看・永久有效</p>
-            </aside>
+            </div>
           </div>
         </section>
-
-        {/* DEMO SECTION */}
-        {demoActive && (
-          <section id="courseDemo" className={styles.demoSection}>
-            <div className={styles.container}>
-              <div className={styles.demoCard}>
-                <div className={styles.demoVideo}>
-                  <div className={styles.demoPlay}><Play size={30} fill="currentColor" /></div>
-                  <h2>第一章試看：踏上黑白鍵的第一步</h2>
-                  <p>認識鍵盤佈局、中央 C、音名 ABCDEFG，建立你的第一個鋼琴地圖。</p>
-                </div>
-                <div className={styles.demoSide}>
-                  <div className={styles.demoTimer}>
-                    {timerDone ? "Demo 試看已結束｜請加入完整課程" : `Demo 試看已開啟｜${mins}:${secs}`}
-                  </div>
-                  <h2>試看後，開始完整學習</h2>
-                  <p>完整課程包含 10 章節、流行曲目實戰、AI 互動遊戲，以及 12 個大三和弦與 12 個小三和弦練習。</p>
-                  <button className={styles.btnRed} onClick={openBuy}>查看課程方案</button>
-                  {timerDone && (
-                    <div className={styles.demoConversion}>
-                      <strong>Demo 試看時間已到</strong>
-                      <p>如果你想繼續完整學習，可以直接加入課程。</p>
-                      <button className={styles.btnRed} style={{ width: "100%", marginTop: 10 }} onClick={openBuy}>立即購買課程</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* FAQ */}
         <section id="faq" className={styles.faqSection} data-reveal>
@@ -474,9 +510,9 @@ export default function HomePage() {
             </div>
             <p className={styles.footerCopy}>© InRecord｜流行鋼琴零基礎入門課</p>
             <div className={styles.footerLinks}>
-              <a href="#">隱私權政策</a>
-              <a href="#">服務條款</a>
-              <a href="#">聯絡我們</a>
+              <a href="/privacy">隱私權政策</a>
+              <a href="/terms">服務條款</a>
+              <a href="/contact">聯絡我們</a>
             </div>
           </div>
         </div>

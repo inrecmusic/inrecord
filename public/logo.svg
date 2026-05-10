@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="60" viewBox="0 0 280 60">
+  <!-- "InRec" — Arial Bold 46px, baseline y=48 -->
+  <text x="36" y="48"
+        font-family="Arial, Helvetica, sans-serif"
+        font-weight="bold"
+        font-size="46"
+        fill="#303033">InRec</text>
+
+  <!-- Circle replacing "o": r=10 + stroke-width=3 → outer ⌀23px (≈ x-height at 46px) -->
+  <!-- Bottom outer edge at y=48.5 ≈ baseline; top outer edge at y=25.5 ≈ x-height top -->
+  <circle cx="180" cy="37" r="10"
+          fill="none"
+          stroke="#303033"
+          stroke-width="3"/>
+
+  <!-- Centre red dot -->
+  <circle cx="180" cy="37" r="4"
+          fill="#ff2028"/>
+
+  <!-- "rd" — same font, picks up right after circle -->
+  <text x="194" y="48"
+        font-family="Arial, Helvetica, sans-serif"
+        font-weight="bold"
+        font-size="46"
+        fill="#303033">rd</text>
+</svg>

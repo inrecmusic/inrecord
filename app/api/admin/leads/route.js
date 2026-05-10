@@ -1,16 +1,10 @@
-// app/api/admin/leads/route.js
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-
-function checkAuth(req) {
-  const auth = req.headers.get("authorization") || "";
-  const token = auth.replace("Bearer ", "");
-  // 簡易 token 驗證（正式上線可換成 JWT 或 Supabase Auth）
-  return token === process.env.ADMIN_PASSWORD;
-}
+import { verifyAdminToken } from "@/lib/adminAuth";
 
 export async function GET(req) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page") || 1);
@@ -36,7 +30,8 @@ export async function GET(req) {
 }
 
 export async function PATCH(req) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { id, status, ...rest } = await req.json();
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });

@@ -8,10 +8,13 @@ import {
   DollarSign, RefreshCw, Download, LogOut, ExternalLink,
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
-  Trash2, Edit2, Copy, Filter, Percent
+  Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare
 } from "lucide-react";
+import ChaptersUnitsPage from "./ChaptersUnitsPage";
+import AssignmentsPage from "./AssignmentsPage";
+import UnitCommentsPage from "./UnitCommentsPage";
+import CourseRatingsPage from "./CourseRatingsPage";
 
-const ADMIN_PW_KEY = "inrecord_admin_pw";
 
 // ── Mock data (串接真實 API 後移除) ────────────────────────────────────────
 const INIT_COMMENTS = [
@@ -61,7 +64,7 @@ const MOCK_VIDEOS = [
 const NAV_GROUPS = [
   { title:"主選單", items:[
     { id:"dashboard",   label:"儀表板",     icon:LayoutDashboard },
-    { id:"courses",     label:"課程管理",   icon:BookOpen },
+    { id:"courses",     label:"課程管理",   icon:BookOpen, badgeKey:"courses" },
     { id:"messages",    label:"留言管理",   icon:MessageCircle, badgeKey:"messages" },
     { id:"media",       label:"媒體中心",   icon:Img },
   ]},
@@ -247,7 +250,7 @@ function DashboardPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFil
 }
 
 // ── Courses Page ───────────────────────────────────────────────────────────
-function CoursesPage({leads}){
+function CoursesPage({leads, onManage}){
   const [search,setSearch]=useState("");
   const [courses,setCourses]=useState([{id:1,title:"零基礎流行鋼琴入門課",desc:"從零開始學習流行鋼琴，包含基礎樂理、和弦節奏與歌曲實作，共 8 堂課",status:"published",price:3500,students:leads.length,date:"2025/10/01"}]);
   const [showModal,setShowModal]=useState(false);
@@ -301,26 +304,9 @@ function CoursesPage({leads}){
                       <a href="/" target="_blank" className={styles.btnSmall}><Eye size={12}/> 查看</a>
                       <button className={styles.btnSmall} onClick={()=>openEdit(c)}><Edit2 size={12}/> 編輯</button>
                       <button className={styles.btnSmall} onClick={()=>toggleStatus(c)}>{c.status==="published"?"下架":"發佈"}</button>
+                      <button className={styles.btnPrimary} style={{padding:"6px 12px",fontSize:12}} onClick={()=>onManage?.(c)}><BookOpen size={12}/> 管理教室</button>
                     </div>
                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className={styles.panel} style={{marginTop:16}}>
-        <div className={styles.panelHead}><h2>定價方案</h2><span className={styles.dim}>串接 Stripe 後生效</span></div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead><tr><th>方案名稱</th><th>環境變數</th><th>售價</th><th>狀態</th></tr></thead>
-            <tbody>
-              {[["粉絲限定【1】","fan1","$2,200"],["粉絲限定【2】","fan2","$2,400"],["第一波早鳥","early1","$2,800"],["第二波早鳥","early2","$3,100"],["最後早鳥","early3","$3,300"],["原價","full","$3,500"]].map(([name,key,price])=>(
-                <tr key={key}>
-                  <td><strong>{name}</strong></td>
-                  <td><code style={{fontSize:12,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>STRIPE_PRICE_ID_{key.toUpperCase()}</code></td>
-                  <td>{price} TWD</td>
-                  <td><span className={styles.pill} style={{background:"#dbeafe",color:"#1e40af"}}>已設定</span></td>
                 </tr>
               ))}
             </tbody>
@@ -709,7 +695,7 @@ function OrdersPage({leads}){
       <div className={styles.pageHeader}>
         <div><h1>訂單管理</h1><p>共 {allOrders.length} 筆訂單</p></div>
         <div className={styles.pageActions}>
-          <a href="https://dashboard.stripe.com" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><ExternalLink size={13}/> Stripe 後台</a>
+          <a href="https://www.payuni.com.tw" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><ExternalLink size={13}/> Payuni 後台</a>
           <button className={styles.btnSmall} onClick={exportOrders}><Download size={13}/> 匯出 CSV</button>
         </div>
       </div>
@@ -884,6 +870,25 @@ function CouponsPage(){
         </div>
       </div>
 
+      <div className={styles.panel} style={{marginTop:16}}>
+        <div className={styles.panelHead}><h2>定價方案</h2><span className={styles.dim}>串接 Payuni 後生效</span></div>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>方案名稱</th><th>plan ID</th><th>售價</th><th>狀態</th></tr></thead>
+            <tbody>
+              {[["粉絲限定【1】","fan1","$2,200"],["粉絲限定【2】","fan2","$2,400"],["第一波早鳥","early1","$2,800"],["第二波早鳥","early2","$3,100"],["最後早鳥","early3","$3,300"],["原價","full","$3,500"]].map(([name,key,price])=>(
+                <tr key={key}>
+                  <td><strong>{name}</strong></td>
+                  <td><code style={{fontSize:12,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{key}</code></td>
+                  <td>{price} TWD</td>
+                  <td><span className={styles.pill} style={{background:"#dbeafe",color:"#1e40af"}}>已設定</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Create modal */}
       {showCreate&&(
         <div className={styles.modalOverlay} onClick={()=>setShowCreate(false)}>
@@ -1029,7 +1034,7 @@ function AnalyticsPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFil
 // ── Integration Page ───────────────────────────────────────────────────────
 function IntegrationPage({showToast}){
   const [brevoStatus,setBrevoStatus]=useState("unknown");const [brevoMsg,setBrevoMsg]=useState("");
-  const [stripeStatus,setStripeStatus]=useState("unknown");const [stripeMsg,setStripeMsg]=useState("");
+  const [payuniStatus,setPayuniStatus]=useState("unknown");const [payuniMsg,setPayuniMsg]=useState("");
 
   // ── 分析追蹤設定 ──────────────────────────────────────────────────────────
   const LS_ANALYTICS="inrecord_analytics";
@@ -1042,7 +1047,7 @@ function IntegrationPage({showToast}){
   function saveAnalytics(){localStorage.setItem(LS_ANALYTICS,JSON.stringify(a));setASaved({...a});showToast("✅ 分析追蹤設定已儲存");}
 
   async function testBrevo(){setBrevoMsg("測試中…");setBrevoStatus("testing");try{const res=await fetch("/api/brevo/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"_test_admin@gmail.com"})});const d=await res.json();if(res.ok&&d.ok){setBrevoStatus("ok");setBrevoMsg("✅ Brevo 連線正常");}else throw new Error(d.error||"api_error");}catch(e){setBrevoStatus("error");setBrevoMsg("❌ "+(e.message.includes("fetch")?"後端尚未部署":e.message));}}
-  async function testStripe(){setStripeMsg("測試中…");setStripeStatus("testing");try{const res=await fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:"full",label:"後台測試"})});const d=await res.json();if(res.ok&&d.url){setStripeStatus("ok");setStripeMsg("✅ Stripe 連線正常");}else throw new Error(d.error||d.message||"checkout_failed");}catch(e){setStripeStatus("error");setStripeMsg("❌ "+(e.message.includes("fetch")?"後端尚未部署":e.message));}}
+  async function testPayuni(){setPayuniMsg("測試中…");setPayuniStatus("testing");try{const res=await fetch("/api/payuni/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:"full",price:3500,label:"後台測試"})});const d=await res.json();if(res.ok&&d.url&&d.fields){setPayuniStatus("ok");setPayuniMsg("✅ Payuni 連線正常");}else throw new Error(d.error||"checkout_failed");}catch(e){setPayuniStatus("error");setPayuniMsg("❌ "+(e.message.includes("fetch")?"後端尚未部署":e.message));}}
   const s2={card:{background:"#fff",border:"1px solid #e2e8f0",borderRadius:20,padding:24,marginBottom:20},h3:{margin:"0 0 4px",fontSize:20},desc:{color:"#64748b",fontSize:14,margin:"0 0 16px"},stepList:{paddingLeft:20,display:"grid",gap:8,fontSize:14,color:"#334155"},codeBlock:{background:"#0f172a",color:"#e2e8f0",borderRadius:12,padding:16,fontFamily:"monospace",fontSize:13,lineHeight:1.8,overflowX:"auto"},envTable:{width:"100%",borderCollapse:"collapse",fontSize:13,marginTop:10},th:{background:"#f8fafc",color:"#94a3b8",padding:"10px 12px",textAlign:"left",borderBottom:"1px solid #e2e8f0",fontSize:12,textTransform:"uppercase"},td:{padding:"10px 12px",borderBottom:"1px solid #e2e8f0"},code:{background:"#f1f5f9",padding:"2px 6px",borderRadius:5,fontFamily:"monospace",fontSize:12},badge:(s)=>({display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:999,fontSize:13,fontWeight:900,background:s==="ok"?"#dcfce7":s==="error"?"#fee2e2":"#f1f5f9",color:s==="ok"?"#166534":s==="error"?"#991b1b":"#6b7280"}),testRow:{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",marginTop:16}};
   return(
     <div>
@@ -1055,10 +1060,10 @@ function IntegrationPage({showToast}){
         <div style={s2.testRow}><button onClick={testBrevo} style={{border:0,background:"#2563eb",color:"#fff",borderRadius:10,padding:"9px 14px",fontWeight:900,cursor:"pointer"}}>🔍 測試 Brevo 連線</button>{brevoMsg&&<span style={{fontSize:13,fontWeight:800,color:brevoStatus==="ok"?"#16a34a":"#dc2626"}}>{brevoMsg}</span>}</div>
       </div>
       <div style={s2.card}>
-        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:48,height:48,borderRadius:14,background:"#635BFF",display:"grid",placeItems:"center",color:"#fff",fontWeight:900,fontSize:20,flexShrink:0}}>S</div><div style={{flex:1}}><h3 style={s2.h3}>Stripe</h3><div style={{color:"#94a3b8",fontSize:13}}>信用卡、Apple Pay、Google Pay 金流結帳</div></div><div style={s2.badge(stripeStatus)}>{stripeStatus==="ok"?"已連線":stripeStatus==="error"?"連線失敗":"未測試"}</div></div>
-        <table style={s2.envTable}><thead><tr><th style={s2.th}>環境變數</th><th style={s2.th}>說明</th></tr></thead><tbody>{[["STRIPE_SECRET_KEY","sk_test_xxx 或 sk_live_xxx"],["STRIPE_PRICE_ID_FAN1","粉絲限定【1】$2,200"],["STRIPE_PRICE_ID_FAN2","粉絲限定【2】$2,400"],["STRIPE_PRICE_ID_EARLY1","第一波早鳥 $2,800"],["STRIPE_PRICE_ID_EARLY2","第二波早鳥 $3,100"],["STRIPE_PRICE_ID_EARLY3","最後早鳥 $3,300"],["STRIPE_PRICE_ID_FULL","原價 $3,500"],["NEXT_PUBLIC_SITE_URL","正式網域"]].map(([k,d])=><tr key={k}><td><code style={s2.code}>{k}</code></td><td style={{color:"#64748b"}}>{d}</td></tr>)}</tbody></table>
-        <ol style={{...s2.stepList,marginTop:14}}><li><strong>dashboard.stripe.com</strong> → 右上切換「測試模式」</li><li>Developers → API keys → 複製 <code style={s2.code}>sk_test_xxx</code></li><li>Products → 新增課程 → 建立 6 個 One-time Price（幣別 TWD）</li><li>複製每個 <code style={s2.code}>price_xxx</code> 填入對應環境變數</li><li>Vercel 填入所有變數後重新部署，測試通過後換成 <code style={s2.code}>sk_live_</code></li></ol>
-        <div style={s2.testRow}><button onClick={testStripe} style={{border:0,background:"#635BFF",color:"#fff",borderRadius:10,padding:"9px 14px",fontWeight:900,cursor:"pointer"}}>🔍 測試 Stripe 連線</button>{stripeMsg&&<span style={{fontSize:13,fontWeight:800,color:stripeStatus==="ok"?"#16a34a":"#dc2626"}}>{stripeMsg}</span>}</div>
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:48,height:48,borderRadius:14,background:"#D4192C",display:"grid",placeItems:"center",color:"#fff",fontWeight:900,fontSize:16,flexShrink:0}}>PAY</div><div style={{flex:1}}><h3 style={s2.h3}>Payuni 統一金流</h3><div style={{color:"#94a3b8",fontSize:13}}>信用卡、ATM 轉帳、超商繳費 金流結帳</div></div><div style={s2.badge(payuniStatus)}>{payuniStatus==="ok"?"已連線":payuniStatus==="error"?"連線失敗":"未測試"}</div></div>
+        <table style={s2.envTable}><thead><tr><th style={s2.th}>環境變數</th><th style={s2.th}>說明</th></tr></thead><tbody>{[["PAYUNI_MERCHANT_ID","特店代號（Payuni 後台取得）"],["PAYUNI_HASH_KEY","HashKey（32 字元）"],["PAYUNI_HASH_IV","HashIV（16 字元）"],["PAYUNI_API_URL","正式：https://api.payuni.com.tw/api/upp"],["NEXT_PUBLIC_SITE_URL","正式網域，用於 ReturnURL / NotifyURL"]].map(([k,d])=><tr key={k}><td><code style={s2.code}>{k}</code></td><td style={{color:"#64748b"}}>{d}</td></tr>)}</tbody></table>
+        <ol style={{...s2.stepList,marginTop:14}}><li>前往 <strong>www.payuni.com.tw</strong> → 申請特店帳號</li><li>後台 → 系統設定 → 取得 特店代號、HashKey、HashIV</li><li>測試環境使用 <code style={s2.code}>https://sandbox-api.payuni.com.tw/api/upp</code></li><li>Vercel 填入所有變數後重新部署，測試通過後換成正式 API URL</li></ol>
+        <div style={s2.testRow}><button onClick={testPayuni} style={{border:0,background:"#D4192C",color:"#fff",borderRadius:10,padding:"9px 14px",fontWeight:900,cursor:"pointer"}}>🔍 測試 Payuni 連線</button>{payuniMsg&&<span style={{fontSize:13,fontWeight:800,color:payuniStatus==="ok"?"#16a34a":"#dc2626"}}>{payuniMsg}</span>}</div>
       </div>
       <div style={s2.card}>
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:48,height:48,borderRadius:14,background:"#3ECF8E",display:"grid",placeItems:"center",color:"#fff",fontWeight:900,fontSize:16,flexShrink:0}}>SB</div><div><h3 style={s2.h3}>Supabase</h3><div style={{color:"#94a3b8",fontSize:13}}>PostgreSQL 資料庫・試看名單 + 訂單記錄</div></div></div>
@@ -1173,7 +1178,7 @@ const DEFAULT_PRIVACY_MD =
 當您使用本平台服務時，我們可能蒐集以下資料：
 
 - **Gmail 地址**：您填寫課程試看申請表單時主動提供。
-- **購買資訊**：透過 Stripe 金流處理，本平台不儲存完整信用卡號碼。
+- **購買資訊**：透過 Payuni 統一金流處理，本平台不儲存完整信用卡號碼。
 - **使用紀錄**：課程頁瀏覽行為與影片觀看紀錄（用於改善課程體驗）。
 - **裝置資訊**：瀏覽器類型、作業系統、IP 位址（僅用於系統安全與統計）。
 
@@ -1195,7 +1200,7 @@ const DEFAULT_PRIVACY_MD =
 
 本平台使用以下第三方服務處理部分資料：
 
-- **Stripe**：金流支付處理，受 Stripe 隱私權政策保護。
+- **Payuni 統一金流**：金流支付處理，受 Payuni 隱私權政策保護。
 - **Brevo**：Email 名單管理與自動化郵件寄送。
 - **Supabase**：PostgreSQL 資料庫儲存，採用業界標準加密。
 - **Google Analytics / Meta Pixel**：網站流量與廣告成效分析（可透過瀏覽器設定退出）。
@@ -1284,7 +1289,7 @@ InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程
 ## 3. 課程購買與付款
 
 - 所有課程費用以**新台幣（TWD）**計價。
-- 付款透過 **Stripe** 安全處理，支援信用卡、Apple Pay、Google Pay。
+- 付款透過 **Payuni 統一金流**安全處理，支援信用卡、ATM 轉帳、超商繳費。
 - 訂單成立後，系統將自動寄送購買確認信至您的 Email。
 - 課程售價可能依早鳥或促銷方案調整，恕不另行通知。
 
@@ -1417,30 +1422,131 @@ function TermsPage({showToast}){return <DocEditorPage title="服務條款" lsKey
 function statusLabel(s){return{requested:"已留 Email",preview_mode:"預覽模式",email_sent:"已寄試看信",demo_opened:"已開 Demo",purchased:"已購買"}[s]||s||"—";}
 function fmt(v){if(!v)return "—";try{return new Date(v).toLocaleString("zh-TW");}catch{return v;}}
 
+// ── Course Detail Page (classroom sub-pages) ──────────────────────────────
+const COURSE_TABS = [
+  { id:"chapters",     label:"章節與單元管理", icon:List },
+  { id:"assignments",  label:"作業設定",       icon:ClipboardList },
+  { id:"unitcomments", label:"單元評論",       icon:MessageSquare },
+  { id:"ratings",      label:"課程評價",       icon:Star },
+];
+
+function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnreadChange }) {
+  const [tab, setTab] = useState("chapters");
+  const Icon = COURSE_TABS.find(t => t.id === tab)?.icon || List;
+  return (
+    <div>
+      {/* breadcrumb */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20 }}>
+        <button
+          onClick={onBack}
+          style={{ border:0, background:"none", cursor:"pointer", color:"#64748b", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:4, padding:0 }}
+        >
+          <BookOpen size={14}/> 課程管理
+        </button>
+        <span style={{ color:"#cbd5e1", fontSize:13 }}>›</span>
+        <span style={{ fontSize:13, fontWeight:800, color:"#0f172a" }}>{course.title}</span>
+      </div>
+
+      {/* course identity strip */}
+      <div style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"#fff", borderRadius:14, border:"1px solid #e8ecf0", marginBottom:20 }}>
+        <div style={{ width:44, height:44, borderRadius:12, background:"#eff6ff", display:"grid", placeItems:"center", flexShrink:0 }}>
+          <Music size={22} color="#2563eb"/>
+        </div>
+        <div>
+          <div style={{ fontWeight:900, fontSize:16, color:"#0f172a" }}>{course.title}</div>
+          <div style={{ fontSize:13, color:"#94a3b8", marginTop:2 }}>{course.desc || ""}</div>
+        </div>
+        <span style={{ marginLeft:"auto", fontSize:12, fontWeight:800, padding:"4px 10px", borderRadius:999, background: course.status==="published"?"#dcfce7":"#f1f5f9", color: course.status==="published"?"#166534":"#475569" }}>
+          {course.status==="published"?"已發佈":"草稿"}
+        </span>
+      </div>
+
+      {/* sub-tab nav */}
+      <div style={{ display:"flex", gap:4, background:"#fff", border:"1px solid #e8ecf0", borderRadius:12, padding:6, marginBottom:20, flexWrap:"wrap" }}>
+        {COURSE_TABS.map(t => {
+          const TIcon = t.icon;
+          const badge = t.id==="unitcomments" && unreadUnitComments > 0 ? unreadUnitComments : null;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                border:0, borderRadius:9, padding:"8px 14px", fontSize:13, fontWeight:700,
+                cursor:"pointer", display:"flex", alignItems:"center", gap:6,
+                background: tab===t.id ? "#2563eb" : "none",
+                color: tab===t.id ? "#fff" : "#475569",
+                position:"relative",
+              }}
+            >
+              <TIcon size={14}/> {t.label}
+              {badge && <span style={{ background:"#ef4444", color:"#fff", borderRadius:999, fontSize:11, fontWeight:900, padding:"1px 6px", marginLeft:2 }}>{badge}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* tab content */}
+      {tab==="chapters"     && <ChaptersUnitsPage  showToast={showToast} courseId={course.id}/>}
+      {tab==="assignments"  && <AssignmentsPage    showToast={showToast} courseId={course.id}/>}
+      {tab==="unitcomments" && <UnitCommentsPage   showToast={showToast} courseId={course.id} onUnreadChange={onUnreadChange}/>}
+      {tab==="ratings"      && <CourseRatingsPage  showToast={showToast} courseId={course.id}/>}
+    </div>
+  );
+}
+
 // ── Main AdminPage ─────────────────────────────────────────────────────────
+const TOKEN_KEY = "inrecord_admin_token";
+const getToken = () => (typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null);
+
 export default function AdminPage(){
   const [authed,setAuthed]=useState(false);
+  const [authChecked,setAuthChecked]=useState(false);
+  const [emailInput,setEmailInput]=useState("");
   const [pwInput,setPwInput]=useState("");
   const [loginErr,setLoginErr]=useState("");
+  const [loginLoading,setLoginLoading]=useState(false);
   const [page,setPage]=useState("dashboard");
+  const [selectedCourse,setSelectedCourse]=useState(null);
   const [leads,setLeads]=useState([]);
   const [loading,setLoading]=useState(false);
   const [toast,setToast]=useState("");
   const [trendFilter,setTrendFilter]=useState("month");
   const [donutFilter,setDonutFilter]=useState("month");
+  const [unreadUnitComments,setUnreadUnitComments]=useState(0);
   const downloadRef=useRef(null);
 
-  const storedPw=()=>(typeof window!=="undefined"?localStorage.getItem(ADMIN_PW_KEY):null);
-  useEffect(()=>{if(storedPw())tryAutoLogin(storedPw());},[]);
+  // Auto-verify stored token on mount
+  useEffect(()=>{
+    const token=getToken();
+    if(!token){setAuthChecked(true);return;}
+    fetch("/api/admin/verify",{headers:{Authorization:`Bearer ${token}`}})
+      .then(r=>{if(r.ok){setAuthed(true);}else{sessionStorage.removeItem(TOKEN_KEY);}})
+      .catch(()=>{sessionStorage.removeItem(TOKEN_KEY);})
+      .finally(()=>setAuthChecked(true));
+  },[]);
 
-  function tryAutoLogin(pw){if(pw===(process.env.NEXT_PUBLIC_ADMIN_HINT||"rick8792")||true){setAuthed(true);localStorage.setItem(ADMIN_PW_KEY,pw);}}
-  function doLogin(){if(!pwInput){setLoginErr("請輸入密碼");return;}localStorage.setItem(ADMIN_PW_KEY,pwInput);setAuthed(true);setLoginErr("");}
-  function doLogout(){localStorage.removeItem(ADMIN_PW_KEY);setAuthed(false);setPwInput("");}
+  async function doLogin(){
+    if(!emailInput||!pwInput){setLoginErr("請輸入 Email 與密碼");return;}
+    setLoginLoading(true);setLoginErr("");
+    try{
+      const res=await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:emailInput,password:pwInput})});
+      const data=await res.json();
+      if(!res.ok){
+        setLoginErr(data.error==="too_many_attempts"?"登入失敗次數過多，請 15 分鐘後再試":"Email 或密碼錯誤");
+        return;
+      }
+      sessionStorage.setItem(TOKEN_KEY,data.token);
+      setAuthed(true);setLoginErr("");
+    }catch{setLoginErr("網路錯誤，請稍後再試");}
+    finally{setLoginLoading(false);}
+  }
+
+  function doLogout(){sessionStorage.removeItem(TOKEN_KEY);setAuthed(false);setEmailInput("");setPwInput("");}
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(""),2400);}
 
   const fetchLeads=useCallback(async()=>{
     setLoading(true);
-    try{const res=await fetch("/api/admin/leads",{headers:{Authorization:`Bearer ${storedPw()}`}});if(!res.ok)throw new Error((await res.json()).error||"fetch_failed");const{data}=await res.json();setLeads(data||[]);}
+    try{const res=await fetch("/api/admin/leads",{headers:{Authorization:`Bearer ${getToken()}`}});if(!res.ok)throw new Error((await res.json()).error||"fetch_failed");const{data}=await res.json();setLeads(data||[]);}
     catch{const raw=localStorage.getItem("inrecord_course_preview_leads");try{setLeads(JSON.parse(raw||"[]"));}catch{setLeads([]);}}
     finally{setLoading(false);}
   },[]);
@@ -1448,7 +1554,7 @@ export default function AdminPage(){
   useEffect(()=>{if(authed&&["dashboard","students","orders","messages","analytics"].includes(page))fetchLeads();},[authed,page,fetchLeads]);
 
   async function markLead(lead,status){
-    try{const res=await fetch("/api/admin/leads",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${storedPw()}`},body:JSON.stringify({id:lead.id,status})});if(res.ok){fetchLeads();showToast("✅ 已更新狀態");return;}}catch{}
+    try{const res=await fetch("/api/admin/leads",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},body:JSON.stringify({id:lead.id,status})});if(res.ok){fetchLeads();showToast("✅ 已更新狀態");return;}}catch{}
     const raw=JSON.parse(localStorage.getItem("inrecord_course_preview_leads")||"[]");
     const upd=raw.map(l=>l.email===lead.email?{...l,status,updatedAt:new Date().toISOString()}:l);
     localStorage.setItem("inrecord_course_preview_leads",JSON.stringify(upd));setLeads(upd);showToast("✅ 已更新（localStorage 模式）");
@@ -1466,16 +1572,29 @@ export default function AdminPage(){
 
   const purchasedCount=leads.filter(l=>l.purchased||l.status==="purchased").length;
   const unreadComments=INIT_COMMENTS.filter(c=>c.status==="unread").length;
-  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return purchasedCount||null;if(key==="messages")return unreadComments||null;return null;}
+
+  useEffect(()=>{
+    if(!authed)return;
+    fetch("/api/admin/unit-comments?count=true",{headers:{Authorization:`Bearer ${getToken()}`}})
+      .then(r=>r.json()).then(d=>{ if(d.unread!=null) setUnreadUnitComments(d.unread); }).catch(()=>{});
+  },[authed,page]);
+
+  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return purchasedCount||null;if(key==="messages")return unreadComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
+
+  if(!authChecked)return(
+    <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f1f5f9"}}>
+      <div style={{width:32,height:32,border:"3px solid #e2e8f0",borderTopColor:"#2563eb",borderRadius:"50%",animation:"spin .65s linear infinite"}}/>
+    </div>
+  );
 
   if(!authed)return(
     <div className={styles.loginWrap}>
       <div className={styles.loginCard}>
         <Logo size={28}/><h1>後台登入</h1><p className={styles.sub}>管理課程試看名單與整合設定</p>
-        <div className={styles.field}><label>Email</label><input className={styles.input} value="inrecmusic@gmail.com" readOnly/></div>
-        <div className={styles.field}><label>Password</label><input className={styles.input} type="password" placeholder="••••••••" value={pwInput} onChange={e=>setPwInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+        <div className={styles.field}><label>Email</label><input className={styles.input} type="email" placeholder="inrecmusic@gmail.com" value={emailInput} onChange={e=>setEmailInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} autoComplete="email"/></div>
+        <div className={styles.field}><label>密碼</label><input className={styles.input} type="password" placeholder="••••••••" value={pwInput} onChange={e=>setPwInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} autoComplete="current-password"/></div>
         {loginErr&&<p className={styles.loginErr}>{loginErr}</p>}
-        <button className={styles.btnPrimary} style={{width:"100%",marginTop:16}} onClick={doLogin}>登入後台</button>
+        <button className={styles.btnPrimary} style={{width:"100%",marginTop:16}} onClick={doLogin} disabled={loginLoading}>{loginLoading?"驗證中…":"登入後台"}</button>
         <p style={{textAlign:"center",marginTop:12,fontSize:13,color:"#888"}}><a href="/" style={{color:"var(--brand)"}}>← 返回前台</a></p>
       </div>
     </div>
@@ -1492,7 +1611,7 @@ export default function AdminPage(){
               {group.items.map(item=>{
                 const Icon=item.icon;const badge=item.badgeKey?getBadge(item.badgeKey):null;
                 return(
-                  <button key={item.id} className={`${styles.navItem} ${page===item.id?styles.active:""}`} onClick={()=>setPage(item.id)}>
+                  <button key={item.id} className={`${styles.navItem} ${page===item.id?styles.active:""}`} onClick={()=>{setPage(item.id);if(item.id!=="courses")setSelectedCourse(null);}}>
                     <span className={styles.navItemInner}><Icon size={17} className={styles.navIcon}/><span>{item.label}</span></span>
                     {badge?<span className={styles.badge}>{badge}</span>:null}
                   </button>
@@ -1513,7 +1632,10 @@ export default function AdminPage(){
         </div>
         <div className={styles.content}>
           {page==="dashboard"   &&<DashboardPage leads={leads} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
-          {page==="courses"     &&<CoursesPage leads={leads}/>}
+          {page==="courses"     &&(selectedCourse
+            ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
+            : <CoursesPage leads={leads} onManage={c=>{setSelectedCourse(c);}}/>
+          )}
           {page==="messages"    &&<MessagesPage/>}
           {page==="media"       &&<MediaPage/>}
           {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
