@@ -27,13 +27,14 @@ function CallbackHandler() {
     const code = searchParams.get("code");
     if (!supabase) { router.replace("/classroom/login"); return; }
 
+    const next = searchParams.get("next") || "/classroom";
     if (code) {
       supabase.auth.exchangeCodeForSession(code)
-        .then(() => router.replace("/classroom"))
+        .then(() => router.replace(next))
         .catch(() => router.replace("/classroom/login"));
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        router.replace(session ? "/classroom" : "/classroom/login");
+        router.replace(session ? next : "/classroom/login");
       });
     }
   }, [router, searchParams]);

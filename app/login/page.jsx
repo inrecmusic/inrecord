@@ -52,7 +52,7 @@ export default function LoginPage() {
     setError("");
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/portal` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/portal` },
     });
     if (err) {
       setError(err.message);

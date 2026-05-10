@@ -24,7 +24,7 @@ export default function PortalPage() {
   }, []);
 
   if (loading || !session) return (
-    <div className={styles.loading}><div className={styles.spinner} /></div>
+    <div className={styles.loadingPage}><div className={styles.spinner} /></div>
   );
 
   const email   = session.user.email ?? "";
@@ -103,7 +103,7 @@ export default function PortalPage() {
             </div>
 
             <div className={styles.grid}>
-              <div className={styles.card} onClick={() => router.push("/portal/watch")} role="button" tabIndex={0}>
+              <div className={styles.card} onClick={() => router.push("/classroom")} role="button" tabIndex={0}>
                 <div className={styles.cardThumb}>
                   <img
                     src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=600&q=80"
