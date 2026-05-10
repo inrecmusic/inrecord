@@ -42,7 +42,7 @@ export default function LoginPage() {
       setError(err.message === "Invalid login credentials" ? "帳號或密碼錯誤，請重新確認。" : err.message);
       setLoading(false);
     } else {
-      router.push("/portal");
+      router.push("/classroom");
     }
   }
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
     setError("");
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/portal` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (err) {
       setError(err.message);
