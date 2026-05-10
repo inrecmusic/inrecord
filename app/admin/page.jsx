@@ -356,33 +356,99 @@ function CoursesPage({leads, onManage}){
 }
 
 // ── Messages Page ──────────────────────────────────────────────────────────
-function MessagesPage(){
-  const [comments,setComments]=useState(INIT_COMMENTS);
+const _pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
+function _api(path, opts = {}) {
+  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${_pw()}`, ...(opts.headers || {}) } });
+}
+const MSG_PER_PAGE = 20;
+
+function MessagesPage({ showToast }){
+  const [comments,setComments]=useState([]);
+  const [total,setTotal]=useState(0);
+  const [loading,setLoading]=useState(false);
+  const [videos,setVideos]=useState([]);
+  const [chapters,setChapters]=useState([]);
   const [filter,setFilter]=useState("all");
   const [search,setSearch]=useState("");
+  const [page,setPage]=useState(1);
   const [replyingId,setReplyingId]=useState(null);
   const [replyText,setReplyText]=useState("");
+  const [replying,setReplying]=useState(false);
   const [deleteId,setDeleteId]=useState(null);
+  const [deleting,setDeleting]=useState(false);
 
-  const unreadCount=comments.filter(c=>c.status==="unread").length;
-  const repliedCount=comments.filter(c=>c.status==="replied").length;
+  const fetchComments=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const params=new URLSearchParams({page,per_page:MSG_PER_PAGE});
+      if(filter!=="all")params.set("status",filter==="unread"?"pending":filter);
+      const r=await _api(`/api/admin/unit-comments?${params}`);
+      const {data,total:t}=await r.json();
+      setComments(data||[]);
+      setTotal(t||0);
+    }catch{}
+    finally{setLoading(false);}
+  },[page,filter]);
 
-  const filtered=useMemo(()=>comments.filter(c=>{
-    if(filter==="unread"&&c.status!=="unread")return false;
-    if(filter==="replied"&&c.status!=="replied")return false;
-    if(search){const q=search.toLowerCase();return c.content.toLowerCase().includes(q)||c.commenter.toLowerCase().includes(q)||c.unit.toLowerCase().includes(q);}
-    return true;
-  }),[comments,filter,search]);
+  const fetchMeta=useCallback(async()=>{
+    try{
+      const [rv,rc]=await Promise.all([_api("/api/admin/videos"),_api("/api/admin/chapters")]);
+      setVideos((await rv.json()).data||[]);
+      setChapters((await rc.json()).data||[]);
+    }catch{}
+  },[]);
 
-  function submitReply(id){if(!replyText.trim())return;setComments(prev=>prev.map(c=>c.id===id?{...c,reply:replyText.trim(),status:"replied"}:c));setReplyingId(null);setReplyText("");}
-  function confirmDelete(){setComments(prev=>prev.filter(c=>c.id!==deleteId));setDeleteId(null);}
-  function openReply(c){if(replyingId===c.id){setReplyingId(null);return;}setReplyingId(c.id);setReplyText(c.reply||"");}
+  useEffect(()=>{fetchMeta();},[fetchMeta]);
+  useEffect(()=>{fetchComments();},[fetchComments]);
+
+  const filtered=useMemo(()=>{
+    if(!search)return comments;
+    const q=search.toLowerCase();
+    return comments.filter(c=>
+      c.content?.toLowerCase().includes(q)||
+      c.user_name?.toLowerCase().includes(q)||
+      c.user_email?.toLowerCase().includes(q)||
+      c.videos?.title?.toLowerCase().includes(q)
+    );
+  },[comments,search]);
+
+  const pendingCount=useMemo(()=>comments.filter(c=>c.status==="pending").length,[comments]);
+  const repliedCount=useMemo(()=>comments.filter(c=>c.status==="replied").length,[comments]);
+  const videoName=id=>videos.find(v=>v.id===id)?.title||"—";
+  const totalPages=Math.max(1,Math.ceil(total/MSG_PER_PAGE));
+
+  async function submitReply(commentId){
+    if(!replyText.trim())return;
+    setReplying(true);
+    try{
+      const r=await _api("/api/admin/comment-replies",{method:"POST",body:JSON.stringify({comment_id:commentId,admin_content:replyText.trim()})});
+      if(!r.ok)throw new Error((await r.json()).error);
+      showToast("✅ 回覆已送出");
+      setReplyingId(null);setReplyText("");fetchComments();
+    }catch(e){showToast("❌ "+(e.message||"回覆失敗"));}
+    finally{setReplying(false);}
+  }
+
+  async function confirmDelete(){
+    setDeleting(true);
+    try{
+      const r=await _api(`/api/admin/unit-comments?id=${deleteId}`,{method:"DELETE"});
+      if(!r.ok)throw new Error((await r.json()).error);
+      showToast("✅ 留言已刪除");setDeleteId(null);fetchComments();
+    }catch(e){showToast("❌ "+(e.message||"刪除失敗"));}
+    finally{setDeleting(false);}
+  }
+
+  function openReply(c){
+    if(replyingId===c.id){setReplyingId(null);return;}
+    setReplyingId(c.id);setReplyText("");
+  }
 
   return(
     <div>
-      <div className={styles.pageHeader}><div><h1>留言管理</h1><p>共 {comments.length} 則留言</p></div></div>
+      <div className={styles.pageHeader}><div><h1>留言管理</h1><p>共 {total} 則課程單元留言</p></div></div>
       <div className={styles.statsGrid} style={{gridTemplateColumns:"repeat(3,1fr)"}}>
-        {[["全部留言",comments.length,"則"],["未回覆",unreadCount,"則待處理"],["已回覆",repliedCount,"則"]].map(([l,v,s])=>(
+        {[["全部留言",total,"則"],["未回覆",pendingCount,"則待處理"],["已回覆",repliedCount,"則"]].map(([l,v,s])=>(
           <div key={l} className={styles.statCard}><div className={styles.statHead}><span className={styles.statLabel}>{l}</span></div><strong className={styles.statValue}>{v}</strong><div className={styles.statSub}>{s}</div></div>
         ))}
       </div>
@@ -390,8 +456,8 @@ function MessagesPage(){
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:12}}>
           <div className={styles.tabGroup}>
             {[["all","全部"],["unread","未回覆"],["replied","已回覆"]].map(([key,label])=>(
-              <button key={key} className={`${styles.tab} ${filter===key?styles.tabActive:""}`} onClick={()=>setFilter(key)}>
-                {label}{key==="unread"&&unreadCount>0&&<span className={styles.tabBadge}>{unreadCount}</span>}
+              <button key={key} className={`${styles.tab} ${filter===key?styles.tabActive:""}`} onClick={()=>{setFilter(key);setPage(1);}}>
+                {label}{key==="unread"&&pendingCount>0&&<span className={styles.tabBadge}>{pendingCount}</span>}
               </button>
             ))}
           </div>
@@ -401,24 +467,27 @@ function MessagesPage(){
           <table className={styles.table}>
             <thead><tr><th>單元</th><th>留言者</th><th>時間</th><th>內容</th><th>操作</th></tr></thead>
             <tbody>
-              {!filtered.length?<tr><td colSpan={5} className={styles.empty}>沒有符合的留言</td></tr>
+              {loading?<tr><td colSpan={5} className={styles.empty}>載入中…</td></tr>
+              :!filtered.length?<tr><td colSpan={5} className={styles.empty}>{total===0?"尚無留言資料":"沒有符合的留言"}</td></tr>
               :filtered.map(c=>(
                 <Fragment key={c.id}>
                   <tr className={replyingId===c.id?styles.commentRowActive:""}>
-                    <td style={{minWidth:140}}><span className={styles.unitTag}>{c.unit}</span></td>
+                    <td style={{minWidth:140}}><span className={styles.unitTag}>{c.videos?.title||videoName(c.video_id)}</span></td>
                     <td style={{minWidth:160}}>
                       <div className={styles.commenterCell}>
-                        <div className={styles.commenterAvatar}>{c.commenter[0]}</div>
+                        <div className={styles.commenterAvatar}>{(c.user_name||c.user_email||"?")[0].toUpperCase()}</div>
                         <div>
-                          <div className={styles.commenterName}>{c.commenter}</div>
-                          <div className={styles.realIdentity}>{c.anonymous&&c.realName?`${c.realName} · ${c.email}`:c.email}</div>
+                          <div className={styles.commenterName}>{c.user_name||"匿名"}</div>
+                          <div className={styles.realIdentity}>{c.user_email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className={styles.dim} style={{whiteSpace:"nowrap",minWidth:120}}>{c.time}</td>
+                    <td className={styles.dim} style={{whiteSpace:"nowrap",minWidth:120}}>
+                      {c.created_at?new Date(c.created_at).toLocaleString("zh-TW",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"}
+                    </td>
                     <td>
                       <div className={styles.commentContent}>{c.content}</div>
-                      {c.reply&&<div className={styles.replyPreview}><span className={styles.replyLabel}>已回覆：</span>{c.reply}</div>}
+                      {c.comment_replies?.length>0&&<div className={styles.replyPreview}><span className={styles.replyLabel}>已回覆：</span>{c.comment_replies[0].admin_content}</div>}
                     </td>
                     <td style={{minWidth:140}}>
                       <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-start"}}>
@@ -434,9 +503,9 @@ function MessagesPage(){
                     <tr className={styles.replyRow}>
                       <td colSpan={5}>
                         <div className={styles.replyBox}>
-                          <textarea className={styles.replyTextarea} placeholder="輸入回覆內容…" value={replyText} rows={3} onChange={e=>setReplyText(e.target.value)}/>
+                          <textarea className={styles.replyTextarea} placeholder="輸入回覆內容…" value={replyText} rows={3} onChange={e=>setReplyText(e.target.value)} autoFocus/>
                           <div className={styles.replyActions}>
-                            <button className={styles.btnPrimary} onClick={()=>submitReply(c.id)}>送出回覆</button>
+                            <button className={styles.btnPrimary} onClick={()=>submitReply(c.id)} disabled={replying}>{replying?"送出中…":"送出回覆"}</button>
                             <button className={styles.btnSmall} onClick={()=>setReplyingId(null)}>取消</button>
                           </div>
                         </div>
@@ -448,13 +517,22 @@ function MessagesPage(){
             </tbody>
           </table>
         </div>
+        {totalPages>1&&(
+          <div className={styles.pagination}>
+            <button className={styles.pageBtn} disabled={page===1} onClick={()=>setPage(p=>p-1)}>‹</button>
+            {Array.from({length:totalPages},(_,i)=>i+1).map(p=>(
+              <button key={p} className={`${styles.pageBtn} ${p===page?styles.pageBtnActive:""}`} onClick={()=>setPage(p)}>{p}</button>
+            ))}
+            <button className={styles.pageBtn} disabled={page===totalPages} onClick={()=>setPage(p=>p+1)}>›</button>
+          </div>
+        )}
       </div>
       {deleteId&&(
         <div className={styles.modalOverlay} onClick={()=>setDeleteId(null)}>
           <div className={styles.modalCard} onClick={e=>e.stopPropagation()}>
             <h3 style={{margin:"0 0 8px",fontSize:17}}>確認刪除留言</h3>
             <p style={{margin:"0 0 20px",color:"#64748b",fontSize:14}}>此操作無法復原，確定要刪除這則留言嗎？</p>
-            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteId(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDelete}>確認刪除</button></div>
+            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteId(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDelete} disabled={deleting}>確認刪除</button></div>
           </div>
         </div>
       )}
@@ -466,44 +544,71 @@ function MessagesPage(){
 function MediaPage(){
   const [showUpload,setShowUpload]=useState(null);
   const [dragging,setDragging]=useState(false);
-  const totalGB=(MOCK_VIDEOS.reduce((_,v)=>_+parseFloat(v.size),0)/1024).toFixed(2);
+  const [videos,setVideos]=useState([]);
+  const [loading,setLoading]=useState(false);
+
+  const fetchVideos=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const r=await _api("/api/admin/videos");
+      const {data}=await r.json();
+      setVideos(data||[]);
+    }catch{}
+    finally{setLoading(false);}
+  },[]);
+
+  useEffect(()=>{fetchVideos();},[fetchVideos]);
+
+  const published=videos.filter(v=>v.published).length;
   return(
     <div>
       <div className={styles.pageHeader}>
         <div><h1>媒體中心</h1><p>管理課程影片、圖片與教材</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={()=>setShowUpload("video")}><Upload size={13}/> 上傳影片</button>
+          <button className={styles.btnSmall} onClick={fetchVideos}><RefreshCw size={13}/> 重新整理</button>
           <button className={styles.btnSmall} onClick={()=>setShowUpload("image")}><Upload size={13}/> 上傳圖片</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
-        {[["影片",MOCK_VIDEOS.length,"支"],["圖片",0,"張"],["附件",0,"個"],["總儲存空間",`${totalGB} GB`,""]].map(([l,v,s])=>(
+        {[["影片單元",videos.length,"支"],["已發布",published,"支"],["草稿",videos.length-published,"支"],["Vimeo 影片",videos.filter(v=>v.vimeo_id).length,"支已串接"]].map(([l,v,s])=>(
           <div key={l} className={styles.statCard}><div className={styles.statHead}><span className={styles.statLabel}>{l}</span></div><strong className={styles.statValue}>{v}</strong><div className={styles.statSub}>{s}</div></div>
         ))}
       </div>
       <div className={styles.panel}>
-        <div className={styles.panelHead}><h2 style={{display:"flex",alignItems:"center",gap:7}}><Video size={16} color="#2563eb"/>最近影片</h2><span className={styles.dim}>共 {MOCK_VIDEOS.length} 支</span></div>
-        <div className={styles.mediaGrid}>
-          {MOCK_VIDEOS.map(v=>(
+        <div className={styles.panelHead}><h2 style={{display:"flex",alignItems:"center",gap:7}}><Video size={16} color="#2563eb"/>影片單元</h2><span className={styles.dim}>共 {videos.length} 支</span></div>
+        {loading?<p style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</p>
+        :!videos.length?(
+          <div className={styles.placeholderCard} style={{padding:"40px 24px"}}>
+            <Video size={36} color="#cbd5e1"/>
+            <p style={{margin:"12px 0 0",fontSize:14,color:"#94a3b8"}}>尚無影片單元，請先在「課程管理 → 管理教室 → 章節與單元管理」新增單元</p>
+          </div>
+        ):(
+          <div className={styles.mediaGrid}>
+          {videos.map(v=>(
             <div key={v.id} className={styles.videoCard}>
               <div className={styles.videoThumb}>
-                <div className={styles.videoPlay}><Play size={22} fill="#fff" color="#fff"/></div>
-                <span className={styles.videoDuration}>{v.duration}</span>
+                {v.vimeo_id
+                  ?<a href={`https://vimeo.com/${v.vimeo_id}`} target="_blank" rel="noreferrer" style={{position:"absolute",inset:0,display:"grid",placeItems:"center"}}>
+                      <div className={styles.videoPlay}><Play size={22} fill="#fff" color="#fff"/></div>
+                    </a>
+                  :<div className={styles.videoPlay}><Play size={22} fill="#fff" color="#fff"/></div>
+                }
+                {v.duration&&<span className={styles.videoDuration}>{v.duration}</span>}
               </div>
               <div className={styles.videoInfo}>
                 <div className={styles.videoTitle}>{v.title}</div>
-                <div className={styles.videoMeta}><span>{v.date}</span><span>{v.size}</span></div>
+                <div className={styles.videoMeta}><span>{v.vimeo_id?`Vimeo ${v.vimeo_id}`:"未設定影片"}</span></div>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:6}}>
-                  <span className={styles.pill} style={{background:"#dcfce7",color:"#166534",fontSize:11}}>就緒</span>
+                  <span className={styles.pill} style={{background:v.published?"#dcfce7":"#f1f5f9",color:v.published?"#166534":"#475569",fontSize:11}}>{v.published?"已發布":"草稿"}</span>
                   <div className={styles.rowActions}>
-                    <button className={styles.btnSmall} style={{padding:"4px 8px",fontSize:12}}><Eye size={11}/></button>
-                    <button className={`${styles.btnSmall} ${styles.btnDanger}`} style={{padding:"4px 8px",fontSize:12}}><Trash2 size={11}/></button>
+                    {v.vimeo_id&&<a href={`https://vimeo.com/${v.vimeo_id}`} target="_blank" rel="noreferrer" className={styles.btnSmall} style={{padding:"4px 8px",fontSize:12}}><Eye size={11}/></a>}
                   </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+        )}
       </div>
       <div className={styles.panel} style={{marginTop:16}}>
         <div className={styles.panelHead}><h2 style={{display:"flex",alignItems:"center",gap:7}}><Img size={16} color="#7c3aed"/>最近圖片</h2><button className={styles.btnSmall} onClick={()=>setShowUpload("image")}><Upload size={12}/> 上傳圖片</button></div>
@@ -532,11 +637,10 @@ function MediaPage(){
               </div>
             </label>
             <div style={{marginTop:12,padding:"11px 14px",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,fontSize:13,color:"#92400e"}}>
-              ⚠️ Demo 模式 — 實際上傳需串接雲端儲存（如 Supabase Storage 或 Cloudflare R2）。
+              ⚠️ 影片請直接上傳至 Vimeo，再到「課程管理 → 管理教室」填入連結。圖片上傳需串接 Supabase Storage。
             </div>
             <div className={styles.modalActions} style={{marginTop:16}}>
-              <button className={styles.btnSmall} onClick={()=>setShowUpload(null)}>取消</button>
-              <button className={styles.btnPrimary}>開始上傳</button>
+              <button className={styles.btnSmall} onClick={()=>setShowUpload(null)}>關閉</button>
             </div>
           </div>
         </div>
@@ -1636,7 +1740,7 @@ export default function AdminPage(){
             ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
             : <CoursesPage leads={leads} onManage={c=>{setSelectedCourse(c);}}/>
           )}
-          {page==="messages"    &&<MessagesPage/>}
+          {page==="messages"    &&<MessagesPage showToast={showToast}/>}
           {page==="media"       &&<MediaPage/>}
           {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
           {page==="orders"      &&<OrdersPage leads={leads}/>}

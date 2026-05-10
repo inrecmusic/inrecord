@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 /* ── Placeholder course data (10 chapters × 3 units) ───────────────────────── */
@@ -240,8 +240,13 @@ function RatingTab({ token }) {
 }
 
 /* ── AssignmentTab ───────────────────────────────────────────────────────────── */
-function AssignmentTab({ video }) {
+function AssignmentTab({ video, token }) {
   const isPlaceholder = video?.id?.startsWith("ph");
+  const [uploading, setUploading] = useState(false);
+  const [done, setDone]           = useState(false);
+  const [err, setErr]             = useState("");
+  const [dragging, setDragging]   = useState(false);
+  const inputRef = useRef(null);
 
   if (isPlaceholder || !video?.assignment_desc) return (
     <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0, lineHeight: 1.6 }}>
@@ -249,12 +254,45 @@ function AssignmentTab({ video }) {
     </p>
   );
 
+  async function handleFile(file) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setErr("目前僅支援 JPG / PNG 格式的作業圖片上傳"); return;
+    }
+    setErr(""); setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const uploadRes = await fetch("/api/upload-proof", { method: "POST", body: fd });
+      const { url } = await uploadRes.json();
+      if (!url) throw new Error("上傳失敗，請確認 Supabase Storage 已設定");
+      const subRes = await fetch("/api/classroom/submission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ video_id: video.id, file_name: file.name, file_url: url }),
+      });
+      if (!subRes.ok) throw new Error((await subRes.json()).error || "提交失敗");
+      setDone(true);
+    } catch (e) { setErr(e.message); }
+    finally { setUploading(false); }
+  }
+
+  if (done) return (
+    <div style={{ textAlign: "center", paddingTop: 40 }}>
+      <div style={{ fontSize: 44, marginBottom: 14 }}>✅</div>
+      <p style={{ fontWeight: 600, color: "#1D1D1F", fontSize: 16, margin: "0 0 6px" }}>作業已成功繳交！</p>
+      <p style={{ color: "#8E8E93", fontSize: 13, margin: 0 }}>老師會批改後回覆，請留意通知</p>
+      <button onClick={() => setDone(false)}
+        style={{ marginTop: 18, background: "none", border: "1px solid rgba(0,0,0,0.15)", borderRadius: 980,
+          padding: "6px 18px", fontSize: 13, cursor: "pointer", color: "#3A3A3C" }}>
+        再次繳交
+      </button>
+    </div>
+  );
+
   return (
     <div>
-      <div style={{
-        background: "#F5F5F7", border: "1px solid rgba(0,0,0,0.06)",
-        borderRadius: 12, padding: "14px 16px", marginBottom: 14,
-      }}>
+      <div style={{ background: "#F5F5F7", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: "#8E8E93", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 7 }}>
           作業說明
         </div>
@@ -263,18 +301,28 @@ function AssignmentTab({ video }) {
           <p style={{ fontSize: 12, color: "#8E8E93", margin: "6px 0 0" }}>截止日期：{video.assignment_due}</p>
         )}
       </div>
-      <div style={{
-        border: "1.5px dashed rgba(0,0,0,0.13)", borderRadius: 12,
-        padding: "36px 20px", textAlign: "center", cursor: "pointer",
-        transition: "background .15s",
-      }}
-        onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F7"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png" style={{ display: "none" }}
+        onChange={e => handleFile(e.target.files?.[0])} />
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
+        style={{
+          border: `1.5px dashed ${dragging ? "#0071E3" : "rgba(0,0,0,0.13)"}`,
+          borderRadius: 12, padding: "36px 20px", textAlign: "center",
+          cursor: uploading ? "wait" : "pointer",
+          background: dragging ? "rgba(0,113,227,0.04)" : "transparent",
+          transition: "background .15s, border-color .15s",
+        }}
       >
-        <div style={{ fontSize: 28, marginBottom: 8 }}>📎</div>
-        <div style={{ fontSize: 13.5, color: "#6E6E73" }}>點擊或拖曳檔案上傳</div>
-        <div style={{ fontSize: 12, color: "#AEAEB2", marginTop: 4 }}>支援所有檔案格式</div>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>{uploading ? "⏳" : "📎"}</div>
+        <div style={{ fontSize: 13.5, color: "#6E6E73" }}>
+          {uploading ? "上傳中，請稍候…" : "點擊或拖曳圖片上傳作業"}
+        </div>
+        <div style={{ fontSize: 12, color: "#AEAEB2", marginTop: 4 }}>支援 JPG、PNG 格式</div>
       </div>
+      {err && <p style={{ color: "#FF3B30", fontSize: 13, margin: "8px 0 0", textAlign: "center" }}>{err}</p>}
     </div>
   );
 }
@@ -604,7 +652,7 @@ export default function ClassroomPage() {
           <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px", background: "#fff" }}>
             {tab === "comments"   && <CommentsTab token={token} video={currentVideo} chapters={displayChapters} />}
             {tab === "rating"     && <RatingTab token={token} />}
-            {tab === "assignment" && <AssignmentTab video={currentVideo} />}
+            {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
           </div>
         </div>
 
