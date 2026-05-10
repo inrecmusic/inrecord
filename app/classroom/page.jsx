@@ -1,11 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabase } from "@/lib/supabase";
 
 function fmtDur(sec) {
   if (!sec) return "";
@@ -255,22 +250,28 @@ export default function ClassroomPage() {
   /* auth + purchase */
   useEffect(() => {
     async function init() {
-      const { data: { user: u } } = await supabase.auth.getUser();
-      if (!u) { window.location.href = "/classroom/login"; return; }
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(u);
-      setToken(session?.access_token || "");
-
       try {
-        const r = await fetch("/api/classroom/verify-purchase", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: u.email }),
-        });
-        const { hasPurchased } = await r.json();
-        setHasPurchased(!!hasPurchased);
-      } catch { setHasPurchased(false); }
-      finally { setLoading(false); }
+        if (!supabase) { window.location.href = "/classroom/login"; return; }
+        const { data: { user: u } } = await supabase.auth.getUser();
+        if (!u) { window.location.href = "/classroom/login"; return; }
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(u);
+        setToken(session?.access_token || "");
+
+        try {
+          const r = await fetch("/api/classroom/verify-purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: u.email }),
+          });
+          const { hasPurchased } = await r.json();
+          setHasPurchased(!!hasPurchased);
+        } catch { setHasPurchased(false); }
+      } catch {
+        window.location.href = "/classroom/login";
+      } finally {
+        setLoading(false);
+      }
     }
     init();
   }, []);
