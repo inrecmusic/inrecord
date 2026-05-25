@@ -25,7 +25,8 @@ export async function GET(req) {
     admin.from("chapters").select("*").order("sort_order", { ascending: true }),
     admin
       .from("videos")
-      .select("id,chapter_id,title,vimeo_id,duration_sec,sort_order,assignment_desc,assignment_due")
+      .select("*")
+      .eq("published", true)
       .order("sort_order", { ascending: true }),
   ]);
 

@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS videos (
   chapter_id          UUID REFERENCES chapters(id) ON DELETE SET NULL,
   title               TEXT NOT NULL,
   vimeo_id            TEXT,
+  bunny_video_id      TEXT,
   duration            TEXT,
   sort_order          INTEGER NOT NULL DEFAULT 0,
   published           BOOLEAN NOT NULL DEFAULT FALSE,

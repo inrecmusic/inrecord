@@ -3,11 +3,13 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
   try {
     const body = await req.json()
-    const { email } = body
+    const rawEmail = body?.email
 
-    if (!email || !email.includes('@')) {
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!rawEmail || typeof rawEmail !== 'string' || rawEmail.length > 254 || !emailRe.test(rawEmail.trim())) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
+    const email = rawEmail.trim().toLowerCase()
 
     const listId = Number(process.env.BREVO_LIST_ID)
     if (!listId) return NextResponse.json({ error: 'missing_BREVO_LIST_ID' }, { status: 500 })
@@ -38,10 +40,11 @@ export async function POST(req) {
       return NextResponse.json({ ok: true, existing: true })
     }
 
-    return NextResponse.json({ error: 'brevo_failed', detail: data }, { status: 500 })
+    console.error('[brevo] unexpected status', res.status, data)
+    return NextResponse.json({ error: 'subscribe_failed' }, { status: 500 })
 
   } catch (err) {
     console.error('[brevo error]', err.message)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: 'subscribe_failed' }, { status: 500 })
   }
 }

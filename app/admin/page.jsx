@@ -8,58 +8,15 @@ import {
   DollarSign, RefreshCw, Download, LogOut, ExternalLink,
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
-  Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare
+  Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
 import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
+import GamesManagePage from "./GamesManagePage";
 
 
-// ── Mock data (串接真實 API 後移除) ────────────────────────────────────────
-const INIT_COMMENTS = [
-  { id:1, unit:"第 1 課：認識鍵盤與基礎姿勢",   commenter:"林小明", email:"student1@example.com", anonymous:false, realName:"",     time:"2026/04/20 14:32", content:"老師好！請問右手 C 大調音階練習時，第幾指應該跨過？影片裡沒有很清楚。",           status:"unread",  reply:"" },
-  { id:2, unit:"第 3 課：基礎和弦 C、F、G",      commenter:"匿名",   email:"yating@example.com",   anonymous:true,  realName:"王雅婷", time:"2026/04/21 09:15", content:"這堂課真的太有用了！一直以為 F 和弦很難，練了三天終於會了 😊",                 status:"replied", reply:"太棒了！F 和弦確實需要一點時間，繼續加油！" },
-  { id:3, unit:"第 5 課：節奏型 Bossa Nova",     commenter:"陳大偉", email:"dawei@example.com",    anonymous:false, realName:"",     time:"2026/04/22 20:45", content:"Bossa Nova 的左手分散和弦跟右手旋律要一起練好難，有沒有什麼訣竅？",           status:"unread",  reply:"" },
-  { id:4, unit:"第 2 課：五指位置練習",          commenter:"匿名",   email:"anon1@example.com",    anonymous:true,  realName:"蔡建國", time:"2026/04/23 11:08", content:"影片在 3:45 處聲音突然變小，是我的問題還是影片本身的問題？",                   status:"unread",  reply:"" },
-  { id:5, unit:"第 7 課：歌曲實作《小星星》",    commenter:"李美玲", email:"meiling@example.com",  anonymous:false, realName:"",     time:"2026/04/24 16:20", content:"終於把小星星完整彈完了！感謝老師的課程，期待下一首歌！",                       status:"replied", reply:"恭喜！下一課會學更多好聽的歌曲喔 🎹" },
-  { id:6, unit:"第 4 課：左手伴奏入門",          commenter:"張建志", email:"jianzhih@example.com", anonymous:false, realName:"",     time:"2026/04/25 08:30", content:"左手的 Bass 音加和弦節奏型，請問練習速度要從多少 BPM 開始比較好？",           status:"unread",  reply:"" },
-  { id:7, unit:"第 6 課：流行歌曲伴奏技巧",     commenter:"匿名",   email:"secret2@example.com",  anonymous:true,  realName:"吳婷婷", time:"2026/04/26 13:50", content:"老師可以教怎麼練快速換和弦嗎？我每次換到 Am 都來不及。",                       status:"unread",  reply:"" },
-  { id:8, unit:"第 1 課：認識鍵盤與基礎姿勢",   commenter:"高志偉", email:"zhiwei@example.com",   anonymous:false, realName:"",     time:"2026/04/27 19:05", content:"課程內容非常紮實！建議可以多加一些練習曲。",                                   status:"replied", reply:"感謝建議！後續會增加更多練習曲目 🎵" },
-];
-
-const MOCK_ORDERS = [
-  { id:"ORD-20260428-001", student:"林小明", email:"lin@example.com",   course:"零基礎流行鋼琴入門課", amount:3500, method:"信用卡",    status:"paid",    time:"2026/04/28 14:32" },
-  { id:"ORD-20260427-002", student:"王雅婷", email:"wang@example.com",  course:"零基礎流行鋼琴入門課", amount:2200, method:"Apple Pay", status:"paid",    time:"2026/04/27 09:15" },
-  { id:"ORD-20260426-003", student:"陳大偉", email:"chen@example.com",  course:"零基礎流行鋼琴入門課", amount:2800, method:"信用卡",    status:"paid",    time:"2026/04/26 20:45" },
-  { id:"ORD-20260425-004", student:"李美玲", email:"lee@example.com",   course:"零基礎流行鋼琴入門課", amount:3300, method:"Google Pay","status":"refunded",time:"2026/04/25 11:08" },
-  { id:"ORD-20260424-005", student:"張建志", email:"zhang@example.com", course:"零基礎流行鋼琴入門課", amount:3100, method:"信用卡",    status:"paid",    time:"2026/04/24 16:20" },
-  { id:"ORD-20260423-006", student:"吳婷婷", email:"wu@example.com",    course:"零基礎流行鋼琴入門課", amount:2400, method:"ATM 轉帳",  status:"pending", time:"2026/04/23 08:30" },
-  { id:"ORD-20260422-007", student:"高志偉", email:"gao@example.com",   course:"零基礎流行鋼琴入門課", amount:3500, method:"信用卡",    status:"paid",    time:"2026/04/22 13:50" },
-  { id:"ORD-20260421-008", student:"劉雅琪", email:"liu@example.com",   course:"零基礎流行鋼琴入門課", amount:2800, method:"Apple Pay", status:"paid",    time:"2026/04/21 19:05" },
-  { id:"ORD-20260420-009", student:"蔡建國", email:"tsai@example.com",  course:"零基礎流行鋼琴入門課", amount:2200, method:"信用卡",    status:"failed",  time:"2026/04/20 22:14" },
-  { id:"ORD-20260419-010", student:"楊雅雯", email:"yang@example.com",  course:"零基礎流行鋼琴入門課", amount:3500, method:"信用卡",    status:"paid",    time:"2026/04/19 10:05" },
-];
-
-const MOCK_COUPONS_INIT = [
-  { id:1, name:"早鳥優惠",   code:"EARLYBIRD",  type:"percent", value:10, used:23, limit:100, status:"active",   start:"2026/01/01", end:"2026/06/30" },
-  { id:2, name:"粉絲特惠",   code:"FANCLUB",    type:"fixed",   value:300,used:15, limit:50,  status:"active",   start:"2026/03/01", end:"2026/05/31" },
-  { id:3, name:"新年快樂",   code:"NY2026",     type:"percent", value:20, used:88, limit:88,  status:"expired",  start:"2026/01/01", end:"2026/02/28" },
-  { id:4, name:"學生優惠",   code:"STUDENT",    type:"fixed",   value:500,used:0,  limit:200, status:"disabled", start:"2026/04/01", end:"2026/12/31" },
-  { id:5, name:"週年慶折扣", code:"ANNIV15",    type:"percent", value:15, used:42, limit:150, status:"active",   start:"2026/04/15", end:"2026/07/15" },
-  { id:6, name:"舊生回購",   code:"RETURN20",   type:"percent", value:20, used:7,  limit:30,  status:"active",   start:"2026/02/01", end:"2026/08/31" },
-];
-
-const MOCK_VIDEOS = [
-  { id:1, title:"第 1 課：認識鍵盤與基礎姿勢", duration:"12:34", date:"2026/3/1",  size:"320 MB", status:"ready" },
-  { id:2, title:"第 2 課：五指位置練習",         duration:"15:20", date:"2026/3/5",  size:"410 MB", status:"ready" },
-  { id:3, title:"第 3 課：基礎和弦 C、F、G",     duration:"18:45", date:"2026/3/10", size:"490 MB", status:"ready" },
-  { id:4, title:"第 4 課：左手伴奏入門",          duration:"22:10", date:"2026/3/15", size:"580 MB", status:"ready" },
-  { id:5, title:"第 5 課：節奏型 Bossa Nova",     duration:"20:33", date:"2026/3/20", size:"540 MB", status:"ready" },
-  { id:6, title:"第 6 課：流行歌曲伴奏技巧",     duration:"25:18", date:"2026/3/25", size:"660 MB", status:"ready" },
-  { id:7, title:"第 7 課：歌曲實作《小星星》",   duration:"14:55", date:"2026/3/30", size:"390 MB", status:"ready" },
-  { id:8, title:"第 8 課：即興創作入門",          duration:"28:44", date:"2026/4/5",  size:"750 MB", status:"ready" },
-];
 
 const NAV_GROUPS = [
   { title:"主選單", items:[
@@ -68,11 +25,15 @@ const NAV_GROUPS = [
     { id:"messages",    label:"留言管理",   icon:MessageCircle, badgeKey:"messages" },
     { id:"media",       label:"媒體中心",   icon:Img },
   ]},
+  { title:"音樂教室", items:[
+    { id:"games",       label:"AI 遊戲管理", icon:Gamepad2 },
+  ]},
   { title:"學員服務", items:[
-    { id:"students",    label:"學員管理",   icon:Users,        badgeKey:"leads" },
-    { id:"orders",      label:"訂單管理",   icon:ShoppingCart, badgeKey:"orders" },
-    { id:"coupons",     label:"優惠券",     icon:Ticket },
-    { id:"analytics",   label:"銷售分析",   icon:TrendingUp },
+    { id:"students",      label:"學員管理",   icon:Users,        badgeKey:"leads" },
+    { id:"orders",        label:"訂單管理",   icon:ShoppingCart, badgeKey:"orders" },
+    { id:"subscriptions", label:"訂閱管理",   icon:CreditCard },
+    { id:"coupons",       label:"優惠券",     icon:Ticket },
+    { id:"analytics",     label:"銷售分析",   icon:TrendingUp },
   ]},
   { title:"設定", items:[
     { id:"integration", label:"系統設定",   icon:Settings },
@@ -82,17 +43,12 @@ const NAV_GROUPS = [
 ];
 
 // ── Chart helpers ──────────────────────────────────────────────────────────
-function seededRand(seed) {
-  let s = seed;
-  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
-}
 function genChartData(filter) {
   const now = new Date();
-  const rand = seededRand(filter.charCodeAt(0) * 17 + 99);
-  if (filter === "day") return Array.from({length:24},(_,i)=>{ const h=(now.getHours()-23+i+24)%24; return {label:`${String(h).padStart(2,"0")}:00`,orders:Math.round(rand()*3),revenue:Math.round(rand()*12000+5000)}; });
-  if (filter === "week") { const days=["日","一","二","三","四","五","六"]; return Array.from({length:7},(_,i)=>{ const d=new Date(now); d.setDate(d.getDate()-6+i); return {label:`週${days[d.getDay()]}`,orders:Math.round(rand()*8+1),revenue:Math.round(rand()*50000+20000)}; }); }
-  if (filter === "year") return Array.from({length:12},(_,i)=>{ const d=new Date(now.getFullYear(),now.getMonth()-11+i,1); return {label:`${d.getMonth()+1}月`,orders:Math.round(rand()*50+10),revenue:Math.round(rand()*400000+100000)}; });
-  return Array.from({length:30},(_,i)=>{ const d=new Date(now); d.setDate(d.getDate()-29+i); return {label:`${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`,orders:Math.round(rand()*12),revenue:Math.round(rand()*55000+15000)}; });
+  if (filter === "day") return Array.from({length:24},(_,i)=>{ const h=(now.getHours()-23+i+24)%24; return {label:`${String(h).padStart(2,"0")}:00`,orders:0,revenue:0}; });
+  if (filter === "week") { const days=["日","一","二","三","四","五","六"]; return Array.from({length:7},(_,i)=>{ const d=new Date(now); d.setDate(d.getDate()-6+i); return {label:`週${days[d.getDay()]}`,orders:0,revenue:0}; }); }
+  if (filter === "year") return Array.from({length:12},(_,i)=>{ const d=new Date(now.getFullYear(),now.getMonth()-11+i,1); return {label:`${d.getMonth()+1}月`,orders:0,revenue:0}; });
+  return Array.from({length:30},(_,i)=>{ const d=new Date(now); d.setDate(d.getDate()-29+i); return {label:`${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`,orders:0,revenue:0}; });
 }
 function smoothPath(pts) {
   if (!pts.length) return "";
@@ -136,23 +92,12 @@ function SalesTrendChart({filter,onFilter}){
 }
 
 function DonutChart({filter,onFilter}){
-  const segs=[{label:"信用卡",pct:70,color:"#f59e0b",count:826},{label:"Apple Pay",pct:15,color:"#1e293b",count:177},{label:"Google Pay",pct:10,color:"#94a3b8",count:118},{label:"其他",pct:5,color:"#e2e8f0",count:59}];
-  const cx=90,cy=90,R=74,r=47;
-  function polar(a,rad){const ang=(a-90)*Math.PI/180;return{x:cx+rad*Math.cos(ang),y:cy+rad*Math.sin(ang)};}
-  function arc(sa,ea){const s1=polar(sa,R),e1=polar(ea,R),s2=polar(ea,r),e2=polar(sa,r),lg=ea-sa>180?1:0;return `M ${s1.x.toFixed(2)} ${s1.y.toFixed(2)} A ${R} ${R} 0 ${lg} 1 ${e1.x.toFixed(2)} ${e1.y.toFixed(2)} L ${s2.x.toFixed(2)} ${s2.y.toFixed(2)} A ${r} ${r} 0 ${lg} 0 ${e2.x.toFixed(2)} ${e2.y.toFixed(2)} Z`;}
-  let cum=0; const arcs=segs.map(s=>{const a=cum;cum+=s.pct/100*360;return{...s,path:arc(a,cum)};});
-  let cum2=0; const lbls=segs.map(s=>{const mid=cum2+(s.pct/100*360)/2;cum2+=s.pct/100*360;const pos=polar(mid,R+16);return{...s,lx:pos.x,ly:pos.y};});
   return(
     <div className={styles.chartCard} style={{width:360,flexShrink:0}}>
       <div className={styles.chartHead}><div className={styles.chartTitle}><CreditCard size={15}/><span>付款方式分布</span></div><FilterBtns filter={filter} onFilter={onFilter}/></div>
-      <div className={styles.donutBody}>
-        <svg viewBox="0 0 180 180" width={170} height={170} style={{flexShrink:0}}>
-          {arcs.map((a,i)=><path key={i} d={a.path} fill={a.color}/>)}
-          {lbls.filter(l=>l.pct>=10).map((l,i)=><text key={i} x={l.lx} y={l.ly} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill={l.color==="#e2e8f0"?"#475569":l.color}>{l.pct}%</text>)}
-          <text x={cx} y={cy-7} textAnchor="middle" fontSize="22" fontWeight="900" fill="#1e293b">70%</text>
-          <text x={cx} y={cy+11} textAnchor="middle" fontSize="10" fill="#94a3b8">信用卡</text>
-        </svg>
-        <div className={styles.donutLegend}>{segs.map((s,i)=><div key={i} className={styles.donutItem}><span className={styles.donutDot} style={{background:s.color}}/><span className={styles.donutLabel}>{s.label}</span><span className={styles.donutCount}>{s.count} 筆</span><span className={styles.donutPct}>{s.pct}%</span></div>)}</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:170,color:"#94a3b8",fontSize:13,flexDirection:"column",gap:8}}>
+        <CreditCard size={28} color="#e2e8f0"/>
+        <span>尚無付款數據</span>
       </div>
     </div>
   );
@@ -182,19 +127,23 @@ function DashboardPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFil
   const demoOpened=leads.filter(l=>l.demo_opened||["demo_opened","purchased"].includes(l.status));
   const fmtTWD=n=>n>=10000?`$${(n/10000).toFixed(1)}萬`:`$${n.toLocaleString()}`;
 
+  const recentOrders=leads.filter(l=>l.purchased||l.status==="purchased").slice(0,5).map((l,i)=>({
+    id:`ORD-REAL-${String(i+1).padStart(3,"0")}`,student:l.email?.split("@")[0]||"學員",email:l.email,
+    amount:3000,status:"paid",time:fmt(l.purchased_at||l.updated_at||l.created_at),
+  }));
   const FUNNEL=[
-    {stage:"瀏覽課程頁",count:12480,color:"#2563eb"},
-    {stage:"查看銷售頁",count:6240, color:"#7c3aed"},
-    {stage:"點擊購買",  count:1872, color:"#f59e0b"},
-    {stage:"完成付款",  count:936,  color:"#16a34a"},
+    {stage:"瀏覽課程頁",count:0,color:"#2563eb"},
+    {stage:"查看銷售頁",count:0, color:"#7c3aed"},
+    {stage:"點擊購買",  count:0, color:"#f59e0b"},
+    {stage:"完成付款",  count:purchased.length,  color:"#16a34a"},
   ];
 
   return(
     <div className={styles.dashContent}>
       <div className={styles.welcomeHead}><h1>歡迎回來，管理員</h1><p>這是您的課程平台營運概況</p></div>
       <div className={styles.statsGrid}>
-        <StatCard label="本月營收" value={fmtTWD(purchasedM.length*3000)} sub="本月累計營收" icon={DollarSign} growth={purchased.length?"+18.5% 較上月":undefined} color="#f59e0b"/>
-        <StatCard label="本月訂單" value={purchasedM.length} sub="本月已完成訂單數" icon={ShoppingCart} growth={purchasedM.length?"+18.4% 較上月":undefined} color="#2563eb"/>
+        <StatCard label="本月營收" value={fmtTWD(purchasedM.length*3000)} sub="本月累計營收" icon={DollarSign} color="#f59e0b"/>
+        <StatCard label="本月訂單" value={purchasedM.length} sub="本月已完成訂單數" icon={ShoppingCart} color="#2563eb"/>
         <StatCard label="總營收"   value={fmtTWD(purchased.length*3000)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
         <StatCard label="總學員數" value={leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
         <StatCard label="平均完課率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
@@ -207,7 +156,7 @@ function DashboardPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFil
       <div className={styles.chartsRow} style={{alignItems:"stretch"}}>
         {/* 轉換漏斗 */}
         <div className={styles.panel} style={{flex:"1 1 0"}}>
-          <div className={styles.panelHead}><h2>轉換漏斗</h2><span className={styles.dim}>整體轉換率 {Math.round(936/12480*100)}%</span></div>
+          <div className={styles.panelHead}><h2>轉換漏斗</h2><span className={styles.dim}>整體轉換率 {FUNNEL[0].count?Math.round(FUNNEL[3].count/FUNNEL[0].count*100)+"%":"—"}</span></div>
           <div style={{display:"grid",gap:10}}>
             {FUNNEL.map((f,i)=>{
               const pct=Math.round(f.count/FUNNEL[0].count*100);
@@ -232,7 +181,7 @@ function DashboardPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFil
             <table className={styles.table}>
               <thead><tr><th>學員</th><th>金額</th><th>狀態</th><th>時間</th></tr></thead>
               <tbody>
-                {MOCK_ORDERS.slice(0,5).map(o=>(
+                {recentOrders.length===0?<tr><td colSpan={4} className={styles.empty} style={{fontSize:13}}>尚無訂單</td></tr>:recentOrders.map(o=>(
                   <tr key={o.id}>
                     <td><div style={{fontWeight:700,fontSize:13}}>{o.student}</div><div style={{fontSize:12,color:"#94a3b8"}}>{o.email}</div></td>
                     <td style={{fontWeight:800}}>NT$ {o.amount.toLocaleString()}</td>
@@ -468,7 +417,7 @@ function MessagesPage({ showToast }){
             <thead><tr><th>單元</th><th>留言者</th><th>時間</th><th>內容</th><th>操作</th></tr></thead>
             <tbody>
               {loading?<tr><td colSpan={5} className={styles.empty}>載入中…</td></tr>
-              :!filtered.length?<tr><td colSpan={5} className={styles.empty}>{total===0?"尚無留言資料":"沒有符合的留言"}</td></tr>
+              :!filtered.length?<tr><td colSpan={5} className={styles.empty}><span className={styles.emptyIcon}>💬</span><span className={styles.emptyTitle}>{total===0?"還沒有任何留言":"沒有符合的留言"}</span><span className={styles.emptySub}>學員提問將在這裡顯示</span></td></tr>
               :filtered.map(c=>(
                 <Fragment key={c.id}>
                   <tr className={replyingId===c.id?styles.commentRowActive:""}>
@@ -570,7 +519,7 @@ function MediaPage(){
         </div>
       </div>
       <div className={styles.statsGrid4}>
-        {[["影片單元",videos.length,"支"],["已發布",published,"支"],["草稿",videos.length-published,"支"],["Vimeo 影片",videos.filter(v=>v.vimeo_id).length,"支已串接"]].map(([l,v,s])=>(
+        {[["影片單元",videos.length,"支"],["已發布",published,"支"],["草稿",videos.length-published,"支"],["已串接影片",videos.filter(v=>v.bunny_video_id||v.vimeo_id).length,"支（Bunny/Vimeo）"]].map(([l,v,s])=>(
           <div key={l} className={styles.statCard}><div className={styles.statHead}><span className={styles.statLabel}>{l}</span></div><strong className={styles.statValue}>{v}</strong><div className={styles.statSub}>{s}</div></div>
         ))}
       </div>
@@ -597,7 +546,7 @@ function MediaPage(){
               </div>
               <div className={styles.videoInfo}>
                 <div className={styles.videoTitle}>{v.title}</div>
-                <div className={styles.videoMeta}><span>{v.vimeo_id?`Vimeo ${v.vimeo_id}`:"未設定影片"}</span></div>
+                <div className={styles.videoMeta}><span>{v.bunny_video_id?`Bunny ${v.bunny_video_id.slice(0,8)}…`:v.vimeo_id?`Vimeo ${v.vimeo_id}`:"未設定影片"}</span></div>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:6}}>
                   <span className={styles.pill} style={{background:v.published?"#dcfce7":"#f1f5f9",color:v.published?"#166534":"#475569",fontSize:11}}>{v.published?"已發布":"草稿"}</span>
                   <div className={styles.rowActions}>
@@ -684,7 +633,7 @@ function StudentsPage({leads,loading,onRefresh,onMark,onExport}){
             <table className={styles.table}>
               <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>註冊日期</th><th>操作</th></tr></thead>
               <tbody>
-                {!filtered.length?<tr><td colSpan={8} className={styles.empty}>尚無學員，請先到前台點「課程試看」留下 Gmail。</td></tr>
+                {!filtered.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>請先到前台點「課程試看」留下 Gmail</span></td></tr>
                 :filtered.map(l=>(
                   <tr key={l.id||l.email}>
                     <td><div className={styles.studentAvatar}>{l.name[0]?.toUpperCase()}</div></td>
@@ -763,13 +712,9 @@ function OrdersPage({leads}){
   const [detailOrder,setDetailOrder]=useState(null);
   const downloadRef=useRef(null);
 
-  // 合併 mock 訂單 + 真實已購學員
-  const allOrders=useMemo(()=>{
-    const realOrders=leads.filter(l=>l.purchased||l.status==="purchased").map((l,i)=>({
-      id:`ORD-REAL-${String(i+1).padStart(3,"0")}`,student:l.email?.split("@")[0]||"學員",email:l.email,course:"零基礎流行鋼琴入門課",amount:3000,method:"信用卡",status:"paid",time:fmt(l.purchased_at||l.updated_at||l.created_at),
-    }));
-    return [...MOCK_ORDERS,...realOrders];
-  },[leads]);
+  const allOrders=useMemo(()=>leads.filter(l=>l.purchased||l.status==="purchased").map((l,i)=>({
+    id:`ORD-REAL-${String(i+1).padStart(3,"0")}`,student:l.email?.split("@")[0]||"學員",email:l.email,course:"零基礎流行鋼琴入門課",amount:3000,method:"信用卡",status:"paid",time:fmt(l.purchased_at||l.updated_at||l.created_at),
+  })),[leads]);
 
   const filtered=useMemo(()=>allOrders.filter(o=>{
     if(statusFilter!=="all"&&o.status!==statusFilter)return false;
@@ -831,7 +776,7 @@ function OrdersPage({leads}){
           <table className={styles.table}>
             <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead>
             <tbody>
-              {!filtered.length?<tr><td colSpan={8} className={styles.empty}>尚無符合的訂單</td></tr>
+              {!filtered.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
               :filtered.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>
@@ -886,7 +831,7 @@ function OrdersPage({leads}){
 
 // ── Coupons Page ───────────────────────────────────────────────────────────
 function CouponsPage(){
-  const [coupons,setCoupons]=useState(MOCK_COUPONS_INIT);
+  const [coupons,setCoupons]=useState([]);
   const [showCreate,setShowCreate]=useState(false);
   const [deleteId,setDeleteId]=useState(null);
   const [form,setForm]=useState({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
@@ -938,7 +883,7 @@ function CouponsPage(){
           <table className={styles.table}>
             <thead><tr><th>名稱</th><th>代碼</th><th>折扣</th><th>已使用 / 上限</th><th>狀態</th><th>有效期間</th><th>操作</th></tr></thead>
             <tbody>
-              {!coupons.length?<tr><td colSpan={7} className={styles.empty}>尚無優惠券</td></tr>
+              {!coupons.length?<tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎟️</span><span className={styles.emptyTitle}>還沒有任何優惠券</span><span className={styles.emptySub}>新增優惠券來吸引更多學員</span></td></tr>
               :coupons.map(c=>(
                 <tr key={c.id}>
                   <td><strong>{c.name}</strong></td>
@@ -1058,25 +1003,278 @@ function CouponsPage(){
   );
 }
 
+// ── Subscriptions Page ────────────────────────────────────────────────────
+function SubscriptionsPage({ showToast }) {
+  const [subs, setSubs]       = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter]   = useState("all");
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({ email: "", plan_type: "monthly", expires_at: "" });
+  const [addErr, setAddErr]   = useState("");
+  const [acting, setActing]   = useState(null);
+
+  const fetchSubs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await _api("/api/admin/subscriptions");
+      const { data } = await r.json();
+      setSubs(data || []);
+    } catch { setSubs([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchSubs(); }, [fetchSubs]);
+
+  const now = new Date();
+  const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const filtered = useMemo(() => {
+    if (filter === "all")     return subs;
+    if (filter === "active")  return subs.filter(s => s.status === "active" && new Date(s.expires_at) > now);
+    if (filter === "soon")    return subs.filter(s => s.status === "active" && new Date(s.expires_at) > now && new Date(s.expires_at) < sevenDays);
+    if (filter === "expired") return subs.filter(s => s.status !== "active" || new Date(s.expires_at) <= now);
+    if (filter === "gift")    return subs.filter(s => s.source === "purchase_gift");
+    return subs;
+  }, [subs, filter, now]);
+
+  const activeCount  = subs.filter(s => s.status === "active" && new Date(s.expires_at) > now).length;
+  const thisMonth    = subs.filter(s => { const d = new Date(s.created_at || 0); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); }).length;
+  const monthlyCount = subs.filter(s => s.plan_type === "monthly" && s.status === "active" && new Date(s.expires_at) > now).length;
+  const yearlyCount  = subs.filter(s => s.plan_type === "yearly"  && s.status === "active" && new Date(s.expires_at) > now).length;
+  const monthlyRev   = Math.round(monthlyCount * 399 + yearlyCount / 12 * 1499);
+  const giftCount    = subs.filter(s => s.source === "purchase_gift" && s.status === "active" && new Date(s.expires_at) > now).length;
+
+  const planLabel = { monthly: "月繳", yearly: "年繳", gift: "贈送" };
+
+  async function extendOne(id) {
+    setActing(id + "_extend");
+    try {
+      const r = await _api("/api/admin/subscriptions", {
+        method: "PATCH",
+        body: JSON.stringify({ id, action: "extend_month" }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error);
+      showToast("✅ 已延長 1 個月"); fetchSubs();
+    } catch (e) { showToast("❌ " + (e.message || "操作失敗")); }
+    finally { setActing(null); }
+  }
+
+  async function cancelOne(id) {
+    setActing(id + "_cancel");
+    try {
+      const r = await _api("/api/admin/subscriptions", {
+        method: "PATCH",
+        body: JSON.stringify({ id, action: "cancel" }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error);
+      showToast("✅ 已取消訂閱"); fetchSubs();
+    } catch (e) { showToast("❌ " + (e.message || "操作失敗")); }
+    finally { setActing(null); }
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault(); setAddErr("");
+    if (!addForm.email.trim()) { setAddErr("請輸入 Email"); return; }
+    if (!addForm.expires_at)   { setAddErr("請選擇到期日"); return; }
+    try {
+      const r = await _api("/api/admin/subscriptions", {
+        method: "POST",
+        body: JSON.stringify(addForm),
+      });
+      if (!r.ok) throw new Error((await r.json()).error);
+      showToast("✅ 已新增訂閱");
+      setShowAdd(false);
+      setAddForm({ email: "", plan_type: "monthly", expires_at: "" });
+      fetchSubs();
+    } catch (e) { setAddErr(e.message || "新增失敗"); }
+  }
+
+  return (
+    <div>
+      <div className={styles.pageHeader}>
+        <div><h1>訂閱管理</h1><p>管理 AI 互動遊戲訂閱方案</p></div>
+        <div className={styles.pageActions}>
+          <button className={styles.btnSmall} onClick={fetchSubs}><RefreshCw size={13}/> 重新整理</button>
+          <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}><Plus size={14}/> 手動新增</button>
+        </div>
+      </div>
+
+      <div className={styles.statsGrid4}>
+        <StatCard label="訂閱中人數" value={activeCount} sub="目前有效" icon={Users} color="#16a34a"/>
+        <StatCard label="本月新增"   value={thisMonth}   sub="新訂閱數" icon={TrendingUp} color="#2563eb"/>
+        <StatCard label="月收入預估" value={`NT$ ${monthlyRev.toLocaleString()}`} sub="訂閱收入" icon={DollarSign} color="#f59e0b"/>
+        <StatCard label="贈送中人數" value={giftCount}   sub="購課贈送" icon={GraduationCap} color="#7c3aed"/>
+      </div>
+
+      <div className={styles.panel}>
+        <div className={styles.panelHead} style={{ flexWrap: "wrap", gap: 12 }}>
+          <div className={styles.tabGroup}>
+            {[
+              ["all",     "全部"],
+              ["active",  "訂閱中"],
+              ["soon",    "即將到期"],
+              ["expired", "已到期"],
+              ["gift",    "贈送"],
+            ].map(([key, label]) => (
+              <button key={key}
+                className={`${styles.tab} ${filter === key ? styles.tabActive : ""}`}
+                onClick={() => setFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className={styles.dim}>共 {filtered.length} 筆</span>
+        </div>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>方案</th>
+                <th>狀態</th>
+                <th>到期日</th>
+                <th>剩餘天數</th>
+                <th>來源</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className={styles.empty}>載入中…</td></tr>
+              ) : !filtered.length ? (
+                <tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎮</span><span className={styles.emptyTitle}>還沒有任何訂閱</span><span className={styles.emptySub}>學員訂閱 AI 互動遊戲後將在這裡顯示</span></td></tr>
+              ) : filtered.map(s => {
+                const expDate  = new Date(s.expires_at);
+                const isActive = s.status === "active" && expDate > now;
+                const daysLeft = isActive ? Math.ceil((expDate - now) / 86400000) : 0;
+                const isSoon   = isActive && daysLeft <= 7;
+                return (
+                  <tr key={s.id}>
+                    <td style={{ fontSize: 13 }}>{s.email}</td>
+                    <td>
+                      <span className={styles.pill} style={{
+                        background: s.plan_type === "gift" ? "#f0fdf4" : s.plan_type === "yearly" ? "#fef3c7" : "#eff6ff",
+                        color: s.plan_type === "gift" ? "#166534" : s.plan_type === "yearly" ? "#92400e" : "#1d4ed8",
+                      }}>
+                        {planLabel[s.plan_type] || s.plan_type}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.pill} style={{
+                        background: isActive ? "#dcfce7" : "#fee2e2",
+                        color: isActive ? "#166534" : "#991b1b",
+                      }}>
+                        {isActive ? "訂閱中" : "已到期"}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                      {expDate.toLocaleDateString("zh-TW")}
+                    </td>
+                    <td>
+                      {isActive ? (
+                        <span style={{ color: isSoon ? "#dc2626" : "#374151", fontWeight: isSoon ? 700 : 400 }}>
+                          {daysLeft} 天{isSoon ? " ⚠️" : ""}
+                        </span>
+                      ) : "—"}
+                    </td>
+                    <td className={styles.dim} style={{ fontSize: 12 }}>{s.source || "—"}</td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button
+                          className={styles.btnSmall}
+                          disabled={acting === s.id + "_extend"}
+                          onClick={() => extendOne(s.id)}
+                        >
+                          +1月
+                        </button>
+                        {isActive && (
+                          <button
+                            className={`${styles.btnSmall} ${styles.btnDanger}`}
+                            disabled={acting === s.id + "_cancel"}
+                            onClick={() => cancelOne(s.id)}
+                          >
+                            取消
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add modal */}
+      {showAdd && (
+        <div className={styles.modalOverlay} onClick={() => setShowAdd(false)}>
+          <div className={styles.modalCard} style={{ width: "min(480px,100%)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18 }}>手動新增訂閱</h3>
+              <button className={styles.iconBtn} onClick={() => setShowAdd(false)}><X size={18}/></button>
+            </div>
+            <form onSubmit={handleAdd} style={{ display: "grid", gap: 14 }}>
+              <div className={styles.formGroup}>
+                <label>Email *</label>
+                <input className={styles.input} type="email" value={addForm.email}
+                  onChange={e => setAddForm(p => ({ ...p, email: e.target.value }))}
+                  placeholder="student@example.com"/>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup} style={{ flex: 1 }}>
+                  <label>方案</label>
+                  <select className={styles.selectInput} style={{ width: "100%" }} value={addForm.plan_type}
+                    onChange={e => setAddForm(p => ({ ...p, plan_type: e.target.value }))}>
+                    <option value="monthly">月繳</option>
+                    <option value="yearly">年繳</option>
+                    <option value="gift">贈送</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup} style={{ flex: 1 }}>
+                  <label>到期日 *</label>
+                  <input className={styles.input} type="date" value={addForm.expires_at}
+                    onChange={e => setAddForm(p => ({ ...p, expires_at: e.target.value }))}/>
+                </div>
+              </div>
+              {addErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{addErr}</p>}
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnSmall} onClick={() => setShowAdd(false)}>取消</button>
+                <button type="submit" className={styles.btnPrimary}>新增訂閱</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Analytics Page ─────────────────────────────────────────────────────────
 function AnalyticsPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFilter}){
   const purchased=leads.filter(l=>l.purchased||l.status==="purchased").length;
-  const totalRev=MOCK_ORDERS.filter(o=>o.status==="paid").reduce((s,o)=>s+o.amount,0);
-  const avgOrder=MOCK_ORDERS.filter(o=>o.status==="paid").length?Math.round(totalRev/MOCK_ORDERS.filter(o=>o.status==="paid").length):0;
-  const monthRev=523600;
+  const totalRev=purchased*3000;
+  const avgOrder=purchased>0?3000:0;
+  const now=new Date();
+  const monthRev=leads.filter(l=>{
+    if(!l.purchased&&l.status!=="purchased")return false;
+    const d=new Date(l.purchased_at||l.updated_at||l.created_at||0);
+    return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+  }).length*3000;
 
   const RANKING=[
-    {rank:1,title:"零基礎流行鋼琴入門課",orders:MOCK_ORDERS.filter(o=>o.status==="paid").length,revenue:totalRev,color:"#f59e0b"},
+    {rank:1,title:"零基礎流行鋼琴入門課",orders:purchased,revenue:totalRev,color:"#f59e0b"},
   ];
-  const FUNNEL=[{stage:"瀏覽課程頁",count:12480},{stage:"查看銷售頁",count:6240},{stage:"點擊購買",count:1872},{stage:"完成付款",count:936}];
+  const FUNNEL=[{stage:"瀏覽課程頁",count:0},{stage:"查看銷售頁",count:0},{stage:"點擊購買",count:0},{stage:"完成付款",count:purchased}];
 
   return(
     <div>
       <div className={styles.pageHeader}><div><h1>銷售分析</h1><p>深入了解您的課程銷售數據</p></div></div>
       <div className={styles.statsGrid4}>
         <StatCard label="總營收" value={`NT$ ${totalRev.toLocaleString()}`} sub="累計" icon={DollarSign} color="#16a34a"/>
-        <StatCard label="本月營收" value={`NT$ ${monthRev.toLocaleString()}`} sub="+18.5% 較上月" icon={TrendingUp} growth="+18.5% 較上月" color="#2563eb"/>
-        <StatCard label="總訂單數" value={MOCK_ORDERS.length} sub="筆" icon={ShoppingCart} color="#7c3aed"/>
+        <StatCard label="本月營收" value={`NT$ ${monthRev.toLocaleString()}`} sub="本月已付款" icon={TrendingUp} color="#2563eb"/>
+        <StatCard label="總訂單數" value={purchased} sub="筆" icon={ShoppingCart} color="#7c3aed"/>
         <StatCard label="平均客單價" value={`NT$ ${avgOrder.toLocaleString()}`} sub="已付款訂單" icon={BarChart2} color="#f59e0b"/>
       </div>
       <div className={styles.chartsRow}>
@@ -1111,7 +1309,7 @@ function AnalyticsPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFil
         </div>
         {/* Funnel */}
         <div className={styles.panel} style={{flex:"1 1 0"}}>
-          <div className={styles.panelHead}><h2>轉換漏斗</h2><span className={styles.dim}>整體 {Math.round(936/12480*100)}%</span></div>
+          <div className={styles.panelHead}><h2>轉換漏斗</h2><span className={styles.dim}>整體轉換率 {FUNNEL[0].count?Math.round(FUNNEL[3].count/FUNNEL[0].count*100)+"%":"—"}</span></div>
           <div style={{display:"grid",gap:12}}>
             {FUNNEL.map((f,i)=>{
               const pct=Math.round(f.count/FUNNEL[0].count*100);
@@ -1675,7 +1873,6 @@ export default function AdminPage(){
   }
 
   const purchasedCount=leads.filter(l=>l.purchased||l.status==="purchased").length;
-  const unreadComments=INIT_COMMENTS.filter(c=>c.status==="unread").length;
 
   useEffect(()=>{
     if(!authed)return;
@@ -1683,7 +1880,7 @@ export default function AdminPage(){
       .then(r=>r.json()).then(d=>{ if(d.unread!=null) setUnreadUnitComments(d.unread); }).catch(()=>{});
   },[authed,page]);
 
-  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return purchasedCount||null;if(key==="messages")return unreadComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
+  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return purchasedCount||null;if(key==="messages")return unreadUnitComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
 
   if(!authChecked)return(
     <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f1f5f9"}}>
@@ -1707,7 +1904,7 @@ export default function AdminPage(){
   return(
     <div className={styles.app}>
       <aside className={styles.sidebar}>
-        <div className={styles.sideTop}><span className={styles.brandName}>InRecord 後台</span></div>
+        <div className={styles.sideTop}><Logo white size={20} /><span className={styles.brandName}>後台</span></div>
         <nav className={styles.sideNav}>
           {NAV_GROUPS.map(group=>(
             <div key={group.title} className={styles.navGroup}>
@@ -1744,6 +1941,8 @@ export default function AdminPage(){
           {page==="media"       &&<MediaPage/>}
           {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
           {page==="orders"      &&<OrdersPage leads={leads}/>}
+          {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
+          {page==="games"       &&<GamesManagePage   showToast={showToast}/>}
           {page==="coupons"     &&<CouponsPage/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
           {page==="integration" &&<IntegrationPage showToast={showToast}/>}

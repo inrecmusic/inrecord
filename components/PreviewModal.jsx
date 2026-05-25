@@ -12,12 +12,10 @@ export default function PreviewModal({ open, onClose, onSuccess }) {
     if (open) setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
 
-  function isGmail(e) { return /@(gmail\.com|googlemail\.com)$/i.test(e); }
   function isValid(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
   async function handleSubmit() {
     if (!isValid(email)) { setMessage("請輸入有效的 Email 地址。"); setStatus("error"); return; }
-    if (!isGmail(email)) { setMessage("請使用 Gmail（@gmail.com）。"); setStatus("error"); return; }
 
     setStatus("loading"); setMessage("");
     try {
@@ -46,12 +44,12 @@ export default function PreviewModal({ open, onClose, onSuccess }) {
       <div className={styles.box} role="dialog" aria-modal="true">
         <button className={styles.close} onClick={onClose}>×</button>
         <h2>體驗試看</h2>
-        <p>輸入 Gmail，我們會寄送課程試看 Email，並加入試看名單。</p>
+        <p>輸入 Email，我們會寄送課程試看 Email，並加入試看名單。</p>
         <input
           ref={inputRef}
           className={styles.input}
           type="email"
-          placeholder="your@gmail.com"
+          placeholder="your@email.com"
           value={email}
           onChange={e => setEmail(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleSubmit()}

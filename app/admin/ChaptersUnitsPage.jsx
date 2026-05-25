@@ -36,7 +36,7 @@ export default function ChaptersUnitsPage({ showToast }) {
 
   // unit modal
   const [videoModal, setVideoModal] = useState(null); // null | "create:{chapId}" | video object
-  const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
+  const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
   const [videoFormErr, setVideoFormErr] = useState("");
 
   const fetchAll = useCallback(async () => {
@@ -100,12 +100,12 @@ export default function ChaptersUnitsPage({ showToast }) {
 
   /* ── Video CRUD ── */
   function openVideoCreate(chapId) {
-    setVideoForm({ chapter_id: chapId, title: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
+    setVideoForm({ chapter_id: chapId, title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
     setVideoFormErr(""); setVideoModal("create");
   }
 
   function openVideoEdit(v) {
-    setVideoForm({ chapter_id: v.chapter_id || "", title: v.title || "", vimeo_url: v.vimeo_id ? `https://vimeo.com/${v.vimeo_id}` : "", vimeo_id: v.vimeo_id || "", duration: v.duration || "", assignment_desc: v.assignment_desc || "", published: v.published || false });
+    setVideoForm({ chapter_id: v.chapter_id || "", title: v.title || "", bunny_video_id: v.bunny_video_id || "", vimeo_url: v.vimeo_id ? `https://vimeo.com/${v.vimeo_id}` : "", vimeo_id: v.vimeo_id || "", duration: v.duration || "", assignment_desc: v.assignment_desc || "", published: v.published || false });
     setVideoFormErr(""); setVideoModal(v);
   }
 
@@ -117,7 +117,7 @@ export default function ChaptersUnitsPage({ showToast }) {
     try {
       const isEdit = videoModal && videoModal !== "create";
       const vimeo_id = videoForm.vimeo_url.match(/vimeo\.com\/(\d+)/)?.[1] || videoForm.vimeo_id;
-      const body = { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), vimeo_id, duration: videoForm.duration, assignment_desc: videoForm.assignment_desc, published: videoForm.published };
+      const body = { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), bunny_video_id: videoForm.bunny_video_id.trim() || null, vimeo_id: vimeo_id || null, duration: videoForm.duration, assignment_desc: videoForm.assignment_desc, published: videoForm.published };
       if (isEdit) body.id = videoModal.id;
       else body.sort_order = videos.filter(v => v.chapter_id === videoForm.chapter_id).length;
       const r = await api("/api/admin/videos", { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(body) });
@@ -247,6 +247,9 @@ export default function ChaptersUnitsPage({ showToast }) {
                           <span style={{ color: "#e2e8f0", cursor: "grab", flexShrink: 0 }}><GripVertical size={14} /></span>
                           <Video size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
                           <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#334155", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</span>
+                          {v.bunny_video_id && (
+                            <span style={{ fontSize: 11, color: "#ea580c", fontWeight: 700, background: "#fff7ed", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>Bunny</span>
+                          )}
                           {v.vimeo_id && (
                             <a href={`https://vimeo.com/${v.vimeo_id}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 700, background: "#eff6ff", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>{v.vimeo_id}</a>
                           )}
@@ -323,7 +326,17 @@ export default function ChaptersUnitsPage({ showToast }) {
                 </div>
               </div>
               <div className={styles.formGroup}>
-                <label>Vimeo 影片連結</label>
+                <label>Bunny Stream Video ID（主要）</label>
+                <input
+                  className={styles.input}
+                  value={videoForm.bunny_video_id}
+                  onChange={e => setVideoForm(p => ({ ...p, bunny_video_id: e.target.value.trim() }))}
+                  placeholder="例：a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                />
+                {videoForm.bunny_video_id && <span style={{ fontSize: 12, color: "#16a34a", marginTop: 3, display: "block" }}>✓ Bunny Video ID 已設定</span>}
+              </div>
+              <div className={styles.formGroup}>
+                <label>Vimeo 影片連結（備用）</label>
                 <input
                   className={styles.input}
                   value={videoForm.vimeo_url}

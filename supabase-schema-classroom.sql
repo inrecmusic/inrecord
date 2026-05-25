@@ -151,11 +151,13 @@ CREATE POLICY "auth_insert_submissions" ON submissions
 -- 學習進度
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS progress (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  video_id    UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
-  watched_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed   BOOLEAN NOT NULL DEFAULT FALSE,
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  video_id        UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+  watched_seconds INTEGER NOT NULL DEFAULT 0,
+  total_seconds   INTEGER NOT NULL DEFAULT 0,
+  watched_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed       BOOLEAN NOT NULL DEFAULT FALSE,
   UNIQUE (user_id, video_id)
 );
 

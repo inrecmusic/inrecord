@@ -2,43 +2,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
-/* ── Placeholder course data (10 chapters × 3 units) ───────────────────────── */
-const PH_CHAPTERS = [
-  { id: "ph1",  title: "課程導覽" },
-  { id: "ph2",  title: "認識鋼琴" },
-  { id: "ph3",  title: "節奏基礎" },
-  { id: "ph4",  title: "C大調音階" },
-  { id: "ph5",  title: "基礎和弦" },
-  { id: "ph6",  title: "流行伴奏型態" },
-  { id: "ph7",  title: "右手旋律" },
-  { id: "ph8",  title: "左右手協調" },
-  { id: "ph9",  title: "歌曲實戰" },
-  { id: "ph10", title: "進階技巧" },
-];
-
-const PH_UNIT_NAMES = [
-  ["歡迎入門", "課程使用指南", "設備準備建議"],
-  ["琴鍵結構與音名", "基本手型與姿勢", "視唱練習"],
-  ["拍子與節拍感", "附點音符與休止符", "節拍器練習"],
-  ["右手音階練習", "左手音階練習", "雙手合奏"],
-  ["三和弦入門", "C-Am-F-G 和弦", "和弦換轉練習"],
-  ["分解和弦型", "柱式和弦型", "混合伴奏應用"],
-  ["連奏與斷奏", "指法基礎", "旋律線條練習"],
-  ["協調訓練方法", "慢速分段練習", "合手彈奏"],
-  ["流行歌曲 A", "流行歌曲 B", "完整示範彈奏"],
-  ["裝飾音技法", "踏板運用", "情感詮釋"],
-];
-
-const PH_VIDEOS = PH_CHAPTERS.flatMap((c, ci) =>
-  PH_UNIT_NAMES[ci].map((name, vi) => ({
-    id: `${c.id}-v${vi + 1}`,
-    chapter_id: c.id,
-    title: `${ci + 1}-${vi + 1}  ${name}`,
-    duration_sec: null,
-    vimeo_id: null,
-  }))
-);
-
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
   if (!sec) return "";
@@ -47,28 +10,32 @@ function fmtDur(sec) {
 
 const F = `-apple-system, "SF Pro Display", BlinkMacSystemFont, "Noto Sans TC", sans-serif`;
 
-/* ── CommentsTab ─────────────────────────────────────────────────────────────── */
-function CommentsTab({ token, video, chapters }) {
+/* ── CommentsSection ─────────────────────────────────────────────────────────── */
+function CommentsSection({ token, video, chapters }) {
+  const [filter, setFilter]   = useState("unit");
   const [comments, setComments] = useState([]);
-  const [text, setText]         = useState("");
-  const [posting, setPosting]   = useState(false);
-  const [msg, setMsg]           = useState("");
+  const [text, setText]       = useState("");
+  const [posting, setPosting] = useState(false);
+  const [msg, setMsg]         = useState("");
+
+  useEffect(() => { setFilter("unit"); setComments([]); }, [video?.id]);
 
   const load = useCallback(async () => {
-    if (!video || !token || video.id.startsWith("ph")) return;
+    if (!token) return;
+    const url = filter === "unit" && video
+      ? `/api/classroom/comments?video_id=${video.id}`
+      : "/api/classroom/comments";
     try {
-      const r = await fetch(`/api/classroom/comments?video_id=${video.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const { data } = await r.json();
       setComments(data || []);
     } catch {}
-  }, [token, video]);
+  }, [token, video?.id, filter]);
 
   useEffect(() => { load(); }, [load]);
 
   async function submit() {
-    if (!text.trim() || !video || video.id.startsWith("ph")) return;
+    if (!text.trim() || !video) return;
     setPosting(true);
     try {
       await fetch("/api/classroom/comment", {
@@ -84,18 +51,39 @@ function CommentsTab({ token, video, chapters }) {
   }
 
   const chapMap = Object.fromEntries((chapters || []).map(c => [c.id, c.title]));
-  const isPlaceholder = video?.id?.startsWith("ph");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ flex: 1, overflowY: "auto", marginBottom: 14 }}>
-        {isPlaceholder ? (
-          <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0, lineHeight: 1.6 }}>
-            課程上線後即可在此留言與提問
-          </p>
-        ) : !comments.length ? (
-          <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0 }}>
-            {video ? "尚無留言，成為第一個留言的人！" : "請先選擇課程單元"}
+    <div style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.07)", padding: "16px 20px" }}>
+      {/* Header + filter */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#1D1D1F" }}>學員留言</div>
+        <div style={{ display: "flex", background: "#F5F5F7", borderRadius: 8, padding: 2 }}>
+          {[{ id: "unit", label: "本單元" }, { id: "all", label: "全部單元" }].map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)}
+              style={{
+                padding: "4px 12px", fontSize: 12, fontWeight: filter === f.id ? 600 : 400,
+                border: 0, cursor: "pointer", fontFamily: F, borderRadius: 6,
+                background: filter === f.id ? "#fff" : "transparent",
+                color: filter === f.id ? "#1D1D1F" : "#8E8E93",
+                boxShadow: filter === f.id ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                transition: "all .12s",
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Comment list */}
+      <div style={{ marginBottom: 14 }}>
+        {!comments.length ? (
+          <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", padding: "20px 0", margin: 0 }}>
+            {!video
+              ? "請先選擇課程單元"
+              : filter === "unit"
+              ? "此單元尚無留言，成為第一個留言的人！"
+              : "尚無留言"}
           </p>
         ) : comments.map(c => (
           <div key={c.id} style={{
@@ -131,13 +119,14 @@ function CommentsTab({ token, video, chapters }) {
         ))}
       </div>
 
-      <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)", paddingTop: 12 }}>
+      {/* Input */}
+      <div>
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
-          placeholder={isPlaceholder ? "課程上線後開放留言" : video ? "輸入你的留言或問題…" : "請先選擇課程單元"}
-          disabled={!video || isPlaceholder}
-          rows={3}
+          placeholder={video ? "輸入你的留言或問題…" : "請先選擇課程單元"}
+          disabled={!video}
+          rows={2}
           style={{
             width: "100%", background: "#F5F5F7",
             border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10,
@@ -147,11 +136,11 @@ function CommentsTab({ token, video, chapters }) {
         />
         {msg && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#34C759" }}>{msg}</p>}
         <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={submit} disabled={posting || !text.trim() || !video || isPlaceholder}
+          <button onClick={submit} disabled={posting || !text.trim() || !video}
             style={{
               background: "#0071E3", color: "#fff", border: 0, borderRadius: 980,
               padding: "7px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer",
-              fontFamily: F, opacity: (!text.trim() || !video || isPlaceholder) ? 0.35 : 1,
+              fontFamily: F, opacity: (!text.trim() || !video) ? 0.35 : 1,
               transition: "opacity .15s",
             }}
           >
@@ -241,14 +230,13 @@ function RatingTab({ token }) {
 
 /* ── AssignmentTab ───────────────────────────────────────────────────────────── */
 function AssignmentTab({ video, token }) {
-  const isPlaceholder = video?.id?.startsWith("ph");
   const [uploading, setUploading] = useState(false);
   const [done, setDone]           = useState(false);
   const [err, setErr]             = useState("");
   const [dragging, setDragging]   = useState(false);
   const inputRef = useRef(null);
 
-  if (isPlaceholder || !video?.assignment_desc) return (
+  if (!video?.assignment_desc) return (
     <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0, lineHeight: 1.6 }}>
       {video ? "此單元沒有作業" : "請先選擇課程單元"}
     </p>
@@ -263,7 +251,7 @@ function AssignmentTab({ video, token }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const uploadRes = await fetch("/api/upload-proof", { method: "POST", body: fd });
+      const uploadRes = await fetch("/api/upload-proof", { method: "POST", body: fd, headers: { Authorization: `Bearer ${token}` } });
       const { url } = await uploadRes.json();
       if (!url) throw new Error("上傳失敗，請確認 Supabase Storage 已設定");
       const subRes = await fetch("/api/classroom/submission", {
@@ -327,20 +315,218 @@ function AssignmentTab({ video, token }) {
   );
 }
 
+/* ── GamesTab ────────────────────────────────────────────────────────────────── */
+function GamesTab({ token, hasSubscription, video, gameCache }) {
+  const [games, setGames]               = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [gameContent, setGameContent]   = useState(null);
+  const [gameLoading, setGameLoading]   = useState(false);
+  const [listLoading, setListLoading]   = useState(false);
+
+  const videoId = video?.id;
+
+  useEffect(() => {
+    setSelectedGame(null); setGameContent(null); setGames([]);
+    if (!hasSubscription || !token || !videoId) return;
+    const cacheKey = `list:${videoId}`;
+    if (gameCache?.current[cacheKey]) {
+      setGames(gameCache.current[cacheKey]);
+      return;
+    }
+    setListLoading(true);
+    fetch(`/api/classroom/games?video_id=${videoId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(({ games }) => {
+        const list = games || [];
+        if (gameCache) gameCache.current[cacheKey] = list;
+        setGames(list);
+      })
+      .catch(() => {})
+      .finally(() => setListLoading(false));
+  }, [hasSubscription, token, videoId]);
+
+  useEffect(() => {
+    if (!selectedGame) return;
+    if (selectedGame.game_type === "url") { setGameContent(selectedGame); return; }
+    if (gameCache?.current[selectedGame.id]) {
+      setGameContent(gameCache.current[selectedGame.id]);
+      return;
+    }
+    setGameLoading(true);
+    setGameContent(null);
+    fetch(`/api/classroom/games?id=${selectedGame.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(({ game }) => {
+        if (game && gameCache) gameCache.current[selectedGame.id] = game;
+        setGameContent(game || null);
+      })
+      .catch(() => setGameContent(null))
+      .finally(() => setGameLoading(false));
+  }, [selectedGame, token]);
+
+  if (!hasSubscription) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 20px" }}>
+        <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+        <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#1D1D1F" }}>
+          此功能需要 AI 遊戲訂閱
+        </h3>
+        <p style={{ color: "#6E6E73", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
+          月繳 NT$399 / 年繳 NT$1,499
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
+          <a href="/#subscription"
+            style={{
+              background: "#0071E3", color: "#fff", padding: "10px 22px",
+              borderRadius: 980, textDecoration: "none", fontWeight: 600, fontSize: 14,
+              fontFamily: F,
+            }}
+          >
+            月繳 NT$399
+          </a>
+          <a href="/#subscription"
+            style={{
+              background: "#1c1c1e", color: "#fff", padding: "10px 22px",
+              borderRadius: 980, textDecoration: "none", fontWeight: 600, fontSize: 14,
+              fontFamily: F,
+            }}
+          >
+            年繳 NT$1,499
+          </a>
+        </div>
+        <p style={{ color: "#AEAEB2", fontSize: 12, margin: 0 }}>
+          購買課程自動贈送 3 個月免費體驗
+        </p>
+      </div>
+    );
+  }
+
+  if (selectedGame) {
+    const isUrlGame = selectedGame.game_type === "url";
+    const closeGame = () => { setSelectedGame(null); setGameContent(null); };
+    return (
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "#000", display: "flex", flexDirection: "column",
+      }}>
+        {/* Title bar */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
+          padding: "10px 16px", background: "#1c1c1e",
+        }}>
+          <button
+            onClick={closeGame}
+            style={{
+              background: "rgba(255,255,255,0.12)", border: 0, cursor: "pointer",
+              color: "#fff", fontSize: 13, fontWeight: 500, padding: "6px 14px",
+              borderRadius: 980, fontFamily: F, lineHeight: 1,
+            }}
+          >
+            ← 返回
+          </button>
+          <span style={{ color: "#f5f5f7", fontSize: 14, fontWeight: 600, fontFamily: F }}>
+            🎮 {selectedGame.title}
+          </span>
+        </div>
+        {/* Game content */}
+        {isUrlGame ? (
+          <iframe
+            src={selectedGame.external_url}
+            allow="autoplay; fullscreen"
+            style={{ flex: 1, border: 0, display: "block", width: "100%" }}
+            title={selectedGame.title}
+          />
+        ) : gameLoading ? (
+          <div style={{ flex: 1, display: "grid", placeItems: "center" }}>
+            <div style={{
+              width: 28, height: 28, border: "2.5px solid rgba(255,255,255,0.15)",
+              borderTopColor: "#0071E3", borderRadius: "50%",
+              animation: "spin .7s linear infinite",
+            }} />
+          </div>
+        ) : (
+          <iframe
+            srcDoc={gameContent?.html_content || "<div style='display:grid;place-items:center;height:100vh;font-family:system-ui;color:#8E8E93'>遊戲內容即將上線</div>"}
+            sandbox="allow-scripts allow-forms"
+            style={{ flex: 1, border: 0, display: "block", width: "100%" }}
+            title={selectedGame.title}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (listLoading) {
+    return (
+      <div style={{ display: "grid", placeItems: "center", padding: 48 }}>
+        <div style={{
+          width: 24, height: 24, border: "2.5px solid rgba(0,0,0,0.08)",
+          borderTopColor: "#0071E3", borderRadius: "50%",
+          animation: "spin .7s linear infinite",
+        }} />
+      </div>
+    );
+  }
+
+  if (!games.length) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 20px" }}>
+        <div style={{ fontSize: 52, marginBottom: 14 }}>🎮</div>
+        <p style={{ fontWeight: 600, color: "#1D1D1F", fontSize: 16, margin: "0 0 6px" }}>此單元暫無 AI 遊戲</p>
+        <p style={{ color: "#8E8E93", fontSize: 13, margin: 0 }}>訂閱已啟用，更多遊戲陸續上線中</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+      gap: 12,
+    }}>
+      {games.map(game => (
+        <button key={game.id} onClick={() => setSelectedGame(game)}
+          style={{
+            border: "1px solid rgba(0,0,0,0.08)", borderRadius: 14, padding: "18px 12px",
+            background: "#F5F5F7", cursor: "pointer", textAlign: "center", fontFamily: F,
+            transition: "background .12s, box-shadow .12s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,113,227,0.06)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,113,227,0.12)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "#F5F5F7"; e.currentTarget.style.boxShadow = "none"; }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🎮</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#1D1D1F", lineHeight: 1.4 }}>{game.title}</div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ── Main ────────────────────────────────────────────────────────────────────── */
 export default function ClassroomPage() {
-  const [user, setUser]               = useState(null);
-  const [token, setToken]             = useState("");
-  const [hasPurchased, setHasPurchased] = useState(false);
-  const [loading, setLoading]         = useState(true);
+  const [user, setUser]                   = useState(null);
+  const [token, setToken]                 = useState("");
+  const [hasPurchased, setHasPurchased]   = useState(false);
+  const [hasSubscription, setHasSubscription] = useState(false);
+  const [subDaysLeft, setSubDaysLeft]     = useState(0);
+  const [loading, setLoading]             = useState(true);
 
-  const [chapters, setChapters]         = useState([]);
-  const [videos, setVideos]             = useState([]);
-  const [currentVideo, setCurrentVideo] = useState(null);
-  const [progress, setProgress]         = useState([]);
-  const [tab, setTab]                   = useState("comments");
+  const [chapters, setChapters]           = useState([]);
+  const [videos, setVideos]               = useState([]);
+  const [currentVideo, setCurrentVideo]   = useState(null);
+  const [progress, setProgress]           = useState([]);
+  const [tab, setTab]                     = useState("rating");
 
-  /* auth + purchase */
+  const gameCacheRef                      = useRef({});
+  const [isTablet, setIsTablet]           = useState(false);
+  useEffect(() => {
+    const check = () => setIsTablet(window.innerWidth <= 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  /* auth + purchase + subscription */
   useEffect(() => {
     async function init() {
       try {
@@ -351,14 +537,27 @@ export default function ClassroomPage() {
         setUser(u);
         setToken(session?.access_token || "");
         try {
-          const r = await fetch("/api/classroom/verify-purchase", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: u.email }),
-          });
-          const { hasPurchased } = await r.json();
+          const [purchaseRes, subRes] = await Promise.all([
+            fetch("/api/classroom/verify-purchase", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: u.email }),
+            }),
+            fetch("/api/classroom/verify-subscription", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: u.email }),
+            }),
+          ]);
+          const { hasPurchased } = await purchaseRes.json();
+          const subData = await subRes.json();
           setHasPurchased(!!hasPurchased);
-        } catch { setHasPurchased(false); }
+          setHasSubscription(!!subData.hasSubscription);
+          setSubDaysLeft(subData.daysLeft || 0);
+        } catch {
+          setHasPurchased(false);
+          setHasSubscription(false);
+        }
       } catch {
         window.location.href = "/classroom/login";
       } finally {
@@ -383,9 +582,9 @@ export default function ClassroomPage() {
         const chaps  = course.chapters || [];
         setChapters(chaps);
         setVideos(vids);
-        setProgress(prog.data || []);
+        setProgress(prog.progress || []);
         if (vids.length) {
-          const pm = Object.fromEntries((prog.data || []).map(p => [p.video_id, p]));
+          const pm = Object.fromEntries((prog.progress || []).map(p => [p.video_id, p]));
           setCurrentVideo(vids.find(v => !pm[v.id]?.completed) || vids[0]);
         }
       } catch {}
@@ -393,53 +592,61 @@ export default function ClassroomPage() {
     load();
   }, [hasPurchased, token]);
 
-  /* auto-select first placeholder unit when API returns nothing */
+  /* Vimeo player time-based progress tracking (every 10s) */
   useEffect(() => {
-    if (!loading && !currentVideo) setCurrentVideo(PH_VIDEOS[0]);
-  }, [loading, currentVideo]);
+    if (!currentVideo?.vimeo_id || !token) return;
+    const videoId = currentVideo.id;
+    let interval;
+    let player;
+    let cancelled = false;
 
-  async function handleSelect(v) {
+    async function setup() {
+      const { default: Player } = await import("@vimeo/player");
+      if (cancelled) return;
+      const iframe = document.getElementById("vimeo-player");
+      if (!iframe) return;
+      player = new Player(iframe);
+      await player.ready();
+      if (cancelled) return;
+
+      interval = setInterval(async () => {
+        try {
+          const [currentTime, duration] = await Promise.all([
+            player.getCurrentTime(),
+            player.getDuration(),
+          ]);
+          if (!duration) return;
+          const r = await fetch("/api/classroom/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              video_id: videoId,
+              watched_seconds: Math.floor(currentTime),
+              total_seconds: Math.floor(duration),
+              completed: currentTime / duration >= 0.8,
+            }),
+          });
+          const { data } = await r.json();
+          if (data) setProgress(prev => {
+            const i = prev.findIndex(p => p.video_id === videoId);
+            return i >= 0 ? prev.map((p, j) => j === i ? data : p) : [...prev, data];
+          });
+        } catch {}
+      }, 10000);
+    }
+
+    setup();
+    return () => { cancelled = true; clearInterval(interval); player?.destroy(); };
+  }, [currentVideo?.id, token]);
+
+  function handleSelect(v) {
     setCurrentVideo(v);
-    setTab("comments");
-    if (!token || v.id.startsWith("ph")) return;
-    try {
-      const r = await fetch("/api/classroom/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ video_id: v.id }),
-      });
-      const { data } = await r.json();
-      if (data) setProgress(prev => {
-        const i = prev.findIndex(p => p.video_id === v.id);
-        return i >= 0 ? prev.map((p, j) => j === i ? data : p) : [...prev, data];
-      });
-    } catch {}
-  }
-
-  async function markComplete() {
-    if (!currentVideo || !token || currentVideo.id.startsWith("ph")) return;
-    try {
-      const r = await fetch("/api/classroom/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ video_id: currentVideo.id, completed: true }),
-      });
-      const { data } = await r.json();
-      if (data) setProgress(prev => {
-        const i = prev.findIndex(p => p.video_id === currentVideo.id);
-        return i >= 0 ? prev.map((p, j) => j === i ? data : p) : [...prev, data];
-      });
-    } catch {}
   }
 
   async function handleLogout() {
     await supabase?.auth.signOut();
-    window.location.href = "/classroom/login";
+    window.location.href = "/";
   }
-
-  /* derive display data: real data if available, else placeholder */
-  const displayChapters = chapters.length ? chapters : PH_CHAPTERS;
-  const displayVideos   = videos.length   ? videos   : PH_VIDEOS;
 
   /* ── Loading ── */
   if (loading) return (
@@ -488,19 +695,26 @@ export default function ClassroomPage() {
     </div>
   );
 
-  const progMap    = Object.fromEntries(progress.map(p => [p.video_id, p]));
-  const doneCount  = progress.filter(p => p.completed).length;
-  const totalCount = displayVideos.length;
-  const pct        = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
-  const chap       = displayChapters.find(c => c.id === currentVideo?.chapter_id);
-  const isDone     = currentVideo ? !!progMap[currentVideo.id]?.completed : false;
-  const isPlaceholderVideo = currentVideo?.id?.startsWith("ph");
+  const progMap         = Object.fromEntries(progress.map(p => [p.video_id, p]));
+  const doneCount       = progress.filter(p => p.completed).length;
+  const totalCount      = videos.length;
+  const pct             = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+  const chap            = chapters.find(c => c.id === currentVideo?.chapter_id);
+  const currentProgEntry = currentVideo ? progMap[currentVideo.id] : null;
+  const isDone          = !!currentProgEntry?.completed;
+  const currentWatchPct = (currentProgEntry?.total_seconds > 0)
+    ? Math.min(100, Math.round((currentProgEntry.watched_seconds / currentProgEntry.total_seconds) * 100))
+    : 0;
 
   /* ── Classroom ── */
   return (
     <div style={{
-      height: "100dvh", background: "#F5F5F7", color: "#1D1D1F",
-      display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: F,
+      height: isTablet ? "auto" : "100dvh",
+      minHeight: "100dvh",
+      background: "#F5F5F7", color: "#1D1D1F",
+      display: "flex", flexDirection: "column",
+      overflow: isTablet ? "auto" : "hidden",
+      fontFamily: F,
     }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -527,8 +741,31 @@ export default function ClassroomPage() {
           </svg>
           音樂教室
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 13, color: "#8E8E93" }}>{user?.email}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {!isTablet && <span style={{ fontSize: 13, color: "#8E8E93" }}>{user?.email}</span>}
+
+          {hasSubscription ? (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 5,
+              fontSize: 12, fontWeight: 600, color: "#34C759",
+              background: "rgba(52,199,89,0.1)", padding: "4px 12px", borderRadius: 980,
+            }}>
+              <span style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: "#34C759", display: "inline-block",
+              }} />
+              AI 遊戲・剩 {subDaysLeft} 天
+            </div>
+          ) : (
+            <a href="/#subscription" style={{
+              background: "linear-gradient(135deg,#FF9500,#FF6B00)",
+              color: "#fff", borderRadius: 980, padding: "4px 12px",
+              fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: F,
+            }}>
+              🎮 解鎖 AI 遊戲
+            </a>
+          )}
+
           <button onClick={handleLogout} style={{
             background: "none", border: "1px solid rgba(0,0,0,0.13)",
             color: "#3A3A3C", borderRadius: 980, padding: "5px 16px",
@@ -544,16 +781,36 @@ export default function ClassroomPage() {
       </header>
 
       {/* ── Body ── */}
-      <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
+      <div style={{
+        flex: 1, display: "flex",
+        flexDirection: isTablet ? "column" : "row",
+        minHeight: 0,
+        overflow: isTablet ? "visible" : "hidden",
+      }}>
 
-        {/* ── Left: player + info + tabs ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid rgba(0,0,0,0.07)" }}>
+        {/* ── Left: player + info + comments + tabs ── */}
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column",
+          overflowY: isTablet ? "visible" : "auto",
+          borderRight: isTablet ? "none" : "1px solid rgba(0,0,0,0.07)",
+          borderBottom: isTablet ? "1px solid rgba(0,0,0,0.07)" : "none",
+        }}>
 
           {/* Player */}
           <div style={{ flexShrink: 0, background: "#000" }}>
-            {currentVideo?.vimeo_id ? (
-              <div style={{ paddingTop: "56.25%", position: "relative" }}>
+            {currentVideo?.bunny_video_id ? (
+              <div style={{ paddingTop: "44%", position: "relative" }}>
                 <iframe
+                  src={`https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${currentVideo.bunny_video_id}?autoplay=false&loop=false&muted=false&preload=true`}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : currentVideo?.vimeo_id ? (
+              <div style={{ paddingTop: "44%", position: "relative" }}>
+                <iframe
+                  id="vimeo-player"
                   src={`https://player.vimeo.com/video/${currentVideo.vimeo_id}?autoplay=0&title=0&byline=0&portrait=0`}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
                   allow="autoplay; fullscreen; picture-in-picture"
@@ -561,7 +818,7 @@ export default function ClassroomPage() {
                 />
               </div>
             ) : (
-              <div style={{ paddingTop: "56.25%", position: "relative", background: "#0A0A0A" }}>
+              <div style={{ paddingTop: "44%", position: "relative", background: "#0A0A0A" }}>
                 <div style={{
                   position: "absolute", inset: 0,
                   display: "flex", flexDirection: "column",
@@ -572,7 +829,7 @@ export default function ClassroomPage() {
                     <circle cx="12" cy="12" r="4" fill="#fff"/>
                   </svg>
                   <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.28)", letterSpacing: ".02em" }}>
-                    {isPlaceholderVideo ? "影片即將上線" : "請從右側選擇課程單元"}
+                    請從右側選擇課程單元
                   </p>
                 </div>
               </div>
@@ -594,8 +851,8 @@ export default function ClassroomPage() {
               <div style={{ fontSize: 15, fontWeight: 600, color: "#1D1D1F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {currentVideo ? currentVideo.title : "請選擇課程單元"}
               </div>
-              {currentVideo?.duration_sec && (
-                <div style={{ fontSize: 12, color: "#8E8E93", marginTop: 2 }}>{fmtDur(currentVideo.duration_sec)}</div>
+              {currentVideo?.duration && (
+                <div style={{ fontSize: 12, color: "#8E8E93", marginTop: 2 }}>{currentVideo.duration}</div>
               )}
             </div>
 
@@ -608,31 +865,30 @@ export default function ClassroomPage() {
                 }}>
                   ✓ 已完成
                 </div>
-              ) : (
-                <button onClick={markComplete}
-                  disabled={isPlaceholderVideo}
-                  style={{
-                    background: "#F5F5F7", border: "1px solid rgba(0,0,0,0.1)",
-                    color: "#3A3A3C", borderRadius: 980, padding: "6px 16px",
-                    cursor: isPlaceholderVideo ? "default" : "pointer",
-                    fontSize: 12, fontWeight: 500, flexShrink: 0, fontFamily: F,
-                    opacity: isPlaceholderVideo ? 0.4 : 1, transition: "background .15s",
-                  }}
-                  onMouseEnter={e => { if (!isPlaceholderVideo) e.currentTarget.style.background = "#EBEBEB"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "#F5F5F7"; }}
-                >
-                  標記完成
-                </button>
-              )
+              ) : currentWatchPct > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: "#0071E3", fontWeight: 600 }}>觀看中 {currentWatchPct}%</span>
+                  <div style={{ width: 64, height: 3, background: "#E5E5EA", borderRadius: 2 }}>
+                    <div style={{ width: `${currentWatchPct}%`, height: "100%", background: "#0071E3", borderRadius: 2, transition: "width .4s" }} />
+                  </div>
+                </div>
+              ) : null
             )}
           </div>
 
+          {/* Comments Section */}
+          <CommentsSection token={token} video={currentVideo} chapters={chapters} />
+
           {/* Tab bar */}
-          <div style={{ display: "flex", flexShrink: 0, borderBottom: "1px solid rgba(0,0,0,0.07)", background: "#fff", padding: "0 10px" }}>
+          <div style={{
+            display: "flex", flexShrink: 0, borderBottom: "1px solid rgba(0,0,0,0.07)",
+            background: "#fff", padding: "0 10px",
+            position: "sticky", top: 0, zIndex: 10,
+          }}>
             {[
-              { id: "comments",   label: "單元留言" },
               { id: "rating",     label: "課程評價" },
               { id: "assignment", label: "作業繳交" },
+              { id: "games",      label: "🎮 互動遊戲" },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
@@ -649,15 +905,21 @@ export default function ClassroomPage() {
           </div>
 
           {/* Tab content */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px", background: "#fff" }}>
-            {tab === "comments"   && <CommentsTab token={token} video={currentVideo} chapters={displayChapters} />}
+          <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
             {tab === "rating"     && <RatingTab token={token} />}
             {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
+            {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} />}
           </div>
         </div>
 
         {/* ── Right: chapter list ── */}
-        <div style={{ width: 288, display: "flex", flexDirection: "column", background: "#fff", flexShrink: 0 }}>
+        <div style={{
+          width: isTablet ? "100%" : 288,
+          maxHeight: isTablet ? 300 : "none",
+          display: "flex", flexDirection: "column",
+          background: "#fff", flexShrink: 0,
+          borderTop: isTablet ? "1px solid rgba(0,0,0,0.07)" : "none",
+        }}>
 
           {/* Progress */}
           <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0 }}>
@@ -675,9 +937,19 @@ export default function ClassroomPage() {
           </div>
 
           {/* Unit list */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "6px 10px 32px" }}>
-            {displayChapters.map((c, ci) => {
-              const cv = displayVideos.filter(v => v.chapter_id === c.id);
+          <div style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: isTablet ? "auto" : "hidden",
+            padding: isTablet ? "6px 10px 10px" : "6px 10px 32px",
+          }}>
+            {chapters.length === 0 && (
+              <div style={{ textAlign: "center", padding: "40px 16px" }}>
+                <p style={{ color: "#8E8E93", fontSize: 13, margin: 0, lineHeight: 1.6 }}>課程尚未上架</p>
+              </div>
+            )}
+            {chapters.map((c, ci) => {
+              const cv = videos.filter(v => v.chapter_id === c.id);
               if (!cv.length) return null;
               return (
                 <div key={c.id} style={{ marginBottom: 4 }}>
@@ -692,8 +964,13 @@ export default function ClassroomPage() {
 
                   {/* Unit buttons */}
                   {cv.map((v, idx) => {
-                    const isActive = v.id === currentVideo?.id;
-                    const done     = !!progMap[v.id]?.completed;
+                    const isActive   = v.id === currentVideo?.id;
+                    const pe         = progMap[v.id];
+                    const done       = !!pe?.completed;
+                    const watchPct   = (pe?.total_seconds > 0)
+                      ? Math.min(100, Math.round((pe.watched_seconds / pe.total_seconds) * 100))
+                      : 0;
+                    const isWatching = !done && watchPct > 0;
                     return (
                       <button key={v.id} onClick={() => handleSelect(v)}
                         style={{
@@ -707,19 +984,19 @@ export default function ClassroomPage() {
                         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
                         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                       >
-                        {/* Circle indicator */}
+                        {/* Status indicator */}
                         <div style={{
                           width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
                           display: "grid", placeItems: "center",
                           fontSize: 10.5, fontWeight: 600,
-                          background: isActive ? "#0071E3" : done ? "rgba(52,199,89,0.12)" : "#F5F5F7",
-                          color: isActive ? "#fff" : done ? "#34C759" : "#8E8E93",
-                          border: `1.5px solid ${isActive ? "#0071E3" : done ? "rgba(52,199,89,0.4)" : "rgba(0,0,0,0.1)"}`,
+                          background: isActive ? "#0071E3" : done ? "rgba(52,199,89,0.12)" : isWatching ? "rgba(0,113,227,0.08)" : "#F5F5F7",
+                          color: isActive ? "#fff" : done ? "#34C759" : isWatching ? "#0071E3" : "#8E8E93",
+                          border: `1.5px solid ${isActive ? "#0071E3" : done ? "rgba(52,199,89,0.4)" : isWatching ? "rgba(0,113,227,0.3)" : "rgba(0,0,0,0.1)"}`,
                         }}>
                           {done && !isActive ? "✓" : idx + 1}
                         </div>
 
-                        {/* Title */}
+                        {/* Title + progress */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{
                             fontSize: 13, lineHeight: 1.4,
@@ -729,11 +1006,18 @@ export default function ClassroomPage() {
                           }}>
                             {v.title}
                           </div>
-                          {v.duration_sec && (
-                            <div style={{ fontSize: 11, color: "#AEAEB2", marginTop: 1 }}>
-                              {fmtDur(v.duration_sec)}
+                          {isWatching ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
+                              <div style={{ flex: 1, height: 3, background: "#E5E5EA", borderRadius: 2 }}>
+                                <div style={{ width: `${watchPct}%`, height: "100%", background: "#0071E3", borderRadius: 2 }} />
+                              </div>
+                              <span style={{ fontSize: 10, color: "#0071E3", flexShrink: 0 }}>{watchPct}%</span>
                             </div>
-                          )}
+                          ) : v.duration ? (
+                            <div style={{ fontSize: 11, color: "#AEAEB2", marginTop: 1 }}>
+                              {v.duration}
+                            </div>
+                          ) : null}
                         </div>
                       </button>
                     );

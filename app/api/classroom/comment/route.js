@@ -18,7 +18,9 @@ export async function POST(req) {
   if (authErr || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { video_id, chapter_id, content } = await req.json();
-  if (!content?.trim()) return NextResponse.json({ error: "content_required" }, { status: 400 });
+  const trimmed = content?.trim();
+  if (!trimmed) return NextResponse.json({ error: "content_required" }, { status: 400 });
+  if (trimmed.length > 2000) return NextResponse.json({ error: "content_too_long" }, { status: 400 });
 
   const { data, error } = await db.from("comments").insert({
     user_id: user.id,
@@ -26,7 +28,7 @@ export async function POST(req) {
     chapter_id,
     user_email: user.email,
     user_name: user.user_metadata?.full_name || user.email?.split("@")[0],
-    content: content.trim(),
+    content: trimmed,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

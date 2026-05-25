@@ -45,7 +45,11 @@ export async function PATCH(req) {
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
-  const { id, ...updates } = await req.json();
+  const { id, status } = await req.json();
+  if (!id) return NextResponse.json({ error: "id_required" }, { status: 400 });
+  const updates = {};
+  if (status !== undefined) updates.status = status;
+  if (!Object.keys(updates).length) return NextResponse.json({ error: "no_updates" }, { status: 400 });
   const { data, error } = await db.from("comments").update(updates).eq("id", id).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, data });

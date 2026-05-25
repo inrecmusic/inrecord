@@ -9,10 +9,10 @@ export async function POST(req) {
   if (!supabase) return NextResponse.json({ hasPurchased: false });
 
   const { data } = await supabase
-    .from("orders")
+    .from("enrollments")
     .select("id")
     .eq("email", email)
-    .eq("status", "paid")
+    .eq("course_id", "piano-101")
     .single();
 
   return NextResponse.json({ hasPurchased: !!data });

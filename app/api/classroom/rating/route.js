@@ -21,14 +21,20 @@ export async function POST(req) {
   const { data: existing } = await db.from("ratings").select("id").eq("user_id", user.id).limit(1);
   if (existing?.length) return NextResponse.json({ error: "already_rated" }, { status: 409 });
 
-  const { course_id = "main", score, content } = await req.json();
-  if (!score || score < 1 || score > 5) return NextResponse.json({ error: "invalid_score" }, { status: 400 });
+  const { score, content } = await req.json();
+  if (!score || !Number.isInteger(score) || score < 1 || score > 5) {
+    return NextResponse.json({ error: "invalid_score" }, { status: 400 });
+  }
+  const trimmedContent = content?.trim() || null;
+  if (trimmedContent && trimmedContent.length > 1000) {
+    return NextResponse.json({ error: "content_too_long" }, { status: 400 });
+  }
 
   const { data, error } = await db.from("ratings").insert({
     user_id: user.id,
-    course_id,
+    course_id: "main",
     score,
-    content: content?.trim() || null,
+    content: trimmedContent,
     user_email: user.email,
     user_name: user.user_metadata?.full_name || user.email?.split("@")[0],
   }).select().single();

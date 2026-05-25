@@ -1,15 +1,15 @@
 /* ── Login ─────────────────────────────────────────────────────────────────── */
-.loginWrap { min-height:100vh; display:grid; place-items:center; background:#060d1a; padding:24px; }
-.loginCard { width:min(420px,100%); background:#0f1c2e; border-radius:20px; padding:36px; box-shadow:0 4px 40px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.08); }
+.loginWrap { min-height:100vh; display:grid; place-items:center; background:#fff; padding:24px; }
+.loginCard { width:min(420px,100%); background:#fff; border-radius:20px; padding:36px; box-shadow:0 20px 60px rgba(15,23,42,.09); border:1px solid #e2e8f0; }
 .loginHead { text-align:center; margin-bottom:28px; }
-.loginTitle { margin:16px 0 4px; font-size:24px; font-weight:900; letter-spacing:-.04em; color:#f1f5f9; }
+.loginTitle { margin:16px 0 4px; font-size:24px; font-weight:900; letter-spacing:-.04em; color:#0f172a; }
 .loginSub { margin:0; font-size:14px; color:#64748b; }
-.loginErr { color:#f87171; font-size:13px; font-weight:800; margin:0; }
+.loginErr { color:#dc2626; font-size:13px; font-weight:800; margin:0; }
 .field { display:grid; gap:5px; }
-.field label { font-size:12.5px; font-weight:800; color:#94a3b8; }
-.input { width:100%; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:11px 12px; font-size:14px; outline:none; box-sizing:border-box; background:rgba(255,255,255,.06); color:#f1f5f9; }
+.field label { font-size:12.5px; font-weight:800; color:#374151; }
+.input { width:100%; border:1px solid #e2e8f0; border-radius:10px; padding:11px 12px; font-size:14px; outline:none; box-sizing:border-box; background:#fff; color:#0f172a; }
 .input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-.input::placeholder { color:#475569; }
+.input::placeholder { color:#9ca3af; }
 
 /* ── Shared buttons ────────────────────────────────────────────────────────── */
 .btnPrimary {

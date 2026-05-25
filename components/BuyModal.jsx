@@ -141,7 +141,12 @@ export default function BuyModal({ open, onClose, plan }) {
         {isFanPlan && !proofFile && !error && (
           <p className={styles.uploadNotice}>請先上傳購買憑證，審核通過後即可開通課程</p>
         )}
-        {error && <div className={styles.errorBox}>{error}</div>}
+        {error && (
+          <>
+            <div className={styles.errorBox}>{error}</div>
+            <button className={styles.retry} onClick={() => { setError(""); handleCheckout(); }}>重新嘗試</button>
+          </>
+        )}
         <p className={styles.note}>🔒 透過 Payuni 統一金流安全付款・支援信用卡、ATM、超商</p>
       </div>
     </div>
