@@ -72,7 +72,7 @@ const POINTS = [
 ];
 
 const PLANS = [
-  { plan: "fan1",   price: 2200, originalPrice: 3500, savings: 1300, label: "粉絲限定【1】",     discount: "6.9折", pillLabel: "粉絲專屬", ribbon: "最高折扣", desc: "提供專輯、演奏會購買憑證即可享有優惠資格", spots: 5  },
+  { plan: "fan1",   price: 2200, originalPrice: 3500, savings: 1300, label: "粉絲限定【1】",     discount: "6.9折", pillLabel: "粉絲專屬", ribbon: "最高折扣", desc: "提供專輯、演奏會購買憑證即可享有優惠資格", spots: 5,  featured: true },
   { plan: "fan2",   price: 2400, originalPrice: 3500, savings: 1100, label: "粉絲限定【2】",     discount: "7.5折", pillLabel: "粉絲專屬",                    desc: "提供樂譜購買憑證即可享有優惠資格",         spots: 8  },
   { plan: "early1", price: 2800, originalPrice: 3500, savings:  700, label: "第一波｜早鳥【1】", discount: "8.1折", pillLabel: "早鳥方案",  dark: true,        desc: "限量名額，課程上線初期最低優惠，先訂先學",  spots: 12 },
 ];
@@ -470,8 +470,8 @@ export default function HomePage() {
           <div className={styles.container}>
             <div className={styles.sectionHead}>
               <small>課程方案</small>
-              <h2>選擇適合你的方案</h2>
-              <p>粉絲限定名額有限，把握優惠價格，開始你的流行鋼琴學習之旅。</p>
+              <h2>立即搶佔限量名額</h2>
+              <p>三種方案，名額有限。一次購買，永久擁有課程，無限次重複觀看。</p>
             </div>
             <div className={styles.countdownWrap}>
               距離早鳥截止&nbsp;
@@ -490,29 +490,31 @@ export default function HomePage() {
               {PLANS.map(p => (
                 <motion.div
                   key={p.plan}
-                  className={[styles.planCard, p.dark ? styles.planCardDark : "", selectedPlan?.plan === p.plan ? styles.planCardSelected : ""].join(" ")}
+                  className={[styles.planCard, p.dark ? styles.planCardDark : "", p.featured ? styles.planCardFeatured : "", selectedPlan?.plan === p.plan ? styles.planCardSelected : ""].join(" ")}
                   onClick={() => selectPlan(p)}
                   role="button"
                   tabIndex={0}
                   variants={fadeUp}
                 >
                   {p.ribbon && <div className={styles.planRibbon}>{p.ribbon}</div>}
-                  <div className={`${styles.planPill} ${p.dark ? styles.planPillDark : ""}`}>
-                    {p.dark && <span className={styles.planPillDot} />}
-                    {p.pillLabel}
+                  <div className={styles.planHeaderRow}>
+                    <div className={`${styles.planPill} ${p.dark ? styles.planPillDark : ""}`}>
+                      {p.dark && <span className={styles.planPillDot} />}
+                      {p.pillLabel}
+                    </div>
+                    <div className={`${styles.planDiscountTag} ${p.dark ? styles.planDiscountTagDark : ""}`}>{p.discount}</div>
                   </div>
                   <h3 className={styles.planName}>{p.label}</h3>
-                  <p className={styles.planDesc}>{p.desc}</p>
-                  <div className={styles.planPriceRow}>
+                  <div className={styles.planPriceBlock}>
                     <span className={styles.planPrice}>${p.price.toLocaleString()}</span>
-                    <span className={styles.planOriginal}>${p.originalPrice.toLocaleString()}</span>
+                    <div className={styles.planPriceOriginalRow}>
+                      <span className={styles.planOriginal}>原價 ${p.originalPrice.toLocaleString()}</span>
+                      <span className={`${styles.planSavingsTag} ${p.dark ? styles.planSavingsTagDark : ""}`}>省 ${p.savings.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className={`${styles.planSavings} ${p.dark ? styles.planSavingsDark : ""}`}>
-                    省下 ${p.savings.toLocaleString()}
-                  </div>
-                  <div className={styles.planDiscountRow}>
-                    <div className={styles.planDiscount}>{p.discount}</div>
-                    <span className={styles.planSpots}>🔥 剩餘 {p.spots} 個名額</span>
+                  <p className={styles.planDesc}>{p.desc}</p>
+                  <div className={`${styles.planSpotsRow} ${p.dark ? styles.planSpotsRowDark : ""}`}>
+                    <span className={styles.planSpots}>🔥 僅剩 {p.spots} 個名額</span>
                   </div>
                 </motion.div>
               ))}
