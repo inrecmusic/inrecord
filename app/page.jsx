@@ -16,6 +16,7 @@ import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
+import { motion } from "framer-motion";
 
 const POINTS = [
   {
@@ -93,6 +94,12 @@ const MODULES = [
 
 const CH = ["一","二","三","四","五","六","七","八","九","十"];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+};
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } };
+
 function useCountUp(target, duration = 1800) {
   const [value, setValue] = useState(0);
   const ref = useRef(null);
@@ -118,27 +125,14 @@ function useCountUp(target, duration = 1800) {
   return [value, ref];
 }
 
-function useReveal() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); obs.disconnect(); }
-    }, { threshold: 0.08, rootMargin: "0px 0px -40px 0px" });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return [ref, visible];
-}
-
-function RevealSection({ as: Tag = "section", className = "", ...props }) {
-  const [ref, visible] = useReveal();
+function RevealSection({ className = "", ...props }) {
   return (
-    <Tag
-      ref={ref}
-      className={`${className} ${styles.reveal} ${visible ? styles.revealed : ""}`}
+    <motion.section
+      className={className}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       {...props}
     />
   );
@@ -270,17 +264,17 @@ export default function HomePage() {
         {/* HERO */}
         <section className={styles.hero}>
           <div className={styles.container + " " + styles.heroGrid}>
-            <div>
-              <div className={styles.eyebrow}>流行鋼琴零基礎入門課</div>
-              <h1>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></h1>
-              <p className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</p>
-              <div className={styles.heroCtas}>
+            <motion.div variants={stagger} initial="hidden" animate="visible">
+              <motion.div variants={fadeUp} className={styles.eyebrow}>流行鋼琴零基礎入門課</motion.div>
+              <motion.h1 variants={fadeUp}>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></motion.h1>
+              <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
+              <motion.div variants={fadeUp} className={styles.heroCtas}>
                 <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={openBuy}>立即購買課程</button>
                 <button className={styles.btnOutline} onClick={() => setPreviewOpen(true)}>
                   <Play size={16} />觀看試看影片
                 </button>
-              </div>
-              <div className={styles.heroFeatures}>
+              </motion.div>
+              <motion.div variants={fadeUp} className={styles.heroFeatures}>
                 {[
                   [Music2,        "零基礎可學",   "從認識鍵盤開始"],
                   [Bot,           "AI 互動遊戲",  "學習不再枯燥"],
@@ -293,9 +287,14 @@ export default function HomePage() {
                     <span>{sub}</span>
                   </div>
                 ))}
-              </div>
-            </div>
-            <aside className={styles.videoCard}>
+              </motion.div>
+            </motion.div>
+            <motion.aside
+              className={styles.videoCard}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
               <div className={styles.videoThumb} onClick={() => setPreviewOpen(true)} role="button" tabIndex={0}>
                 <div className={styles.play}><Play size={22} fill="currentColor" /></div>
               </div>
@@ -305,19 +304,25 @@ export default function HomePage() {
                   <li key={i}>{i}</li>
                 ))}
               </ul>
-            </aside>
+            </motion.aside>
           </div>
         </section>
 
         {/* STATS */}
         <section className={styles.stats}>
           <div className={styles.container}>
-            <div className={styles.statsCard}>
+            <motion.div
+              className={styles.statsCard}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
               <StatItem icon={Users}    value={stats ? stats.purchases : null}                               suffix="+" label="學員加入學習" />
               <StatItem icon={Star}     value={stats && stats.rating != null ? Number(stats.rating) : null}  suffix=" / 5" label="學員平均評分" />
               <StatItem icon={BookOpen} value={10}  suffix=""  label="系統化章節" />
               <StatItem icon={Music}    value={20}  suffix="+" label="流行曲目實戰" />
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -327,20 +332,27 @@ export default function HomePage() {
             <div className={styles.sectionHead} style={{ marginBottom: "32px" }}>
               <h2>課程設計與說明</h2>
             </div>
-            <div className={styles.featureGrid} style={{ marginBottom: "56px" }}>
+            <motion.div
+              className={styles.featureGrid}
+              style={{ marginBottom: "56px" }}
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-40px" }}
+            >
               {[
                 [Music2, "零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
                 [Bot,    "AI 互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
                 [Music,  "流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
                 [Award,  "成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
               ].map(([Icon, title, desc]) => (
-                <div key={title} className={styles.featureCard}>
+                <motion.div key={title} className={styles.featureCard} variants={fadeUp}>
                   <div className={styles.featureIcon}><Icon size={22} strokeWidth={1.5} /></div>
                   <h3>{title}</h3>
                   <p>{desc}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
             <div className={styles.introGrid}>
               <div className={styles.introCopy}>
                 <small>課程定位與目標</small>
@@ -368,18 +380,24 @@ export default function HomePage() {
               <RevealSection key={pt.n} className={styles.pointBlock}>
                 <div className={styles.pointBadge}>POINT {pt.n}</div>
                 <h2 className={styles.pointTitle}>{pt.title}</h2>
-                <div className={styles.pointGrid}>
+                <motion.div
+                  className={styles.pointGrid}
+                  variants={stagger}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-40px" }}
+                >
                   {pt.items.map(item => {
                     const Icon = item.icon;
                     return (
-                      <div key={item.label} className={styles.pointCard}>
+                      <motion.div key={item.label} className={styles.pointCard} variants={fadeUp}>
                         <div className={styles.pointCardIcon}><Icon size={28} strokeWidth={1.5} /></div>
                         <strong>{item.label}</strong>
                         <span>{item.sub}</span>
-                      </div>
+                      </motion.div>
                     );
                   })}
-                </div>
+                </motion.div>
               </RevealSection>
             ))}
           </div>
@@ -462,14 +480,21 @@ export default function HomePage() {
               <strong>{String(countdown.m).padStart(2,"0")}分</strong>&nbsp;
               <strong>{String(countdown.s).padStart(2,"0")}秒</strong>
             </div>
-            <div className={styles.plansRow}>
+            <motion.div
+              className={styles.plansRow}
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-40px" }}
+            >
               {PLANS.map(p => (
-                <div
+                <motion.div
                   key={p.plan}
                   className={[styles.planCard, p.dark ? styles.planCardDark : "", selectedPlan?.plan === p.plan ? styles.planCardSelected : ""].join(" ")}
                   onClick={() => selectPlan(p)}
                   role="button"
                   tabIndex={0}
+                  variants={fadeUp}
                 >
                   {p.ribbon && <div className={styles.planRibbon}>{p.ribbon}</div>}
                   <div className={`${styles.planPill} ${p.dark ? styles.planPillDark : ""}`}>
@@ -489,9 +514,9 @@ export default function HomePage() {
                     <div className={styles.planDiscount}>{p.discount}</div>
                     <span className={styles.planSpots}>🔥 剩餘 {p.spots} 個名額</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
             <div className={styles.planNote}>
               ＊購買憑證不限於照片或訂單編號，只要能夠證明曾購買過皆可享有優惠。
             </div>
