@@ -67,7 +67,7 @@
 .outcomes { list-style: none; padding: 0; display: grid; gap: 12px; margin-top: 24px; font-weight: 700; }
 .outcomes li { display: flex; align-items: flex-start; gap: 10px; }
 .outcomes li::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-top: 7px; flex-shrink: 0; }
-.pianoPhoto { min-height: 390px; border-radius: 20px; background: url("https://images.unsplash.com/photo-1519683109079-d5f539e1542f?auto=format&fit=crop&w=700&q=80"); background-size: cover; background-position: center; box-shadow: 0 20px 60px rgba(0,0,0,.12); }
+.pianoPhoto { min-height: 390px; border-radius: 20px; background: url("/rick-piano.jpg"); background-size: cover; background-position: center top; box-shadow: 0 20px 60px rgba(0,0,0,.12); }
 
 /* PRICING */
 .pricingSection { padding: 80px 0; background: var(--bg); }
