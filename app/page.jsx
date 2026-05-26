@@ -73,9 +73,9 @@ const POINTS = [
 ];
 
 const PLANS = [
-  { plan: "fan1",   price: 2200, originalPrice: 3500, savings: 1300, label: "粉絲限定【1】",     discount: "6.9折", pillLabel: "粉絲專屬", ribbon: "最高折扣", desc: "提供專輯、演奏會購買憑證即可享有優惠資格", spots: 5,  featured: true },
-  { plan: "fan2",   price: 2400, originalPrice: 3500, savings: 1100, label: "粉絲限定【2】",     discount: "7.5折", pillLabel: "粉絲專屬",                    desc: "提供樂譜購買憑證即可享有優惠資格",         spots: 8  },
-  { plan: "early1", price: 2800, originalPrice: 3500, savings:  700, label: "第一波｜早鳥【1】", discount: "8.1折", pillLabel: "早鳥方案",  dark: true,        desc: "限量名額，課程上線初期最低優惠，先訂先學",  spots: 12 },
+  { plan: "fan1",   price: 2200, originalPrice: 3500, savings: 1300, label: "粉絲限定【1】",     discount: "6.3折", pillLabel: "粉絲專屬", ribbon: "最高折扣", desc: "提供專輯、演奏會購買憑證即可享有優惠資格", spots: 5,  featured: true },
+  { plan: "fan2",   price: 2400, originalPrice: 3500, savings: 1100, label: "粉絲限定【2】",     discount: "6.9折", pillLabel: "粉絲專屬",                    desc: "提供樂譜購買憑證即可享有優惠資格",         spots: 8  },
+  { plan: "early1", price: 2800, originalPrice: 3500, savings:  700, label: "第一波｜早鳥【1】", discount: "8.0折", pillLabel: "早鳥方案",  dark: true,        desc: "限量名額，課程上線初期最低優惠，先訂先學",  spots: 12 },
 ];
 
 const MODULES = [
@@ -498,11 +498,14 @@ export default function HomePage() {
               <p>三種方案，名額有限。一次購買，永久擁有課程，無限次重複觀看。</p>
             </div>
             <div className={styles.countdownWrap}>
-              距離早鳥截止&nbsp;
-              <strong>{String(countdown.d).padStart(2,"0")}天</strong>&nbsp;
-              <strong>{String(countdown.h).padStart(2,"0")}時</strong>&nbsp;
-              <strong>{String(countdown.m).padStart(2,"0")}分</strong>&nbsp;
-              <strong>{String(countdown.s).padStart(2,"0")}秒</strong>
+              <span className={styles.countdownDot} />
+              <span>距離早鳥截止</span>
+              <span className={styles.countdownTime}>
+                <strong>{String(countdown.d).padStart(2,"0")}</strong><em>天</em>
+                <strong>{String(countdown.h).padStart(2,"0")}</strong><em>時</em>
+                <strong>{String(countdown.m).padStart(2,"0")}</strong><em>分</em>
+                <strong>{String(countdown.s).padStart(2,"0")}</strong><em>秒</em>
+              </span>
             </div>
             <motion.div
               className={styles.plansRow}
@@ -523,17 +526,20 @@ export default function HomePage() {
                   {p.ribbon && <div className={styles.planRibbon}>{p.ribbon}</div>}
                   <div className={styles.planHeaderRow}>
                     <div className={`${styles.planPill} ${p.dark ? styles.planPillDark : ""}`}>
-                      {p.dark && <span className={styles.planPillDot} />}
+                      <span className={styles.planPillDot} />
                       {p.pillLabel}
                     </div>
-                    <div className={`${styles.planDiscountTag} ${p.dark ? styles.planDiscountTagDark : ""}`}>{p.discount}</div>
                   </div>
                   <h3 className={styles.planName}>{p.label}</h3>
                   <div className={styles.planPriceBlock}>
-                    <span className={styles.planPrice}>${p.price.toLocaleString()}</span>
+                    <div className={styles.planPriceRow}>
+                      <span className={`${styles.planCurrency} ${p.dark ? styles.planCurrencyDark : ""}`}>NT$</span>
+                      <span className={styles.planPrice}>{p.price.toLocaleString()}</span>
+                    </div>
                     <div className={styles.planPriceOriginalRow}>
-                      <span className={styles.planOriginal}>原價 ${p.originalPrice.toLocaleString()}</span>
-                      <span className={`${styles.planSavingsTag} ${p.dark ? styles.planSavingsTagDark : ""}`}>省 ${p.savings.toLocaleString()}</span>
+                      <span className={styles.planOriginal}>原價 NT${p.originalPrice.toLocaleString()}</span>
+                      <span className={`${styles.planDiscountTag} ${p.dark ? styles.planDiscountTagDark : ""}`}>{p.discount}</span>
+                      <span className={`${styles.planSavingsTag} ${p.dark ? styles.planSavingsTagDark : ""}`}>省 NT${p.savings.toLocaleString()}</span>
                     </div>
                   </div>
                   <p className={styles.planDesc}>{p.desc}</p>
@@ -549,7 +555,7 @@ export default function HomePage() {
             <div className={styles.planBuyWrap}>
               <button className={`${styles.btnRed} ${styles.buyBtn}`} onClick={openBuy}>
                 <ShoppingCart size={18} />
-                {`購買 ${selectedPlan.label} — NT$${selectedPlan.price.toLocaleString()}`}
+                {`購買 ${selectedPlan.label}  ｜  NT$${selectedPlan.price.toLocaleString()}`}
               </button>
               <p className={styles.buyNote}><Heart size={13} />無限次觀看・永久有效</p>
               <p className={styles.buySecurity}>🔒 安全付款・購買後立即開通・永久有效</p>
@@ -561,9 +567,9 @@ export default function HomePage() {
         <RevealSection id="subscription" className={styles.subSection}>
           <div className={styles.container}>
             <div className={styles.sectionHead} style={{ marginBottom: "20px" }}>
-              <small>AI 互動遊戲</small>
-              <h2>訂閱 AI 遊戲，讓練習更有效率</h2>
-              <p>解鎖全部 4 款 AI 互動遊戲，隨課程章節練習，快速培養音感、和弦反應與節奏感。</p>
+              <small>— PRICING · 訂閱方案</small>
+              <h2 className={styles.subHeading}>選擇適合你的方案</h2>
+              <p>隨時開始 · 隨時暫停 · 隨你的練習步調</p>
             </div>
             <div className={styles.subGiftBar}>
               <Gift size={14} strokeWidth={2} />
@@ -573,8 +579,11 @@ export default function HomePage() {
               {/* Monthly */}
               <div className={styles.subCard}>
                 <div className={styles.subCardPeriodRow}>
-                  <div className={styles.subCardIcon}><RotateCcw size={18} strokeWidth={2} /></div>
-                  <span className={styles.subCardPeriodLabel}>月繳方案</span>
+                  <div className={styles.subCardIcon}><Clock size={18} strokeWidth={2} /></div>
+                  <div>
+                    <div className={styles.subCardPeriodMeta}>MONTHLY · 月繳</div>
+                    <div className={styles.subCardPeriodLabel}>月繳方案</div>
+                  </div>
                 </div>
                 <div className={styles.subCardPriceRow}>
                   <span className={styles.subCardCurrency}>NT$</span>
@@ -592,10 +601,13 @@ export default function HomePage() {
               </div>
               {/* Yearly */}
               <div className={styles.subCardDark}>
-                <div className={styles.subBadge}><Award size={12} strokeWidth={2} />年繳最划算</div>
+                <div className={styles.subBadge}><Star size={12} strokeWidth={2} />年繳最划算</div>
                 <div className={styles.subCardPeriodRow}>
                   <div className={styles.subCardIconDark}><Star size={18} strokeWidth={2} /></div>
-                  <span className={styles.subCardPeriodLabelDark}>年繳方案</span>
+                  <div>
+                    <div className={styles.subCardPeriodMetaDark}>ANNUAL · 年繳</div>
+                    <div className={styles.subCardPeriodLabelDark}>年繳方案</div>
+                  </div>
                 </div>
                 <div className={styles.subCardPriceRow}>
                   <span className={styles.subCardCurrencyDark}>NT$</span>
@@ -603,7 +615,7 @@ export default function HomePage() {
                   <span className={styles.subCardPerDark}>/年</span>
                 </div>
                 <div className={styles.subCardMonthly}>折合每月 NT$124.9</div>
-                <div className={styles.subCardSavings}>省下 NT$3,289（等同 8 個月免費）</div>
+                <div className={styles.subCardSavings}>+ 省下 NT$3,289（等同 8 個月免費）</div>
                 <ul className={`${styles.subFeatureList} ${styles.subFeatureListDark}`}>
                   {["全部 4 款 AI 互動遊戲","練習紀錄與進度追蹤","新遊戲持續更新"].map(f => (
                     <li key={f}><Check size={13} strokeWidth={2.5} />{f}</li>
