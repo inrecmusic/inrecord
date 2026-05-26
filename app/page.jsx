@@ -10,6 +10,7 @@ import {
   Layers, Waves, RotateCcw,
   Zap, BarChart2, Gamepad2, Clock,
   Video, BookOpen,
+  Flame, Check, Gift, Shield,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
@@ -207,6 +208,29 @@ export default function HomePage() {
   }, []);
 
   function selectPlan(p) { setSelectedPlan(p); }
+
+  async function subCheckout(plan) {
+    if (!user?.email) { window.location.href = "/classroom/login"; return; }
+    try {
+      const res = await fetch("/api/payuni/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, email: user.email }),
+      });
+      const data = await res.json();
+      if (!data.url || !data.fields) { alert("無法建立訂單，請稍後再試"); return; }
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.url;
+      Object.entries(data.fields).forEach(([k, v]) => {
+        const inp = document.createElement("input");
+        inp.type = "hidden"; inp.name = k; inp.value = v;
+        form.appendChild(inp);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch { alert("網路錯誤，請稍後再試"); }
+  }
 
   function openBuy() {
     if (!selectedPlan) {
@@ -514,7 +538,7 @@ export default function HomePage() {
                   </div>
                   <p className={styles.planDesc}>{p.desc}</p>
                   <div className={`${styles.planSpotsRow} ${p.dark ? styles.planSpotsRowDark : ""}`}>
-                    <span className={styles.planSpots}>🔥 僅剩 {p.spots} 個名額</span>
+                    <span className={styles.planSpots}><Flame size={13} strokeWidth={2} />僅剩 {p.spots} 個名額</span>
                   </div>
                 </motion.div>
               ))}
@@ -529,6 +553,69 @@ export default function HomePage() {
               </button>
               <p className={styles.buyNote}><Heart size={13} />無限次觀看・永久有效</p>
               <p className={styles.buySecurity}>🔒 安全付款・購買後立即開通・永久有效</p>
+            </div>
+          </div>
+        </RevealSection>
+
+        {/* SUBSCRIPTION */}
+        <RevealSection id="subscription" className={styles.subSection}>
+          <div className={styles.container}>
+            <div className={styles.sectionHead} style={{ marginBottom: "20px" }}>
+              <small>AI 互動遊戲</small>
+              <h2>訂閱 AI 遊戲，讓練習更有效率</h2>
+              <p>解鎖全部 4 款 AI 互動遊戲，隨課程章節練習，快速培養音感、和弦反應與節奏感。</p>
+            </div>
+            <div className={styles.subGiftBar}>
+              <Gift size={14} strokeWidth={2} />
+              <span>購買課程自動贈送 <strong>3 個月</strong>免費體驗，無需另外付費</span>
+            </div>
+            <div className={styles.subPlans}>
+              {/* Monthly */}
+              <div className={styles.subCard}>
+                <div className={styles.subCardPeriodRow}>
+                  <div className={styles.subCardIcon}><RotateCcw size={18} strokeWidth={2} /></div>
+                  <span className={styles.subCardPeriodLabel}>月繳方案</span>
+                </div>
+                <div className={styles.subCardPriceRow}>
+                  <span className={styles.subCardCurrency}>NT$</span>
+                  <span className={styles.subCardAmount}>399</span>
+                  <span className={styles.subCardPer}>/月</span>
+                </div>
+                <ul className={styles.subFeatureList}>
+                  {["全部 4 款 AI 互動遊戲","練習紀錄與進度追蹤","可隨時取消訂閱"].map(f => (
+                    <li key={f}><Check size={13} strokeWidth={2.5} />{f}</li>
+                  ))}
+                </ul>
+                <button className={styles.subBtnOutline} onClick={() => subCheckout("monthly")}>
+                  選擇月繳
+                </button>
+              </div>
+              {/* Yearly */}
+              <div className={styles.subCardDark}>
+                <div className={styles.subBadge}><Award size={12} strokeWidth={2} />年繳最划算</div>
+                <div className={styles.subCardPeriodRow}>
+                  <div className={styles.subCardIconDark}><Star size={18} strokeWidth={2} /></div>
+                  <span className={styles.subCardPeriodLabelDark}>年繳方案</span>
+                </div>
+                <div className={styles.subCardPriceRow}>
+                  <span className={styles.subCardCurrencyDark}>NT$</span>
+                  <span className={styles.subCardAmountDark}>1,499</span>
+                  <span className={styles.subCardPerDark}>/年</span>
+                </div>
+                <div className={styles.subCardMonthly}>折合每月 NT$124.9</div>
+                <div className={styles.subCardSavings}>省下 NT$3,289（等同 8 個月免費）</div>
+                <ul className={`${styles.subFeatureList} ${styles.subFeatureListDark}`}>
+                  {["全部 4 款 AI 互動遊戲","練習紀錄與進度追蹤","新遊戲持續更新"].map(f => (
+                    <li key={f}><Check size={13} strokeWidth={2.5} />{f}</li>
+                  ))}
+                </ul>
+                <button className={styles.subBtnDark} onClick={() => subCheckout("yearly")}>
+                  選擇年繳
+                </button>
+              </div>
+            </div>
+            <div className={styles.subNote}>
+              <Shield size={13} strokeWidth={2} />透過 PAYUNi 安全金流付款，資料加密傳輸
             </div>
           </div>
         </RevealSection>

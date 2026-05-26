@@ -101,7 +101,40 @@
 .planCardDark .planDesc { color: #94a3b8; }
 .planSpotsRow { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
 .planSpotsRowDark { border-top-color: rgba(255,255,255,.08); }
-.planSpots { font-size: 13px; font-weight: 800; color: #dc2626; }
+.planSpots { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: #dc2626; }
+
+/* SUBSCRIPTION */
+.subSection { padding: 80px 0; background: var(--bg); }
+.subGiftBar { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #15803d; margin: 0 auto 40px; max-width: 500px; }
+.subPlans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 700px; margin: 0 auto; }
+.subCard { background: white; border: 2px solid var(--line); border-radius: 20px; padding: 28px 26px 24px; display: flex; flex-direction: column; }
+.subCardDark { background: #020b18; border: 2px solid rgba(59,130,246,.3); border-radius: 20px; padding: 28px 26px 24px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.subCardDark::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #3b82f6 40%, #60a5fa 50%, #3b82f6 60%, transparent); box-shadow: 0 0 14px rgba(96,165,250,.5); }
+.subBadge { display: inline-flex; align-items: center; gap: 5px; background: rgba(37,99,235,.12); color: #93c5fd; border: 1px solid rgba(59,130,246,.35); font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 999px; letter-spacing: .04em; margin-bottom: 20px; width: fit-content; }
+.subCardPeriodRow { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.subCardIcon { width: 38px; height: 38px; border-radius: 11px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex-shrink: 0; }
+.subCardIconDark { width: 38px; height: 38px; border-radius: 11px; background: rgba(37,99,235,.15); color: #60a5fa; display: grid; place-items: center; flex-shrink: 0; }
+.subCardPeriodLabel { font-size: 15px; font-weight: 800; color: #374151; }
+.subCardPeriodLabelDark { font-size: 15px; font-weight: 800; color: #e2e8f0; }
+.subCardPriceRow { display: flex; align-items: baseline; gap: 3px; margin-bottom: 20px; }
+.subCardCurrency { font-size: 18px; font-weight: 900; color: #374151; padding-bottom: 6px; }
+.subCardAmount { font-size: 52px; font-weight: 900; letter-spacing: -.05em; color: #0f172a; line-height: 1; }
+.subCardPer { font-size: 14px; font-weight: 700; color: #94a3b8; padding-bottom: 8px; }
+.subCardCurrencyDark { font-size: 18px; font-weight: 900; color: #94a3b8; padding-bottom: 6px; }
+.subCardAmountDark { font-size: 52px; font-weight: 900; letter-spacing: -.05em; color: #e2e8f0; line-height: 1; }
+.subCardPerDark { font-size: 14px; font-weight: 700; color: #64748b; padding-bottom: 8px; }
+.subCardMonthly { font-size: 13px; font-weight: 700; color: #60a5fa; margin-bottom: 6px; }
+.subCardSavings { font-size: 12px; font-weight: 700; color: #93c5fd; background: rgba(37,99,235,.1); border-radius: 7px; padding: 5px 12px; margin-bottom: 22px; }
+.subFeatureList { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 11px; flex: 1; }
+.subFeatureList li { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; color: #374151; }
+.subFeatureList li svg { color: var(--brand); flex-shrink: 0; }
+.subFeatureListDark li { color: #cbd5e1; }
+.subFeatureListDark li svg { color: #60a5fa; }
+.subBtnOutline { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 20px; background: white; border: 2px solid var(--brand); border-radius: 10px; color: var(--brand); font-weight: 900; font-size: 15px; cursor: pointer; transition: background .18s, color .18s; }
+.subBtnOutline:hover { background: var(--brand); color: white; }
+.subBtnDark { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 20px; background: linear-gradient(135deg, #1d4ed8, #3b82f6); border: 0; border-radius: 10px; color: white; font-weight: 900; font-size: 15px; cursor: pointer; box-shadow: 0 6px 20px rgba(37,99,235,.35); transition: opacity .18s, transform .18s; }
+.subBtnDark:hover { opacity: .9; transform: translateY(-1px); }
+.subNote { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 20px; font-size: 12px; color: #94a3b8; font-weight: 600; }
 .planNote { background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 8px; padding: 14px 18px; margin-top: 24px; font-size: 14px; color: #78350f; font-weight: 600; line-height: 1.65; }
 .planBuyWrap { text-align: center; margin-top: 32px; }
 .buyBtn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; }
@@ -234,4 +267,5 @@
   .stat { border-right: 0; border-bottom: 1px solid var(--line); padding: 16px 0; }
   .stat:last-child { border-bottom: 0; }
   .cta { padding: 44px 24px; }
+  .subPlans { grid-template-columns: 1fr; max-width: 380px; }
 }
