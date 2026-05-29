@@ -1,10 +1,26 @@
-import { Noto_Sans_TC } from "next/font/google";
+import { Noto_Sans_TC, Noto_Serif_TC, Cormorant } from "next/font/google";
 import "./globals.css";
 
-const noto = Noto_Sans_TC({
+const notoSans = Noto_Sans_TC({
   subsets: ["latin"],
   weight: ["400", "700", "900"],
   display: "swap",
+  variable: "--font-sans",
+});
+
+const notoSerif = Noto_Serif_TC({
+  subsets: ["latin"],
+  weight: ["300"],
+  display: "swap",
+  variable: "--font-serif",
+});
+
+const cormorant = Cormorant({
+  subsets: ["latin"],
+  weight: ["300"],
+  style: ["italic"],
+  display: "swap",
+  variable: "--font-cormorant",
 });
 
 export const metadata = {
@@ -19,7 +35,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="zh-Hant" className={noto.className}>
+    <html
+      lang="zh-Hant"
+      className={`${notoSans.variable} ${notoSerif.variable} ${cormorant.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

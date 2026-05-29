@@ -11,13 +11,19 @@
   --surface: #ffffff;
   --shadow: 0 20px 60px rgba(15, 23, 42, 0.1);
   --radius: 18px;
+
+  /* Typography system */
+  --type-display: var(--font-serif), "Noto Serif TC", serif;
+  --type-serif:   var(--font-serif), "Noto Serif TC", serif;
+  --type-body:    var(--font-sans),  "Noto Sans TC",  sans-serif;
+  --type-en-italic: var(--font-cormorant), "Cormorant", serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-family: var(--type-body);
   color: var(--ink);
   background: var(--bg);
   line-height: 1.65;
@@ -26,4 +32,32 @@ body {
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 img { max-width: 100%; }
+
+/* Global heading scale — Noto Serif TC 300 for all h1/h2 */
+h1, h2 {
+  font-family: var(--type-display);
+  font-weight: 300;
+  letter-spacing: -.02em;
+}
+h3 { font-weight: 500; letter-spacing: -.01em; }
+h4, h5, h6 { font-weight: 500; }
+
+/* Display heading — Noto Serif TC 300, main titles */
+.font-display {
+  font-family: var(--type-display);
+  font-weight: 300;
+}
+
+/* Serif — Noto Serif TC 300, subtitles / quotes (usually gold) */
+.font-serif-tc {
+  font-family: var(--type-serif);
+  font-weight: 300;
+}
+
+/* English italic accent — Cormorant Italic 300 */
+.font-en-italic {
+  font-family: var(--type-en-italic);
+  font-style: italic;
+  font-weight: 300;
+}
 

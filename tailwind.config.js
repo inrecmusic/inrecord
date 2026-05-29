@@ -8,6 +8,12 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ["var(--font-serif)", "Noto Serif TC", "serif"],
+        "serif-tc": ["var(--font-serif)", "Noto Serif TC", "serif"],
+        sans: ["var(--font-sans)", "Noto Sans TC", "sans-serif"],
+        "en-italic": ["var(--font-cormorant)", "Cormorant", "serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
