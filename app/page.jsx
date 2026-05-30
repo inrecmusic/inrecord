@@ -679,7 +679,7 @@ export default function HomePage() {
       <footer className={styles.footer}>
         <div className={styles.container}>
           <div className={styles.footerInner}>
-            <Logo white size={28} />
+            <span onDoubleClick={() => { window.location.href = "/admin"; }} style={{ cursor: "default" }}><Logo white size={28} /></span>
             <div className={styles.footerSocial}>
               {[
                 [Camera,        "Instagram"],
