@@ -1,26 +1,32 @@
-import { Noto_Sans_TC, Noto_Serif_TC, Cormorant } from "next/font/google";
+import { Newsreader, Spectral, Noto_Serif_TC } from "next/font/google";
 import "./globals.css";
 
-const notoSans = Noto_Sans_TC({
+// Modern Literary type system — Newsreader + Spectral + Noto Serif TC
+
+// Latin headings + italic accents
+const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   display: "swap",
-  variable: "--font-sans",
+  variable: "--font-newsreader",
 });
 
+// Latin body text + numerals
+const spectral = Spectral({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-spectral",
+});
+
+// All Chinese — body and headings
 const notoSerif = Noto_Serif_TC({
   subsets: ["latin"],
-  weight: ["300"],
+  weight: ["300", "400", "500", "700"],
   display: "swap",
   variable: "--font-serif",
-});
-
-const cormorant = Cormorant({
-  subsets: ["latin"],
-  weight: ["300"],
-  style: ["italic"],
-  display: "swap",
-  variable: "--font-cormorant",
 });
 
 export const metadata = {
@@ -37,7 +43,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="zh-Hant"
-      className={`${notoSans.variable} ${notoSerif.variable} ${cormorant.variable}`}
+      className={`${newsreader.variable} ${spectral.variable} ${notoSerif.variable}`}
     >
       <body>{children}</body>
     </html>

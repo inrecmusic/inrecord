@@ -5,18 +5,27 @@
   --brand-soft: #eff6ff;
   --gold: #f7d68a;
   --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
   --muted: #64748b;
   --line: #e2e8f0;
   --bg: #f8fafc;
+  --paper: #f8fafc;
   --surface: #ffffff;
   --shadow: 0 20px 60px rgba(15, 23, 42, 0.1);
   --radius: 18px;
 
-  /* Typography system */
-  --type-display: var(--font-serif), "Noto Serif TC", serif;
-  --type-serif:   var(--font-serif), "Noto Serif TC", serif;
-  --type-body:    var(--font-sans),  "Noto Sans TC",  sans-serif;
-  --type-en-italic: var(--font-cormorant), "Cormorant", serif;
+  /* Typography system — Modern Literary: Newsreader + Spectral + Noto Serif TC */
+  /* Headings — Latin: Newsreader, CJK: Noto Serif TC */
+  --type-display:   var(--font-newsreader), var(--font-serif), "Noto Serif TC", serif;
+  /* Pure CJK serif — subtitles / quotes */
+  --type-serif:     var(--font-serif), "Noto Serif TC", serif;
+  /* Body — Latin & numerals: Spectral, CJK: Noto Serif TC */
+  --type-body:      var(--font-spectral), var(--font-serif), "Noto Serif TC", serif;
+  /* English italic accent — Newsreader Italic */
+  --type-en-italic: var(--font-newsreader), serif;
+  /* Numerals — Spectral */
+  --type-numeric:   var(--font-spectral), var(--font-serif), serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -33,7 +42,21 @@ a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 img { max-width: 100%; }
 
-/* Global heading scale — Noto Serif TC 300 for all h1/h2 */
+/* ── Chinese line-breaking rule ───────────────────────────────────────────
+   Break CJK text only at punctuation / spaces — never split a phrase like
+   「有趣」across two lines (word-break: keep-all). line-break: strict applies
+   禁則處理 so a line never starts with 、，。」etc. text-wrap: pretty avoids
+   single-character orphans on the last line. overflow-wrap is the safety net
+   so an over-long unbroken run can still wrap instead of overflowing. */
+h1, h2, h3, h4, h5, h6,
+p, li, dd, dt, blockquote, figcaption {
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+/* Global heading scale — Newsreader (Latin) + Noto Serif TC for all h1/h2 */
 h1, h2 {
   font-family: var(--type-display);
   font-weight: 300;
@@ -42,22 +65,28 @@ h1, h2 {
 h3 { font-weight: 500; letter-spacing: -.01em; }
 h4, h5, h6 { font-weight: 500; }
 
-/* Display heading — Noto Serif TC 300, main titles */
+/* Display heading — Newsreader + Noto Serif TC, main titles */
 .font-display {
   font-family: var(--type-display);
   font-weight: 300;
 }
 
-/* Serif — Noto Serif TC 300, subtitles / quotes (usually gold) */
+/* Serif — Noto Serif TC, subtitles / quotes (usually gold) */
 .font-serif-tc {
   font-family: var(--type-serif);
   font-weight: 300;
 }
 
-/* English italic accent — Cormorant Italic 300 */
+/* English italic accent — Newsreader Italic */
 .font-en-italic {
   font-family: var(--type-en-italic);
   font-style: italic;
-  font-weight: 300;
+  font-weight: 500;
+}
+
+/* Numerals — Spectral */
+.font-numeric {
+  font-family: var(--type-numeric);
+  font-feature-settings: "lnum" 1, "tnum" 1;
 }
 

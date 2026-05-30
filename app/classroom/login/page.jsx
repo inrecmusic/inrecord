@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import styles from "../classroom.module.css";
-import { Music } from "lucide-react";
+import Logo from "@/components/Logo";
+import styles from "./login.module.css";
 
 function GoogleIcon() {
   return (
@@ -46,9 +46,7 @@ export default function ClassroomLoginPage() {
     setError("");
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: window.location.origin + "/auth/callback",
-      },
+      options: { redirectTo: window.location.origin + "/auth/callback" },
     });
     if (err) {
       setError(err.message);
@@ -57,44 +55,27 @@ export default function ClassroomLoginPage() {
   }
 
   return (
-    <div className={styles.loginWrap}>
-      <div className={styles.loginCard}>
-        <div className={styles.loginHead}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: "#eff6ff", display: "grid", placeItems: "center", margin: "0 auto" }}>
-            <Music size={26} color="#2563eb" />
-          </div>
-          <h1 className={styles.loginTitle}>InRecord 音樂教室</h1>
-          <p className={styles.loginSub}>登入以存取你的課程內容</p>
-        </div>
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <a href="/" className={styles.cardLogo} aria-label="InRecord 首頁"><Logo size={24} /></a>
+        <h2 className={styles.title}>學員登入</h2>
+        <p className={styles.sub}>登入以存取你的課程內容</p>
 
-        {/* Google OAuth */}
         <button
           type="button"
+          className={styles.oauthBtn}
           onClick={handleGoogle}
           disabled={googleLoading || loading}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            width: "100%", padding: "12px 16px", marginBottom: 16,
-            border: "1.5px solid #e2e8f0", borderRadius: 12,
-            background: "white", fontSize: 15, fontWeight: 700,
-            color: "#374151", cursor: "pointer", fontFamily: "inherit",
-            transition: "border-color .2s, background .2s",
-            opacity: (googleLoading || loading) ? 0.6 : 1,
-          }}
         >
           <GoogleIcon />
           {googleLoading ? "跳轉中…" : "使用 Google 登入"}
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, color: "#94a3b8", fontSize: 13, fontWeight: 600 }}>
-          <span style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-          或使用 Email 登入
-          <span style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-        </div>
+        <div className={styles.divider}>或使用 Email 登入</div>
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
+        <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
-            <label htmlFor="email">電子信箱</label>
+            <label className={styles.label} htmlFor="email">電子信箱</label>
             <input
               id="email"
               type="email"
@@ -107,7 +88,7 @@ export default function ClassroomLoginPage() {
             />
           </div>
           <div className={styles.field}>
-            <label htmlFor="password">密碼</label>
+            <label className={styles.label} htmlFor="password">密碼</label>
             <input
               id="password"
               type="password"
@@ -120,16 +101,15 @@ export default function ClassroomLoginPage() {
             />
           </div>
 
-          {error && <p className={styles.loginErr}>{error}</p>}
+          {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.btnPrimary} disabled={loading || googleLoading} style={{ width: "100%", marginTop: 4, padding: "13px 18px", fontSize: 15 }}>
+          <button type="submit" className={styles.submit} disabled={loading || googleLoading}>
             {loading ? "登入中…" : "登入"}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>
-          購課後請使用購買時的 Email 登入
-        </p>
+        <p className={styles.hint}>購課後請使用購買時的 Email 登入</p>
+        <a href="/#pricing" className={styles.back}>查看課程方案 →</a>
       </div>
     </div>
   );

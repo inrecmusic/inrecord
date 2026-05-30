@@ -9,10 +9,14 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["var(--font-serif)", "Noto Serif TC", "serif"],
+        // Modern Literary — Newsreader + Spectral + Noto Serif TC
+        display: ["var(--font-newsreader)", "var(--font-serif)", "Noto Serif TC", "serif"],
         "serif-tc": ["var(--font-serif)", "Noto Serif TC", "serif"],
-        sans: ["var(--font-sans)", "Noto Sans TC", "sans-serif"],
-        "en-italic": ["var(--font-cormorant)", "Cormorant", "serif"],
+        body: ["var(--font-spectral)", "var(--font-serif)", "Noto Serif TC", "serif"],
+        // legacy alias — now maps to the serif body stack
+        sans: ["var(--font-spectral)", "var(--font-serif)", "Noto Serif TC", "serif"],
+        "en-italic": ["var(--font-newsreader)", "serif"],
+        numeric: ["var(--font-spectral)", "var(--font-serif)", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",

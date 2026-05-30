@@ -23,8 +23,8 @@
 
 /* ── Shell ─────────────────────────────────────────────────────────────────── */
 .shell { height:100vh; display:flex; flex-direction:column; background:#060d1a; overflow:hidden; }
-/* Dark UI — reset headings to sans-serif for readability */
-.shell h1, .shell h2, .shell h3 { font-family:var(--type-body,sans-serif); }
+/* Dark UI — headings use the Modern Literary body stack */
+.shell h1, .shell h2, .shell h3 { font-family:var(--type-body,serif); }
 
 /* ── Topbar ────────────────────────────────────────────────────────────────── */
 .topbar {
