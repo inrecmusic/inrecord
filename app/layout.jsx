@@ -1,41 +1,32 @@
-import { Noto_Serif_TC, Noto_Sans_TC, Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
+import { Newsreader, Spectral, Noto_Serif_TC } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
 
-const notoSerifTC = Noto_Serif_TC({
+// Modern Literary type system — Newsreader + Spectral + Noto Serif TC
+
+// Latin headings + italic accents
+const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "700"],
-  variable: "--font-noto-serif-tc",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   display: "swap",
+  variable: "--font-newsreader",
 });
 
-const notoSansTC = Noto_Sans_TC({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-noto-sans-tc",
-  display: "swap",
-});
-
-const cormorant = Cormorant_Garamond({
+// Latin body text + numerals
+const spectral = Spectral({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
   style: ["normal", "italic"],
-  variable: "--font-cormorant",
   display: "swap",
+  variable: "--font-spectral",
 });
 
-const inter = Inter({
+// All Chinese — body and headings
+const notoSerif = Noto_Serif_TC({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
+  weight: ["300", "400", "500", "700"],
   display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-jetbrains-mono",
-  display: "swap",
+  variable: "--font-serif",
 });
 
 export const metadata = {
@@ -44,19 +35,16 @@ export const metadata = {
   openGraph: {
     title: "InRecord｜流行鋼琴零基礎入門課",
     description: "10 章節 × 流行曲目實戰 × AI 互動遊戲",
-    images: ["/logo.png"],
+    images: ["https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=1200&q=80"],
   },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="zh-Hant" className={cn(
-      notoSerifTC.variable,
-      notoSansTC.variable,
-      cormorant.variable,
-      inter.variable,
-      jetbrainsMono.variable,
-    )}>
+    <html
+      lang="zh-Hant"
+      className={`${newsreader.variable} ${spectral.variable} ${notoSerif.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

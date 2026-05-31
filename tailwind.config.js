@@ -8,6 +8,16 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Modern Literary — Newsreader + Spectral + Noto Serif TC
+        display: ["var(--font-newsreader)", "var(--font-serif)", "Noto Serif TC", "serif"],
+        "serif-tc": ["var(--font-serif)", "Noto Serif TC", "serif"],
+        body: ["var(--font-spectral)", "var(--font-serif)", "Noto Serif TC", "serif"],
+        // legacy alias — now maps to the serif body stack
+        sans: ["var(--font-spectral)", "var(--font-serif)", "Noto Serif TC", "serif"],
+        "en-italic": ["var(--font-newsreader)", "serif"],
+        numeric: ["var(--font-spectral)", "var(--font-serif)", "serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

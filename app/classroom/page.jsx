@@ -8,7 +8,7 @@ function fmtDur(sec) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-const F = `-apple-system, "SF Pro Display", BlinkMacSystemFont, "Noto Sans TC", sans-serif`;
+const F = `var(--type-body)`;
 
 /* ── CommentsSection ─────────────────────────────────────────────────────────── */
 function CommentsSection({ token, video, chapters }) {
@@ -56,15 +56,15 @@ function CommentsSection({ token, video, chapters }) {
     <div style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.07)", padding: "16px 20px" }}>
       {/* Header + filter */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#1D1D1F" }}>學員留言</div>
-        <div style={{ display: "flex", background: "#F5F5F7", borderRadius: 8, padding: 2 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>學員留言</div>
+        <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 8, padding: 2 }}>
           {[{ id: "unit", label: "本單元" }, { id: "all", label: "全部單元" }].map(f => (
             <button key={f.id} onClick={() => setFilter(f.id)}
               style={{
                 padding: "4px 12px", fontSize: 12, fontWeight: filter === f.id ? 600 : 400,
                 border: 0, cursor: "pointer", fontFamily: F, borderRadius: 6,
                 background: filter === f.id ? "#fff" : "transparent",
-                color: filter === f.id ? "#1D1D1F" : "#8E8E93",
+                color: filter === f.id ? "#0f172a" : "#64748b",
                 boxShadow: filter === f.id ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
                 transition: "all .12s",
               }}
@@ -78,7 +78,7 @@ function CommentsSection({ token, video, chapters }) {
       {/* Comment list */}
       <div style={{ marginBottom: 14 }}>
         {!comments.length ? (
-          <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", padding: "20px 0", margin: 0 }}>
+          <p style={{ color: "#64748b", fontSize: 13.5, textAlign: "center", padding: "20px 0", margin: 0 }}>
             {!video
               ? "請先選擇課程單元"
               : filter === "unit"
@@ -88,31 +88,31 @@ function CommentsSection({ token, video, chapters }) {
         ) : comments.map(c => (
           <div key={c.id} style={{
             padding: "12px 14px", borderRadius: 12, marginBottom: 8,
-            background: "#F5F5F7", border: "1px solid rgba(0,0,0,0.05)",
+            background: "#f1f5f9", border: "1px solid rgba(0,0,0,0.05)",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 7 }}>
               <div style={{
                 width: 30, height: 30, borderRadius: "50%",
-                background: "#0071E3", color: "#fff",
+                background: "#2563eb", color: "#fff",
                 display: "grid", placeItems: "center",
                 fontSize: 13, fontWeight: 600, flexShrink: 0,
               }}>
                 {(c.user_email || "?")[0].toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#1D1D1F" }}>{c.user_name || "學員"}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{c.user_name || "學員"}</div>
                 {chapMap[c.chapter_id] && (
-                  <span style={{ fontSize: 11, color: "#0071E3", background: "rgba(0,113,227,0.08)", padding: "1px 8px", borderRadius: 20 }}>
+                  <span style={{ fontSize: 11, color: "#2563eb", background: "rgba(37,99,235,0.08)", padding: "1px 8px", borderRadius: 20 }}>
                     {chapMap[c.chapter_id]}
                   </span>
                 )}
               </div>
             </div>
-            <p style={{ margin: 0, fontSize: 13.5, color: "#3A3A3C", lineHeight: 1.6 }}>{c.content}</p>
+            <p style={{ margin: 0, fontSize: 13.5, color: "#334155", lineHeight: 1.6 }}>{c.content}</p>
             {c.comment_replies?.length > 0 && (
-              <div style={{ marginTop: 9, paddingLeft: 12, borderLeft: "2px solid #0071E3" }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#0071E3", marginBottom: 3 }}>老師回覆</div>
-                <p style={{ margin: 0, fontSize: 13, color: "#3A3A3C" }}>{c.comment_replies[0].admin_content}</p>
+              <div style={{ marginTop: 9, paddingLeft: 12, borderLeft: "2px solid #2563eb" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#2563eb", marginBottom: 3 }}>老師回覆</div>
+                <p style={{ margin: 0, fontSize: 13, color: "#334155" }}>{c.comment_replies[0].admin_content}</p>
               </div>
             )}
           </div>
@@ -128,17 +128,17 @@ function CommentsSection({ token, video, chapters }) {
           disabled={!video}
           rows={2}
           style={{
-            width: "100%", background: "#F5F5F7",
+            width: "100%", background: "#f1f5f9",
             border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10,
-            padding: "10px 12px", color: "#1D1D1F", fontSize: 13.5,
+            padding: "10px 12px", color: "#0f172a", fontSize: 13.5,
             fontFamily: F, resize: "vertical", outline: "none", boxSizing: "border-box",
           }}
         />
-        {msg && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#34C759" }}>{msg}</p>}
+        {msg && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#16a34a" }}>{msg}</p>}
         <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
           <button onClick={submit} disabled={posting || !text.trim() || !video}
             style={{
-              background: "#0071E3", color: "#fff", border: 0, borderRadius: 980,
+              background: "#2563eb", color: "#fff", border: 0, borderRadius: 980,
               padding: "7px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer",
               fontFamily: F, opacity: (!text.trim() || !video) ? 0.35 : 1,
               transition: "opacity .15s",
@@ -180,14 +180,14 @@ function RatingTab({ token }) {
   if (done) return (
     <div style={{ textAlign: "center", paddingTop: 48 }}>
       <div style={{ fontSize: 52, marginBottom: 14 }}>⭐</div>
-      <p style={{ fontWeight: 600, color: "#1D1D1F", fontSize: 18, margin: "0 0 6px" }}>感謝你的評價！</p>
-      <p style={{ color: "#8E8E93", fontSize: 14, margin: 0 }}>你的回饋對我們非常重要</p>
+      <p style={{ fontWeight: 600, color: "#0f172a", fontSize: 18, margin: "0 0 6px" }}>感謝你的評價！</p>
+      <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>你的回饋對我們非常重要</p>
     </div>
   );
 
   return (
     <div>
-      <p style={{ fontSize: 15, fontWeight: 600, color: "#1D1D1F", margin: "0 0 14px" }}>你對這堂課的評分是？</p>
+      <p style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", margin: "0 0 14px" }}>你對這堂課的評分是？</p>
       <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
         {[1, 2, 3, 4, 5].map(i => (
           <button key={i}
@@ -200,24 +200,24 @@ function RatingTab({ token }) {
         ))}
       </div>
       {selected > 0 && (
-        <p style={{ fontSize: 13, color: "#8E8E93", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 16px" }}>
           {["", "有點失望", "普通", "還不錯", "很好", "非常推薦！"][selected]}
         </p>
       )}
       <textarea value={content} onChange={e => setContent(e.target.value)}
         placeholder="分享你的學習心得（選填）" rows={3}
         style={{
-          width: "100%", background: "#F5F5F7",
+          width: "100%", background: "#f1f5f9",
           border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10,
-          padding: "10px 12px", color: "#1D1D1F", fontSize: 13.5,
+          padding: "10px 12px", color: "#0f172a", fontSize: 13.5,
           fontFamily: F, resize: "vertical", outline: "none",
           boxSizing: "border-box", marginBottom: 14,
         }}
       />
-      {err && <p style={{ color: "#FF3B30", fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
+      {err && <p style={{ color: "#dc2626", fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
       <button onClick={submit} disabled={!selected || submitting}
         style={{
-          background: "#0071E3", color: "#fff", border: 0, borderRadius: 980,
+          background: "#2563eb", color: "#fff", border: 0, borderRadius: 980,
           padding: "8px 22px", fontSize: 13, fontWeight: 500, cursor: "pointer",
           fontFamily: F, opacity: !selected ? 0.35 : 1, transition: "opacity .15s",
         }}
@@ -237,7 +237,7 @@ function AssignmentTab({ video, token }) {
   const inputRef = useRef(null);
 
   if (!video?.assignment_desc) return (
-    <p style={{ color: "#8E8E93", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0, lineHeight: 1.6 }}>
+    <p style={{ color: "#64748b", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0, lineHeight: 1.6 }}>
       {video ? "此單元沒有作業" : "請先選擇課程單元"}
     </p>
   );
@@ -268,11 +268,11 @@ function AssignmentTab({ video, token }) {
   if (done) return (
     <div style={{ textAlign: "center", paddingTop: 40 }}>
       <div style={{ fontSize: 44, marginBottom: 14 }}>✅</div>
-      <p style={{ fontWeight: 600, color: "#1D1D1F", fontSize: 16, margin: "0 0 6px" }}>作業已成功繳交！</p>
-      <p style={{ color: "#8E8E93", fontSize: 13, margin: 0 }}>老師會批改後回覆，請留意通知</p>
+      <p style={{ fontWeight: 600, color: "#0f172a", fontSize: 16, margin: "0 0 6px" }}>作業已成功繳交！</p>
+      <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>老師會批改後回覆，請留意通知</p>
       <button onClick={() => setDone(false)}
         style={{ marginTop: 18, background: "none", border: "1px solid rgba(0,0,0,0.15)", borderRadius: 980,
-          padding: "6px 18px", fontSize: 13, cursor: "pointer", color: "#3A3A3C" }}>
+          padding: "6px 18px", fontSize: 13, cursor: "pointer", color: "#334155" }}>
         再次繳交
       </button>
     </div>
@@ -280,13 +280,13 @@ function AssignmentTab({ video, token }) {
 
   return (
     <div>
-      <div style={{ background: "#F5F5F7", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#8E8E93", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 7 }}>
+      <div style={{ background: "#f1f5f9", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 7 }}>
           作業說明
         </div>
-        <p style={{ margin: 0, fontSize: 14, color: "#1D1D1F", lineHeight: 1.65 }}>{video.assignment_desc}</p>
+        <p style={{ margin: 0, fontSize: 14, color: "#0f172a", lineHeight: 1.65 }}>{video.assignment_desc}</p>
         {video.assignment_due && (
-          <p style={{ fontSize: 12, color: "#8E8E93", margin: "6px 0 0" }}>截止日期：{video.assignment_due}</p>
+          <p style={{ fontSize: 12, color: "#64748b", margin: "6px 0 0" }}>截止日期：{video.assignment_due}</p>
         )}
       </div>
       <input ref={inputRef} type="file" accept="image/jpeg,image/png" style={{ display: "none" }}
@@ -297,20 +297,20 @@ function AssignmentTab({ video, token }) {
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
         style={{
-          border: `1.5px dashed ${dragging ? "#0071E3" : "rgba(0,0,0,0.13)"}`,
+          border: `1.5px dashed ${dragging ? "#2563eb" : "rgba(0,0,0,0.13)"}`,
           borderRadius: 12, padding: "36px 20px", textAlign: "center",
           cursor: uploading ? "wait" : "pointer",
-          background: dragging ? "rgba(0,113,227,0.04)" : "transparent",
+          background: dragging ? "rgba(37,99,235,0.04)" : "transparent",
           transition: "background .15s, border-color .15s",
         }}
       >
         <div style={{ fontSize: 28, marginBottom: 8 }}>{uploading ? "⏳" : "📎"}</div>
-        <div style={{ fontSize: 13.5, color: "#6E6E73" }}>
+        <div style={{ fontSize: 13.5, color: "#475569" }}>
           {uploading ? "上傳中，請稍候…" : "點擊或拖曳圖片上傳作業"}
         </div>
-        <div style={{ fontSize: 12, color: "#AEAEB2", marginTop: 4 }}>支援 JPG、PNG 格式</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>支援 JPG、PNG 格式</div>
       </div>
-      {err && <p style={{ color: "#FF3B30", fontSize: 13, margin: "8px 0 0", textAlign: "center" }}>{err}</p>}
+      {err && <p style={{ color: "#dc2626", fontSize: 13, margin: "8px 0 0", textAlign: "center" }}>{err}</p>}
     </div>
   );
 }
@@ -368,16 +368,16 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     return (
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
-        <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#1D1D1F" }}>
+        <h3 style={{ margin: "0 0 8px", fontFamily: "var(--type-display)", fontSize: 22, fontWeight: 500, color: "#0f172a", letterSpacing: "-.01em" }}>
           此功能需要 AI 遊戲訂閱
         </h3>
-        <p style={{ color: "#6E6E73", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
+        <p style={{ color: "#475569", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
           月繳 NT$399 / 年繳 NT$1,499
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
           <a href="/#subscription"
             style={{
-              background: "#0071E3", color: "#fff", padding: "10px 22px",
+              background: "#2563eb", color: "#fff", padding: "10px 22px",
               borderRadius: 980, textDecoration: "none", fontWeight: 600, fontSize: 14,
               fontFamily: F,
             }}
@@ -394,7 +394,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
             年繳 NT$1,499
           </a>
         </div>
-        <p style={{ color: "#AEAEB2", fontSize: 12, margin: 0 }}>
+        <p style={{ color: "#94a3b8", fontSize: 12, margin: 0 }}>
           購買課程自動贈送 3 個月免費體驗
         </p>
       </div>
@@ -440,13 +440,13 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
           <div style={{ flex: 1, display: "grid", placeItems: "center" }}>
             <div style={{
               width: 28, height: 28, border: "2.5px solid rgba(255,255,255,0.15)",
-              borderTopColor: "#0071E3", borderRadius: "50%",
+              borderTopColor: "#2563eb", borderRadius: "50%",
               animation: "spin .7s linear infinite",
             }} />
           </div>
         ) : (
           <iframe
-            srcDoc={gameContent?.html_content || "<div style='display:grid;place-items:center;height:100vh;font-family:system-ui;color:#8E8E93'>遊戲內容即將上線</div>"}
+            srcDoc={gameContent?.html_content || "<div style='display:grid;place-items:center;height:100vh;font-family:system-ui;color:#64748b'>遊戲內容即將上線</div>"}
             sandbox="allow-scripts allow-forms"
             style={{ flex: 1, border: 0, display: "block", width: "100%" }}
             title={selectedGame.title}
@@ -461,7 +461,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       <div style={{ display: "grid", placeItems: "center", padding: 48 }}>
         <div style={{
           width: 24, height: 24, border: "2.5px solid rgba(0,0,0,0.08)",
-          borderTopColor: "#0071E3", borderRadius: "50%",
+          borderTopColor: "#2563eb", borderRadius: "50%",
           animation: "spin .7s linear infinite",
         }} />
       </div>
@@ -472,8 +472,8 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     return (
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 14 }}>🎮</div>
-        <p style={{ fontWeight: 600, color: "#1D1D1F", fontSize: 16, margin: "0 0 6px" }}>此單元暫無 AI 遊戲</p>
-        <p style={{ color: "#8E8E93", fontSize: 13, margin: 0 }}>訂閱已啟用，更多遊戲陸續上線中</p>
+        <p style={{ fontWeight: 600, color: "#0f172a", fontSize: 16, margin: "0 0 6px" }}>此單元暫無 AI 遊戲</p>
+        <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>訂閱已啟用，更多遊戲陸續上線中</p>
       </div>
     );
   }
@@ -488,14 +488,14 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
         <button key={game.id} onClick={() => setSelectedGame(game)}
           style={{
             border: "1px solid rgba(0,0,0,0.08)", borderRadius: 14, padding: "18px 12px",
-            background: "#F5F5F7", cursor: "pointer", textAlign: "center", fontFamily: F,
+            background: "#f1f5f9", cursor: "pointer", textAlign: "center", fontFamily: F,
             transition: "background .12s, box-shadow .12s",
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,113,227,0.06)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,113,227,0.12)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "#F5F5F7"; e.currentTarget.style.boxShadow = "none"; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(37,99,235,0.06)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(37,99,235,0.12)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.boxShadow = "none"; }}
         >
           <div style={{ fontSize: 32, marginBottom: 8 }}>🎮</div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#1D1D1F", lineHeight: 1.4 }}>{game.title}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", lineHeight: 1.4 }}>{game.title}</div>
         </button>
       ))}
     </div>
@@ -654,10 +654,10 @@ export default function ClassroomPage() {
       <div style={{ textAlign: "center" }}>
         <div style={{
           width: 28, height: 28, border: "2.5px solid rgba(0,0,0,0.08)",
-          borderTopColor: "#0071E3", borderRadius: "50%",
+          borderTopColor: "#2563eb", borderRadius: "50%",
           animation: "spin .7s linear infinite", margin: "0 auto 12px",
         }} />
-        <p style={{ fontSize: 14, color: "#8E8E93", margin: 0, fontWeight: 400 }}>載入中…</p>
+        <p style={{ fontSize: 14, color: "#64748b", margin: 0, fontWeight: 400 }}>載入中…</p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -667,25 +667,25 @@ export default function ClassroomPage() {
   if (!hasPurchased) return (
     <div style={{
       minHeight: "100vh", display: "grid", placeItems: "center",
-      background: "#F5F5F7", color: "#1D1D1F", textAlign: "center",
+      background: "#f1f5f9", color: "#0f172a", textAlign: "center",
       padding: 32, fontFamily: F,
     }}>
       <div>
         <div style={{ fontSize: 56, marginBottom: 20 }}>🎹</div>
-        <h2 style={{ margin: "0 0 10px", fontSize: 26, fontWeight: 700, letterSpacing: "-.01em" }}>尚未購買課程</h2>
-        <p style={{ color: "#6E6E73", marginBottom: 32, fontSize: 15, lineHeight: 1.65, maxWidth: 320, margin: "0 auto 32px" }}>
+        <h2 style={{ margin: "0 0 10px", fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, letterSpacing: "-.02em" }}>尚未購買課程</h2>
+        <p style={{ color: "#475569", marginBottom: 32, fontSize: 15, lineHeight: 1.65, maxWidth: 320, margin: "0 auto 32px" }}>
           請先完成購課，即可觀看所有教學影片。
         </p>
         <a href="/#pricing" style={{
           display: "inline-block", padding: "13px 32px",
-          background: "#0071E3", color: "#fff", borderRadius: 980,
+          background: "#2563eb", color: "#fff", borderRadius: 980,
           fontWeight: 600, textDecoration: "none", fontSize: 15, fontFamily: F,
         }}>
           查看課程方案
         </a>
         <div style={{ marginTop: 16 }}>
           <button onClick={handleLogout} style={{
-            background: "none", border: 0, color: "#AEAEB2",
+            background: "none", border: 0, color: "#94a3b8",
             cursor: "pointer", fontSize: 13, fontFamily: F,
           }}>
             登出
@@ -711,7 +711,7 @@ export default function ClassroomPage() {
     <div style={{
       height: isTablet ? "auto" : "100dvh",
       minHeight: "100dvh",
-      background: "#F5F5F7", color: "#1D1D1F",
+      background: "#f1f5f9", color: "#0f172a",
       display: "flex", flexDirection: "column",
       overflow: isTablet ? "auto" : "hidden",
       fontFamily: F,
@@ -734,31 +734,31 @@ export default function ClassroomPage() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 22px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 600, fontSize: 15, color: "#1D1D1F" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 600, fontSize: 15, color: "#0f172a" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#0071E3" strokeWidth="2"/>
-            <circle cx="12" cy="12" r="4" fill="#FF3B30"/>
+            <circle cx="12" cy="12" r="10" stroke="#2563eb" strokeWidth="2"/>
+            <circle cx="12" cy="12" r="4" fill="#dc2626"/>
           </svg>
           音樂教室
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {!isTablet && <span style={{ fontSize: 13, color: "#8E8E93" }}>{user?.email}</span>}
+          {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
 
           {hasSubscription ? (
             <div style={{
               display: "flex", alignItems: "center", gap: 5,
-              fontSize: 12, fontWeight: 600, color: "#34C759",
-              background: "rgba(52,199,89,0.1)", padding: "4px 12px", borderRadius: 980,
+              fontSize: 12, fontWeight: 600, color: "#16a34a",
+              background: "rgba(22,163,74,0.1)", padding: "4px 12px", borderRadius: 980,
             }}>
               <span style={{
                 width: 7, height: 7, borderRadius: "50%",
-                background: "#34C759", display: "inline-block",
+                background: "#16a34a", display: "inline-block",
               }} />
               AI 遊戲・剩 {subDaysLeft} 天
             </div>
           ) : (
             <a href="/#subscription" style={{
-              background: "linear-gradient(135deg,#FF9500,#FF6B00)",
+              background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
               color: "#fff", borderRadius: 980, padding: "4px 12px",
               fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: F,
             }}>
@@ -768,7 +768,7 @@ export default function ClassroomPage() {
 
           <button onClick={handleLogout} style={{
             background: "none", border: "1px solid rgba(0,0,0,0.13)",
-            color: "#3A3A3C", borderRadius: 980, padding: "5px 16px",
+            color: "#334155", borderRadius: 980, padding: "5px 16px",
             cursor: "pointer", fontSize: 12, fontWeight: 500, fontFamily: F,
             transition: "background .15s",
           }}
@@ -844,15 +844,15 @@ export default function ClassroomPage() {
           }}>
             <div style={{ minWidth: 0 }}>
               {chap && (
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#0071E3", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#2563eb", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>
                   {chap.title}
                 </div>
               )}
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#1D1D1F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {currentVideo ? currentVideo.title : "請選擇課程單元"}
               </div>
               {currentVideo?.duration && (
-                <div style={{ fontSize: 12, color: "#8E8E93", marginTop: 2 }}>{currentVideo.duration}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{currentVideo.duration}</div>
               )}
             </div>
 
@@ -860,16 +860,16 @@ export default function ClassroomPage() {
               isDone ? (
                 <div style={{
                   display: "flex", alignItems: "center", gap: 5,
-                  fontSize: 12, fontWeight: 600, color: "#34C759",
-                  background: "rgba(52,199,89,0.1)", padding: "6px 16px", borderRadius: 980, flexShrink: 0,
+                  fontSize: 12, fontWeight: 600, color: "#16a34a",
+                  background: "rgba(22,163,74,0.1)", padding: "6px 16px", borderRadius: 980, flexShrink: 0,
                 }}>
                   ✓ 已完成
                 </div>
               ) : currentWatchPct > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, color: "#0071E3", fontWeight: 600 }}>觀看中 {currentWatchPct}%</span>
-                  <div style={{ width: 64, height: 3, background: "#E5E5EA", borderRadius: 2 }}>
-                    <div style={{ width: `${currentWatchPct}%`, height: "100%", background: "#0071E3", borderRadius: 2, transition: "width .4s" }} />
+                  <span style={{ fontSize: 11, color: "#2563eb", fontWeight: 600 }}>觀看中 {currentWatchPct}%</span>
+                  <div style={{ width: 64, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
+                    <div style={{ width: `${currentWatchPct}%`, height: "100%", background: "#2563eb", borderRadius: 2, transition: "width .4s" }} />
                   </div>
                 </div>
               ) : null
@@ -894,8 +894,8 @@ export default function ClassroomPage() {
                 style={{
                   padding: "11px 14px", fontSize: 13.5, fontWeight: tab === t.id ? 600 : 400,
                   cursor: "pointer", border: 0, background: "none", fontFamily: F,
-                  color: tab === t.id ? "#1D1D1F" : "#8E8E93",
-                  borderBottom: tab === t.id ? "2px solid #0071E3" : "2px solid transparent",
+                  color: tab === t.id ? "#0f172a" : "#64748b",
+                  borderBottom: tab === t.id ? "2px solid #2563eb" : "2px solid transparent",
                   transition: "color .12s",
                 }}
               >
@@ -924,16 +924,16 @@ export default function ClassroomPage() {
           {/* Progress */}
           <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 500, marginBottom: 9 }}>
-              <span style={{ color: "#8E8E93" }}>學習進度</span>
-              <span style={{ color: "#0071E3", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
+              <span style={{ color: "#64748b" }}>學習進度</span>
+              <span style={{ color: "#2563eb", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
             </div>
-            <div style={{ height: 4, background: "#E5E5EA", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ height: 4, background: "#e2e8f0", borderRadius: 2, overflow: "hidden" }}>
               <div style={{
-                height: "100%", background: "#0071E3", borderRadius: 2,
+                height: "100%", background: "#2563eb", borderRadius: 2,
                 width: `${pct}%`, transition: "width .6s ease",
               }} />
             </div>
-            <div style={{ fontSize: 11, color: "#AEAEB2", marginTop: 5, textAlign: "right" }}>{pct}%</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 5, textAlign: "right" }}>{pct}%</div>
           </div>
 
           {/* Unit list */}
@@ -945,7 +945,7 @@ export default function ClassroomPage() {
           }}>
             {chapters.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 16px" }}>
-                <p style={{ color: "#8E8E93", fontSize: 13, margin: 0, lineHeight: 1.6 }}>課程尚未上架</p>
+                <p style={{ color: "#64748b", fontSize: 13, margin: 0, lineHeight: 1.6 }}>課程尚未上架</p>
               </div>
             )}
             {chapters.map((c, ci) => {
@@ -955,7 +955,7 @@ export default function ClassroomPage() {
                 <div key={c.id} style={{ marginBottom: 4 }}>
                   {/* Chapter header */}
                   <div style={{
-                    fontSize: 10.5, fontWeight: 600, color: "#AEAEB2",
+                    fontSize: 10.5, fontWeight: 600, color: "#94a3b8",
                     textTransform: "uppercase", letterSpacing: ".06em",
                     padding: "12px 6px 5px",
                   }}>
@@ -978,7 +978,7 @@ export default function ClassroomPage() {
                           width: "100%", padding: "8px 8px 8px 6px",
                           border: 0, borderRadius: 9, cursor: "pointer",
                           textAlign: "left", fontFamily: F,
-                          background: isActive ? "rgba(0,113,227,0.08)" : "transparent",
+                          background: isActive ? "rgba(37,99,235,0.08)" : "transparent",
                           transition: "background .1s",
                         }}
                         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
@@ -989,9 +989,9 @@ export default function ClassroomPage() {
                           width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
                           display: "grid", placeItems: "center",
                           fontSize: 10.5, fontWeight: 600,
-                          background: isActive ? "#0071E3" : done ? "rgba(52,199,89,0.12)" : isWatching ? "rgba(0,113,227,0.08)" : "#F5F5F7",
-                          color: isActive ? "#fff" : done ? "#34C759" : isWatching ? "#0071E3" : "#8E8E93",
-                          border: `1.5px solid ${isActive ? "#0071E3" : done ? "rgba(52,199,89,0.4)" : isWatching ? "rgba(0,113,227,0.3)" : "rgba(0,0,0,0.1)"}`,
+                          background: isActive ? "#2563eb" : done ? "rgba(22,163,74,0.12)" : isWatching ? "rgba(37,99,235,0.08)" : "#f1f5f9",
+                          color: isActive ? "#fff" : done ? "#16a34a" : isWatching ? "#2563eb" : "#64748b",
+                          border: `1.5px solid ${isActive ? "#2563eb" : done ? "rgba(22,163,74,0.4)" : isWatching ? "rgba(37,99,235,0.3)" : "rgba(0,0,0,0.1)"}`,
                         }}>
                           {done && !isActive ? "✓" : idx + 1}
                         </div>
@@ -1001,20 +1001,20 @@ export default function ClassroomPage() {
                           <div style={{
                             fontSize: 13, lineHeight: 1.4,
                             fontWeight: isActive ? 600 : 400,
-                            color: isActive ? "#0071E3" : "#3A3A3C",
+                            color: isActive ? "#2563eb" : "#334155",
                             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                           }}>
                             {v.title}
                           </div>
                           {isWatching ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
-                              <div style={{ flex: 1, height: 3, background: "#E5E5EA", borderRadius: 2 }}>
-                                <div style={{ width: `${watchPct}%`, height: "100%", background: "#0071E3", borderRadius: 2 }} />
+                              <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
+                                <div style={{ width: `${watchPct}%`, height: "100%", background: "#2563eb", borderRadius: 2 }} />
                               </div>
-                              <span style={{ fontSize: 10, color: "#0071E3", flexShrink: 0 }}>{watchPct}%</span>
+                              <span style={{ fontSize: 10, color: "#2563eb", flexShrink: 0 }}>{watchPct}%</span>
                             </div>
                           ) : v.duration ? (
-                            <div style={{ fontSize: 11, color: "#AEAEB2", marginTop: 1 }}>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
                               {v.duration}
                             </div>
                           ) : null}
