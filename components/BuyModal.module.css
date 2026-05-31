@@ -65,3 +65,22 @@
   font-size: 15px; font-weight: 700; cursor: pointer; transition: .2s;
 }
 .retry:hover { background: #eff6ff; }
+
+/* === 三方案：特色清單與開通帳號（2026-05） === */
+.features {
+  list-style: none; margin: 0 0 18px; padding: 0;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.features li {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13.5px; line-height: 1.5; color: #475569;
+  word-break: keep-all; line-break: strict;
+}
+.features li svg { color: #2563eb; flex-shrink: 0; margin-top: 2px; }
+.account {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px; padding: 12px 14px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+}
+.accountLabel { font-size: 13px; color: #64748b; flex-shrink: 0; }
+.accountEmail { font-size: 14px; font-weight: 600; color: #0f172a; word-break: break-all; text-align: right; }

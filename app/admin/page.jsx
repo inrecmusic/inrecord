@@ -31,7 +31,7 @@ const NAV_GROUPS = [
   { title:"學員服務", items:[
     { id:"students",      label:"學員管理",   icon:Users,        badgeKey:"leads" },
     { id:"orders",        label:"訂單管理",   icon:ShoppingCart, badgeKey:"orders" },
-    { id:"subscriptions", label:"訂閱管理",   icon:CreditCard },
+    { id:"subscriptions", label:"遊戲存取",   icon:CreditCard },
     { id:"coupons",       label:"優惠券",     icon:Ticket },
     { id:"analytics",     label:"銷售分析",   icon:TrendingUp },
   ]},
@@ -1092,7 +1092,7 @@ function SubscriptionsPage({ showToast }) {
   return (
     <div>
       <div className={styles.pageHeader}>
-        <div><h1>訂閱管理</h1><p>管理 AI 互動遊戲訂閱方案</p></div>
+        <div><h1>遊戲存取</h1><p>管理已購買 AI 遊戲的學員存取</p></div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={fetchSubs}><RefreshCw size={13}/> 重新整理</button>
           <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}><Plus size={14}/> 手動新增</button>

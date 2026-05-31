@@ -369,33 +369,24 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
         <h3 style={{ margin: "0 0 8px", fontFamily: "var(--type-display)", fontSize: 22, fontWeight: 500, color: "#0f172a", letterSpacing: "-.01em" }}>
-          此功能需要 AI 遊戲訂閱
+          尚未開通 AI 遊戲
         </h3>
         <p style={{ color: "#475569", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
-          月繳 NT$399 / 年繳 NT$1,499
+          購買「課程包 AI」或「AI 遊戲單買」即可永久暢玩
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
-          <a href="/#subscription"
+          <a href="/#pricing"
             style={{
               background: "#2563eb", color: "#fff", padding: "10px 22px",
               borderRadius: 980, textDecoration: "none", fontWeight: 600, fontSize: 14,
               fontFamily: F,
             }}
           >
-            月繳 NT$399
-          </a>
-          <a href="/#subscription"
-            style={{
-              background: "#1c1c1e", color: "#fff", padding: "10px 22px",
-              borderRadius: 980, textDecoration: "none", fontWeight: 600, fontSize: 14,
-              fontFamily: F,
-            }}
-          >
-            年繳 NT$1,499
+            前往購買
           </a>
         </div>
         <p style={{ color: "#94a3b8", fontSize: 12, margin: 0 }}>
-          購買課程自動贈送 3 個月免費體驗
+          一次買斷・永久使用・無訂閱月費
         </p>
       </div>
     );
@@ -473,7 +464,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 14 }}>🎮</div>
         <p style={{ fontWeight: 600, color: "#0f172a", fontSize: 16, margin: "0 0 6px" }}>此單元暫無 AI 遊戲</p>
-        <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>訂閱已啟用，更多遊戲陸續上線中</p>
+        <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>已開通，更多遊戲陸續上線中</p>
       </div>
     );
   }
@@ -754,15 +745,15 @@ export default function ClassroomPage() {
                 width: 7, height: 7, borderRadius: "50%",
                 background: "#16a34a", display: "inline-block",
               }} />
-              AI 遊戲・剩 {subDaysLeft} 天
+              AI 遊戲・已開通
             </div>
           ) : (
-            <a href="/#subscription" style={{
+            <a href="/#pricing" style={{
               background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
               color: "#fff", borderRadius: 980, padding: "4px 12px",
               fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: F,
             }}>
-              🎮 解鎖 AI 遊戲
+              🎮 購買 AI 遊戲
             </a>
           )}
 

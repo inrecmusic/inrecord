@@ -25,9 +25,9 @@ function makeHashInfo(encryptInfo, key, iv) {
 
 export async function POST(req) {
   try {
-    const { plan, price, label, proofUrl } = await req.json();
+    const { plan, price, label, email } = await req.json();
 
-    if (!plan || !price) return NextResponse.json({ error: "missing_params" }, { status: 400 });
+    if (!plan || !price || !email) return NextResponse.json({ error: "missing_params" }, { status: 400 });
 
     const merID   = process.env.PAYUNI_MERCHANT_ID;
     const hashKey = process.env.PAYUNI_HASH_KEY;
@@ -72,8 +72,8 @@ export async function POST(req) {
         amount:       Number(price),
         currency:     "twd",
         mer_trade_no: tradeNo,
+        email,
         status:       "pending",
-        ...(proofUrl ? { proof_url: proofUrl } : {}),
       });
       if (error) console.error("[payuni checkout] supabase error", error.message);
     }

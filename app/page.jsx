@@ -10,7 +10,7 @@ import {
   Layers, Waves, RotateCcw,
   Zap, BarChart2, Gamepad2, Clock,
   Video, BookOpen,
-  Flame, Check, Gift, Shield,
+  Check,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
@@ -73,9 +73,35 @@ const POINTS = [
 ];
 
 const PLANS = [
-  { plan: "fan1",   price: 2200, originalPrice: 3500, savings: 1300, label: "粉絲限定【1】",     discount: "6.3折", pillLabel: "粉絲專屬", ribbon: "最高折扣", desc: "提供專輯、演奏會購買憑證即可享有優惠資格", spots: 5,  featured: true },
-  { plan: "fan2",   price: 2400, originalPrice: 3500, savings: 1100, label: "粉絲限定【2】",     discount: "6.9折", pillLabel: "粉絲專屬",                    desc: "提供樂譜購買憑證即可享有優惠資格",         spots: 8  },
-  { plan: "early1", price: 2800, originalPrice: 3500, savings:  700, label: "第一波｜早鳥【1】", discount: "8.0折", pillLabel: "早鳥方案",  dark: true,        desc: "限量名額，課程上線初期最低優惠，先訂先學",  spots: 12 },
+  {
+    plan: "course",
+    label: "課程單賣",
+    pillLabel: "經典課程",
+    price: 3800,
+    desc: "10 章節完整課程，一次買斷、永久觀看。",
+    features: ["10 章節系統化課程", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
+    cta: "購買課程",
+  },
+  {
+    plan: "bundle",
+    label: "課程包 AI",
+    pillLabel: "最超值",
+    price: 3999,
+    desc: "課程 + AI 互動遊戲，永久使用、一次擁有全部。",
+    features: ["完整 10 章節課程", "全部 AI 互動遊戲永久使用", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
+    featured: true,
+    ribbon: "最推薦",
+    cta: "購買課程包",
+  },
+  {
+    plan: "game",
+    label: "AI 遊戲單買",
+    pillLabel: "互動練習",
+    price: 1200,
+    desc: "全部 AI 互動遊戲，永久使用。",
+    features: ["全部 AI 互動遊戲永久使用", "音名快閃・唱名階梯", "和弦辨識家・節奏打點師", "練習紀錄與進度追蹤"],
+    cta: "購買遊戲",
+  },
 ];
 
 const MODULES = [
@@ -153,12 +179,11 @@ function StatItem({ icon: Icon, value, suffix, label }) {
 export default function HomePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
+  const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
-  const [countdown, setCountdown] = useState({ d: 0, h: 0, m: 0, s: 0 });
 
   useEffect(() => {
     if (!supabase) return;
@@ -185,59 +210,14 @@ export default function HomePage() {
     }
   }, []);
 
-  useEffect(() => {
-    const DEADLINE_KEY = "inrecord_earlybird_deadline";
-    if (!localStorage.getItem(DEADLINE_KEY)) {
-      const d = new Date();
-      d.setDate(d.getDate() + 7);
-      localStorage.setItem(DEADLINE_KEY, d.toISOString());
-    }
-    const deadline = new Date(localStorage.getItem(DEADLINE_KEY));
-    function tick() {
-      const diff = Math.max(0, deadline.getTime() - Date.now());
-      setCountdown({
-        d: Math.floor(diff / 86400000),
-        h: Math.floor((diff % 86400000) / 3600000),
-        m: Math.floor((diff % 3600000) / 60000),
-        s: Math.floor((diff % 60000) / 1000),
-      });
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  function selectPlan(p) { setSelectedPlan(p); }
-
-  async function subCheckout(plan) {
+  function startBuy(plan) {
     if (!user?.email) { window.location.href = "/classroom/login"; return; }
-    try {
-      const res = await fetch("/api/payuni/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, email: user.email }),
-      });
-      const data = await res.json();
-      if (!data.url || !data.fields) { alert("無法建立訂單，請稍後再試"); return; }
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = data.url;
-      Object.entries(data.fields).forEach(([k, v]) => {
-        const inp = document.createElement("input");
-        inp.type = "hidden"; inp.name = k; inp.value = v;
-        form.appendChild(inp);
-      });
-      document.body.appendChild(form);
-      form.submit();
-    } catch { alert("網路錯誤，請稍後再試"); }
+    setSelectedPlan(plan);
+    setBuyOpen(true);
   }
 
   function openBuy() {
-    if (!selectedPlan) {
-      document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-    setBuyOpen(true);
+    startBuy(selectedPlan || PLANS[1]);
   }
 
   function onPreviewSuccess() { setPreviewOpen(false); }
@@ -258,7 +238,7 @@ export default function HomePage() {
           {user
             ? <a href="/classroom"       className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>
             : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => { selectPlan(PLANS[2]); setBuyOpen(true); }}>立即購買課程</button>
+          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => startBuy(PLANS[1])}>立即購買課程</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -494,18 +474,8 @@ export default function HomePage() {
           <div className={styles.container}>
             <div className={styles.sectionHead}>
               <small>課程方案</small>
-              <h2>立即搶佔限量名額</h2>
-              <p>三種方案，名額有限。一次購買，永久擁有課程，無限次重複觀看。</p>
-            </div>
-            <div className={styles.countdownWrap}>
-              <span className={styles.countdownDot} />
-              <span>距離早鳥截止</span>
-              <span className={styles.countdownTime}>
-                <strong>{String(countdown.d).padStart(2,"0")}</strong><em>天</em>
-                <strong>{String(countdown.h).padStart(2,"0")}</strong><em>時</em>
-                <strong>{String(countdown.m).padStart(2,"0")}</strong><em>分</em>
-                <strong>{String(countdown.s).padStart(2,"0")}</strong><em>秒</em>
-              </span>
+              <h2>選擇最適合你的方案</h2>
+              <p>一次購買，永久擁有。課程與 AI 遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
             <motion.div
               className={styles.plansRow}
@@ -517,15 +487,12 @@ export default function HomePage() {
               {PLANS.map(p => (
                 <motion.div
                   key={p.plan}
-                  className={[styles.planCard, p.dark ? styles.planCardDark : "", p.featured ? styles.planCardFeatured : "", selectedPlan?.plan === p.plan ? styles.planCardSelected : ""].join(" ")}
-                  onClick={() => selectPlan(p)}
-                  role="button"
-                  tabIndex={0}
+                  className={[styles.planCard, p.featured ? styles.planCardFeatured : ""].join(" ")}
                   variants={fadeUp}
                 >
                   {p.ribbon && <div className={styles.planRibbon}>{p.ribbon}</div>}
                   <div className={styles.planHeaderRow}>
-                    <div className={`${styles.planPill} ${p.dark ? styles.planPillDark : ""}`}>
+                    <div className={`${styles.planPill} ${p.featured ? styles.planPillDark : ""}`}>
                       <span className={styles.planPillDot} />
                       {p.pillLabel}
                     </div>
@@ -533,102 +500,28 @@ export default function HomePage() {
                   <h3 className={styles.planName}>{p.label}</h3>
                   <div className={styles.planPriceBlock}>
                     <div className={styles.planPriceRow}>
-                      <span className={`${styles.planCurrency} ${p.dark ? styles.planCurrencyDark : ""}`}>NT$</span>
+                      <span className={styles.planCurrency}>NT$</span>
                       <span className={styles.planPrice}>{p.price.toLocaleString()}</span>
-                    </div>
-                    <div className={styles.planPriceOriginalRow}>
-                      <span className={styles.planOriginal}>原價 NT${p.originalPrice.toLocaleString()}</span>
-                      <span className={`${styles.planDiscountTag} ${p.dark ? styles.planDiscountTagDark : ""}`}>{p.discount}</span>
-                      <span className={`${styles.planSavingsTag} ${p.dark ? styles.planSavingsTagDark : ""}`}>省 NT${p.savings.toLocaleString()}</span>
+                      <span className={styles.planUnit}>／永久</span>
                     </div>
                   </div>
                   <p className={styles.planDesc}>{p.desc}</p>
-                  <div className={`${styles.planSpotsRow} ${p.dark ? styles.planSpotsRowDark : ""}`}>
-                    <span className={styles.planSpots}><Flame size={13} strokeWidth={2} />僅剩 {p.spots} 個名額</span>
-                  </div>
+                  <ul className={styles.planFeatures}>
+                    {p.features.map(f => (
+                      <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>
+                    ))}
+                  </ul>
+                  <button
+                    className={`${styles.planBtn} ${p.featured ? styles.planBtnFeatured : ""}`}
+                    onClick={() => startBuy(p)}
+                  >
+                    <ShoppingCart size={17} />
+                    {`${p.cta}　NT$${p.price.toLocaleString()}`}
+                  </button>
                 </motion.div>
               ))}
             </motion.div>
-            <div className={styles.planNote}>
-              ＊購買憑證不限於照片或訂單編號，只要能夠證明曾購買過皆可享有優惠。
-            </div>
-            <div className={styles.planBuyWrap}>
-              <button className={`${styles.btnRed} ${styles.buyBtn}`} onClick={openBuy}>
-                <ShoppingCart size={18} />
-                {`購買 ${selectedPlan.label}  ｜  NT$${selectedPlan.price.toLocaleString()}`}
-              </button>
-              <p className={styles.buyNote}><Heart size={13} />無限次觀看・永久有效</p>
-              <p className={styles.buySecurity}>🔒 安全付款・購買後立即開通・永久有效</p>
-            </div>
-          </div>
-        </RevealSection>
-
-        {/* SUBSCRIPTION */}
-        <RevealSection id="subscription" className={styles.subSection}>
-          <div className={styles.container}>
-            <div className={styles.sectionHead} style={{ marginBottom: "20px" }}>
-              <small>— PRICING · 訂閱方案</small>
-              <h2 className={styles.subHeading}>選擇適合你的方案</h2>
-              <p>隨時開始 · 隨時暫停 · 隨你的練習步調</p>
-            </div>
-            <div className={styles.subGiftBar}>
-              <Gift size={14} strokeWidth={2} />
-              <span>購買課程自動贈送 <strong>3 個月</strong>免費體驗，無需另外付費</span>
-            </div>
-            <div className={styles.subPlans}>
-              {/* Monthly */}
-              <div className={styles.subCard}>
-                <div className={styles.subCardPeriodRow}>
-                  <div className={styles.subCardIcon}><Clock size={18} strokeWidth={2} /></div>
-                  <div>
-                    <div className={styles.subCardPeriodMeta}>MONTHLY · 月繳</div>
-                    <div className={styles.subCardPeriodLabel}>月繳方案</div>
-                  </div>
-                </div>
-                <div className={styles.subCardPriceRow}>
-                  <span className={styles.subCardCurrency}>NT$</span>
-                  <span className={styles.subCardAmount}>399</span>
-                  <span className={styles.subCardPer}>/月</span>
-                </div>
-                <ul className={styles.subFeatureList}>
-                  {["全部 4 款 AI 互動遊戲","練習紀錄與進度追蹤","可隨時取消訂閱"].map(f => (
-                    <li key={f}><Check size={13} strokeWidth={2.5} />{f}</li>
-                  ))}
-                </ul>
-                <button className={styles.subBtnOutline} onClick={() => subCheckout("monthly")}>
-                  選擇月繳
-                </button>
-              </div>
-              {/* Yearly */}
-              <div className={styles.subCardDark}>
-                <div className={styles.subBadge}><Star size={12} strokeWidth={2} />年繳最划算</div>
-                <div className={styles.subCardPeriodRow}>
-                  <div className={styles.subCardIconDark}><Star size={18} strokeWidth={2} /></div>
-                  <div>
-                    <div className={styles.subCardPeriodMetaDark}>ANNUAL · 年繳</div>
-                    <div className={styles.subCardPeriodLabelDark}>年繳方案</div>
-                  </div>
-                </div>
-                <div className={styles.subCardPriceRow}>
-                  <span className={styles.subCardCurrencyDark}>NT$</span>
-                  <span className={styles.subCardAmountDark}>1,499</span>
-                  <span className={styles.subCardPerDark}>/年</span>
-                </div>
-                <div className={styles.subCardMonthly}>折合每月 NT$124.9</div>
-                <div className={styles.subCardSavings}>+ 省下 NT$3,289（等同 8 個月免費）</div>
-                <ul className={`${styles.subFeatureList} ${styles.subFeatureListDark}`}>
-                  {["全部 4 款 AI 互動遊戲","練習紀錄與進度追蹤","新遊戲持續更新"].map(f => (
-                    <li key={f}><Check size={13} strokeWidth={2.5} />{f}</li>
-                  ))}
-                </ul>
-                <button className={styles.subBtnDark} onClick={() => subCheckout("yearly")}>
-                  選擇年繳
-                </button>
-              </div>
-            </div>
-            <div className={styles.subNote}>
-              <Shield size={13} strokeWidth={2} />透過 PAYUNi 安全金流付款，資料加密傳輸
-            </div>
+            <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・購買後立即開通・永久有效</p>
           </div>
         </RevealSection>
 
@@ -645,7 +538,7 @@ export default function HomePage() {
                 ["我需要準備鋼琴嗎？",           "AI 互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
                 ["學完後可以彈哪些歌？",         "課程實戰練習包含《Do-Re-Mi》、《Happy Birthday》、《稻香》、《告白氣球》、《刻在我心底的名字》、《Always With Me》等 20+ 首。"],
-                ["粉絲限定方案如何驗證資格？",   "購買後我們會寄送確認 Email，請提供購買專輯、音樂會或樂譜的憑證（照片或訂單截圖均可），審核通過後開通課程。"],
+                ["課程包和單買有什麼差別？",     "課程包 AI（NT$3,999）一次擁有完整課程與全部 AI 互動遊戲，最超值；也可只買課程（NT$3,800）或只買 AI 遊戲（NT$1,200），皆為一次買斷、永久使用。"],
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -702,7 +595,7 @@ export default function HomePage() {
       </footer>
 
       <PreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} onSuccess={onPreviewSuccess} />
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} />
     </>
   );
 }
