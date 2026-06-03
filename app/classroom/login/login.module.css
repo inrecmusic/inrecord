@@ -10,10 +10,10 @@
 .cardLogo { display: inline-flex; margin-bottom: 30px; }
 
 .title {
-  font-family: var(--type-display);
-  font-weight: 400;
+  font-family: var(--type-heading);
+  font-weight: 600;
   font-size: 32px;
-  letter-spacing: -.02em;
+  letter-spacing: -.01em;
   color: var(--ink, #0f172a);
   margin: 0 0 6px;
 }

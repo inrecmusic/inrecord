@@ -15,17 +15,19 @@
   --shadow: 0 20px 60px rgba(15, 23, 42, 0.1);
   --radius: 18px;
 
-  /* Typography system — Modern Literary: Newsreader + Spectral + Noto Serif TC */
-  /* Headings — Latin: Newsreader, CJK: Noto Serif TC */
-  --type-display:   var(--font-newsreader), var(--font-serif), "Noto Serif TC", serif;
-  /* Pure CJK serif — subtitles / quotes */
-  --type-serif:     var(--font-serif), "Noto Serif TC", serif;
-  /* Body — Latin & numerals: Spectral, CJK: Noto Serif TC */
-  --type-body:      var(--font-spectral), var(--font-serif), "Noto Serif TC", serif;
-  /* English italic accent — Newsreader Italic */
-  --type-en-italic: var(--font-newsreader), serif;
-  /* Numerals — Spectral */
-  --type-numeric:   var(--font-spectral), var(--font-serif), serif;
+  /* Typography system — v3 Two-tier: Main-visual serif (Hero only) + Content sans (黑體) */
+  /* Layer 1 · Main-visual ONLY — EN: Cormorant 中庸, CJK: Noto Serif TC 厚重 */
+  --type-display:   var(--font-cormorant), var(--font-noto-serif), "Noto Serif TC", serif;
+  /* Layer 2 · Content sans (黑體) — body, all non-hero headings, subtitles, captions */
+  --type-body:      var(--font-inter), var(--font-noto-sans), "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  /* Section / block headings — same sans stack; font-weight 600/700 creates hierarchy */
+  --type-heading:   var(--font-inter), var(--font-noto-sans), "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  /* DEPRECATED alias — was serif subtitles; v3 routes content to sans (黑體) */
+  --type-serif:     var(--type-body);
+  /* English italic accent (main-visual signature) — Cormorant italic */
+  --type-en-italic: var(--font-cormorant), Georgia, serif;
+  /* Numerals — Inter */
+  --type-numeric:   var(--font-inter), var(--font-noto-sans), sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -56,35 +58,36 @@ p, li, dd, dt, blockquote, figcaption {
   text-wrap: pretty;
 }
 
-/* Global heading scale — Newsreader (Latin) + Noto Serif TC for all h1/h2 */
+/* Global heading scale — v3 content layer: sans (黑體), weight builds hierarchy */
 h1, h2 {
-  font-family: var(--type-display);
-  font-weight: 300;
-  letter-spacing: -.02em;
+  font-family: var(--type-heading);
+  font-weight: 600;
+  letter-spacing: -.01em;
 }
-h3 { font-weight: 500; letter-spacing: -.01em; }
-h4, h5, h6 { font-weight: 500; }
+h3 { font-weight: 600; letter-spacing: -.01em; }
+h4, h5, h6 { font-weight: 600; }
 
-/* Display heading — Newsreader + Noto Serif TC, main titles */
+/* Display heading — main-visual serif (Hero only): Cormorant + Noto Serif TC 厚重 */
 .font-display {
   font-family: var(--type-display);
-  font-weight: 300;
+  font-weight: 600;
+  letter-spacing: .018em;
 }
 
-/* Serif — Noto Serif TC, subtitles / quotes (usually gold) */
+/* Subtitles / quotes — v3 content layer is sans (黑體), not serif */
 .font-serif-tc {
   font-family: var(--type-serif);
-  font-weight: 300;
+  font-weight: 500;
 }
 
-/* English italic accent — Newsreader Italic */
+/* English italic accent — Cormorant Garamond Italic (main-visual signature) */
 .font-en-italic {
   font-family: var(--type-en-italic);
   font-style: italic;
   font-weight: 500;
 }
 
-/* Numerals — Spectral */
+/* Numerals — Inter */
 .font-numeric {
   font-family: var(--type-numeric);
   font-feature-settings: "lnum" 1, "tnum" 1;
