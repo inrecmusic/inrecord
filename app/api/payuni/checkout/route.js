@@ -25,9 +25,17 @@ function makeHashInfo(encryptInfo, key, iv) {
 
 export async function POST(req) {
   try {
-    const { plan, price, label, email } = await req.json();
+    const { plan, email } = await req.json();
 
-    if (!plan || !price || !email) return NextResponse.json({ error: "missing_params" }, { status: 400 });
+    if (!plan || !email) return NextResponse.json({ error: "missing_params" }, { status: 400 });
+
+    // Authoritative server-side pricing — never trust the amount sent by the
+    // client (prevents price tampering on the checkout request).
+    const PLAN_PRICES = { course: 3800, bundle: 3999, game: 1200 };
+    const PLAN_LABELS = { course: "課程單賣", bundle: "課程包 AI", game: "AI 遊戲單買" };
+    const price = PLAN_PRICES[plan];
+    const label = PLAN_LABELS[plan];
+    if (!price) return NextResponse.json({ error: "invalid_plan" }, { status: 400 });
 
     const merID   = process.env.PAYUNI_MERCHANT_ID;
     const hashKey = process.env.PAYUNI_HASH_KEY;

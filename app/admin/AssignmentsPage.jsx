@@ -109,7 +109,7 @@ export default function AssignmentsPage({ showToast }) {
                     <td className={styles.dim} style={{ maxWidth: 220 }}>
                       <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.assignment_desc}</span>
                     </td>
-                    <td className={styles.dim}>{v.assignment_deadline || "—"}</td>
+                    <td className={styles.dim}>{v.assignment_due || "—"}</td>
                     <td>
                       <span className={styles.courseBadge}>{subCount[v.id] ?? "—"}</span>
                     </td>

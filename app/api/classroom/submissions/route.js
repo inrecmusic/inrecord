@@ -22,7 +22,7 @@ export async function GET(req) {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const video_id = new URL(req.url).searchParams.get("video_id");
-  let q = db.from("submissions").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+  let q = db.from("submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false });
   if (video_id) q = q.eq("video_id", video_id);
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
