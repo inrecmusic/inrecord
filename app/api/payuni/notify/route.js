@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
+import { sendPurchaseEmail } from "@/lib/brevo-email";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
 function aesDecrypt(encryptStr, key, iv) {
@@ -106,8 +107,24 @@ export async function POST(req) {
           }
         }
 
-        // 開立電子發票（光貿 Amego）— 失敗不中斷購課流程，僅記錄 log
+        // 首次成功處理此訂單（尚未開發票）才執行：寄開課確認信 + 開發票
+        // 以 invoice_no 作為去重標記，避免 Payuni 重送 notify 時重複寄信／重複開票
         if (order?.id && !order.invoice_no) {
+          // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
+          if (order.email) {
+            const mailResult = await sendPurchaseEmail({
+              email:      order.email,
+              plan:       order.plan,
+              planLabel:  order.plan_label,
+              merTradeNo: params.MerTradeNo,
+            });
+            if (mailResult.success) {
+              console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
+            } else if (!mailResult.skipped) {
+              console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
+            }
+          }
+
           const invoiceResult = await createInvoice({
             orderId: order.id,
             buyerName: order.buyer_name || "學員",
