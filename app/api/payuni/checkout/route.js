@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
+import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 
 // 發票欄位驗證（與前端 BuyModal 規則一致）
 const MOBILE_BARCODE_RE  = /^\/[0-9A-Z.+-]{7}$/;
@@ -88,6 +89,10 @@ export async function POST(req) {
       if (!body.buyerName || !String(body.buyerName).trim()) {
         return NextResponse.json({ error: "missing_company_name" }, { status: 400 });
       }
+      const taxCheck = await verifyTaxId(id);
+      if (taxCheck.valid === false) {
+        return NextResponse.json({ error: "tax_id_not_exist" }, { status: 400 });
+      }
       buyerTaxId = id;
       buyerName  = String(body.buyerName).trim().slice(0, 60);
     } else if (body.carrierType) {
@@ -96,6 +101,10 @@ export async function POST(req) {
       }
       const cid = String(body.carrierId || "").trim().toUpperCase();
       if (!MOBILE_BARCODE_RE.test(cid)) return NextResponse.json({ error: "invalid_carrier_id" }, { status: 400 });
+      const carrierCheck = await verifyCarrier(cid);
+      if (carrierCheck.valid === false) {
+        return NextResponse.json({ error: "carrier_not_exist" }, { status: 400 });
+      }
       carrierType = MOBILE_CARRIER_TYPE;
       carrierId   = cid;
     }
