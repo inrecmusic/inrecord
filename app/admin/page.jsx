@@ -719,7 +719,7 @@ function OrdersPage({leads}){
     try{
       const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId})});
       const d=await res.json();
-      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);alert("✅ 退款成功，存取已撤銷");}
+      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);alert("✅ "+(d.method==="cancel"?"已取消授權（未請款）":"退款成功")+"，存取已撤銷");}
       else alert("❌ 退款失敗："+(d.error||"unknown"));
     }catch(e){alert("❌ 退款失敗："+e.message);}
     finally{setRefunding(false);}

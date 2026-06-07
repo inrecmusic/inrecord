@@ -25,17 +25,29 @@ export async function POST(req) {
   if (order.status !== "paid")     return NextResponse.json({ error: "not_paid" }, { status: 400 });
   if (!order.payuni_trade_no)      return NextResponse.json({ error: "missing_trade_no" }, { status: 400 });
 
-  // 呼叫 PAYUNi 退款（CloseType=2）
-  const result = await payuniTrade("trade/close", {
+  // 自動判斷：先嘗試「請退款」(trade/close CloseType=2)；
+  // 若該筆尚未請款（仍為授權狀態，close 會失敗），改用「取消授權」(trade/cancel)。
+  let result = await payuniTrade("trade/close", {
     TradeNo:   order.payuni_trade_no,
     CloseType: "2",
   });
+  let method = "refund"; // 請退款
 
   if (!result.success) {
-    return NextResponse.json(
-      { error: result.data?.Message || result.data?.error || "refund_failed", detail: result.data },
-      { status: 502 }
-    );
+    const cancel = await payuniTrade("trade/cancel", { TradeNo: order.payuni_trade_no });
+    if (cancel.success) {
+      result = cancel;
+      method = "cancel"; // 取消授權
+    } else {
+      return NextResponse.json(
+        {
+          error: "refund_failed",
+          close_detail:  result.data?.Message || result.data?.error || result.data,
+          cancel_detail: cancel.data?.Message || cancel.data?.error || cancel.data,
+        },
+        { status: 502 }
+      );
+    }
   }
 
   // 標記訂單已退款
@@ -55,5 +67,5 @@ export async function POST(req) {
     await supabase.from("enrollments").delete().eq("order_id", order.id);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, method });
 }
