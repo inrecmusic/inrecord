@@ -38,6 +38,8 @@ export default function BuyModal({ open, onClose, plan, email }) {
   const [carrierId, setCarrierId]     = useState("");       // 手機條碼
   const [taxId, setTaxId]             = useState("");       // 公司統編
   const [companyName, setCompanyName] = useState("");       // 公司抬頭
+  const [verifying, setVerifying]     = useState(false);    // 載具/統編即時驗證中
+  const [verifyError, setVerifyError] = useState("");
   const [couponInput, setCouponInput]       = useState("");
   const [couponApplied, setCouponApplied]   = useState(null); // 驗證通過的優惠券
   const [couponMsg, setCouponMsg]           = useState("");
@@ -80,11 +82,42 @@ export default function BuyModal({ open, onClose, plan, email }) {
     return "";
   }
 
+  // 呼叫後端即時驗證載具/統編是否真實存在；回傳 true=可繼續（含 degraded 放行）
+  async function verifyInvoiceField() {
+    setVerifyError("");
+    let type, value;
+    if (invoiceType === "mobile")       { type = "mobile";  value = carrierId.trim().toUpperCase(); }
+    else if (invoiceType === "company") { type = "company"; value = taxId.trim(); }
+    else return true; // email 載具不需驗
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/invoice/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, value }),
+      });
+      const d = await res.json();
+      if (d.valid === false) {
+        setVerifyError(type === "mobile" ? "查無此手機條碼，請確認後重新輸入" : "查無此統一編號，請確認後重新輸入");
+        return false;
+      }
+      if (type === "company" && d.name) setCompanyName(d.name); // 自動帶公司名
+      return true;
+    } catch {
+      return true; // 前端驗證失敗不擋（後端 checkout 會再驗）
+    } finally {
+      setVerifying(false);
+    }
+  }
+
   async function handleCheckout() {
     if (!email) { window.location.href = "/classroom/login"; return; }
 
     const invalid = validateInvoice();
     if (invalid) { setError("⚠️ " + invalid); return; }
+
+    const ok = await verifyInvoiceField();
+    if (!ok) return; // verifyError 已設，畫面顯示紅字
 
     setLoading(true);
     setError("");
@@ -204,7 +237,7 @@ export default function BuyModal({ open, onClose, plan, email }) {
               placeholder="/ABC+123（斜線開頭 7 碼）"
               value={carrierId}
               maxLength={8}
-              onChange={e => setCarrierId(e.target.value.toUpperCase())}
+              onChange={e => { setCarrierId(e.target.value.toUpperCase()); setVerifyError(""); }}
             />
           )}
 
@@ -224,7 +257,7 @@ export default function BuyModal({ open, onClose, plan, email }) {
                 placeholder="統一編號（8 位數字）"
                 value={taxId}
                 maxLength={8}
-                onChange={e => setTaxId(e.target.value.replace(/\D/g, ""))}
+                onChange={e => { setTaxId(e.target.value.replace(/\D/g, "")); setVerifyError(""); }}
               />
               <input
                 className={styles.invoiceInput}
@@ -237,8 +270,10 @@ export default function BuyModal({ open, onClose, plan, email }) {
           )}
         </div>
 
-        <button className={styles.proceed} onClick={handleCheckout} disabled={loading}>
-          {loading ? "處理中…" : "前往付款 →"}
+        {verifyError && <p className={styles.couponErr} style={{ color: "#dc2626" }}>{verifyError}</p>}
+
+        <button className={styles.proceed} onClick={handleCheckout} disabled={loading || verifying}>
+          {loading ? "處理中…" : verifying ? "驗證中…" : "前往付款 →"}
         </button>
         {error && (
           <>
