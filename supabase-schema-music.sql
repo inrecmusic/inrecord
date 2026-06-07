@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS videos (
   sort_order          INTEGER NOT NULL DEFAULT 0,
   published           BOOLEAN NOT NULL DEFAULT FALSE,
   assignment_desc     TEXT,
-  assignment_deadline DATE,
+  assignment_due      DATE,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
