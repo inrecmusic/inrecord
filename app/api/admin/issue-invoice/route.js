@@ -38,6 +38,6 @@ export async function POST(req) {
     return NextResponse.json({ error: result.error || "issue_failed", code: result.code }, { status: 500 });
   }
 
-  await supabase.from("orders").update({ invoice_no: result.invoiceNo }).eq("id", order.id);
+  await supabase.from("orders").update({ invoice_no: result.invoiceNo, invoice_error: null }).eq("id", order.id);
   return NextResponse.json({ ok: true, invoiceNo: result.invoiceNo });
 }
