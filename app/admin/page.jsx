@@ -199,31 +199,62 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
 }
 
 // ── Courses Page ───────────────────────────────────────────────────────────
-function CoursesPage({leads, onManage}){
+function CoursesPage({leads, onManage, showToast}){
   const [search,setSearch]=useState("");
-  const [courses,setCourses]=useState([{id:1,title:"零基礎流行鋼琴入門課",desc:"從零開始學習流行鋼琴，包含基礎樂理、和弦節奏與歌曲實作，共 8 堂課",status:"published",price:3500,students:leads.length,date:"2025/10/01"}]);
+  const [courses,setCourses]=useState([]);
+  const [loading,setLoading]=useState(false);
   const [showModal,setShowModal]=useState(false);
   const [editing,setEditing]=useState(null);
+  const [saving,setSaving]=useState(false);
   const [form,setForm]=useState({title:"",desc:"",price:"",status:"published"});
   const [formErr,setFormErr]=useState("");
+
+  const purchased=leads.filter(l=>l.purchased||l.status==="purchased").length;
+
+  const fetchCourses=useCallback(async()=>{
+    setLoading(true);
+    try{const r=await _api("/api/admin/courses");const{data}=await r.json();setCourses(data||[]);}
+    catch{setCourses([]);}
+    finally{setLoading(false);}
+  },[]);
+  useEffect(()=>{fetchCourses();},[fetchCourses]);
+
   const filtered=useMemo(()=>courses.filter(c=>!search||c.title.includes(search)),[courses,search]);
   function openCreate(){setEditing(null);setForm({title:"",desc:"",price:"",status:"published"});setFormErr("");setShowModal(true);}
-  function openEdit(c){setEditing(c);setForm({title:c.title,desc:c.desc||"",price:String(c.price),status:c.status});setFormErr("");setShowModal(true);}
-  function handleSave(e){
+  function openEdit(c){setEditing(c);setForm({title:c.title,desc:c.description||"",price:String(c.price),status:c.status});setFormErr("");setShowModal(true);}
+
+  async function handleSave(e){
     e.preventDefault();setFormErr("");
     if(!form.title.trim()){setFormErr("請輸入課程標題");return;}
-    if(!form.price||isNaN(form.price)){setFormErr("請輸入有效售價");return;}
-    if(editing){setCourses(prev=>prev.map(c=>c.id===editing.id?{...c,title:form.title.trim(),desc:form.desc.trim(),price:Number(form.price),status:form.status}:c));}
-    else{const d=new Date();setCourses(prev=>[...prev,{id:Date.now(),title:form.title.trim(),desc:form.desc.trim(),price:Number(form.price),status:form.status,students:0,date:`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`}]);}
-    setShowModal(false);
+    if(form.price===""||isNaN(form.price)){setFormErr("請輸入有效售價");return;}
+    setSaving(true);
+    try{
+      const body={title:form.title.trim(),description:form.desc.trim()||null,price:Number(form.price),status:form.status};
+      if(editing)body.id=editing.id;
+      const r=await _api("/api/admin/courses",{method:editing?"PATCH":"POST",body:JSON.stringify(body)});
+      if(!r.ok)throw new Error((await r.json()).error||"儲存失敗");
+      showToast?.(editing?"✅ 課程已更新":"✅ 課程已新增");
+      setShowModal(false);fetchCourses();
+    }catch(err){setFormErr(err.message);}
+    finally{setSaving(false);}
   }
-  function toggleStatus(c){setCourses(prev=>prev.map(x=>x.id===c.id?{...x,status:x.status==="published"?"draft":"published"}:x));}
+
+  async function toggleStatus(c){
+    try{const r=await _api("/api/admin/courses",{method:"PATCH",body:JSON.stringify({id:c.id,status:c.status==="published"?"draft":"published"})});if(!r.ok)throw new Error();fetchCourses();}
+    catch{showToast?.("❌ 操作失敗");}
+  }
+  async function removeCourse(c){
+    if(!window.confirm(`確定要刪除課程「${c.title}」嗎？此操作無法復原。`))return;
+    try{const r=await _api(`/api/admin/courses?id=${c.id}`,{method:"DELETE"});if(!r.ok)throw new Error();showToast?.("✅ 課程已刪除");fetchCourses();}
+    catch{showToast?.("❌ 刪除失敗");}
+  }
 
   return(
     <div>
       <div className={styles.pageHeader}>
         <div><h1>課程管理</h1><p>管理您的所有課程內容</p></div>
         <div className={styles.pageActions}>
+          <button className={styles.btnSmall} onClick={fetchCourses}><RefreshCw size={13}/> 重新整理</button>
           <a href="/" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><Eye size={13}/> 前台預覽</a>
           <button className={styles.btnPrimary} onClick={openCreate}><Plus size={14}/> 新增課程</button>
         </div>
@@ -235,25 +266,28 @@ function CoursesPage({leads, onManage}){
         </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>封面</th><th>標題</th><th>狀態</th><th>價格</th><th>學員數</th><th>建立日期</th><th>操作</th></tr></thead>
+            <thead><tr><th>封面</th><th>標題</th><th>狀態</th><th>價格</th><th>已購人數</th><th>建立日期</th><th>操作</th></tr></thead>
             <tbody>
-              {filtered.map(c=>(
+              {loading?<tr><td colSpan={7} className={styles.empty}>載入中…</td></tr>
+              :!filtered.length?<tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>📚</span><span className={styles.emptyTitle}>還沒有任何課程</span><span className={styles.emptySub}>點右上角「新增課程」開始建立</span></td></tr>
+              :filtered.map(c=>(
                 <tr key={c.id}>
                   <td><div className={styles.courseCoverThumb}><Music size={22} color="#f59e0b"/></div></td>
                   <td>
                     <div style={{fontWeight:800,fontSize:14}}>{c.title}</div>
-                    <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>{c.desc||"零基礎・流行鋼琴・8 堂課"}</div>
+                    <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>{c.description||"零基礎・流行鋼琴"}</div>
                   </td>
                   <td><span className={styles.pill} style={{background:c.status==="published"?"#dcfce7":"#f1f5f9",color:c.status==="published"?"#166534":"#475569"}}>{c.status==="published"?"已發佈":"草稿"}</span></td>
-                  <td style={{fontWeight:800}}>NT$ {c.price.toLocaleString()}</td>
-                  <td>{c.students} 位</td>
-                  <td className={styles.dim}>{c.date}</td>
+                  <td style={{fontWeight:800}}>NT$ {Number(c.price).toLocaleString()}</td>
+                  <td>{purchased} 位</td>
+                  <td className={styles.dim}>{fmt(c.created_at).split(" ")[0]}</td>
                   <td>
                     <div className={styles.rowActions}>
                       <a href="/" target="_blank" className={styles.btnSmall}><Eye size={12}/> 查看</a>
                       <button className={styles.btnSmall} onClick={()=>openEdit(c)}><Edit2 size={12}/> 編輯</button>
                       <button className={styles.btnSmall} onClick={()=>toggleStatus(c)}>{c.status==="published"?"下架":"發佈"}</button>
                       <button className={styles.btnPrimary} style={{padding:"6px 12px",fontSize:12}} onClick={()=>onManage?.(c)}><BookOpen size={12}/> 管理教室</button>
+                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>removeCourse(c)}><Trash2 size={12}/></button>
                     </div>
                   </td>
                 </tr>
@@ -294,7 +328,7 @@ function CoursesPage({leads, onManage}){
               {formErr&&<p style={{color:"#dc2626",fontSize:13,margin:0,fontWeight:700}}>{formErr}</p>}
               <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSmall} onClick={()=>setShowModal(false)}>取消</button>
-                <button type="submit" className={styles.btnPrimary}>{editing?"儲存變更":"建立課程"}</button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving?"儲存中…":editing?"儲存變更":"建立課程"}</button>
               </div>
             </form>
           </div>
@@ -1997,7 +2031,7 @@ export default function AdminPage(){
           {page==="dashboard"   &&<DashboardPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
           {page==="courses"     &&(selectedCourse
             ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
-            : <CoursesPage leads={leads} onManage={c=>{setSelectedCourse(c);}}/>
+            : <CoursesPage leads={leads} onManage={c=>{setSelectedCourse(c);}} showToast={showToast}/>
           )}
           {page==="messages"    &&<MessagesPage showToast={showToast}/>}
           {page==="media"       &&<MediaPage/>}
