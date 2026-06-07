@@ -8,4 +8,5 @@ ADD COLUMN IF NOT EXISTS invoice_no   TEXT,
 ADD COLUMN IF NOT EXISTS buyer_name   TEXT,
 ADD COLUMN IF NOT EXISTS buyer_tax_id TEXT,
 ADD COLUMN IF NOT EXISTS carrier_type TEXT,
-ADD COLUMN IF NOT EXISTS carrier_id   TEXT;
+ADD COLUMN IF NOT EXISTS carrier_id   TEXT,
+ADD COLUMN IF NOT EXISTS invoice_error TEXT;  -- 最後一次開票失敗原因（成功時清為 null）
