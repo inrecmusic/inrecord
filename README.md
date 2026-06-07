@@ -1,45 +1,30 @@
-# InRecord 流行鋼琴零基礎入門課 v3 — Next.js + Supabase
+# InRecord — 零基礎流行鋼琴入門課
+
+Next.js 14 App Router 線上課程平台。買斷制（無訂閱），PAYUNi 金流、Amego 電子發票、Supabase 資料庫、Brevo Email、Bunny/Vimeo 影片。
+
+> 架構決策、資料表、API 與環境變數的權威說明見 **`CLAUDE.md`**。本檔僅作快速上手。
 
 ## 技術架構
 
 | 層次 | 技術 |
 |------|------|
 | 前端框架 | Next.js 14 App Router |
-| 樣式 | CSS Modules |
 | 資料庫 | Supabase（PostgreSQL） |
-| Email 名單 | Brevo（原 Sendinblue） |
-| 金流 | Stripe Checkout |
+| 金流 | PAYUNi 統一金流（整合支付頁 upp） |
+| 電子發票 | 光貿 Amego |
+| Email | Brevo（名單 + 交易信） |
+| 影片 | Bunny Stream / Vimeo |
 | 部署 | Vercel |
 
-## 檔案結構
+## 方案（買斷制，永久有效）
 
-```
-inrecord/
-├── app/
-│   ├── layout.jsx          # Root Layout
-│   ├── page.jsx            # 前台首頁
-│   ├── page.module.css
-│   ├── globals.css
-│   ├── admin/
-│   │   ├── page.jsx        # 後台（儀表板 + 名單 + 整合設定）
-│   │   └── admin.module.css
-│   ├── success/
-│   │   └── page.jsx        # Stripe 付款成功頁
-│   └── api/
-│       ├── brevo/subscribe/route.js   # Brevo 訂閱 + Supabase 寫入
-│       ├── stripe/checkout/route.js   # Stripe Checkout Session
-│       └── admin/leads/route.js       # 後台試看名單 CRUD
-├── components/
-│   ├── Logo.jsx / Logo.module.css
-│   ├── PreviewModal.jsx / .module.css
-│   └── BuyModal.jsx / .module.css
-├── lib/
-│   └── supabase.js         # Supabase 客戶端
-├── supabase-schema.sql     # 資料庫 Schema
-├── .env.local.example      # 環境變數範本
-├── next.config.js
-└── package.json
-```
+| plan key | 方案 | 售價 |
+|----------|------|------|
+| `course` | 課程單賣 | NT$3,800 |
+| `bundle` | 課程包 AI（首頁主打） | NT$3,999 |
+| `game`   | AI 遊戲單買 | NT$1,200 |
+
+價格權威來源為後端 `lib/plans.js` 的 `PLAN_CATALOG`，checkout 不信任前端傳入的價格。
 
 ## 快速開始
 
@@ -51,56 +36,43 @@ npm install
 ### 2. 設定環境變數
 ```bash
 cp .env.local.example .env.local
-# 用編輯器填入所有值
+# 依檔內註解填入各服務金鑰；完整清單見 CLAUDE.md
 ```
 
-### 3. 設定 Supabase
-1. 前往 [supabase.com](https://supabase.com) 建立新專案
-2. SQL Editor → 貼上 `supabase-schema.sql` → Run
-3. Settings → API → 複製 URL 和 keys 填入 `.env.local`
+### 3. 設定資料庫（Supabase）
+SQL Editor 依序執行：
+`supabase-schema.sql` → `supabase-schema-classroom.sql` / `supabase-schema-music.sql` → `supabase-deploy.sql`（彙整發票欄位 / coupons / courses，idempotent）。
 
-### 4. 設定 Brevo
-1. [app.brevo.com](https://app.brevo.com) → Settings → API Keys → 建立 Key
-2. Contacts → Lists → 建立名單，記下 List ID
-3. Settings → Senders → 新增並驗證寄件人 Email
-
-### 5. 設定 Stripe
-1. [dashboard.stripe.com](https://dashboard.stripe.com) → 測試模式
-2. Developers → API Keys → 複製 `sk_test_xxx`
-3. Products → Add product → 新增 6 個 One-time Price（幣別 TWD）
-4. 複製每個 `price_xxx` 填入 `.env.local`
-
-### 6. 啟動開發伺服器
+### 4. 啟動開發伺服器
 ```bash
 npm run dev
 # 前台：http://localhost:3000
 # 後台：http://localhost:3000/admin
 ```
 
-### 7. 部署到 Vercel
+## 購買開通流程（PAYUNi）
+
+```
+BuyModal（需先登入）
+  ↓ POST /api/payuni/checkout  { plan, email, couponCode? }
+  └── 後端決定價格 → 寫 pending orders → 回傳 PAYUNi 整合支付頁欄位
+
+付款成功
+  ├── 前景導回 ReturnURL /api/payuni/return → 303 轉址 /success
+  └── 背景通知 NotifyURL /api/payuni/notify（開通的權威來源）
+        ├── course / bundle → upsert enrollments（課程永久）
+        ├── game / bundle   → insert subscriptions（expires_at=2999-12-31）
+        ├── 寄送開課確認信（Brevo）
+        ├── 開立電子發票（Amego）
+        └── 優惠券使用次數 +1
+```
+
+## 部署到 Vercel
 ```bash
 npx vercel --prod
-# 記得在 Vercel Dashboard 設定所有環境變數
+# 並在 Vercel Dashboard 設定所有正式環境變數
 ```
 
 ## 後台登入
 - URL：`/admin`
-- 預設密碼：`ChangeMe123!`（請在 `.env.local` 的 `ADMIN_PASSWORD` 修改）
-
-## 資料流
-
-```
-前台 Modal 填寫 Gmail
-  ↓
-POST /api/brevo/subscribe
-  ├── Brevo：加入名單 + 寄送試看 Email
-  └── Supabase：寫入 course_preview_leads 表
-
-前台選擇方案 → 點購買
-  ↓
-POST /api/stripe/checkout
-  └── Stripe：建立 Checkout Session → 跳轉結帳
-
-付款成功
-  └── 跳轉 /success?session_id=xxx
-```
+- 帳密由 `.env.local` 的 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 設定（正式上線請改強密碼）。
