@@ -770,6 +770,8 @@ function OrdersPage({leads}){
     status:o.status||"pending",
     time:fmt(o.created_at||o.updated_at),
     invoiceNo:o.invoice_no||"",
+    invoiceError:o.invoice_error||"",
+    needInvoice:(o.status==="paid" && !o.invoice_no), // 已付款但未開票（待補開）
   })),[rows]);
 
   const filtered=useMemo(()=>allOrders.filter(o=>{
@@ -844,8 +846,11 @@ function OrdersPage({leads}){
                   <td style={{fontSize:12,whiteSpace:"nowrap"}}>
                     {o.invoiceNo
                       ? <code style={{fontSize:11,background:"#ecfdf5",color:"#047857",padding:"2px 6px",borderRadius:4,fontWeight:700}}>{o.invoiceNo}</code>
-                      : (o.realId&&o.status==="paid"
-                          ? <button className={styles.btnSmall} disabled={issuing===o.realId} onClick={()=>issueInvoice(o.realId)}>{issuing===o.realId?"開立中…":"手動開立"}</button>
+                      : (o.needInvoice
+                          ? <span style={{display:"inline-flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                              {o.invoiceError && <span style={{color:"#dc2626",fontWeight:700}}>開票失敗：{o.invoiceError}</span>}
+                              <button className={styles.btnSmall} disabled={issuing===o.realId} onClick={()=>issueInvoice(o.realId)}>{issuing===o.realId?"補開中…":"補開發票"}</button>
+                            </span>
                           : <span style={{color:"#94a3b8"}}>尚未開立</span>)}
                   </td>
                   <td className={styles.dim} style={{fontSize:12,whiteSpace:"nowrap"}}>{o.time}</td>
@@ -874,8 +879,11 @@ function OrdersPage({leads}){
                 ["狀態",<OrderStatusPill key="s" status={detailOrder.status}/>],
                 ["發票號碼",detailOrder.invoiceNo
                   ? <code key="inv" style={{fontSize:11,background:"#ecfdf5",color:"#047857",padding:"2px 6px",borderRadius:4,fontWeight:700}}>{detailOrder.invoiceNo}</code>
-                  : (detailOrder.realId&&detailOrder.status==="paid"
-                      ? <button key="iv" className={styles.btnSmall} disabled={issuing===detailOrder.realId} onClick={()=>issueInvoice(detailOrder.realId)}>{issuing===detailOrder.realId?"開立中…":"手動開立"}</button>
+                  : (detailOrder.needInvoice
+                      ? <span key="iv" style={{display:"inline-flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                          {detailOrder.invoiceError && <span style={{color:"#dc2626",fontWeight:700}}>開票失敗：{detailOrder.invoiceError}</span>}
+                          <button className={styles.btnSmall} disabled={issuing===detailOrder.realId} onClick={()=>issueInvoice(detailOrder.realId)}>{issuing===detailOrder.realId?"補開中…":"補開發票"}</button>
+                        </span>
                       : <span key="iv" style={{color:"#94a3b8"}}>尚未開立</span>)],
                 ["建立時間",detailOrder.time],
               ].map(([label,val],i,arr)=>(
@@ -1949,7 +1957,7 @@ export default function AdminPage(){
     catch{setOrders([]);}
   },[]);
 
-  useEffect(()=>{if(authed&&["dashboard","analytics"].includes(page))fetchOrders();},[authed,page,fetchOrders]);
+  useEffect(()=>{if(authed)fetchOrders();},[authed,page,fetchOrders]);
 
   async function markLead(lead,status){
     try{const res=await fetch("/api/admin/leads",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},body:JSON.stringify({id:lead.id,status})});if(res.ok){fetchLeads();showToast("✅ 已更新狀態");return;}}catch{}
@@ -1969,6 +1977,7 @@ export default function AdminPage(){
   }
 
   const purchasedCount=leads.filter(l=>l.purchased||l.status==="purchased").length;
+  const failedInvoiceCount=orders.filter(o=>o.status==="paid"&&!o.invoice_no).length; // 已付款待補開發票
 
   useEffect(()=>{
     if(!authed)return;
@@ -1976,7 +1985,7 @@ export default function AdminPage(){
       .then(r=>r.json()).then(d=>{ if(d.unread!=null) setUnreadUnitComments(d.unread); }).catch(()=>{});
   },[authed,page]);
 
-  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return purchasedCount||null;if(key==="messages")return unreadUnitComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
+  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return failedInvoiceCount||null;if(key==="messages")return unreadUnitComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
 
   if(!authChecked)return(
     <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f1f5f9"}}>
