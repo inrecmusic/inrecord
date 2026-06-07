@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
-
-// 方案價格與品名以後端為準（不信任前端傳入的 price / label）
-const PLAN_CATALOG = {
-  course: { price: 3800, label: "課程單賣" },
-  bundle: { price: 3999, label: "課程包 AI" },
-  game:   { price: 1200, label: "AI 遊戲單買" },
-};
+import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
 
 // 發票欄位驗證（與前端 BuyModal 規則一致）
 const MOBILE_BARCODE_RE  = /^\/[0-9A-Z.+-]{7}$/;
@@ -61,8 +55,26 @@ export async function POST(req) {
     if (!email || typeof email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }
-    const price = catalog.price;
+    let price = catalog.price;
     const label = catalog.label;
+
+    // 2.5) 優惠券：後端重新驗證並計算折後價（不信任前端傳入的折扣）
+    let couponCode = null;
+    if (body.couponCode) {
+      const sb = getSupabaseAdmin();
+      if (sb) {
+        const { data: coupon } = await sb
+          .from("coupons")
+          .select("*")
+          .eq("code", String(body.couponCode).trim().toUpperCase())
+          .maybeSingle();
+        const cErr = couponError(coupon);
+        if (cErr) return NextResponse.json({ error: cErr }, { status: 400 });
+        price = applyCoupon(price, coupon);
+        couponCode = coupon.code;
+      }
+    }
+    if (price < 1) return NextResponse.json({ error: "amount_too_low" }, { status: 400 });
 
     // 2) 發票欄位後端驗證（不信任前端）
     let buyerTaxId  = null;
@@ -132,6 +144,7 @@ export async function POST(req) {
         buyer_tax_id: buyerTaxId || null,
         carrier_type: carrierType || null,
         carrier_id:   carrierId || null,
+        coupon_code:  couponCode || null,
       });
       if (error) console.error("[payuni checkout] supabase error", error.message);
     }

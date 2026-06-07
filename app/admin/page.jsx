@@ -25,9 +25,6 @@ const NAV_GROUPS = [
     { id:"messages",    label:"留言管理",   icon:MessageCircle, badgeKey:"messages" },
     { id:"media",       label:"媒體中心",   icon:Img },
   ]},
-  { title:"音樂教室", items:[
-    { id:"games",       label:"AI 遊戲管理", icon:Gamepad2 },
-  ]},
   { title:"學員服務", items:[
     { id:"students",      label:"學員管理",   icon:Users,        badgeKey:"leads" },
     { id:"orders",        label:"訂單管理",   icon:ShoppingCart, badgeKey:"orders" },
@@ -119,32 +116,35 @@ function StatCard({label,value,sub,icon:Icon,growth,color="#2563eb"}){
 }
 
 // ── Dashboard Page ─────────────────────────────────────────────────────────
-function DashboardPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
+function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
   const now=new Date();
-  const thisMonth=leads.filter(l=>{const d=new Date(l.created_at||l.requestedAt||0);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();});
-  const purchased=leads.filter(l=>l.purchased||l.status==="purchased");
-  const purchasedM=thisMonth.filter(l=>l.purchased||l.status==="purchased");
   const demoOpened=leads.filter(l=>l.demo_opened||["demo_opened","purchased"].includes(l.status));
   const fmtTWD=n=>n>=10000?`$${(n/10000).toFixed(1)}萬`:`$${n.toLocaleString()}`;
 
-  const recentOrders=leads.filter(l=>l.purchased||l.status==="purchased").slice(0,5).map((l,i)=>({
-    id:`ORD-REAL-${String(i+1).padStart(3,"0")}`,student:l.email?.split("@")[0]||"學員",email:l.email,
-    amount:3000,status:"paid",time:fmt(l.purchased_at||l.updated_at||l.created_at),
+  const sameMonth=v=>{const d=new Date(v||0);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();};
+  const paidOrders=orders.filter(o=>o.status==="paid");
+  const paidM=paidOrders.filter(o=>sameMonth(o.created_at||o.updated_at));
+  const totalRev=paidOrders.reduce((s,o)=>s+(Number(o.amount)||0),0);
+  const monthRev=paidM.reduce((s,o)=>s+(Number(o.amount)||0),0);
+
+  const recentOrders=paidOrders.slice(0,5).map(o=>({
+    id:o.id,student:o.buyer_name||o.email?.split("@")[0]||"學員",email:o.email,
+    amount:Number(o.amount)||0,status:o.status||"paid",time:fmt(o.created_at||o.updated_at),
   }));
   const FUNNEL=[
     {stage:"瀏覽課程頁",count:0,color:"#2563eb"},
     {stage:"查看銷售頁",count:0, color:"#7c3aed"},
     {stage:"點擊購買",  count:0, color:"#f59e0b"},
-    {stage:"完成付款",  count:purchased.length,  color:"#16a34a"},
+    {stage:"完成付款",  count:paidOrders.length,  color:"#16a34a"},
   ];
 
   return(
     <div className={styles.dashContent}>
       <div className={styles.welcomeHead}><h1>歡迎回來，管理員</h1><p>這是您的課程平台營運概況</p></div>
       <div className={styles.statsGrid}>
-        <StatCard label="本月營收" value={fmtTWD(purchasedM.length*3000)} sub="本月累計營收" icon={DollarSign} color="#f59e0b"/>
-        <StatCard label="本月訂單" value={purchasedM.length} sub="本月已完成訂單數" icon={ShoppingCart} color="#2563eb"/>
-        <StatCard label="總營收"   value={fmtTWD(purchased.length*3000)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
+        <StatCard label="本月營收" value={fmtTWD(monthRev)} sub="本月累計營收" icon={DollarSign} color="#f59e0b"/>
+        <StatCard label="本月訂單" value={paidM.length} sub="本月已完成訂單數" icon={ShoppingCart} color="#2563eb"/>
+        <StatCard label="總營收"   value={fmtTWD(totalRev)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
         <StatCard label="總學員數" value={leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
         <StatCard label="平均完課率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
@@ -491,8 +491,6 @@ function MessagesPage({ showToast }){
 
 // ── Media Page ─────────────────────────────────────────────────────────────
 function MediaPage(){
-  const [showUpload,setShowUpload]=useState(null);
-  const [dragging,setDragging]=useState(false);
   const [videos,setVideos]=useState([]);
   const [loading,setLoading]=useState(false);
 
@@ -515,7 +513,6 @@ function MediaPage(){
         <div><h1>媒體中心</h1><p>管理課程影片、圖片與教材</p></div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={fetchVideos}><RefreshCw size={13}/> 重新整理</button>
-          <button className={styles.btnSmall} onClick={()=>setShowUpload("image")}><Upload size={13}/> 上傳圖片</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
@@ -560,40 +557,12 @@ function MediaPage(){
         )}
       </div>
       <div className={styles.panel} style={{marginTop:16}}>
-        <div className={styles.panelHead}><h2 style={{display:"flex",alignItems:"center",gap:7}}><Img size={16} color="#7c3aed"/>最近圖片</h2><button className={styles.btnSmall} onClick={()=>setShowUpload("image")}><Upload size={12}/> 上傳圖片</button></div>
+        <div className={styles.panelHead}><h2 style={{display:"flex",alignItems:"center",gap:7}}><Img size={16} color="#7c3aed"/>最近圖片</h2></div>
         <div className={styles.placeholderCard} style={{padding:"40px 24px"}}>
           <Img size={36} color="#cbd5e1"/>
           <p style={{margin:"12px 0 0",fontSize:14,color:"#94a3b8"}}>尚未上傳任何圖片</p>
         </div>
       </div>
-      {showUpload&&(
-        <div className={styles.modalOverlay} onClick={()=>{setShowUpload(null);setDragging(false);}}>
-          <div className={styles.modalCard} style={{width:"min(480px,100%)"}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <h3 style={{margin:0}}>上傳{showUpload==="video"?"影片":"圖片"}</h3>
-              <button className={styles.iconBtn} onClick={()=>setShowUpload(null)}><X size={18}/></button>
-            </div>
-            <label style={{display:"block",cursor:"pointer"}}
-              onDragOver={e=>{e.preventDefault();setDragging(true);}}
-              onDragLeave={()=>setDragging(false)}
-              onDrop={e=>{e.preventDefault();setDragging(false);}}
-            >
-              <input type="file" accept={showUpload==="video"?"video/*":"image/*"} style={{display:"none"}}/>
-              <div style={{border:`2px dashed ${dragging?"#2563eb":"#e2e8f0"}`,borderRadius:14,padding:"44px 24px",textAlign:"center",background:dragging?"#eff6ff":"#f8fafc",transition:".15s"}}>
-                <Upload size={32} color={dragging?"#2563eb":"#94a3b8"} style={{display:"block",margin:"0 auto 12px"}}/>
-                <div style={{fontWeight:800,color:"#374151",marginBottom:4}}>點擊或拖曳{showUpload==="video"?"影片":"圖片"}至此</div>
-                <div style={{fontSize:12,color:"#94a3b8"}}>{showUpload==="video"?"支援 MP4、MOV，最大 2 GB":"支援 JPG、PNG、WebP，最大 10 MB"}</div>
-              </div>
-            </label>
-            <div style={{marginTop:12,padding:"11px 14px",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,fontSize:13,color:"#92400e"}}>
-              ⚠️ 影片請直接上傳至 Vimeo，再到「課程管理 → 管理教室」填入連結。圖片上傳需串接 Supabase Storage。
-            </div>
-            <div className={styles.modalActions} style={{marginTop:16}}>
-              <button className={styles.btnSmall} onClick={()=>setShowUpload(null)}>關閉</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -710,11 +679,64 @@ function OrdersPage({leads}){
   const [dateFrom,setDateFrom]=useState("");
   const [dateTo,setDateTo]=useState("");
   const [detailOrder,setDetailOrder]=useState(null);
+  const [rows,setRows]=useState([]);
+  const [issuing,setIssuing]=useState(null);
+  const [refunding,setRefunding]=useState(false);
   const downloadRef=useRef(null);
 
-  const allOrders=useMemo(()=>leads.filter(l=>l.purchased||l.status==="purchased").map((l,i)=>({
-    id:`ORD-REAL-${String(i+1).padStart(3,"0")}`,student:l.email?.split("@")[0]||"學員",email:l.email,course:"零基礎流行鋼琴入門課",amount:3000,method:"信用卡",status:"paid",time:fmt(l.purchased_at||l.updated_at||l.created_at),
-  })),[leads]);
+  const loadOrders=useCallback(async()=>{
+    try{
+      const res=await _api("/api/admin/orders");
+      if(!res.ok)throw new Error("fetch_failed");
+      const{data}=await res.json();
+      setRows(data||[]);
+    }catch{
+      // 後端尚未部署 / 無資料表：以 leads 衍生顯示（無發票資訊）
+      setRows((leads||[]).filter(l=>l.purchased||l.status==="purchased").map((l,i)=>({
+        id:`LEAD-${i+1}`,mer_trade_no:`ORD-REAL-${String(i+1).padStart(3,"0")}`,email:l.email,plan_label:"零基礎流行鋼琴入門課",amount:3000,pay_type:"信用卡",status:"paid",created_at:l.purchased_at||l.updated_at||l.created_at,
+      })));
+    }
+  },[leads]);
+
+  useEffect(()=>{loadOrders();},[loadOrders]);
+
+  async function issueInvoice(realId){
+    if(!realId||issuing)return;
+    setIssuing(realId);
+    try{
+      const res=await _api("/api/admin/issue-invoice",{method:"POST",body:JSON.stringify({id:realId})});
+      const d=await res.json();
+      if(res.ok&&d.invoiceNo){await loadOrders();alert("✅ 發票開立成功："+d.invoiceNo);}
+      else alert("❌ 發票開立失敗："+(d.error||"unknown"));
+    }catch(e){alert("❌ 發票開立失敗："+e.message);}
+    finally{setIssuing(null);}
+  }
+
+  async function refundOrder(realId){
+    if(!realId||refunding)return;
+    if(!window.confirm("確定要對此訂單申請退款嗎？\n退款成功後將同步撤銷該學員的課程／遊戲存取，且無法復原。"))return;
+    setRefunding(true);
+    try{
+      const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId})});
+      const d=await res.json();
+      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);alert("✅ 退款成功，存取已撤銷");}
+      else alert("❌ 退款失敗："+(d.error||"unknown"));
+    }catch(e){alert("❌ 退款失敗："+e.message);}
+    finally{setRefunding(false);}
+  }
+
+  const allOrders=useMemo(()=>rows.map(o=>({
+    id:o.mer_trade_no||o.id,
+    realId:o.id,
+    student:o.buyer_name||o.email?.split("@")[0]||"學員",
+    email:o.email,
+    course:o.plan_label||"零基礎流行鋼琴入門課",
+    amount:Number(o.amount)||0,
+    method:o.pay_type||"—",
+    status:o.status||"pending",
+    time:fmt(o.created_at||o.updated_at),
+    invoiceNo:o.invoice_no||"",
+  })),[rows]);
 
   const filtered=useMemo(()=>allOrders.filter(o=>{
     if(statusFilter!=="all"&&o.status!==statusFilter)return false;
@@ -774,9 +796,9 @@ function OrdersPage({leads}){
         </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead>
+            <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>發票號碼</th><th>建立時間</th><th>操作</th></tr></thead>
             <tbody>
-              {!filtered.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
+              {!filtered.length?<tr><td colSpan={9} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
               :filtered.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>
@@ -785,6 +807,13 @@ function OrdersPage({leads}){
                   <td style={{fontWeight:800}}>NT$ {o.amount.toLocaleString()}</td>
                   <td className={styles.dim}>{o.method}</td>
                   <td><OrderStatusPill status={o.status}/></td>
+                  <td style={{fontSize:12,whiteSpace:"nowrap"}}>
+                    {o.invoiceNo
+                      ? <code style={{fontSize:11,background:"#ecfdf5",color:"#047857",padding:"2px 6px",borderRadius:4,fontWeight:700}}>{o.invoiceNo}</code>
+                      : (o.realId&&o.status==="paid"
+                          ? <button className={styles.btnSmall} disabled={issuing===o.realId} onClick={()=>issueInvoice(o.realId)}>{issuing===o.realId?"開立中…":"手動開立"}</button>
+                          : <span style={{color:"#94a3b8"}}>尚未開立</span>)}
+                  </td>
                   <td className={styles.dim} style={{fontSize:12,whiteSpace:"nowrap"}}>{o.time}</td>
                   <td><button className={styles.btnSmall} onClick={()=>setDetailOrder(o)}><Eye size={12}/> 查看</button></td>
                 </tr>
@@ -809,6 +838,11 @@ function OrdersPage({leads}){
                 ["金額",<strong key="a">NT$ {detailOrder.amount.toLocaleString()}</strong>],
                 ["付款方式",detailOrder.method],
                 ["狀態",<OrderStatusPill key="s" status={detailOrder.status}/>],
+                ["發票號碼",detailOrder.invoiceNo
+                  ? <code key="inv" style={{fontSize:11,background:"#ecfdf5",color:"#047857",padding:"2px 6px",borderRadius:4,fontWeight:700}}>{detailOrder.invoiceNo}</code>
+                  : (detailOrder.realId&&detailOrder.status==="paid"
+                      ? <button key="iv" className={styles.btnSmall} disabled={issuing===detailOrder.realId} onClick={()=>issueInvoice(detailOrder.realId)}>{issuing===detailOrder.realId?"開立中…":"手動開立"}</button>
+                      : <span key="iv" style={{color:"#94a3b8"}}>尚未開立</span>)],
                 ["建立時間",detailOrder.time],
               ].map(([label,val],i,arr)=>(
                 <div key={label} style={{display:"grid",gridTemplateColumns:"110px 1fr",gap:8,fontSize:14,padding:"11px 14px",borderBottom:i<arr.length-1?"1px solid #f8fafc":"0",background:i%2?"#fafafa":"#fff"}}>
@@ -819,7 +853,7 @@ function OrdersPage({leads}){
             </div>
             <div className={styles.modalActions}>
               <button className={styles.btnSmall} onClick={()=>setDetailOrder(null)}>關閉</button>
-              {detailOrder.status==="paid"&&<button className={`${styles.btnSmall} ${styles.btnDanger}`}>申請退款</button>}
+              {detailOrder.status==="paid"&&detailOrder.realId&&<button className={`${styles.btnSmall} ${styles.btnDanger}`} disabled={refunding} onClick={()=>refundOrder(detailOrder.realId)}>{refunding?"退款中…":"申請退款"}</button>}
             </div>
           </div>
         </div>
@@ -830,17 +864,34 @@ function OrdersPage({leads}){
 }
 
 // ── Coupons Page ───────────────────────────────────────────────────────────
-function CouponsPage(){
+function CouponsPage({ showToast }){
   const [coupons,setCoupons]=useState([]);
+  const [loading,setLoading]=useState(false);
   const [showCreate,setShowCreate]=useState(false);
   const [deleteId,setDeleteId]=useState(null);
+  const [saving,setSaving]=useState(false);
   const [form,setForm]=useState({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
   const [formErr,setFormErr]=useState("");
 
-  const active=coupons.filter(c=>c.status==="active").length;
-  const expired=coupons.filter(c=>c.status==="expired").length;
-  const disabled=coupons.filter(c=>c.status==="disabled").length;
-  const totalUsed=coupons.reduce((s,c)=>s+c.used,0);
+  const fetchCoupons=useCallback(async()=>{
+    setLoading(true);
+    try{const r=await _api("/api/admin/coupons");const{data}=await r.json();setCoupons(data||[]);}
+    catch{setCoupons([]);}
+    finally{setLoading(false);}
+  },[]);
+  useEffect(()=>{fetchCoupons();},[fetchCoupons]);
+
+  const now=new Date();
+  function displayStatus(c){
+    if(c.status==="disabled")return "disabled";
+    if(c.ends_at){const e=new Date(c.ends_at);e.setHours(23,59,59,999);if(e<now)return "expired";}
+    return "active";
+  }
+  const rows=coupons.map(c=>({...c,_status:displayStatus(c)}));
+  const active=rows.filter(c=>c._status==="active").length;
+  const expired=rows.filter(c=>c._status==="expired").length;
+  const disabled=rows.filter(c=>c._status==="disabled").length;
+  const totalUsed=coupons.reduce((s,c)=>s+(c.used||0),0);
 
   function CouponStatus({status}){
     const MAP={active:["啟用中","#dcfce7","#166534"],expired:["已過期","#fee2e2","#991b1b"],disabled:["已停用","#f1f5f9","#475569"]};
@@ -850,26 +901,50 @@ function CouponsPage(){
 
   function genCode(){const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";return Array.from({length:8},()=>chars[Math.floor(Math.random()*chars.length)]).join("");}
 
-  function handleCreate(e){
+  async function handleCreate(e){
     e.preventDefault();setFormErr("");
     if(!form.name.trim()){setFormErr("請輸入優惠券名稱");return;}
     if(!form.code.trim()){setFormErr("請輸入優惠碼");return;}
-    if(!form.value||isNaN(form.value)){setFormErr("請輸入有效的折扣值");return;}
-    const newC={id:Date.now(),name:form.name.trim(),code:form.code.trim().toUpperCase(),type:form.type,value:Number(form.value),used:0,limit:form.limit?Number(form.limit):999,status:"active",start:form.start||"—",end:form.end||"—"};
-    setCoupons(prev=>[newC,...prev]);
-    setShowCreate(false);setForm({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
+    if(!form.value||isNaN(form.value)||Number(form.value)<=0){setFormErr("請輸入有效的折扣值");return;}
+    if(form.type==="percent"&&Number(form.value)>100){setFormErr("百分比折扣不可超過 100");return;}
+    setSaving(true);
+    try{
+      const r=await _api("/api/admin/coupons",{method:"POST",body:JSON.stringify({
+        name:form.name.trim(),code:form.code.trim().toUpperCase(),type:form.type,value:Number(form.value),
+        usage_limit:form.limit?Number(form.limit):null,starts_at:form.start||null,ends_at:form.end||null,
+      })});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.error==="code_exists"?"優惠碼已存在，請換一個":d.error||"建立失敗");
+      showToast?.("✅ 優惠券已建立");
+      setShowCreate(false);setForm({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
+      fetchCoupons();
+    }catch(err){setFormErr(err.message);}
+    finally{setSaving(false);}
   }
 
-  function toggleStatus(id){
-    setCoupons(prev=>prev.map(c=>c.id===id?{...c,status:c.status==="active"?"disabled":"active"}:c));
+  async function toggleStatus(c){
+    try{
+      const r=await _api("/api/admin/coupons",{method:"PATCH",body:JSON.stringify({id:c.id,status:c.status==="active"?"disabled":"active"})});
+      if(!r.ok)throw new Error();
+      fetchCoupons();
+    }catch{showToast?.("❌ 操作失敗");}
   }
-  function confirmDelete(){setCoupons(prev=>prev.filter(c=>c.id!==deleteId));setDeleteId(null);}
+  async function confirmDelete(){
+    try{
+      const r=await _api(`/api/admin/coupons?id=${deleteId}`,{method:"DELETE"});
+      if(!r.ok)throw new Error();
+      showToast?.("✅ 優惠券已刪除");setDeleteId(null);fetchCoupons();
+    }catch{showToast?.("❌ 刪除失敗");}
+  }
 
   return(
     <div>
       <div className={styles.pageHeader}>
-        <div><h1>優惠券管理</h1><p>建立與管理折扣代碼</p></div>
-        <div className={styles.pageActions}><button className={styles.btnPrimary} onClick={()=>setShowCreate(true)}><Plus size={14}/> 新增優惠券</button></div>
+        <div><h1>優惠券管理</h1><p>建立與管理折扣代碼（結帳時自動套用）</p></div>
+        <div className={styles.pageActions}>
+          <button className={styles.btnSmall} onClick={fetchCoupons}><RefreshCw size={13}/> 重新整理</button>
+          <button className={styles.btnPrimary} onClick={()=>setShowCreate(true)}><Plus size={14}/> 新增優惠券</button>
+        </div>
       </div>
       <div className={styles.statsGrid4}>
         <StatCard label="啟用中" value={active} sub="張優惠券" icon={Ticket} color="#16a34a"/>
@@ -883,8 +958,11 @@ function CouponsPage(){
           <table className={styles.table}>
             <thead><tr><th>名稱</th><th>代碼</th><th>折扣</th><th>已使用 / 上限</th><th>狀態</th><th>有效期間</th><th>操作</th></tr></thead>
             <tbody>
-              {!coupons.length?<tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎟️</span><span className={styles.emptyTitle}>還沒有任何優惠券</span><span className={styles.emptySub}>新增優惠券來吸引更多學員</span></td></tr>
-              :coupons.map(c=>(
+              {loading?<tr><td colSpan={7} className={styles.empty}>載入中…</td></tr>
+              :!rows.length?<tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎟️</span><span className={styles.emptyTitle}>還沒有任何優惠券</span><span className={styles.emptySub}>新增優惠券來吸引更多學員</span></td></tr>
+              :rows.map(c=>{
+                const limit=c.usage_limit;
+                return(
                 <tr key={c.id}>
                   <td><strong>{c.name}</strong></td>
                   <td>
@@ -899,40 +977,23 @@ function CouponsPage(){
                     </span>
                   </td>
                   <td>
-                    <div style={{fontSize:13}}><span style={{fontWeight:800}}>{c.used}</span> / {c.limit}</div>
-                    <div style={{marginTop:4,height:4,background:"#f1f5f9",borderRadius:999,width:80,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${Math.min(c.used/c.limit*100,100)}%`,background:"#2563eb",borderRadius:999}}/>
-                    </div>
+                    <div style={{fontSize:13}}><span style={{fontWeight:800}}>{c.used||0}</span> / {limit==null?"∞":limit}</div>
+                    {limit!=null&&(
+                      <div style={{marginTop:4,height:4,background:"#f1f5f9",borderRadius:999,width:80,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${Math.min((c.used||0)/limit*100,100)}%`,background:"#2563eb",borderRadius:999}}/>
+                      </div>
+                    )}
                   </td>
-                  <td><CouponStatus status={c.status}/></td>
-                  <td className={styles.dim} style={{fontSize:12}}>{c.start} ~ {c.end}</td>
+                  <td><CouponStatus status={c._status}/></td>
+                  <td className={styles.dim} style={{fontSize:12}}>{c.starts_at||"—"} ~ {c.ends_at||"—"}</td>
                   <td>
                     <div className={styles.rowActions}>
-                      <button className={styles.btnSmall} onClick={()=>toggleStatus(c.id)}>{c.status==="active"?"停用":"啟用"}</button>
+                      <button className={styles.btnSmall} onClick={()=>toggleStatus(c)}>{c.status==="active"?"停用":"啟用"}</button>
                       <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>setDeleteId(c.id)}><Trash2 size={12}/></button>
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className={styles.panel} style={{marginTop:16}}>
-        <div className={styles.panelHead}><h2>定價方案</h2><span className={styles.dim}>串接 Payuni 後生效</span></div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead><tr><th>方案名稱</th><th>plan ID</th><th>售價</th><th>狀態</th></tr></thead>
-            <tbody>
-              {[["粉絲限定【1】","fan1","$2,200"],["粉絲限定【2】","fan2","$2,400"],["第一波早鳥","early1","$2,800"],["第二波早鳥","early2","$3,100"],["最後早鳥","early3","$3,300"],["原價","full","$3,500"]].map(([name,key,price])=>(
-                <tr key={key}>
-                  <td><strong>{name}</strong></td>
-                  <td><code style={{fontSize:12,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{key}</code></td>
-                  <td>{price} TWD</td>
-                  <td><span className={styles.pill} style={{background:"#dbeafe",color:"#1e40af"}}>已設定</span></td>
-                </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>
@@ -982,7 +1043,7 @@ function CouponsPage(){
               {formErr&&<p style={{color:"#dc2626",fontSize:13,margin:0,fontWeight:700}}>{formErr}</p>}
               <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSmall} onClick={()=>setShowCreate(false)}>取消</button>
-                <button type="submit" className={styles.btnPrimary}>建立優惠券</button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving?"建立中…":"建立優惠券"}</button>
               </div>
             </form>
           </div>
@@ -1009,7 +1070,7 @@ function SubscriptionsPage({ showToast }) {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter]   = useState("all");
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ email: "", plan_type: "monthly", expires_at: "" });
+  const [addForm, setAddForm] = useState({ email: "", plan_type: "bundle", expires_at: "2999-12-31" });
   const [addErr, setAddErr]   = useState("");
   const [acting, setActing]   = useState(null);
 
@@ -1026,25 +1087,21 @@ function SubscriptionsPage({ showToast }) {
   useEffect(() => { fetchSubs(); }, [fetchSubs]);
 
   const now = new Date();
-  const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const isLive = s => s.status === "active" && new Date(s.expires_at) > now;
 
   const filtered = useMemo(() => {
-    if (filter === "all")     return subs;
-    if (filter === "active")  return subs.filter(s => s.status === "active" && new Date(s.expires_at) > now);
-    if (filter === "soon")    return subs.filter(s => s.status === "active" && new Date(s.expires_at) > now && new Date(s.expires_at) < sevenDays);
-    if (filter === "expired") return subs.filter(s => s.status !== "active" || new Date(s.expires_at) <= now);
-    if (filter === "gift")    return subs.filter(s => s.source === "purchase_gift");
+    if (filter === "active")  return subs.filter(isLive);
+    if (filter === "expired") return subs.filter(s => !isLive(s));
     return subs;
   }, [subs, filter, now]);
 
-  const activeCount  = subs.filter(s => s.status === "active" && new Date(s.expires_at) > now).length;
-  const thisMonth    = subs.filter(s => { const d = new Date(s.created_at || 0); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); }).length;
-  const monthlyCount = subs.filter(s => s.plan_type === "monthly" && s.status === "active" && new Date(s.expires_at) > now).length;
-  const yearlyCount  = subs.filter(s => s.plan_type === "yearly"  && s.status === "active" && new Date(s.expires_at) > now).length;
-  const monthlyRev   = Math.round(monthlyCount * 399 + yearlyCount / 12 * 1499);
-  const giftCount    = subs.filter(s => s.source === "purchase_gift" && s.status === "active" && new Date(s.expires_at) > now).length;
+  const activeCount = subs.filter(isLive).length;
+  const thisMonth   = subs.filter(s => { const d = new Date(s.created_at || 0); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); }).length;
+  const bundleCount = subs.filter(s => s.plan_type === "bundle" && isLive(s)).length;
+  const gameCount   = subs.filter(s => s.plan_type === "game"   && isLive(s)).length;
 
-  const planLabel = { monthly: "月繳", yearly: "年繳", gift: "贈送" };
+  const planLabel = { bundle: "課程包", game: "AI 遊戲單買", monthly: "月繳", yearly: "年繳", gift: "贈送" };
 
   async function extendOne(id) {
     setActing(id + "_extend");
@@ -1082,9 +1139,9 @@ function SubscriptionsPage({ showToast }) {
         body: JSON.stringify(addForm),
       });
       if (!r.ok) throw new Error((await r.json()).error);
-      showToast("✅ 已新增訂閱");
+      showToast("✅ 已新增遊戲存取");
       setShowAdd(false);
-      setAddForm({ email: "", plan_type: "monthly", expires_at: "" });
+      setAddForm({ email: "", plan_type: "bundle", expires_at: "2999-12-31" });
       fetchSubs();
     } catch (e) { setAddErr(e.message || "新增失敗"); }
   }
@@ -1100,10 +1157,10 @@ function SubscriptionsPage({ showToast }) {
       </div>
 
       <div className={styles.statsGrid4}>
-        <StatCard label="訂閱中人數" value={activeCount} sub="目前有效" icon={Users} color="#16a34a"/>
-        <StatCard label="本月新增"   value={thisMonth}   sub="新訂閱數" icon={TrendingUp} color="#2563eb"/>
-        <StatCard label="月收入預估" value={`NT$ ${monthlyRev.toLocaleString()}`} sub="訂閱收入" icon={DollarSign} color="#f59e0b"/>
-        <StatCard label="贈送中人數" value={giftCount}   sub="購課贈送" icon={GraduationCap} color="#7c3aed"/>
+        <StatCard label="有效存取人數" value={activeCount} sub="目前有效" icon={Users} color="#16a34a"/>
+        <StatCard label="本月新增"     value={thisMonth}   sub="新增存取數" icon={TrendingUp} color="#2563eb"/>
+        <StatCard label="課程包永久"   value={bundleCount} sub="課程＋遊戲" icon={GraduationCap} color="#f59e0b"/>
+        <StatCard label="遊戲單買永久" value={gameCount}   sub="AI 遊戲" icon={CreditCard} color="#7c3aed"/>
       </div>
 
       <div className={styles.panel}>
@@ -1111,10 +1168,8 @@ function SubscriptionsPage({ showToast }) {
           <div className={styles.tabGroup}>
             {[
               ["all",     "全部"],
-              ["active",  "訂閱中"],
-              ["soon",    "即將到期"],
-              ["expired", "已到期"],
-              ["gift",    "贈送"],
+              ["active",  "有效"],
+              ["expired", "已失效"],
             ].map(([key, label]) => (
               <button key={key}
                 className={`${styles.tab} ${filter === key ? styles.tabActive : ""}`}
@@ -1154,8 +1209,8 @@ function SubscriptionsPage({ showToast }) {
                     <td style={{ fontSize: 13 }}>{s.email}</td>
                     <td>
                       <span className={styles.pill} style={{
-                        background: s.plan_type === "gift" ? "#f0fdf4" : s.plan_type === "yearly" ? "#fef3c7" : "#eff6ff",
-                        color: s.plan_type === "gift" ? "#166534" : s.plan_type === "yearly" ? "#92400e" : "#1d4ed8",
+                        background: s.plan_type === "bundle" ? "#fef3c7" : s.plan_type === "game" ? "#eff6ff" : "#f1f5f9",
+                        color: s.plan_type === "bundle" ? "#92400e" : s.plan_type === "game" ? "#1d4ed8" : "#475569",
                       }}>
                         {planLabel[s.plan_type] || s.plan_type}
                       </span>
@@ -1212,7 +1267,7 @@ function SubscriptionsPage({ showToast }) {
         <div className={styles.modalOverlay} onClick={() => setShowAdd(false)}>
           <div className={styles.modalCard} style={{ width: "min(480px,100%)" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18 }}>手動新增訂閱</h3>
+              <h3 style={{ margin: 0, fontSize: 18 }}>手動新增遊戲存取</h3>
               <button className={styles.iconBtn} onClick={() => setShowAdd(false)}><X size={18}/></button>
             </div>
             <form onSubmit={handleAdd} style={{ display: "grid", gap: 14 }}>
@@ -1227,21 +1282,21 @@ function SubscriptionsPage({ showToast }) {
                   <label>方案</label>
                   <select className={styles.selectInput} style={{ width: "100%" }} value={addForm.plan_type}
                     onChange={e => setAddForm(p => ({ ...p, plan_type: e.target.value }))}>
-                    <option value="monthly">月繳</option>
-                    <option value="yearly">年繳</option>
-                    <option value="gift">贈送</option>
+                    <option value="bundle">課程包（課程＋遊戲）</option>
+                    <option value="game">AI 遊戲單買</option>
                   </select>
                 </div>
                 <div className={styles.formGroup} style={{ flex: 1 }}>
                   <label>到期日 *</label>
                   <input className={styles.input} type="date" value={addForm.expires_at}
                     onChange={e => setAddForm(p => ({ ...p, expires_at: e.target.value }))}/>
+                  <span style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 3, display: "block" }}>永久存取請填 <code style={{ background:"#f1f5f9", padding:"1px 5px", borderRadius:4 }}>2999-12-31</code></span>
                 </div>
               </div>
               {addErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{addErr}</p>}
               <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSmall} onClick={() => setShowAdd(false)}>取消</button>
-                <button type="submit" className={styles.btnPrimary}>新增訂閱</button>
+                <button type="submit" className={styles.btnPrimary}>新增存取</button>
               </div>
             </form>
           </div>
@@ -1252,16 +1307,13 @@ function SubscriptionsPage({ showToast }) {
 }
 
 // ── Analytics Page ─────────────────────────────────────────────────────────
-function AnalyticsPage({leads,trendFilter,donutFilter,setTrendFilter,setDonutFilter}){
-  const purchased=leads.filter(l=>l.purchased||l.status==="purchased").length;
-  const totalRev=purchased*3000;
-  const avgOrder=purchased>0?3000:0;
+function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter}){
   const now=new Date();
-  const monthRev=leads.filter(l=>{
-    if(!l.purchased&&l.status!=="purchased")return false;
-    const d=new Date(l.purchased_at||l.updated_at||l.created_at||0);
-    return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
-  }).length*3000;
+  const paidOrders=orders.filter(o=>o.status==="paid");
+  const purchased=paidOrders.length;
+  const totalRev=paidOrders.reduce((s,o)=>s+(Number(o.amount)||0),0);
+  const avgOrder=purchased>0?Math.round(totalRev/purchased):0;
+  const monthRev=paidOrders.filter(o=>{const d=new Date(o.created_at||o.updated_at||0);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).reduce((s,o)=>s+(Number(o.amount)||0),0);
 
   const RANKING=[
     {rank:1,title:"零基礎流行鋼琴入門課",orders:purchased,revenue:totalRev,color:"#f59e0b"},
@@ -1730,6 +1782,7 @@ const COURSE_TABS = [
   { id:"assignments",  label:"作業設定",       icon:ClipboardList },
   { id:"unitcomments", label:"單元評論",       icon:MessageSquare },
   { id:"ratings",      label:"課程評價",       icon:Star },
+  { id:"games",        label:"AI 遊戲",        icon:Gamepad2 },
 ];
 
 function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnreadChange }) {
@@ -1792,6 +1845,7 @@ function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnr
       {tab==="assignments"  && <AssignmentsPage    showToast={showToast} courseId={course.id}/>}
       {tab==="unitcomments" && <UnitCommentsPage   showToast={showToast} courseId={course.id} onUnreadChange={onUnreadChange}/>}
       {tab==="ratings"      && <CourseRatingsPage  showToast={showToast} courseId={course.id}/>}
+      {tab==="games"        && <GamesManagePage    showToast={showToast} courseId={course.id}/>}
     </div>
   );
 }
@@ -1810,6 +1864,7 @@ export default function AdminPage(){
   const [page,setPage]=useState("dashboard");
   const [selectedCourse,setSelectedCourse]=useState(null);
   const [leads,setLeads]=useState([]);
+  const [orders,setOrders]=useState([]);
   const [loading,setLoading]=useState(false);
   const [toast,setToast]=useState("");
   const [trendFilter,setTrendFilter]=useState("month");
@@ -1854,6 +1909,13 @@ export default function AdminPage(){
   },[]);
 
   useEffect(()=>{if(authed&&["dashboard","students","orders","messages","analytics"].includes(page))fetchLeads();},[authed,page,fetchLeads]);
+
+  const fetchOrders=useCallback(async()=>{
+    try{const res=await fetch("/api/admin/orders",{headers:{Authorization:`Bearer ${getToken()}`}});if(!res.ok)throw new Error("fetch_failed");const{data}=await res.json();setOrders(data||[]);}
+    catch{setOrders([]);}
+  },[]);
+
+  useEffect(()=>{if(authed&&["dashboard","analytics"].includes(page))fetchOrders();},[authed,page,fetchOrders]);
 
   async function markLead(lead,status){
     try{const res=await fetch("/api/admin/leads",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},body:JSON.stringify({id:lead.id,status})});if(res.ok){fetchLeads();showToast("✅ 已更新狀態");return;}}catch{}
@@ -1932,7 +1994,7 @@ export default function AdminPage(){
           </div>
         </div>
         <div className={styles.content}>
-          {page==="dashboard"   &&<DashboardPage leads={leads} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
+          {page==="dashboard"   &&<DashboardPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
           {page==="courses"     &&(selectedCourse
             ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
             : <CoursesPage leads={leads} onManage={c=>{setSelectedCourse(c);}}/>
@@ -1942,9 +2004,8 @@ export default function AdminPage(){
           {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
           {page==="orders"      &&<OrdersPage leads={leads}/>}
           {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
-          {page==="games"       &&<GamesManagePage   showToast={showToast}/>}
-          {page==="coupons"     &&<CouponsPage/>}
-          {page==="analytics"   &&<AnalyticsPage leads={leads} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
+          {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
+          {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
           {page==="integration" &&<IntegrationPage showToast={showToast}/>}
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
           {page==="terms"       &&<TermsPage showToast={showToast}/>}
