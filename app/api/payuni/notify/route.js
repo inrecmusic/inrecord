@@ -145,10 +145,14 @@ export async function POST(req) {
           if (invoiceResult.success) {
             await supabase
               .from("orders")
-              .update({ invoice_no: invoiceResult.invoiceNo })
+              .update({ invoice_no: invoiceResult.invoiceNo, invoice_error: null })
               .eq("id", order.id);
             console.log("[Invoice] 開立成功:", invoiceResult.invoiceNo);
           } else {
+            await supabase
+              .from("orders")
+              .update({ invoice_error: invoiceResult.error || `code_${invoiceResult.code || "unknown"}` })
+              .eq("id", order.id);
             console.error("[Invoice] 開立失敗:", invoiceResult.error);
           }
         }
