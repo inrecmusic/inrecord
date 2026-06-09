@@ -1143,7 +1143,7 @@ function SubscriptionsPage({ showToast }) {
   const bundleCount = subs.filter(s => s.plan_type === "bundle" && isLive(s)).length;
   const gameCount   = subs.filter(s => s.plan_type === "game"   && isLive(s)).length;
 
-  const planLabel = { bundle: "課程包", game: "AI 遊戲單買", monthly: "月繳", yearly: "年繳", gift: "贈送" };
+  const planLabel = { bundle: "學琴全攻略", game: "AI 練功房", monthly: "月繳", yearly: "年繳", gift: "贈送" };
 
   async function extendOne(id) {
     setActing(id + "_extend");
@@ -1324,8 +1324,8 @@ function SubscriptionsPage({ showToast }) {
                   <label>方案</label>
                   <select className={styles.selectInput} style={{ width: "100%" }} value={addForm.plan_type}
                     onChange={e => setAddForm(p => ({ ...p, plan_type: e.target.value }))}>
-                    <option value="bundle">課程包（課程＋遊戲）</option>
-                    <option value="game">AI 遊戲單買</option>
+                    <option value="bundle">學琴全攻略（課程＋遊戲）</option>
+                    <option value="game">AI 練功房</option>
                   </select>
                 </div>
                 <div className={styles.formGroup} style={{ flex: 1 }}>
@@ -1443,7 +1443,7 @@ function IntegrationPage({showToast}){
   function saveAnalytics(){localStorage.setItem(LS_ANALYTICS,JSON.stringify(a));setASaved({...a});showToast("✅ 分析追蹤設定已儲存");}
 
   async function testBrevo(){setBrevoMsg("測試中…");setBrevoStatus("testing");try{const res=await fetch("/api/brevo/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"_test_admin@gmail.com"})});const d=await res.json();if(res.ok&&d.ok){setBrevoStatus("ok");setBrevoMsg("✅ Brevo 連線正常");}else throw new Error(d.error||"api_error");}catch(e){setBrevoStatus("error");setBrevoMsg("❌ "+(e.message.includes("fetch")?"後端尚未部署":e.message));}}
-  async function testPayuni(){setPayuniMsg("測試中…");setPayuniStatus("testing");try{const res=await fetch("/api/payuni/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:"full",price:3500,label:"後台測試"})});const d=await res.json();if(res.ok&&d.url&&d.fields){setPayuniStatus("ok");setPayuniMsg("✅ Payuni 連線正常");}else throw new Error(d.error||"checkout_failed");}catch(e){setPayuniStatus("error");setPayuniMsg("❌ "+(e.message.includes("fetch")?"後端尚未部署":e.message));}}
+  async function testPayuni(){setPayuniMsg("測試中…");setPayuniStatus("testing");try{const res=await fetch("/api/payuni/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:"course",price:3800,label:"後台測試",email:"_test_admin@gmail.com"})});const d=await res.json();if(res.ok&&d.url&&d.fields){setPayuniStatus("ok");setPayuniMsg("✅ Payuni 連線正常");}else throw new Error(d.error||"checkout_failed");}catch(e){setPayuniStatus("error");setPayuniMsg("❌ "+(e.message.includes("fetch")?"後端尚未部署":e.message));}}
   const s2={card:{background:"#fff",border:"1px solid #e2e8f0",borderRadius:20,padding:24,marginBottom:20},h3:{margin:"0 0 4px",fontSize:20},desc:{color:"#64748b",fontSize:14,margin:"0 0 16px"},stepList:{paddingLeft:20,display:"grid",gap:8,fontSize:14,color:"#334155"},codeBlock:{background:"#0f172a",color:"#e2e8f0",borderRadius:12,padding:16,fontFamily:"monospace",fontSize:13,lineHeight:1.8,overflowX:"auto"},envTable:{width:"100%",borderCollapse:"collapse",fontSize:13,marginTop:10},th:{background:"#f8fafc",color:"#94a3b8",padding:"10px 12px",textAlign:"left",borderBottom:"1px solid #e2e8f0",fontSize:12,textTransform:"uppercase"},td:{padding:"10px 12px",borderBottom:"1px solid #e2e8f0"},code:{background:"#f1f5f9",padding:"2px 6px",borderRadius:5,fontFamily:"monospace",fontSize:12},badge:(s)=>({display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:999,fontSize:13,fontWeight:900,background:s==="ok"?"#dcfce7":s==="error"?"#fee2e2":"#f1f5f9",color:s==="ok"?"#166534":s==="error"?"#991b1b":"#6b7280"}),testRow:{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",marginTop:16}};
   return(
     <div>
@@ -1451,7 +1451,7 @@ function IntegrationPage({showToast}){
       <div style={s2.card}>
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:48,height:48,borderRadius:14,background:"#0B996E",display:"grid",placeItems:"center",color:"#fff",fontWeight:900,fontSize:20,flexShrink:0}}>B</div><div style={{flex:1}}><h3 style={s2.h3}>Brevo</h3><div style={{color:"#94a3b8",fontSize:13}}>Email 名單管理 + 自動寄送試看信</div></div><div style={s2.badge(brevoStatus)}>{brevoStatus==="ok"?"已連線":brevoStatus==="error"?"連線失敗":"未測試"}</div></div>
         <p style={s2.desc}>前台試看 Modal 填寫 Gmail 後呼叫 <code style={s2.code}>/api/brevo/subscribe</code>，加入 Brevo 名單並自動寄出試看 Email，同時寫入 Supabase。</p>
-        <table style={s2.envTable}><thead><tr><th style={s2.th}>環境變數</th><th style={s2.th}>說明</th><th style={s2.th}>範例</th></tr></thead><tbody>{[["BREVO_API_KEY","Brevo API 金鑰","xkeysib-xxx..."],["BREVO_LIST_ID","目標名單 ID","3"],["BREVO_SENDER_EMAIL","已驗證寄件人","hello@你的網域.com"],["BREVO_SENDER_NAME","寄件人名稱","InRecord"],["DEMO_URL","試看按鈕連結","https://你的網址/#courseDemo"],["BREVO_TEMPLATE_ID","（可選）Template ID","5"]].map(([k,d,e])=><tr key={k}><td><code style={s2.code}>{k}</code></td><td style={{color:"#64748b"}}>{d}</td><td style={{color:"#94a3b8"}}><code style={s2.code}>{e}</code></td></tr>)}</tbody></table>
+        <table style={s2.envTable}><thead><tr><th style={s2.th}>環境變數</th><th style={s2.th}>說明</th><th style={s2.th}>範例</th></tr></thead><tbody>{[["BREVO_API_KEY","Brevo API 金鑰","xkeysib-xxx..."],["BREVO_LIST_ID","目標名單 ID","3"],["BREVO_SENDER_EMAIL","已驗證寄件人","hello@你的網域.com"],["BREVO_SENDER_NAME","寄件人名稱","InRecord"],["DEMO_URL","試看按鈕連結","https://你的網址/#curriculum"],["BREVO_TEMPLATE_ID","（可選）Template ID","5"]].map(([k,d,e])=><tr key={k}><td><code style={s2.code}>{k}</code></td><td style={{color:"#64748b"}}>{d}</td><td style={{color:"#94a3b8"}}><code style={s2.code}>{e}</code></td></tr>)}</tbody></table>
         <ol style={s2.stepList}><li>前往 <strong>app.brevo.com</strong> → Settings → API Keys → 建立新的 API Key</li><li>Contacts → Lists → 建立名單，記下 List ID</li><li>Settings → Senders → 新增並驗證寄件人 Email</li><li><strong>Vercel</strong> → Settings → Environment Variables 填入所有變數後重新部署</li></ol>
         <div style={s2.testRow}><button onClick={testBrevo} style={{border:0,background:"#2563eb",color:"#fff",borderRadius:10,padding:"9px 14px",fontWeight:900,cursor:"pointer"}}>🔍 測試 Brevo 連線</button>{brevoMsg&&<span style={{fontSize:13,fontWeight:800,color:brevoStatus==="ok"?"#16a34a":"#dc2626"}}>{brevoMsg}</span>}</div>
       </div>

@@ -10,6 +10,25 @@ const COUPON_ERRORS = {
   coupon_used_up:     "優惠碼已達使用上限",
 };
 
+// checkout 失敗時對使用者顯示的友善文案（不洩露系統設定細節）
+const CHECKOUT_ERRORS = {
+  invalid_plan:         "方案資料有誤，請重新整理後再試。",
+  invalid_email:        "Email 格式不正確，請確認登入帳號。",
+  amount_too_low:       "金額異常，請重新整理後再試。",
+  invalid_tax_id:       "統一編號格式不正確，請確認後再試。",
+  tax_id_not_exist:     "查無此統一編號，請確認後再試。",
+  missing_company_name: "請填寫公司抬頭。",
+  invalid_carrier_type: "載具類型不正確，請重新選擇。",
+  invalid_carrier_id:   "手機條碼載具格式不正確，請確認後再試。",
+  carrier_not_exist:    "查無此手機條碼載具，請確認後再試。",
+  missing_payuni_config: "付款服務暫時無法使用，請稍後再試或與我們聯繫。",
+};
+function checkoutErrorMessage(code) {
+  if (code && COUPON_ERRORS[code]) return COUPON_ERRORS[code];
+  if (code && CHECKOUT_ERRORS[code]) return CHECKOUT_ERRORS[code];
+  return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
+}
+
 // 手機條碼載具格式：斜線開頭 + 7 碼（大寫英數與 . + -）
 const MOBILE_BARCODE_RE = /^\/[0-9A-Z.+-]{7}$/;
 // 統一編號：8 位數字
@@ -155,7 +174,7 @@ export default function BuyModal({ open, onClose, plan, email }) {
       form.submit();
     } catch (err) {
       console.error("[payuni checkout]", err);
-      setError("⚠️ 金流服務尚未設定，請確認 Payuni 環境變數（PAYUNI_MERCHANT_ID、PAYUNI_HASH_KEY、PAYUNI_HASH_IV）已在 Vercel 設定。");
+      setError(checkoutErrorMessage(err.message));
       setLoading(false);
     }
   }

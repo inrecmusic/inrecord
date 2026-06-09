@@ -69,7 +69,7 @@ export async function POST(req) {
             updated_at:      new Date().toISOString(),
           },
           { onConflict: "mer_trade_no" }
-        ).select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code").single();
+        ).select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
         if (error) {
           console.error("[payuni notify] supabase error", error.message);
         } else if (order?.email) {
@@ -107,9 +107,15 @@ export async function POST(req) {
           }
         }
 
-        // 首次成功處理此訂單（尚未開發票）才執行：寄開課確認信 + 開發票
-        // 以 invoice_no 作為去重標記，避免 Payuni 重送 notify 時重複寄信／重複開票
-        if (order?.id && !order.invoice_no) {
+        // 一次性履約（優惠券累計 + 寄開課信）：以 fulfilled_at 作為去重旗標。
+        // 與開發票分離 —— 開發票可能反覆失敗重試，不能讓它連帶造成優惠券重複累計／重複寄信。
+        if (order?.id && !order.fulfilled_at) {
+          // 先打旗標再做副作用，避免 Payuni 短時間重送 notify 造成重複
+          await supabase
+            .from("orders")
+            .update({ fulfilled_at: new Date().toISOString() })
+            .eq("id", order.id);
+
           // 優惠券使用次數累計（付款成功才計）
           if (order.coupon_code) {
             const { data: c } = await supabase.from("coupons").select("used").eq("code", order.coupon_code).single();
@@ -130,7 +136,10 @@ export async function POST(req) {
               console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
             }
           }
+        }
 
+        // 開立發票：以 invoice_no 作為去重旗標，可在開票失敗時隨後重試（手動或重送 notify）
+        if (order?.id && !order.invoice_no) {
           const invoiceResult = await createInvoice({
             orderId: order.id,
             buyerName: order.buyer_name || "學員",

@@ -26,7 +26,7 @@ export default function PreviewModal({ open, onClose, onSuccess }) {
           email,
           source: "course_preview_modal",
           course: "零基礎流行鋼琴入門課",
-          demoUrl: `${window.location.origin}/#courseDemo`
+          demoUrl: `${window.location.origin}/#curriculum`
         })
       });
       if (!res.ok) throw new Error((await res.json()).error || "api_error");

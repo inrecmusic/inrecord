@@ -4,6 +4,7 @@
 -- ════════════════════════════════════════
 
 ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS fulfilled_at TIMESTAMPTZ,  -- 首次付款成功處理時間；優惠券累計／寄信的去重旗標
 ADD COLUMN IF NOT EXISTS invoice_no   TEXT,
 ADD COLUMN IF NOT EXISTS buyer_name   TEXT,
 ADD COLUMN IF NOT EXISTS buyer_tax_id TEXT,

@@ -2,6 +2,7 @@
 
 > 目標：六月底前正式上線。今天 2026-06-08，約 3 週。
 > 圖例：👤 需你操作（憑證/外部後台）　🤖 程式可協助　⏳ 有外部審核時程
+> 📋 端對端手動測試逐步腳本見 [`test-script.md`](./test-script.md)（金流／退款／發票／教室存取／優惠券去重）。
 
 ---
 
@@ -26,6 +27,7 @@
 - [ ] 👤 自訂網域綁定 Vercel + SSL 正常
 
 ### 上線前端對端實測（用正式環境，真實小額）
+> 逐步步驟與預期結果見 [`test-script.md`](./test-script.md) 第 3~6 段。
 - [ ] 🤖👤 刷一筆：付款 → notify 開通（enrollments/subscriptions）→ 開發票 → 開課信
 - [ ] 🤖👤 LINE Pay 付款走一次完整流程
 - [ ] 🤖👤 退款測試：`/api/admin/refund`（trade/close → fallback cancel）+ 確認開通已撤銷
@@ -35,7 +37,7 @@
 
 ## 🟠 P1 — 上線品質（強烈建議月底前）
 
-- [ ] 🤖 **優惠券超計 bug**：notify 內 `used +1` 包在 `!order.invoice_no` 區塊，發票一直失敗時每次重送 notify 都會 +1 → 改用獨立去重旗標（屬金流/發票，待你開放後處理）
+- [x] 🤖 ~~**優惠券超計 bug**~~：已改用 `orders.fulfilled_at` 獨立去重旗標，優惠券累計＋寄信與「可重試的開發票」分離（需執行 `supabase-deploy.sql` 補上 `fulfilled_at` 欄位）
 - [ ] 👤 **Brevo 寄件網域 SPF/DKIM 驗證**（否則開課信易進垃圾桶）
 - [ ] 👤 付款失敗 / 取消的使用者引導文案（return 一律導 `/success`，需確認失敗畫面）
 - [x] 🤖 ~~開發用一次性路由收口~~（已刪除 debug/fix-bunny/run-migration）
