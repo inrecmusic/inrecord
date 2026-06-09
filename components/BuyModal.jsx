@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import styles from "./BuyModal.module.css";
+import { MOBILE_BARCODE_RE, TAX_ID_RE, MOBILE_CARRIER_TYPE, isValidTaxId } from "@/lib/invoice-fields";
 
 const COUPON_ERRORS = {
   coupon_not_found:   "查無此優惠碼",
@@ -27,27 +28,6 @@ function checkoutErrorMessage(code) {
   if (code && COUPON_ERRORS[code]) return COUPON_ERRORS[code];
   if (code && CHECKOUT_ERRORS[code]) return CHECKOUT_ERRORS[code];
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
-}
-
-// 手機條碼載具格式：斜線開頭 + 7 碼（大寫英數與 . + -）
-const MOBILE_BARCODE_RE = /^\/[0-9A-Z.+-]{7}$/;
-// 統一編號：8 位數字
-const TAX_ID_RE = /^\d{8}$/;
-// Amego 手機條碼載具代碼
-const MOBILE_CARRIER_TYPE = "3J0002";
-
-// 統一編號檢查碼驗證（財政部 2023 新制：sum 可被 5 整除；第 7 碼為 7 時有 +1 例外）
-function isValidTaxId(id) {
-  if (!TAX_ID_RE.test(id) || id === "00000000") return false;
-  const weights = [1, 2, 1, 2, 1, 2, 4, 1];
-  const digits = id.split("").map(Number);
-  let sum = 0;
-  for (let i = 0; i < 8; i++) {
-    const product = digits[i] * weights[i];
-    sum += Math.floor(product / 10) + (product % 10);
-  }
-  if (sum % 5 === 0) return true;
-  return digits[6] === 7 && (sum + 1) % 5 === 0;
 }
 
 export default function BuyModal({ open, onClose, plan, email }) {

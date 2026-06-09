@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
 function aesDecrypt(encryptStr, key, iv) {
@@ -109,7 +110,7 @@ export async function POST(req) {
 
         // 一次性履約（優惠券累計 + 寄開課信）：以 fulfilled_at 作為去重旗標。
         // 與開發票分離 —— 開發票可能反覆失敗重試，不能讓它連帶造成優惠券重複累計／重複寄信。
-        if (order?.id && !order.fulfilled_at) {
+        if (needsFulfillment(order)) {
           // 先打旗標再做副作用，避免 Payuni 短時間重送 notify 造成重複
           await supabase
             .from("orders")
@@ -139,7 +140,7 @@ export async function POST(req) {
         }
 
         // 開立發票：以 invoice_no 作為去重旗標，可在開票失敗時隨後重試（手動或重送 notify）
-        if (order?.id && !order.invoice_no) {
+        if (needsInvoice(order)) {
           const invoiceResult = await createInvoice({
             orderId: order.id,
             buyerName: order.buyer_name || "學員",

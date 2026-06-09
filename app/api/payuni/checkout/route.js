@@ -3,24 +3,7 @@ import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
-
-// 發票欄位驗證（與前端 BuyModal 規則一致）
-const MOBILE_BARCODE_RE  = /^\/[0-9A-Z.+-]{7}$/;
-const TAX_ID_RE          = /^\d{8}$/;
-const MOBILE_CARRIER_TYPE = "3J0002";
-
-function isValidTaxId(id) {
-  if (!TAX_ID_RE.test(id) || id === "00000000") return false;
-  const weights = [1, 2, 1, 2, 1, 2, 4, 1];
-  const digits = id.split("").map(Number);
-  let sum = 0;
-  for (let i = 0; i < 8; i++) {
-    const product = digits[i] * weights[i];
-    sum += Math.floor(product / 10) + (product % 10);
-  }
-  if (sum % 5 === 0) return true;
-  return digits[6] === 7 && (sum + 1) % 5 === 0;
-}
+import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 
 // Payuni 統一金流 AES-256-GCM 加密
 // 輸出格式：hex( base64(密文) + ':::' + base64(GCM tag) )，與官方 SDK 一致
@@ -100,7 +83,7 @@ export async function POST(req) {
         return NextResponse.json({ error: "invalid_carrier_type" }, { status: 400 });
       }
       const cid = String(body.carrierId || "").trim().toUpperCase();
-      if (!MOBILE_BARCODE_RE.test(cid)) return NextResponse.json({ error: "invalid_carrier_id" }, { status: 400 });
+      if (!isValidMobileBarcode(cid)) return NextResponse.json({ error: "invalid_carrier_id" }, { status: 400 });
       const carrierCheck = await verifyCarrier(cid);
       if (carrierCheck.valid === false) {
         return NextResponse.json({ error: "carrier_not_exist" }, { status: 400 });
