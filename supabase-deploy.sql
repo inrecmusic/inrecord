@@ -80,3 +80,27 @@ CREATE POLICY "service_role_courses" ON courses
 INSERT INTO courses (title, description, price, status)
 SELECT '零基礎流行鋼琴入門課', '從零開始學習流行鋼琴，包含基礎樂理、和弦節奏與歌曲實作', 3800, 'published'
 WHERE NOT EXISTS (SELECT 1 FROM courses);
+
+-- ════════════════════════════════════════
+-- 優惠序號庫：coupon_batches 表 + coupons.batch_id
+-- 序號 = usage_limit=1 的 coupon；結帳流程與優惠券共用
+-- ════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS coupon_batches (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL,                   -- 例：2026 春季演奏會
+  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed'
+  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$
+  prefix      TEXT,                            -- 序號前綴，例 LIVE
+  note        TEXT,                            -- 活動備註
+  starts_at   DATE,
+  ends_at     DATE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE coupon_batches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_coupon_batches" ON coupon_batches;
+CREATE POLICY "service_role_coupon_batches" ON coupon_batches
+  USING (auth.role() = 'service_role');
+
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS batch_id UUID
+  REFERENCES coupon_batches(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS coupons_batch_idx ON coupons (batch_id);
