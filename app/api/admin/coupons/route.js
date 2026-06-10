@@ -10,6 +10,7 @@ export async function GET(req) {
   const { data, error } = await supabase
     .from("coupons")
     .select("*")
+    .is("batch_id", null)              // 序號（批次碼）不出現在一般優惠券列表
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
