@@ -189,14 +189,14 @@ export default function ClassroomLoginPage() {
             </div>
             {otpSent && (
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="otp-code">驗證碼（6 位數）</label>
+                <label className={styles.label} htmlFor="otp-code">驗證碼</label>
                 <input
                   id="otp-code" type="text" inputMode="numeric" className={styles.input}
-                  value={otpCode} onChange={e => setOtpCode(e.target.value)}
-                  placeholder="輸入信件中的 6 位數驗證碼" required
-                  autoComplete="one-time-code" maxLength={6}
+                  value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\s/g, ""))}
+                  placeholder="輸入信件中的驗證碼" required
+                  autoComplete="one-time-code"
                 />
-                <p className={styles.helpText}>已寄出登入信。可輸入信中的 6 位數驗證碼，或直接點信中的登入連結。</p>
+                <p className={styles.helpText}>已寄出登入信。可輸入信中的驗證碼，或直接點信中的登入連結。</p>
               </div>
             )}
             {error && <p className={styles.error}>{error}</p>}
