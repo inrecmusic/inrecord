@@ -127,7 +127,7 @@ export default function ClassroomLoginPage() {
         {inApp && (
           <div className={styles.banner}>
             你正從 App 內建瀏覽器開啟，<strong>Google 登入會被擋下</strong>。請改用下方「Email 驗證碼登入」，
-            或點右上角選單選擇「在 Safari／Chrome 開啟」。
+            或點右下角的「⋯」選擇「在 Safari／瀏覽器開啟」。
           </div>
         )}
 
