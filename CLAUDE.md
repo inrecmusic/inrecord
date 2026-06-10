@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS coupons (
 );
 ```
 
+### 優惠序號庫（coupon_batches）
+
+現場活動限定序號：每組序號是一筆 `usage_limit=1` 的 `coupons`，靠 `batch_id` 歸入 `coupon_batches`（批次 metadata：折扣、前綴、備註、起訖）。**結帳/驗證/notify 累計流程與優惠券完全共用，零修改**——序號用一次即 `coupon_used_up` 失效。後台「優惠券」頁下方「序號庫」可批次自動產生（前綴＋數量，上限 500，CSPRNG 產碼且排除易混字 0/O/1/I）或手動補建、查看清單、全選複製、下載 CSV（含 BOM 與公式注入防護）。一般優惠券列表以 `.is("batch_id", null)` 排除序號。產碼/正規化/CSV 純邏輯在 `lib/serial-codes.js`（有單元測試）。API：`/api/admin/coupon-batches`（GET/POST/DELETE）、`/api/admin/coupon-batches/[id]/codes`（GET）。
+
 ### subscriptions 資料表（沿用為「遊戲存取」記錄）
 
 遊戲存取權仍存於 subscriptions 表；「永久」以遠期到期日 `2999-12-31` 表示。
