@@ -915,6 +915,98 @@ function CouponsPage({ showToast }){
   const [form,setForm]=useState({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
   const [formErr,setFormErr]=useState("");
 
+  // ── 序號庫 ──
+  const [batches,setBatches]=useState([]);
+  const [batchLoading,setBatchLoading]=useState(false);
+  const [showBatchCreate,setShowBatchCreate]=useState(false);
+  const [batchSaving,setBatchSaving]=useState(false);
+  const [batchErr,setBatchErr]=useState("");
+  const [batchForm,setBatchForm]=useState({name:"",type:"percent",value:"",prefix:"",note:"",start:"",end:"",mode:"auto",quantity:"50",codes:""});
+  const [expandId,setExpandId]=useState(null);
+  const [expandCodes,setExpandCodes]=useState([]);
+  const [expandLoading,setExpandLoading]=useState(false);
+  const [deleteBatch,setDeleteBatch]=useState(null);
+
+  const fetchBatches=useCallback(async()=>{
+    setBatchLoading(true);
+    try{const r=await _api("/api/admin/coupon-batches");const{data}=await r.json();setBatches(data||[]);}
+    catch{setBatches([]);}
+    finally{setBatchLoading(false);}
+  },[]);
+  useEffect(()=>{fetchBatches();},[fetchBatches]);
+
+  function discountLabel(b){return b.type==="percent"?`${b.value}% 折扣`:`折 NT$${b.value}`;}
+
+  async function toggleExpand(b){
+    if(expandId===b.id){setExpandId(null);setExpandCodes([]);return;}
+    setExpandId(b.id);setExpandLoading(true);setExpandCodes([]);
+    try{const r=await _api(`/api/admin/coupon-batches/${b.id}/codes`);const{data}=await r.json();setExpandCodes(data||[]);}
+    catch{setExpandCodes([]);}
+    finally{setExpandLoading(false);}
+  }
+
+  async function handleBatchCreate(e){
+    e.preventDefault();setBatchErr("");
+    if(!batchForm.name.trim()){setBatchErr("請輸入批次名稱");return;}
+    if(!batchForm.value||isNaN(batchForm.value)||Number(batchForm.value)<=0){setBatchErr("請輸入有效的折扣值");return;}
+    if(batchForm.type==="percent"&&Number(batchForm.value)>100){setBatchErr("百分比折扣不可超過 100");return;}
+    if(batchForm.mode==="auto"&&(!batchForm.quantity||Number(batchForm.quantity)<=0)){setBatchErr("請輸入產生數量");return;}
+    if(batchForm.mode==="manual"&&!batchForm.codes.trim()){setBatchErr("請貼上序號（一行一組）");return;}
+    setBatchSaving(true);
+    try{
+      const r=await _api("/api/admin/coupon-batches",{method:"POST",body:JSON.stringify({
+        name:batchForm.name.trim(),type:batchForm.type,value:Number(batchForm.value),
+        prefix:batchForm.prefix.trim()||null,note:batchForm.note.trim()||null,
+        starts_at:batchForm.start||null,ends_at:batchForm.end||null,
+        mode:batchForm.mode,
+        quantity:batchForm.mode==="auto"?Number(batchForm.quantity):undefined,
+        codes:batchForm.mode==="manual"?batchForm.codes:undefined,
+      })});
+      const d=await r.json();
+      if(!r.ok){
+        const msg=d.error==="code_exists"?`序號重複：${(d.conflicts||[]).slice(0,5).join(", ")}`
+          :d.error==="too_many_codes"?"數量超過上限 500"
+          :d.error==="code_collision"?"自動產碼碰撞過多，請換前綴或減少數量"
+          :d.error||"建立失敗";
+        throw new Error(msg);
+      }
+      showToast?.(`✅ 已建立批次，共 ${d.data.total} 組序號`);
+      setShowBatchCreate(false);
+      setBatchForm({name:"",type:"percent",value:"",prefix:"",note:"",start:"",end:"",mode:"auto",quantity:"50",codes:""});
+      fetchBatches();
+    }catch(err){setBatchErr(err.message);}
+    finally{setBatchSaving(false);}
+  }
+
+  async function confirmDeleteBatch(){
+    try{
+      const r=await _api(`/api/admin/coupon-batches?id=${deleteBatch.id}`,{method:"DELETE"});
+      if(!r.ok)throw new Error();
+      showToast?.("✅ 批次已刪除");setDeleteBatch(null);
+      if(expandId===deleteBatch.id){setExpandId(null);setExpandCodes([]);}
+      fetchBatches();
+    }catch{showToast?.("❌ 刪除失敗");}
+  }
+
+  function copyAllCodes(){
+    if(!expandCodes.length)return;
+    navigator.clipboard?.writeText(expandCodes.map(c=>c.code).join("\n"));
+    showToast?.("✅ 已複製全部序號");
+  }
+
+  function downloadCsv(b){
+    const dl=discountLabel(b);
+    // 防 CSV 公式注入：以 = + - @ Tab CR 開頭者前綴單引號並整欄加引號
+    const esc=(s)=>{let v=String(s??"");const f=/^[=+\-@\t\r]/.test(v);if(f)v="'"+v;return f||/[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
+    const header="序號,狀態,折扣,批次名稱";
+    const lines=expandCodes.map(c=>[esc(c.code),c.used?"已使用":"未使用",esc(dl),esc(b.name)].join(","));
+    const csv="﻿"+[header,...lines].join("\n")+"\n"; // BOM 讓 Excel 正確顯示中文
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download=`序號_${b.name}.csv`;a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const fetchCoupons=useCallback(async()=>{
     setLoading(true);
     try{const r=await _api("/api/admin/coupons");const{data}=await r.json();setCoupons(data||[]);}
@@ -1041,6 +1133,72 @@ function CouponsPage({ showToast }){
         </div>
       </div>
 
+      {/* ── 序號庫 ── */}
+      <div className={styles.pageHeader} style={{marginTop:32}}>
+        <div><h2 style={{margin:0}}>序號庫</h2><p>現場活動限定：批次產生獨立序號，每組限用一次</p></div>
+        <div className={styles.pageActions}>
+          <button className={styles.btnSmall} onClick={fetchBatches}><RefreshCw size={13}/> 重新整理</button>
+          <button className={styles.btnPrimary} onClick={()=>setShowBatchCreate(true)}><Plus size={14}/> 新增批次</button>
+        </div>
+      </div>
+      <div className={styles.panel}>
+        <div className={styles.panelHead}><h2>批次列表</h2><span className={styles.dim}>共 {batches.length} 批</span></div>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>批次名稱</th><th>折扣</th><th>已用 / 總數</th><th>前綴</th><th>有效期間</th><th>備註</th><th>操作</th></tr></thead>
+            <tbody>
+              {batchLoading?<tr><td colSpan={7} className={styles.empty}>載入中…</td></tr>
+              :!batches.length?<tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎫</span><span className={styles.emptyTitle}>還沒有任何序號批次</span><span className={styles.emptySub}>新增批次來產生現場活動序號</span></td></tr>
+              :batches.map(b=>(
+                <Fragment key={b.id}>
+                <tr>
+                  <td><strong>{b.name}</strong></td>
+                  <td>
+                    <span className={styles.discountBadge} style={{background:b.type==="percent"?"#eff6ff":"#fef3c7",color:b.type==="percent"?"#1d4ed8":"#92400e"}}>
+                      {b.type==="percent"?<><Percent size={11}/> {b.value}%</>:<>NT$ {b.value}</>}
+                    </span>
+                  </td>
+                  <td><span style={{fontWeight:800}}>{b.used}</span> / {b.total}</td>
+                  <td className={styles.dim}>{b.prefix||"—"}</td>
+                  <td className={styles.dim} style={{fontSize:12}}>{b.starts_at||"—"} ~ {b.ends_at||"—"}</td>
+                  <td className={styles.dim} style={{fontSize:12,maxWidth:160}}>{b.note||"—"}</td>
+                  <td>
+                    <div className={styles.rowActions}>
+                      <button className={styles.btnSmall} onClick={()=>toggleExpand(b)}>{expandId===b.id?"收合":"查看序號"}</button>
+                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>setDeleteBatch(b)}><Trash2 size={12}/></button>
+                    </div>
+                  </td>
+                </tr>
+                {expandId===b.id&&(
+                  <tr>
+                    <td colSpan={7} style={{background:"#f8fafc"}}>
+                      {expandLoading?<div className={styles.dim} style={{padding:12}}>載入序號中…</div>:(
+                        <div style={{padding:"8px 4px"}}>
+                          <div style={{display:"flex",gap:8,marginBottom:10}}>
+                            <button className={styles.btnSmall} onClick={copyAllCodes}><Copy size={12}/> 全選複製</button>
+                            <button className={styles.btnSmall} onClick={()=>downloadCsv(b)}><Download size={12}/> 下載 CSV</button>
+                            <span className={styles.dim} style={{alignSelf:"center"}}>共 {expandCodes.length} 組</span>
+                          </div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                            {expandCodes.map(c=>(
+                              <span key={c.id} style={{display:"inline-flex",alignItems:"center",gap:6,background:c.used?"#f1f5f9":"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"3px 8px",fontSize:12}}>
+                                <code style={{fontWeight:700,letterSpacing:1,textDecoration:c.used?"line-through":"none",color:c.used?"#94a3b8":"#0f172a"}}>{c.code}</code>
+                                <span className={styles.dim} style={{fontSize:11}}>{c.used?"已使用":"未使用"}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Create modal */}
       {showCreate&&(
         <div className={styles.modalOverlay} onClick={()=>setShowCreate(false)}>
@@ -1099,6 +1257,77 @@ function CouponsPage({ showToast }){
             <h3 style={{margin:"0 0 8px",fontSize:17}}>確認刪除優惠券</h3>
             <p style={{margin:"0 0 20px",color:"#64748b",fontSize:14}}>刪除後無法復原，確定要刪除嗎？</p>
             <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteId(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDelete}>確認刪除</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch create modal */}
+      {showBatchCreate&&(
+        <div className={styles.modalOverlay} onClick={()=>!batchSaving&&setShowBatchCreate(false)}>
+          <div className={styles.modalCard} style={{width:"min(560px,100%)"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <h3 style={{margin:0,fontSize:18}}>新增序號批次</h3>
+              <button className={styles.iconBtn} onClick={()=>setShowBatchCreate(false)}><X size={18}/></button>
+            </div>
+            <form onSubmit={handleBatchCreate} style={{display:"grid",gap:14}}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}><label>批次名稱 *</label><input className={styles.input} value={batchForm.name} onChange={e=>setBatchForm(p=>({...p,name:e.target.value}))} placeholder="例：2026 春季演奏會"/></div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup} style={{flex:1}}>
+                  <label>折扣類型</label>
+                  <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.type} onChange={e=>setBatchForm(p=>({...p,type:e.target.value}))}>
+                    <option value="percent">百分比折扣 (%)</option>
+                    <option value="fixed">固定金額折扣 (NT$)</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup} style={{flex:1}}>
+                  <label>折扣值 * {batchForm.type==="percent"?"(%)":"(NT$)"}</label>
+                  <input className={styles.input} type="number" min="1" value={batchForm.value} onChange={e=>setBatchForm(p=>({...p,value:e.target.value}))} placeholder={batchForm.type==="percent"?"90":"500"}/>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup} style={{flex:1}}>
+                  <label>產生方式</label>
+                  <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.mode} onChange={e=>setBatchForm(p=>({...p,mode:e.target.value}))}>
+                    <option value="auto">自動產生</option><option value="manual">手動貼上</option>
+                  </select>
+                </div>
+              </div>
+              {batchForm.mode==="auto"?(
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup} style={{flex:1}}><label>前綴（選填）</label><input className={styles.input} value={batchForm.prefix} onChange={e=>setBatchForm(p=>({...p,prefix:e.target.value.toUpperCase()}))} placeholder="例：LIVE"/></div>
+                  <div className={styles.formGroup} style={{flex:1}}><label>產生數量 *（上限 500）</label><input className={styles.input} type="number" min="1" max="500" value={batchForm.quantity} onChange={e=>setBatchForm(p=>({...p,quantity:e.target.value}))} placeholder="50"/></div>
+                </div>
+              ):(
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup} style={{flex:1}}><label>序號（一行一組）*</label><textarea className={styles.input} rows={5} value={batchForm.codes} onChange={e=>setBatchForm(p=>({...p,codes:e.target.value}))} placeholder={"LIVE-AAAA\nLIVE-BBBB"}/></div>
+                </div>
+              )}
+              <div className={styles.formRow}>
+                <div className={styles.formGroup} style={{flex:1}}><label>開始日期</label><input className={styles.input} type="date" value={batchForm.start} onChange={e=>setBatchForm(p=>({...p,start:e.target.value}))}/></div>
+                <div className={styles.formGroup} style={{flex:1}}><label>結束日期</label><input className={styles.input} type="date" value={batchForm.end} onChange={e=>setBatchForm(p=>({...p,end:e.target.value}))}/></div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}><label>活動備註（選填）</label><input className={styles.input} value={batchForm.note} onChange={e=>setBatchForm(p=>({...p,note:e.target.value}))} placeholder="例：現場演奏會發放"/></div>
+              </div>
+              {batchErr&&<p style={{color:"#dc2626",fontSize:13,margin:0,fontWeight:700}}>{batchErr}</p>}
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnSmall} onClick={()=>setShowBatchCreate(false)}>取消</button>
+                <button type="submit" className={styles.btnPrimary} disabled={batchSaving}>{batchSaving?"建立中…":"建立批次並產生序號"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Batch delete confirm */}
+      {deleteBatch&&(
+        <div className={styles.modalOverlay} onClick={()=>setDeleteBatch(null)}>
+          <div className={styles.modalCard} onClick={e=>e.stopPropagation()}>
+            <h3 style={{margin:"0 0 8px",fontSize:17}}>確認刪除批次</h3>
+            <p style={{margin:"0 0 20px",color:"#64748b",fontSize:14}}>將刪除「{deleteBatch.name}」及其 {deleteBatch.total} 組序號（已使用 {deleteBatch.used} 組）。已成立訂單不受影響，但未使用的序號將失效，無法復原。</p>
+            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteBatch(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDeleteBatch}>確認刪除</button></div>
           </div>
         </div>
       )}
