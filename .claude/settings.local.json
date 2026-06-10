@@ -10,7 +10,10 @@
       "Bash(python3 -c ' *)",
       "Bash(grep -v \"^$\")",
       "Bash(node *)",
-      "Bash(curl -s http://localhost:3000/rick.jpg -o /dev/null -w \"%{http_code}\")"
+      "Bash(curl -s http://localhost:3000/rick.jpg -o /dev/null -w \"%{http_code}\")",
+      "Bash(git log *)",
+      "Bash(vercel env *)",
+      "Bash(echo \"=== exit: $? ===\")"
     ]
   }
 }

@@ -10,10 +10,10 @@
 .cardLogo { display: inline-flex; margin-bottom: 30px; }
 
 .title {
-  font-family: var(--type-display);
-  font-weight: 400;
+  font-family: var(--type-heading);
+  font-weight: 600;
   font-size: 32px;
-  letter-spacing: -.02em;
+  letter-spacing: -.01em;
   color: var(--ink, #0f172a);
   margin: 0 0 6px;
 }
@@ -107,6 +107,41 @@
 }
 .submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(37,99,235,.4); }
 .submit:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.banner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 11px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #92400e;
+  margin-bottom: 20px;
+}
+.banner strong { color: #b45309; }
+
+.helpText {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.linkBtn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  background: none;
+  border: 0;
+  padding: 4px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--brand, #2563eb);
+  cursor: pointer;
+  text-align: center;
+}
+.linkBtn:hover { text-decoration: underline; }
 
 .hint {
   margin: 26px 0 14px;

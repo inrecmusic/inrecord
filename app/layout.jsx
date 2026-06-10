@@ -1,32 +1,41 @@
-import { Newsreader, Spectral, Noto_Serif_TC } from "next/font/google";
+import { Cormorant_Garamond, Noto_Serif_TC, Inter, Noto_Sans_TC } from "next/font/google";
 import "./globals.css";
 
-// Modern Literary type system — Newsreader + Spectral + Noto Serif TC
+// v3 Two-tier type system —
+//   Layer 1 · Main-visual serif (Hero only): Cormorant Garamond + Noto Serif TC
+//   Layer 2 · Content sans (黑體, everywhere else): Inter + Noto Sans TC
 
-// Latin headings + italic accents
-const newsreader = Newsreader({
+// Layer 1 · Main-visual — Latin serif (English 中庸 = 500)
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600"],
   style: ["normal", "italic"],
   display: "swap",
-  variable: "--font-newsreader",
+  variable: "--font-cormorant",
 });
 
-// Latin body text + numerals
-const spectral = Spectral({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-spectral",
-});
-
-// All Chinese — body and headings
+// Layer 1 · Main-visual — Chinese serif (中文 厚重 = 600)
 const notoSerif = Noto_Serif_TC({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["500", "600", "700"],
   display: "swap",
-  variable: "--font-serif",
+  variable: "--font-noto-serif",
+});
+
+// Layer 2 · Content — Latin sans + numerals
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+// Layer 2 · Content — Chinese sans (黑體)
+const notoSans = Noto_Sans_TC({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-noto-sans",
 });
 
 export const metadata = {
@@ -43,7 +52,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="zh-Hant"
-      className={`${newsreader.variable} ${spectral.variable} ${notoSerif.variable}`}
+      className={`${cormorant.variable} ${notoSerif.variable} ${inter.variable} ${notoSans.variable}`}
     >
       <body>{children}</body>
     </html>

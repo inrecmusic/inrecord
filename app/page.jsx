@@ -75,8 +75,8 @@ const POINTS = [
 const PLANS = [
   {
     plan: "course",
-    label: "課程單賣",
-    pillLabel: "經典課程",
+    label: "鋼琴自學全課程",
+    pillLabel: "從零學起",
     price: 3800,
     desc: "10 章節完整課程，一次買斷、永久觀看。",
     features: ["10 章節系統化課程", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
@@ -84,8 +84,8 @@ const PLANS = [
   },
   {
     plan: "bundle",
-    label: "課程包 AI",
-    pillLabel: "最超值",
+    label: "學琴全攻略",
+    pillLabel: "最超值全配",
     price: 3999,
     desc: "課程 + AI 互動遊戲，永久使用、一次擁有全部。",
     features: ["完整 10 章節課程", "全部 AI 互動遊戲永久使用", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
@@ -95,8 +95,8 @@ const PLANS = [
   },
   {
     plan: "game",
-    label: "AI 遊戲單買",
-    pillLabel: "互動練習",
+    label: "AI 練功房",
+    pillLabel: "邊玩邊練",
     price: 1200,
     desc: "全部 AI 互動遊戲，永久使用。",
     features: ["全部 AI 互動遊戲永久使用", "音名快閃・唱名階梯", "和弦辨識家・節奏打點師", "練習紀錄與進度追蹤"],
@@ -543,7 +543,7 @@ export default function HomePage() {
                 ["我需要準備鋼琴嗎？",           "AI 互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
                 ["學完後可以彈哪些歌？",         "課程實戰練習包含《Do-Re-Mi》、《Happy Birthday》、《稻香》、《告白氣球》、《刻在我心底的名字》、《Always With Me》等 20+ 首。"],
-                ["課程包和單買有什麼差別？",     "課程包 AI（NT$3,999）一次擁有完整課程與全部 AI 互動遊戲，最超值；也可只買課程（NT$3,800）或只買 AI 遊戲（NT$1,200），皆為一次買斷、永久使用。"],
+                ["課程包和單買有什麼差別？",     "學琴全攻略（NT$3,999）一次擁有完整課程與全部 AI 互動遊戲，最超值；也可只買鋼琴自學全課程（NT$3,800）或只買 AI 練功房（NT$1,200），皆為一次買斷、永久使用。"],
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -580,11 +580,12 @@ export default function HomePage() {
             <span onDoubleClick={() => { window.location.href = "/admin"; }} style={{ cursor: "default" }}><Logo white size={28} /></span>
             <div className={styles.footerSocial}>
               {[
-                [Camera,        "Instagram"],
-                [PlayCircle,    "YouTube"],
-                [MessageCircle, "Line"],
-              ].map(([Icon, label]) => (
-                <a key={label} href="#" className={styles.socialBtn} aria-label={label}>
+                // url 為 null 者尚未提供連結，先不顯示（待補上 YouTube／Line 後填入）
+                [Camera,        "Instagram", "https://www.instagram.com/inrec.music"],
+                [PlayCircle,    "YouTube",   null],
+                [MessageCircle, "Line",      null],
+              ].filter(([, , url]) => url).map(([Icon, label, url]) => (
+                <a key={label} href={url} target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label={label}>
                   <Icon size={18} />
                 </a>
               ))}

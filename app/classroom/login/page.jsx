@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { isInAppBrowser } from "@/lib/inapp-browser";
 import Logo from "@/components/Logo";
 import styles from "./login.module.css";
 
@@ -20,9 +21,22 @@ export default function ClassroomLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [inApp, setInApp] = useState(false);
+  // 登入模式：password（密碼）| otp（Email 驗證碼）
+  const [mode, setMode] = useState("password");
+  const [otpSent, setOtpSent] = useState(false);
+
+  // 偵測 App 內建瀏覽器：Google OAuth 會被擋，預設改走 Email 驗證碼
+  useEffect(() => {
+    if (isInAppBrowser()) {
+      setInApp(true);
+      setMode("otp");
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -54,6 +68,55 @@ export default function ClassroomLoginPage() {
     }
   }
 
+  // 寄送 Email 驗證碼（同時也會寄登入連結，兩者擇一皆可登入）
+  async function handleSendOtp(e) {
+    e.preventDefault();
+    if (!supabase) { setError("系統設定錯誤，請聯繫管理員"); return; }
+    if (!email) { setError("請輸入電子信箱"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const { error: err } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
+      });
+      if (err) throw err;
+      setOtpSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 驗證 6 位數驗證碼
+  async function handleVerifyOtp(e) {
+    e.preventDefault();
+    if (!supabase) { setError("系統設定錯誤，請聯繫管理員"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const { error: err } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode.trim(),
+        type: "email",
+      });
+      if (err) throw err;
+      router.replace("/classroom");
+    } catch (err) {
+      setError("驗證碼錯誤或已過期，請重新取得");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function switchMode(next) {
+    setMode(next);
+    setError("");
+    setOtpSent(false);
+    setOtpCode("");
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -61,52 +124,97 @@ export default function ClassroomLoginPage() {
         <h2 className={styles.title}>學員登入</h2>
         <p className={styles.sub}>登入以存取你的課程內容</p>
 
-        <button
-          type="button"
-          className={styles.oauthBtn}
-          onClick={handleGoogle}
-          disabled={googleLoading || loading}
-        >
-          <GoogleIcon />
-          {googleLoading ? "跳轉中…" : "使用 Google 登入"}
+        {inApp && (
+          <div className={styles.banner}>
+            你正從 App 內建瀏覽器開啟，<strong>Google 登入會被擋下</strong>。請改用下方「Email 驗證碼登入」，
+            或點右下角的「⋯」選擇「在 Safari／瀏覽器開啟」。
+          </div>
+        )}
+
+        {/* Google 登入：App 內建瀏覽器會被 Google 擋，故在 in-app 時隱藏 */}
+        {!inApp && (
+          <>
+            <button
+              type="button"
+              className={styles.oauthBtn}
+              onClick={handleGoogle}
+              disabled={googleLoading || loading}
+            >
+              <GoogleIcon />
+              {googleLoading ? "跳轉中…" : "使用 Google 登入"}
+            </button>
+            <div className={styles.divider}>
+              {mode === "otp" ? "或使用 Email 驗證碼" : "或使用 Email 登入"}
+            </div>
+          </>
+        )}
+
+        {/* Email + 密碼 */}
+        {mode === "password" && (
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="email">電子信箱</label>
+              <input
+                id="email" type="email" className={styles.input}
+                value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com" required autoComplete="email"
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="password">密碼</label>
+              <input
+                id="password" type="password" className={styles.input}
+                value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••" required autoComplete="current-password"
+              />
+            </div>
+            {error && <p className={styles.error}>{error}</p>}
+            <button type="submit" className={styles.submit} disabled={loading || googleLoading}>
+              {loading ? "登入中…" : "登入"}
+            </button>
+          </form>
+        )}
+
+        {/* Email 驗證碼（OTP）— App 內建瀏覽器友善，免 Google、免密碼 */}
+        {mode === "otp" && (
+          <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className={styles.form}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="otp-email">電子信箱</label>
+              <input
+                id="otp-email" type="email" className={styles.input}
+                value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com" required autoComplete="email"
+                disabled={otpSent}
+              />
+            </div>
+            {otpSent && (
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="otp-code">驗證碼</label>
+                <input
+                  id="otp-code" type="text" inputMode="numeric" className={styles.input}
+                  value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\s/g, ""))}
+                  placeholder="輸入信件中的驗證碼" required
+                  autoComplete="one-time-code"
+                />
+                <p className={styles.helpText}>已寄出登入信。可輸入信中的驗證碼，或直接點信中的登入連結。</p>
+              </div>
+            )}
+            {error && <p className={styles.error}>{error}</p>}
+            <button type="submit" className={styles.submit} disabled={loading || googleLoading}>
+              {loading ? "處理中…" : otpSent ? "驗證並登入" : "寄送驗證碼"}
+            </button>
+            {otpSent && (
+              <button type="button" className={styles.linkBtn} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); }}>
+                沒收到？重新寄送
+              </button>
+            )}
+          </form>
+        )}
+
+        {/* 模式切換 */}
+        <button type="button" className={styles.linkBtn} onClick={() => switchMode(mode === "otp" ? "password" : "otp")}>
+          {mode === "otp" ? "改用密碼登入" : "改用 Email 驗證碼登入（免密碼）"}
         </button>
-
-        <div className={styles.divider}>或使用 Email 登入</div>
-
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">電子信箱</label>
-            <input
-              id="email"
-              type="email"
-              className={styles.input}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">密碼</label>
-            <input
-              id="password"
-              type="password"
-              className={styles.input}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && <p className={styles.error}>{error}</p>}
-
-          <button type="submit" className={styles.submit} disabled={loading || googleLoading}>
-            {loading ? "登入中…" : "登入"}
-          </button>
-        </form>
 
         <p className={styles.hint}>購課後請使用購買時的 Email 登入</p>
         <a href="/#pricing" className={styles.back}>查看課程方案 →</a>

@@ -372,7 +372,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
           尚未開通 AI 遊戲
         </h3>
         <p style={{ color: "#475569", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
-          購買「課程包 AI」或「AI 遊戲單買」即可永久暢玩
+          購買「學琴全攻略」或「AI 練功房」即可永久暢玩
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
           <a href="/#pricing"
@@ -525,19 +525,22 @@ export default function ClassroomPage() {
         const { data: { user: u } } = await supabase.auth.getUser();
         if (!u) { window.location.href = "/classroom/login"; return; }
         const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token || "";
         setUser(u);
-        setToken(session?.access_token || "");
+        setToken(accessToken);
         try {
+          const authHeaders = {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          };
           const [purchaseRes, subRes] = await Promise.all([
             fetch("/api/classroom/verify-purchase", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: u.email }),
+              headers: authHeaders,
             }),
             fetch("/api/classroom/verify-subscription", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: u.email }),
+              headers: authHeaders,
             }),
           ]);
           const { hasPurchased } = await purchaseRes.json();

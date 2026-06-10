@@ -1,21 +1,29 @@
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { createInvoice } from "@/lib/amego-invoice";
+import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
 
-function aesDecrypt(hex, key, iv) {
+// Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
+function aesDecrypt(encryptStr, key, iv) {
+  const combined = Buffer.from(encryptStr, "hex").toString("utf8");
+  const [ctB64, tagB64] = combined.split(":::");
   const decipher = crypto.createDecipheriv(
-    "aes-256-cbc",
+    "aes-256-gcm",
     Buffer.from(key, "utf8"),
     Buffer.from(iv, "utf8")
   );
-  let dec = decipher.update(hex, "hex", "utf8");
+  decipher.setAuthTag(Buffer.from(tagB64, "base64"));
+  let dec = decipher.update(ctB64, "base64", "utf8");
   dec += decipher.final("utf8");
   return dec;
 }
 
+// Payuni SHA256 驗證碼：SHA256(HashKey + EncryptInfo + HashIV) 轉大寫
 function makeHashInfo(encryptInfo, key, iv) {
   return crypto
     .createHash("sha256")
-    .update(`HashKey=${key}&EncryptInfo=${encryptInfo}&HashIV=${iv}`)
+    .update(key + encryptInfo + iv)
     .digest("hex")
     .toUpperCase();
 }
@@ -46,8 +54,8 @@ export async function POST(req) {
     const params    = Object.fromEntries(new URLSearchParams(plaintext));
     console.log("[payuni notify]", params);
 
-    // Status 1 = 付款成功
-    if (params.Status === "1") {
+    // 解密後 TradeStatus = 1 代表付款成功（外層 Status 為 'SUCCESS'）
+    if (params.TradeStatus === "1") {
       console.log("[payuni paid]", params.MerTradeNo, params.TradeAmt);
 
       const supabase = getSupabaseAdmin();
@@ -57,12 +65,12 @@ export async function POST(req) {
             mer_trade_no:    params.MerTradeNo,
             payuni_trade_no: params.TradeNo,
             amount:          Number(params.TradeAmt),
-            pay_type:        params.PayType || null,
+            pay_type:        params.PaymentType || params.PayType || null,
             status:          "paid",
             updated_at:      new Date().toISOString(),
           },
           { onConflict: "mer_trade_no" }
-        ).select("id, email, plan").single();
+        ).select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
         if (error) {
           console.error("[payuni notify] supabase error", error.message);
         } else if (order?.email) {
@@ -97,6 +105,65 @@ export async function POST(req) {
               });
               if (gameErr) console.error("[payuni notify] game access insert error", gameErr.message);
             }
+          }
+        }
+
+        // 一次性履約（優惠券累計 + 寄開課信）：以 fulfilled_at 作為去重旗標。
+        // 與開發票分離 —— 開發票可能反覆失敗重試，不能讓它連帶造成優惠券重複累計／重複寄信。
+        if (needsFulfillment(order)) {
+          // 先打旗標再做副作用，避免 Payuni 短時間重送 notify 造成重複
+          await supabase
+            .from("orders")
+            .update({ fulfilled_at: new Date().toISOString() })
+            .eq("id", order.id);
+
+          // 優惠券使用次數累計（付款成功才計）
+          if (order.coupon_code) {
+            const { data: c } = await supabase.from("coupons").select("used").eq("code", order.coupon_code).single();
+            if (c) await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+          }
+
+          // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
+          if (order.email) {
+            const mailResult = await sendPurchaseEmail({
+              email:      order.email,
+              plan:       order.plan,
+              planLabel:  order.plan_label,
+              merTradeNo: params.MerTradeNo,
+            });
+            if (mailResult.success) {
+              console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
+            } else if (!mailResult.skipped) {
+              console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
+            }
+          }
+        }
+
+        // 開立發票：以 invoice_no 作為去重旗標，可在開票失敗時隨後重試（手動或重送 notify）
+        if (needsInvoice(order)) {
+          const invoiceResult = await createInvoice({
+            orderId: order.id,
+            buyerName: order.buyer_name || "學員",
+            buyerEmail: order.email,
+            buyerTaxId: order.buyer_tax_id || null,
+            amount: order.amount,
+            productName: order.plan_label || "零基礎流行鋼琴入門課",
+            carrierType: order.carrier_type || "",
+            carrierId: order.carrier_id || "",
+          });
+
+          if (invoiceResult.success) {
+            await supabase
+              .from("orders")
+              .update({ invoice_no: invoiceResult.invoiceNo, invoice_error: null })
+              .eq("id", order.id);
+            console.log("[Invoice] 開立成功:", invoiceResult.invoiceNo);
+          } else {
+            await supabase
+              .from("orders")
+              .update({ invoice_error: invoiceResult.error || `code_${invoiceResult.code || "unknown"}` })
+              .eq("id", order.id);
+            console.error("[Invoice] 開立失敗:", invoiceResult.error);
           }
         }
       }

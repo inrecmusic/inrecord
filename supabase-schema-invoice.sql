@@ -1,0 +1,13 @@
+-- ════════════════════════════════════════
+-- 光貿 Amego 電子發票：orders 資料表欄位
+-- 於 Supabase SQL Editor 執行一次即可
+-- ════════════════════════════════════════
+
+ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS fulfilled_at TIMESTAMPTZ,  -- 首次付款成功處理時間；優惠券累計／寄信的去重旗標
+ADD COLUMN IF NOT EXISTS invoice_no   TEXT,
+ADD COLUMN IF NOT EXISTS buyer_name   TEXT,
+ADD COLUMN IF NOT EXISTS buyer_tax_id TEXT,
+ADD COLUMN IF NOT EXISTS carrier_type TEXT,
+ADD COLUMN IF NOT EXISTS carrier_id   TEXT,
+ADD COLUMN IF NOT EXISTS invoice_error TEXT;  -- 最後一次開票失敗原因（成功時清為 null）

@@ -9,14 +9,13 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        // Modern Literary — Newsreader + Spectral + Noto Serif TC
-        display: ["var(--font-newsreader)", "var(--font-serif)", "Noto Serif TC", "serif"],
-        "serif-tc": ["var(--font-serif)", "Noto Serif TC", "serif"],
-        body: ["var(--font-spectral)", "var(--font-serif)", "Noto Serif TC", "serif"],
-        // legacy alias — now maps to the serif body stack
-        sans: ["var(--font-spectral)", "var(--font-serif)", "Noto Serif TC", "serif"],
-        "en-italic": ["var(--font-newsreader)", "serif"],
-        numeric: ["var(--font-spectral)", "var(--font-serif)", "serif"],
+        // v3 Two-tier — Main-visual serif (Cormorant + Noto Serif TC) / Content sans (Inter + Noto Sans TC)
+        display: ["var(--font-cormorant)", "var(--font-noto-serif)", "Noto Serif TC", "serif"],
+        "serif-tc": ["var(--font-noto-serif)", "Noto Serif TC", "serif"],
+        body: ["var(--font-inter)", "var(--font-noto-sans)", "Noto Sans TC", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "var(--font-noto-sans)", "Noto Sans TC", "system-ui", "sans-serif"],
+        "en-italic": ["var(--font-cormorant)", "Georgia", "serif"],
+        numeric: ["var(--font-inter)", "var(--font-noto-sans)", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

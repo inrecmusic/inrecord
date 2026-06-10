@@ -84,3 +84,44 @@
 }
 .accountLabel { font-size: 13px; color: #64748b; flex-shrink: 0; }
 .accountEmail { font-size: 14px; font-weight: 600; color: #0f172a; word-break: break-all; text-align: right; }
+
+/* === 發票開立方式（2026-06） === */
+.invoiceSection { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+.invoiceTitle { font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 2px; }
+.invoiceOption {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 11px 14px; border: 1px solid #e2e8f0; border-radius: 12px;
+  background: #fff; transition: border-color .2s, background .2s;
+}
+.invoiceOption:hover { border-color: #bfdbfe; }
+.invoiceOptionActive { border-color: #2563eb; background: #eff6ff; }
+.invoiceOption input { width: 17px; height: 17px; accent-color: #2563eb; flex-shrink: 0; }
+.invoiceOption span { display: flex; flex-direction: column; gap: 2px; }
+.invoiceOption strong { font-size: 14px; color: #0f172a; word-break: keep-all; line-break: strict; }
+.invoiceOption small { font-size: 12px; color: #64748b; word-break: break-all; }
+.invoiceCompany { display: flex; flex-direction: column; gap: 8px; }
+.invoiceInput {
+  width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1;
+  border-radius: 10px; padding: 11px 14px; font-size: 14px; color: #0f172a;
+  transition: border-color .2s;
+}
+.invoiceInput:focus { outline: none; border-color: #2563eb; }
+
+/* ── 優惠券 ─────────────────────────────────────────── */
+.couponRow { display: flex; gap: 8px; margin-top: 14px; }
+.couponInput {
+  flex: 1; box-sizing: border-box; border: 1px solid #cbd5e1;
+  border-radius: 10px; padding: 11px 14px; font-size: 14px; color: #0f172a;
+  text-transform: uppercase; transition: border-color .2s;
+}
+.couponInput:focus { outline: none; border-color: #2563eb; }
+.couponInput:disabled { background: #f8fafc; color: #64748b; }
+.couponBtn {
+  flex-shrink: 0; padding: 0 18px; border: 0; border-radius: 10px;
+  background: #2563eb; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
+  transition: opacity .2s;
+}
+.couponBtn:hover { opacity: .9; }
+.couponBtn:disabled { opacity: .5; cursor: not-allowed; }
+.couponOk  { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: #16a34a; }
+.couponErr { margin: 8px 0 0; font-size: 13px; color: #dc2626; }
