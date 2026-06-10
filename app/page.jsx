@@ -129,26 +129,31 @@ const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } }
 
 function useCountUp(target, duration = 1800) {
   const [value, setValue] = useState(0);
+  const [inView, setInView] = useState(false);
   const ref = useRef(null);
-  const started = useRef(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const t0 = Date.now();
-        const tick = () => {
-          const p = Math.min((Date.now() - t0) / duration, 1);
-          setValue(Math.round((1 - Math.pow(1 - p, 3)) * target));
-          if (p < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
+      if (entry.isIntersecting) { setInView(true); obs.disconnect(); }
     }, { threshold: 0.5 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [target, duration]);
+  }, []);
+  // Re-run the count animation whenever the target changes (e.g. async
+  // /api/stats data arriving after first paint) once the element is in view.
+  useEffect(() => {
+    if (!inView) return;
+    let raf;
+    const t0 = Date.now();
+    const tick = () => {
+      const p = Math.min((Date.now() - t0) / duration, 1);
+      setValue(Math.round((1 - Math.pow(1 - p, 3)) * target));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, target, duration]);
   return [value, ref];
 }
 
