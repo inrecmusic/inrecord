@@ -71,7 +71,7 @@
 
 /* PRICING */
 .pricingSection { padding: 80px 0; background: var(--bg); }
-.plansRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
+.plansRow { display: grid; grid-template-columns: repeat(2, minmax(0, 360px)); gap: 20px; margin-top: 40px; justify-content: center; }
 .planCard { position: relative; background: white; border: 2px solid var(--line); border-radius: 20px; padding: 26px 24px 22px; display: flex; flex-direction: column; cursor: pointer; transition: border-color .2s, box-shadow .2s, transform .2s; overflow: hidden; }
 .planCard:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.08); }
 .planCardSelected { border-color: var(--brand) !important; background: #f8fbff !important; box-shadow: 0 0 0 4px rgba(37,99,235,.14), 0 12px 36px rgba(37,99,235,.16) !important; }
