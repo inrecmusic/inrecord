@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { selectAll } from "@/lib/supabase-paginate";
 
 export async function GET(req) {
   const payload = await verifyAdminToken(req);
@@ -10,11 +11,9 @@ export async function GET(req) {
   if (!supabase) return NextResponse.json({ ok: true, data: [] });
 
   try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
+    const data = await selectAll(supabase, "orders", q =>
+      q.select("*").order("created_at", { ascending: false })
+    );
     return NextResponse.json({ ok: true, data });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
