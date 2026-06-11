@@ -937,6 +937,14 @@ function CouponsPage({ showToast }){
 
   function discountLabel(b){return b.type==="percent"?`${b.value}% 折扣`:`折 NT$${b.value}`;}
 
+  // 依生效/結束日推算批次狀態（與前台 couponError 的日期判斷一致），避免後台「啟用中」但前台「尚未開始」對不起來
+  function batchStatus(b){
+    const now=new Date();
+    if(b.starts_at&&new Date(b.starts_at)>now)return["upcoming",`尚未開始（${b.starts_at} 起）`,"#fef9c3","#854d0e"];
+    if(b.ends_at){const e=new Date(b.ends_at);e.setHours(23,59,59,999);if(e<now)return["ended","已結束","#fee2e2","#991b1b"];}
+    return["active","進行中","#dcfce7","#166534"];
+  }
+
   async function toggleExpand(b){
     if(expandId===b.id){setExpandId(null);setExpandCodes([]);return;}
     setExpandId(b.id);setExpandLoading(true);setExpandCodes([]);
@@ -1145,10 +1153,10 @@ function CouponsPage({ showToast }){
         <div className={styles.panelHead}><h2>批次列表</h2><span className={styles.dim}>共 {batches.length} 批</span></div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>批次名稱</th><th>折扣</th><th>已用 / 總數</th><th>前綴</th><th>有效期間</th><th>備註</th><th>操作</th></tr></thead>
+            <thead><tr><th>批次名稱</th><th>折扣</th><th>狀態</th><th>已用 / 總數</th><th>前綴</th><th>有效期間</th><th>備註</th><th>操作</th></tr></thead>
             <tbody>
-              {batchLoading?<tr><td colSpan={7} className={styles.empty}>載入中…</td></tr>
-              :!batches.length?<tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎫</span><span className={styles.emptyTitle}>還沒有任何序號批次</span><span className={styles.emptySub}>新增批次來產生現場活動序號</span></td></tr>
+              {batchLoading?<tr><td colSpan={8} className={styles.empty}>載入中…</td></tr>
+              :!batches.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>🎫</span><span className={styles.emptyTitle}>還沒有任何序號批次</span><span className={styles.emptySub}>新增批次來產生現場活動序號</span></td></tr>
               :batches.map(b=>(
                 <Fragment key={b.id}>
                 <tr>
@@ -1158,6 +1166,7 @@ function CouponsPage({ showToast }){
                       {b.type==="percent"?<><Percent size={11}/> {b.value}%</>:<>NT$ {b.value}</>}
                     </span>
                   </td>
+                  <td>{(()=>{const[,label,bg,fg]=batchStatus(b);return<span className={styles.pill} style={{background:bg,color:fg,whiteSpace:"nowrap"}}>{label}</span>;})()}</td>
                   <td><span style={{fontWeight:800}}>{b.used}</span> / {b.total}</td>
                   <td className={styles.dim}>{b.prefix||"—"}</td>
                   <td className={styles.dim} style={{fontSize:12}}>{b.starts_at||"—"} ~ {b.ends_at||"—"}</td>
@@ -1171,7 +1180,7 @@ function CouponsPage({ showToast }){
                 </tr>
                 {expandId===b.id&&(
                   <tr>
-                    <td colSpan={7} style={{background:"#f8fafc"}}>
+                    <td colSpan={8} style={{background:"#f8fafc"}}>
                       {expandLoading?<div className={styles.dim} style={{padding:12}}>載入序號中…</div>:(
                         <div style={{padding:"8px 4px"}}>
                           <div style={{display:"flex",gap:8,marginBottom:10}}>
