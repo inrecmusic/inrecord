@@ -120,6 +120,22 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 | `/api/admin/courses` | GET/POST/PATCH/DELETE | 後台課程 CRUD |
 | `/api/admin/coupons` | GET/POST/PATCH/DELETE | 後台優惠券 CRUD |
 
+## 速率限制（Rate Limiting）
+
+公開端點的限流統一走 `lib/rate-limit.js` 的 `createDistributedLimiter`：**Upstash Redis 全域優先、記憶體保底**。有 Redis env → 跨 instance 精準 sliding window；缺 env 或 Redis 連線失敗 → 自動退回單機 `createRateLimiter`（記憶體型，多 instance 會繞過，僅基本防護），確保限流層故障不會擋掉正常請求。回 `429` 時帶 `Retry-After` header。IP 取自 `x-forwarded-for`（第一個）→ `x-real-ip`。
+
+| 端點 | 門檻 | 用途 |
+|------|------|------|
+| `/api/invoice/validate` | 20 次/分 · IP | 擋手機條碼/統編枚舉；**並先做格式預檢**（不符就不外呼 Amego/g0v）|
+| `/api/coupons/validate` | 30 次/分 · IP | 擋優惠碼/序號枚舉 |
+| `/api/brevo/subscribe` | 5 次/分 · IP | 擋訂閱濫發/信箱轟炸 |
+| `/api/admin/login` | 5 次**失敗**/15 分 · IP | 後台登入暴力破解；**只計失敗、成功不扣額** |
+
+- **payuni `notify`/`return` 刻意不限流**（PAYUNi 回呼，已有 HashInfo 驗章），限流會擋掉付款通知。
+- 新增公開端點要套限流時：`const limiter = createDistributedLimiter({ limit, windowMs, prefix: "rl:xxx" })`，在 handler 開頭 `await limiter(clientIp(req))`，`!allowed` 就回 429。每端點用獨立 `prefix`。
+
+> **Upstash 環境變數命名陷阱**：Vercel Marketplace 的 Upstash 整合注入的是 **`KV_REST_API_URL` / `KV_REST_API_TOKEN`**（KV 命名），**不是** `UPSTASH_REDIS_REST_URL/TOKEN`。`getUpstash()` 已做相容：`KV_REST_API_*` 優先、`UPSTASH_REDIS_REST_*` 次之，兩種供裝方式皆可。免費方案命令額度對目前流量綽綽有餘。
+
 ## 環境變數
 
 ```
@@ -141,6 +157,10 @@ ADMIN_PASSWORD
 AMEGO_APP_KEY
 AMEGO_IDENTIFIER
 AMEGO_API_URL
+BREVO_LIST_ID
+# Upstash Redis（限流；Vercel Marketplace 整合自動注入 KV_ 命名，缺則退回記憶體限流）
+KV_REST_API_URL
+KV_REST_API_TOKEN
 ```
 
 ## 部署需執行的 SQL
