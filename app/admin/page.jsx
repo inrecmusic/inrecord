@@ -2204,6 +2204,7 @@ export default function AdminPage(){
   const [loginLoading,setLoginLoading]=useState(false);
   const [page,setPage]=useState("dashboard");
   const [selectedCourse,setSelectedCourse]=useState(null);
+  const [navOpen,setNavOpen]=useState(false);
   const [leads,setLeads]=useState([]);
   const [orders,setOrders]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -2307,7 +2308,7 @@ export default function AdminPage(){
 
   return(
     <div className={styles.app}>
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${navOpen?styles.sidebarOpen:""}`}>
         <div className={styles.sideTop}><Logo white size={20} /><span className={styles.brandName}>後台</span></div>
         <nav className={styles.sideNav}>
           {NAV_GROUPS.map(group=>(
@@ -2316,7 +2317,7 @@ export default function AdminPage(){
               {group.items.map(item=>{
                 const Icon=item.icon;const badge=item.badgeKey?getBadge(item.badgeKey):null;
                 return(
-                  <button key={item.id} className={`${styles.navItem} ${page===item.id?styles.active:""}`} onClick={()=>{setPage(item.id);if(item.id!=="courses")setSelectedCourse(null);}}>
+                  <button key={item.id} className={`${styles.navItem} ${page===item.id?styles.active:""}`} onClick={()=>{setPage(item.id);if(item.id!=="courses")setSelectedCourse(null);setNavOpen(false);}}>
                     <span className={styles.navItemInner}><Icon size={17} className={styles.navIcon}/><span>{item.label}</span></span>
                     {badge?<span className={styles.badge}>{badge}</span>:null}
                   </button>
@@ -2327,9 +2328,11 @@ export default function AdminPage(){
         </nav>
         <div className={styles.sideBottom}><button className={styles.sideBtn} onClick={doLogout}><LogOut size={15}/> 登出</button></div>
       </aside>
+      {navOpen&&<div className={styles.navOverlay} onClick={()=>setNavOpen(false)}/>}
 
       <div className={styles.main}>
         <div className={styles.topbar}>
+          <button className={styles.hamburger} onClick={()=>setNavOpen(true)} aria-label="開啟選單"><List size={20}/></button>
           <span className={styles.topbarTitle}>後台管理系統</span>
           <div className={styles.topbarRight}>
             <div className={styles.adminAvatar}>管</div>
