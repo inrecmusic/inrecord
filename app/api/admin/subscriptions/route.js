@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { selectAll } from "@/lib/supabase-paginate";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -8,12 +9,14 @@ export async function GET(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  let data;
+  try {
+    data = await selectAll(supabase, "subscriptions", q =>
+      q.select("*").order("created_at", { ascending: false })
+    );
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
   return NextResponse.json({ data });
 }
 

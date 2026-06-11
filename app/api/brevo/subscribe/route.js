@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
+import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+
+// 公開端點：每 IP 每分鐘 5 次，擋訂閱濫發 / 信箱轟炸（全域，缺 Redis 時記憶體保底）
+const limiter = createDistributedLimiter({ limit: 5, windowMs: 60_000, prefix: "rl:brevo-subscribe" });
 
 export async function POST(req) {
   try {
+    const rl = await limiter(clientIp(req))
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'rate_limited' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+      )
+    }
+
     const body = await req.json()
     const rawEmail = body?.email
 

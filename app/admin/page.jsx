@@ -707,7 +707,7 @@ function OrderStatusPill({status}){
 }
 
 // ── Orders Page ────────────────────────────────────────────────────────────
-function OrdersPage({leads}){
+function OrdersPage({leads,showToast}){
   const [statusFilter,setStatusFilter]=useState("all");
   const [search,setSearch]=useState("");
   const [dateFrom,setDateFrom]=useState("");
@@ -717,6 +717,8 @@ function OrdersPage({leads}){
   const [issuing,setIssuing]=useState(null);
   const [refunding,setRefunding]=useState(false);
   const downloadRef=useRef(null);
+  const [tablePage,setTablePage]=useState(1);
+  const PER=20;
 
   const loadOrders=useCallback(async()=>{
     try{
@@ -740,9 +742,9 @@ function OrdersPage({leads}){
     try{
       const res=await _api("/api/admin/issue-invoice",{method:"POST",body:JSON.stringify({id:realId})});
       const d=await res.json();
-      if(res.ok&&d.invoiceNo){await loadOrders();alert("✅ 發票開立成功："+d.invoiceNo);}
-      else alert("❌ 發票開立失敗："+(d.error||"unknown"));
-    }catch(e){alert("❌ 發票開立失敗："+e.message);}
+      if(res.ok&&d.invoiceNo){await loadOrders();showToast?.("✅ 發票開立成功："+d.invoiceNo);}
+      else showToast?.("❌ 發票開立失敗："+(d.error||"unknown"));
+    }catch(e){showToast?.("❌ 發票開立失敗："+e.message);}
     finally{setIssuing(null);}
   }
 
@@ -753,9 +755,9 @@ function OrdersPage({leads}){
     try{
       const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId})});
       const d=await res.json();
-      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);alert("✅ "+(d.method==="cancel"?"已取消授權（未請款）":"退款成功")+"，存取已撤銷");}
-      else alert("❌ 退款失敗："+(d.error||"unknown"));
-    }catch(e){alert("❌ 退款失敗："+e.message);}
+      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);showToast?.("✅ "+(d.method==="cancel"?"已取消授權（未請款）":"退款成功")+"，存取已撤銷");}
+      else showToast?.("❌ 退款失敗："+(d.error||"unknown"));
+    }catch(e){showToast?.("❌ 退款失敗："+e.message);}
     finally{setRefunding(false);}
   }
 
@@ -782,6 +784,11 @@ function OrdersPage({leads}){
     return true;
   }),[allOrders,statusFilter,search,dateFrom,dateTo]);
 
+  // 搜尋/篩選改變時回到第 1 頁
+  useEffect(()=>{setTablePage(1);},[search,statusFilter,dateFrom,dateTo,rows.length]);
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PER));
+  const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
+
   const paid=allOrders.filter(o=>o.status==="paid");
   const pending=allOrders.filter(o=>o.status==="pending");
   const refunded=allOrders.filter(o=>o.status==="refunded");
@@ -789,10 +796,12 @@ function OrdersPage({leads}){
 
   function exportOrders(){
     if(!downloadRef.current)return;
+    // 防 CSV 公式注入：以 = + - @ Tab CR 開頭者前綴單引號並整欄加引號
+    const esc=(s)=>{let v=String(s??"");const f=/^[=+\-@\t\r]/.test(v);if(f)v="'"+v;return f||/[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
     const cols=["id","student","email","course","amount","method","status","time"];
     const rows=[cols,...filtered.map(o=>cols.map(c=>o[c]??""))];
-    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    const csv="﻿"+rows.map(r=>r.map(esc).join(",")).join("\n")+"\n"; // BOM 讓 Excel 正確顯示中文
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
     downloadRef.current.href=url;downloadRef.current.download="orders.csv";downloadRef.current.click();
     setTimeout(()=>URL.revokeObjectURL(url),100);
   }
@@ -835,7 +844,7 @@ function OrdersPage({leads}){
             <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>發票號碼</th><th>建立時間</th><th>操作</th></tr></thead>
             <tbody>
               {!filtered.length?<tr><td colSpan={9} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
-              :filtered.map(o=>(
+              :pageRows.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>
                   <td><div style={{fontWeight:700,fontSize:13}}>{o.student}</div><div style={{fontSize:12,color:"#94a3b8"}}>{o.email}</div></td>
@@ -860,6 +869,13 @@ function OrdersPage({leads}){
             </tbody>
           </table>
         </div>
+        {filtered.length>PER&&(
+          <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:12,padding:"12px 0"}}>
+            <button className={styles.btnSmall} disabled={tablePage<=1} onClick={()=>setTablePage(p=>Math.max(1,p-1))}>上一頁</button>
+            <span className={styles.dim} style={{fontSize:13}}>第 {tablePage} / {totalPages} 頁</span>
+            <button className={styles.btnSmall} disabled={tablePage>=totalPages} onClick={()=>setTablePage(p=>Math.min(totalPages,p+1))}>下一頁</button>
+          </div>
+        )}
       </div>
       {detailOrder&&(
         <div className={styles.modalOverlay} onClick={()=>setDetailOrder(null)}>
@@ -926,6 +942,10 @@ function CouponsPage({ showToast }){
   const [expandCodes,setExpandCodes]=useState([]);
   const [expandLoading,setExpandLoading]=useState(false);
   const [deleteBatch,setDeleteBatch]=useState(null);
+  const [batchSearch,setBatchSearch]=useState("");
+  const [codeFilter,setCodeFilter]=useState("all"); // all | unused | used
+  const [codeSearch,setCodeSearch]=useState("");
+  const [codeLimit,setCodeLimit]=useState(60);
 
   const fetchBatches=useCallback(async()=>{
     setBatchLoading(true);
@@ -936,6 +956,20 @@ function CouponsPage({ showToast }){
   useEffect(()=>{fetchBatches();},[fetchBatches]);
 
   function discountLabel(b){return b.type==="percent"?`${b.value}% 折扣`:`折 NT$${b.value}`;}
+
+  const shownBatches=batches.filter(b=>{
+    if(!batchSearch.trim())return true;
+    const q=batchSearch.trim().toLowerCase();
+    return (b.name||"").toLowerCase().includes(q)||(b.prefix||"").toLowerCase().includes(q);
+  });
+  function visibleCodes(){
+    return expandCodes.filter(c=>{
+      if(codeFilter==="unused"&&c.used)return false;
+      if(codeFilter==="used"&&!c.used)return false;
+      if(codeSearch.trim()&&!c.code.toLowerCase().includes(codeSearch.trim().toLowerCase()))return false;
+      return true;
+    });
+  }
 
   // 依生效/結束日推算批次狀態（與前台 couponError 的日期判斷一致），避免後台「啟用中」但前台「尚未開始」對不起來
   function batchStatus(b){
@@ -948,6 +982,7 @@ function CouponsPage({ showToast }){
   async function toggleExpand(b){
     if(expandId===b.id){setExpandId(null);setExpandCodes([]);return;}
     setExpandId(b.id);setExpandLoading(true);setExpandCodes([]);
+    setCodeFilter("all");setCodeSearch("");setCodeLimit(60);
     try{const r=await _api(`/api/admin/coupon-batches/${b.id}/codes`);const{data}=await r.json();setExpandCodes(data||[]);}
     catch{setExpandCodes([]);}
     finally{setExpandLoading(false);}
@@ -1006,8 +1041,8 @@ function CouponsPage({ showToast }){
     const dl=discountLabel(b);
     // 防 CSV 公式注入：以 = + - @ Tab CR 開頭者前綴單引號並整欄加引號
     const esc=(s)=>{let v=String(s??"");const f=/^[=+\-@\t\r]/.test(v);if(f)v="'"+v;return f||/[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
-    const header="序號,狀態,折扣,批次名稱";
-    const lines=expandCodes.map(c=>[esc(c.code),c.used?"已使用":"未使用",esc(dl),esc(b.name)].join(","));
+    const header="序號,狀態,兌換人,兌換時間,折扣,批次名稱";
+    const lines=expandCodes.map(c=>[esc(c.code),c.used?"已使用":"未使用",esc(c.redeemedEmail||""),esc(c.redeemedAt?String(c.redeemedAt).slice(0,10):""),esc(dl),esc(b.name)].join(","));
     const csv="﻿"+[header,...lines].join("\n")+"\n"; // BOM 讓 Excel 正確顯示中文
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
     const url=URL.createObjectURL(blob);
@@ -1150,14 +1185,20 @@ function CouponsPage({ showToast }){
         </div>
       </div>
       <div className={styles.panel}>
-        <div className={styles.panelHead}><h2>批次列表</h2><span className={styles.dim}>共 {batches.length} 批</span></div>
+        <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
+          <h2>批次列表</h2>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginLeft:"auto"}}>
+            <input className={styles.searchInput} placeholder="搜尋批次名稱、前綴…" value={batchSearch} onChange={e=>setBatchSearch(e.target.value)}/>
+            <span className={styles.dim}>{shownBatches.length} / {batches.length} 批</span>
+          </div>
+        </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead><tr><th>批次名稱</th><th>折扣</th><th>狀態</th><th>已用 / 總數</th><th>前綴</th><th>有效期間</th><th>備註</th><th>操作</th></tr></thead>
             <tbody>
               {batchLoading?<tr><td colSpan={8} className={styles.empty}>載入中…</td></tr>
               :!batches.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>🎫</span><span className={styles.emptyTitle}>還沒有任何序號批次</span><span className={styles.emptySub}>新增批次來產生現場活動序號</span></td></tr>
-              :batches.map(b=>(
+              :shownBatches.map(b=>(
                 <Fragment key={b.id}>
                 <tr>
                   <td><strong>{b.name}</strong></td>
@@ -1181,23 +1222,43 @@ function CouponsPage({ showToast }){
                 {expandId===b.id&&(
                   <tr>
                     <td colSpan={8} style={{background:"#f8fafc"}}>
-                      {expandLoading?<div className={styles.dim} style={{padding:12}}>載入序號中…</div>:(
+                      {expandLoading?<div className={styles.dim} style={{padding:12}}>載入序號中…</div>:(()=>{
+                        const vis=visibleCodes();
+                        const shown=vis.slice(0,codeLimit);
+                        return(
                         <div style={{padding:"8px 4px"}}>
-                          <div style={{display:"flex",gap:8,marginBottom:10}}>
+                          <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
                             <button className={styles.btnSmall} onClick={copyAllCodes}><Copy size={12}/> 全選複製</button>
                             <button className={styles.btnSmall} onClick={()=>downloadCsv(b)}><Download size={12}/> 下載 CSV</button>
-                            <span className={styles.dim} style={{alignSelf:"center"}}>共 {expandCodes.length} 組</span>
+                            <div style={{display:"flex",gap:4}}>
+                              {[["all","全部"],["unused","未使用"],["used","已使用"]].map(([k,label])=>(
+                                <button key={k} className={`${styles.btnSmall} ${codeFilter===k?styles.filterActive:""}`} onClick={()=>{setCodeFilter(k);setCodeLimit(60);}}>{label}</button>
+                              ))}
+                            </div>
+                            <input className={styles.searchInput} placeholder="搜尋序號…" value={codeSearch} onChange={e=>{setCodeSearch(e.target.value);setCodeLimit(60);}} style={{maxWidth:160}}/>
+                            <span className={styles.dim} style={{alignSelf:"center"}}>{vis.length} 組（全批 {expandCodes.length}）</span>
                           </div>
                           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                            {expandCodes.map(c=>(
+                            {shown.map(c=>(
                               <span key={c.id} style={{display:"inline-flex",alignItems:"center",gap:6,background:c.used?"#f1f5f9":"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"3px 8px",fontSize:12}}>
                                 <code style={{fontWeight:700,letterSpacing:1,textDecoration:c.used?"line-through":"none",color:c.used?"#94a3b8":"#0f172a"}}>{c.code}</code>
-                                <span className={styles.dim} style={{fontSize:11}}>{c.used?"已使用":"未使用"}</span>
+                                <span className={styles.dim} style={{fontSize:11}}>
+                                  {c.used
+                                    ? `已使用${c.redeemedEmail?` · ${c.redeemedEmail}`:""}${c.redeemedAt?` · ${String(c.redeemedAt).slice(0,10)}`:""}`
+                                    : "未使用"}
+                                </span>
                               </span>
                             ))}
+                            {!vis.length&&<span className={styles.dim} style={{padding:8}}>沒有符合的序號</span>}
                           </div>
+                          {vis.length>codeLimit&&(
+                            <div style={{marginTop:10}}>
+                              <button className={styles.btnSmall} onClick={()=>setCodeLimit(n=>n+60)}>顯示更多（+60，剩 {vis.length-codeLimit}）</button>
+                            </div>
+                          )}
                         </div>
-                      )}
+                        );
+                      })()}
                     </td>
                   </tr>
                 )}
@@ -2143,6 +2204,7 @@ export default function AdminPage(){
   const [loginLoading,setLoginLoading]=useState(false);
   const [page,setPage]=useState("dashboard");
   const [selectedCourse,setSelectedCourse]=useState(null);
+  const [navOpen,setNavOpen]=useState(false);
   const [leads,setLeads]=useState([]);
   const [orders,setOrders]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -2246,7 +2308,7 @@ export default function AdminPage(){
 
   return(
     <div className={styles.app}>
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${navOpen?styles.sidebarOpen:""}`}>
         <div className={styles.sideTop}><Logo white size={20} /><span className={styles.brandName}>後台</span></div>
         <nav className={styles.sideNav}>
           {NAV_GROUPS.map(group=>(
@@ -2255,7 +2317,7 @@ export default function AdminPage(){
               {group.items.map(item=>{
                 const Icon=item.icon;const badge=item.badgeKey?getBadge(item.badgeKey):null;
                 return(
-                  <button key={item.id} className={`${styles.navItem} ${page===item.id?styles.active:""}`} onClick={()=>{setPage(item.id);if(item.id!=="courses")setSelectedCourse(null);}}>
+                  <button key={item.id} className={`${styles.navItem} ${page===item.id?styles.active:""}`} onClick={()=>{setPage(item.id);if(item.id!=="courses")setSelectedCourse(null);setNavOpen(false);}}>
                     <span className={styles.navItemInner}><Icon size={17} className={styles.navIcon}/><span>{item.label}</span></span>
                     {badge?<span className={styles.badge}>{badge}</span>:null}
                   </button>
@@ -2266,9 +2328,11 @@ export default function AdminPage(){
         </nav>
         <div className={styles.sideBottom}><button className={styles.sideBtn} onClick={doLogout}><LogOut size={15}/> 登出</button></div>
       </aside>
+      {navOpen&&<div className={styles.navOverlay} onClick={()=>setNavOpen(false)}/>}
 
       <div className={styles.main}>
         <div className={styles.topbar}>
+          <button className={styles.hamburger} onClick={()=>setNavOpen(true)} aria-label="開啟選單"><List size={20}/></button>
           <span className={styles.topbarTitle}>後台管理系統</span>
           <div className={styles.topbarRight}>
             <div className={styles.adminAvatar}>管</div>
@@ -2283,7 +2347,7 @@ export default function AdminPage(){
           {page==="messages"    &&<MessagesPage showToast={showToast}/>}
           {page==="media"       &&<MediaPage/>}
           {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
-          {page==="orders"      &&<OrdersPage leads={leads}/>}
+          {page==="orders"      &&<OrdersPage leads={leads} showToast={showToast}/>}
           {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
