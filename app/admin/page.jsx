@@ -707,7 +707,7 @@ function OrderStatusPill({status}){
 }
 
 // ── Orders Page ────────────────────────────────────────────────────────────
-function OrdersPage({leads}){
+function OrdersPage({leads,showToast}){
   const [statusFilter,setStatusFilter]=useState("all");
   const [search,setSearch]=useState("");
   const [dateFrom,setDateFrom]=useState("");
@@ -717,6 +717,8 @@ function OrdersPage({leads}){
   const [issuing,setIssuing]=useState(null);
   const [refunding,setRefunding]=useState(false);
   const downloadRef=useRef(null);
+  const [tablePage,setTablePage]=useState(1);
+  const PER=20;
 
   const loadOrders=useCallback(async()=>{
     try{
@@ -740,9 +742,9 @@ function OrdersPage({leads}){
     try{
       const res=await _api("/api/admin/issue-invoice",{method:"POST",body:JSON.stringify({id:realId})});
       const d=await res.json();
-      if(res.ok&&d.invoiceNo){await loadOrders();alert("✅ 發票開立成功："+d.invoiceNo);}
-      else alert("❌ 發票開立失敗："+(d.error||"unknown"));
-    }catch(e){alert("❌ 發票開立失敗："+e.message);}
+      if(res.ok&&d.invoiceNo){await loadOrders();showToast?.("✅ 發票開立成功："+d.invoiceNo);}
+      else showToast?.("❌ 發票開立失敗："+(d.error||"unknown"));
+    }catch(e){showToast?.("❌ 發票開立失敗："+e.message);}
     finally{setIssuing(null);}
   }
 
@@ -753,9 +755,9 @@ function OrdersPage({leads}){
     try{
       const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId})});
       const d=await res.json();
-      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);alert("✅ "+(d.method==="cancel"?"已取消授權（未請款）":"退款成功")+"，存取已撤銷");}
-      else alert("❌ 退款失敗："+(d.error||"unknown"));
-    }catch(e){alert("❌ 退款失敗："+e.message);}
+      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);showToast?.("✅ "+(d.method==="cancel"?"已取消授權（未請款）":"退款成功")+"，存取已撤銷");}
+      else showToast?.("❌ 退款失敗："+(d.error||"unknown"));
+    }catch(e){showToast?.("❌ 退款失敗："+e.message);}
     finally{setRefunding(false);}
   }
 
@@ -782,6 +784,11 @@ function OrdersPage({leads}){
     return true;
   }),[allOrders,statusFilter,search,dateFrom,dateTo]);
 
+  // 搜尋/篩選改變時回到第 1 頁
+  useEffect(()=>{setTablePage(1);},[search,statusFilter,dateFrom,dateTo,rows.length]);
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PER));
+  const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
+
   const paid=allOrders.filter(o=>o.status==="paid");
   const pending=allOrders.filter(o=>o.status==="pending");
   const refunded=allOrders.filter(o=>o.status==="refunded");
@@ -789,10 +796,12 @@ function OrdersPage({leads}){
 
   function exportOrders(){
     if(!downloadRef.current)return;
+    // 防 CSV 公式注入：以 = + - @ Tab CR 開頭者前綴單引號並整欄加引號
+    const esc=(s)=>{let v=String(s??"");const f=/^[=+\-@\t\r]/.test(v);if(f)v="'"+v;return f||/[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
     const cols=["id","student","email","course","amount","method","status","time"];
     const rows=[cols,...filtered.map(o=>cols.map(c=>o[c]??""))];
-    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    const csv="﻿"+rows.map(r=>r.map(esc).join(",")).join("\n")+"\n"; // BOM 讓 Excel 正確顯示中文
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
     downloadRef.current.href=url;downloadRef.current.download="orders.csv";downloadRef.current.click();
     setTimeout(()=>URL.revokeObjectURL(url),100);
   }
@@ -835,7 +844,7 @@ function OrdersPage({leads}){
             <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>發票號碼</th><th>建立時間</th><th>操作</th></tr></thead>
             <tbody>
               {!filtered.length?<tr><td colSpan={9} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
-              :filtered.map(o=>(
+              :pageRows.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>
                   <td><div style={{fontWeight:700,fontSize:13}}>{o.student}</div><div style={{fontSize:12,color:"#94a3b8"}}>{o.email}</div></td>
@@ -860,6 +869,13 @@ function OrdersPage({leads}){
             </tbody>
           </table>
         </div>
+        {filtered.length>PER&&(
+          <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:12,padding:"12px 0"}}>
+            <button className={styles.btnSmall} disabled={tablePage<=1} onClick={()=>setTablePage(p=>Math.max(1,p-1))}>上一頁</button>
+            <span className={styles.dim} style={{fontSize:13}}>第 {tablePage} / {totalPages} 頁</span>
+            <button className={styles.btnSmall} disabled={tablePage>=totalPages} onClick={()=>setTablePage(p=>Math.min(totalPages,p+1))}>下一頁</button>
+          </div>
+        )}
       </div>
       {detailOrder&&(
         <div className={styles.modalOverlay} onClick={()=>setDetailOrder(null)}>
@@ -2283,7 +2299,7 @@ export default function AdminPage(){
           {page==="messages"    &&<MessagesPage showToast={showToast}/>}
           {page==="media"       &&<MediaPage/>}
           {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
-          {page==="orders"      &&<OrdersPage leads={leads}/>}
+          {page==="orders"      &&<OrdersPage leads={leads} showToast={showToast}/>}
           {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
