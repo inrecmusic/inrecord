@@ -73,13 +73,14 @@ selectAll(supabase, table, buildQuery?) → Promise<rows[]>
 
 ---
 
-## ④ 訂單搜尋 + CSV 匯出
+## ④ 強化既有訂單 CSV 匯出
 
-- 搜尋同 ①（email／訂單號／狀態）。
-- `OrdersPage` 加「匯出 CSV」鈕，仿學員管理 `exportCsv` 模式（前端組 CSV + BOM + Blob 下載）。
-- 欄位：`訂單號(mer_trade_no), email, 方案(plan_label), 金額(amount), 狀態(status), 優惠碼(coupon_code), 發票號(invoice_no), 時間(created_at)`。
-- CSV esc 套用與序號庫相同的公式注入防護（`=+-@` 開頭前綴單引號）。
-- 匯出範圍 = 目前**過濾後**的訂單（搜尋結果），無搜尋時即全部。
+校正（2026-06-11）：細讀 `OrdersPage` 後確認**搜尋（學員／email／訂單號）、狀態篩選、日期區間篩選、CSV 匯出皆已存在**（`exportOrders` 匯出過濾後結果）。故 ④ 縮減為強化既有 CSV 的一個小缺陷：
+
+- 現有 `exportOrders`（`app/admin/page.jsx` 約 790-798 行）產生的 CSV **無 BOM**（Excel 開啟中文亂碼）、**無公式注入防護**。
+- 修正：CSV 字串前加 UTF-8 BOM `﻿`；每格 esc 套用與序號庫相同的公式注入防護（`=+-@\t\r` 開頭前綴單引號並整欄加引號）。
+- 匯出範圍維持現狀（目前過濾後的訂單）。
+- 不重做已存在的搜尋/篩選/匯出鈕。
 
 ---
 
