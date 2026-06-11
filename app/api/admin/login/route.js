@@ -1,45 +1,35 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
+import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 
-// In-memory rate limiter: ip -> { count, lockedUntil }
-const attempts = new Map();
-const MAX_ATTEMPTS = 5;
-const LOCK_MS = 15 * 60 * 1000;
-
-function getClientIp(req) {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
+// 後台登入暴力破解防護：每 IP 15 分鐘最多 5 次「失敗」嘗試（全域，缺 Redis 時記憶體保底）。
+// 只在密碼錯誤時計次，登入成功不扣額 —— 保留原本的語意，但改為跨 instance 精準。
+const limiter = createDistributedLimiter({
+  limit: 5,
+  windowMs: 15 * 60 * 1000,
+  prefix: "rl:admin-login",
+});
 
 export async function POST(req) {
-  const ip = getClientIp(req);
-  const now = Date.now();
-  const record = attempts.get(ip) || { count: 0, lockedUntil: 0 };
-
-  if (record.lockedUntil > now) {
-    return NextResponse.json({ error: "too_many_attempts" }, { status: 429 });
-  }
-
+  const ip = clientIp(req);
   const { email, password } = await req.json();
 
   if (
     email !== process.env.ADMIN_EMAIL ||
     password !== process.env.ADMIN_PASSWORD
   ) {
-    record.count += 1;
-    if (record.count >= MAX_ATTEMPTS) {
-      record.lockedUntil = now + LOCK_MS;
+    // 失敗才計次；超過上限回 429
+    const rl = await limiter(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "too_many_attempts" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
     }
-    attempts.set(ip, record);
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }
 
-  // Success — reset counter
-  attempts.delete(ip);
-
+  // 成功 —— 不消耗限流額度
   const secret = new TextEncoder().encode(process.env.JWT_SECRET);
   const token = await new SignJWT({ email, role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
