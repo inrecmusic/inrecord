@@ -1,0 +1,171 @@
+.slide {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: clamp(22px, 3.2vw, 40px) clamp(26px, 4vw, 58px);
+  background: var(--bg, #f8fafc);
+  box-sizing: border-box;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(22px, 3.8vw, 46px);
+  min-height: 0;
+}
+
+/* ── Left info column ─────────────────────────────── */
+.info {
+  flex: 0 0 38%;
+  max-width: 38%;
+}
+.eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--brand, #2563eb);
+}
+.title {
+  font-family: "Cormorant Garamond", "Noto Serif TC", "Source Han Serif TC", "Songti TC", serif;
+  font-size: clamp(28px, 3.4vw, 46px);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--ink, #0f172a);
+  margin: 14px 0 0;
+}
+.underline {
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gold, #f7d68a);
+  margin: 16px 0 18px;
+}
+.sub {
+  margin: 0;
+  color: var(--muted, #64748b);
+  font-size: clamp(14px, 1.4vw, 16px);
+  line-height: 1.65;
+}
+.progress {
+  margin-top: clamp(20px, 3vw, 36px);
+}
+.progNum {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+}
+.progNumActive {
+  color: var(--brand, #2563eb);
+}
+.bars {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.bar {
+  width: clamp(32px, 3vw, 44px);
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line, #e2e8f0);
+  transition: background 0.3s ease;
+}
+.barActive {
+  background: var(--brand, #2563eb);
+}
+
+/* ── Divider ──────────────────────────────────────── */
+.divider {
+  width: 1.5px;
+  align-self: stretch;
+  margin: 6% 0;
+  background: var(--line, #e2e8f0);
+}
+
+/* ── Right visual column ──────────────────────────── */
+.visual {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.topLabel {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--muted, #64748b);
+  text-align: center;
+}
+.caption {
+  margin: 0;
+  text-align: center;
+  color: var(--muted, #64748b);
+  font-size: clamp(13px, 1.4vw, 16px);
+  line-height: 1.5;
+}
+.caption b {
+  color: var(--ink, #0f172a);
+  font-weight: 700;
+}
+.caption :global(.hl) {
+  color: var(--brand, #2563eb);
+  font-weight: 700;
+}
+
+.photoWrap {
+  width: 100%;
+  aspect-ratio: 456 / 224;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1.5px solid var(--keyline, #cbd5e1);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.photoWrap:hover .photo {
+  transform: scale(1.04);
+}
+
+/* ── Footer ───────────────────────────────────────── */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1.5px solid var(--line, #e2e8f0);
+  padding-top: 14px;
+  margin-top: clamp(14px, 2vw, 22px);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted, #64748b);
+}
+
+/* ── Mobile: stack info over visual ───────────────── */
+@media (max-width: 760px) {
+  .body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .info,
+  .visual {
+    flex: none;
+    max-width: 100%;
+    width: 100%;
+  }
+  .divider {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo,
+  .bar {
+    transition: none !important;
+  }
+}
