@@ -195,7 +195,6 @@
   .plansRow { grid-template-columns: 1fr; }
   .moduleBody { grid-template-columns: 1fr; padding-left: 20px; }
   .pianoPhoto { min-height: 260px; }
-  .demoCard { grid-template-columns: 1fr; }
   .instructorPhoto { min-height: 300px; }
   .instructorGrid { gap: 36px; }
   .pointGrid { grid-template-columns: repeat(2, 1fr); }
@@ -211,7 +210,6 @@
   .stat { border-right: 0; border-bottom: 1px solid var(--line); padding: 16px 0; }
   .stat:last-child { border-bottom: 0; }
   .cta { padding: 44px 24px; }
-  .subPlans { grid-template-columns: 1fr; max-width: 380px; }
 }
 
 /* === 三方案買斷制：新增樣式（2026-05 取消訂閱制） === */
