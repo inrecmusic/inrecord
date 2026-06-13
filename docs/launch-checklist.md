@@ -11,8 +11,7 @@
 ### 金流（PAYUNi）
 - [ ] 👤 `PAYUNI_API_URL` 由 sandbox 改正式：`https://api.payuni.com.tw/api/upp`
 - [ ] 👤 換上正式 `PAYUNI_MERCHANT_ID` / `PAYUNI_HASH_KEY` / `PAYUNI_HASH_IV`
-- [ ] 👤⏳ **LINE Pay 送審**（PAYUNi 商店後台啟用 LINE Pay 付款方式 — 卡外部審核時程，最先送件）
-- [ ] 👤 LINE Pay 審核通過後，確認整合支付頁有出現 LINE Pay 選項
+- [ ] ⏸️ ~~**LINE Pay 送審**~~（**暫不考慮**，上線只用信用卡；日後要開再送審）
 
 ### 電子發票（Amego）
 - [ ] 👤 `AMEGO_IDENTIFIER` 改公司正式統編（目前測試值 `12345678`）
@@ -29,7 +28,6 @@
 ### 上線前端對端實測（用正式環境，真實小額）
 > 逐步步驟與預期結果見 [`test-script.md`](./test-script.md) 第 3~6 段。
 - [ ] 🤖👤 刷一筆：付款 → notify 開通（enrollments/subscriptions）→ 開發票 → 開課信
-- [ ] 🤖👤 LINE Pay 付款走一次完整流程
 - [ ] 🤖👤 退款測試：`/api/admin/refund`（trade/close → fallback cancel）+ 確認開通已撤銷
 - [ ] 🤖👤 優惠券：折後價正確 + 付款成功才 +1
 
@@ -62,6 +60,6 @@
 ---
 
 ## 📅 建議時程
-- **第 1 週（本週）**：送 LINE Pay 審核（先卡時程）；切換 PAYUNi/Amego/SITE_URL 正式值 + Vercel env；後台密碼/JWT 強化
+- **第 1 週（本週）**：切換 PAYUNi/Amego/SITE_URL 正式值 + Vercel env；後台密碼/JWT 強化（LINE Pay 暫不考慮，省去審核時程）
 - **第 2 週**：正式環境端對端實測（付款→開通→發票→信→退款）；Brevo 網域驗證；優惠券超計 bug
-- **第 3 週**：LINE Pay 審核通過後實測；邊界測試；保留 buffer
+- **第 3 週**：邊界測試；保留 buffer
