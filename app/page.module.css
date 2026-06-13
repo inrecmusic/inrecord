@@ -263,3 +263,34 @@
   .planCardFeatured { transform: scale(1.04); }
   .planCardFeatured:hover { transform: scale(1.04) translateY(-3px); }
 }
+
+.stickyBuyBar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(15,23,42,.97);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,.1);
+  transform: translateY(110%);
+  transition: transform .3s ease;
+}
+.stickyBuyBarShow { transform: translateY(0); }
+.stickyBuyInfo { display: flex; flex-direction: column; line-height: 1.2; }
+.stickyBuyPrice { color: #fff; font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.stickyBuyLabel { color: rgba(255,255,255,.6); font-size: 12px; }
+.stickyBuyBtn {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 0; border-radius: 10px; cursor: pointer;
+  padding: 12px 20px; font-size: 15px; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  box-shadow: 0 6px 20px rgba(37,99,235,.4);
+}
+@media (max-width: 768px) {
+  .stickyBuyBar { display: flex; }
+  .footer { padding-bottom: calc(40px + 64px + env(safe-area-inset-bottom)); }
+}

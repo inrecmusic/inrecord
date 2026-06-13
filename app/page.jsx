@@ -232,6 +232,7 @@ export default function HomePage() {
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const heroRef = useRef(null);
 
   useEffect(() => {
@@ -248,6 +249,17 @@ export default function HomePage() {
       .then(r => r.json())
       .then(data => { if (data.ok) setStats(data); })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { rootMargin: "0px 0px -100% 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -623,6 +635,16 @@ export default function HomePage() {
           </div>
         </RevealSection>
       </main>
+
+      <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>
+        <div className={styles.stickyBuyInfo}>
+          <span className={styles.stickyBuyPrice}>NT$3,999</span>
+          <span className={styles.stickyBuyLabel}>學琴全攻略</span>
+        </div>
+        <button className={styles.stickyBuyBtn} onClick={() => startBuy(PLANS[1])}>
+          <ShoppingCart size={17} />立即購買
+        </button>
+      </div>
 
       <footer className={styles.footer}>
         <div className={styles.container}>
