@@ -52,7 +52,7 @@ export async function GET(req) {
 
     const siteHost = process.env.NEXT_PUBLIC_SITE_URL
       ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname
-      : "inrecord-swart.vercel.app";
+      : "inrecordmusic.com";
 
     let html = (game.html_content || "").replace(
       "</body>",
