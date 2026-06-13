@@ -356,3 +356,14 @@
   .pointGrid { grid-template-columns: repeat(2,1fr); }
   .plansRow { grid-template-columns: repeat(2, minmax(0,340px)); }
 }
+
+/* === Task 9: 觸控裝置停用 hover 位移 === */
+@media (hover: none) {
+  .planCard:hover,
+  .pointCard:hover,
+  .module:hover,
+  .featureCard:hover { transform: none; box-shadow: none; }
+  .btnRed:hover:not(:disabled) { transform: none; }
+  .planBtn:hover { transform: none; background: #fff; }
+  .planBtnFeatured:hover { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+}
