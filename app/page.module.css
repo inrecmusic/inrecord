@@ -206,7 +206,8 @@
   .heroFeatures { order: 3; grid-template-columns: repeat(2,1fr); max-width: none; margin-top: 22px; }
   .introGrid, .instructorGrid { grid-template-columns: 1fr; }
   .statsCard, .featureGrid { grid-template-columns: repeat(2,1fr); }
-  .plansRow { grid-template-columns: 1fr; }
+  .plansRow { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .planCardFeatured { order: -1; }
   .moduleBody { grid-template-columns: 1fr; padding-left: 20px; }
   .pianoPhoto { min-height: 260px; }
   .instructorPhoto { min-height: 300px; }
@@ -315,4 +316,10 @@
   .pointCardIcon { width: 44px; height: 44px; border-radius: 12px; margin-bottom: 0; flex: 0 0 auto; }
   .pointCard strong { flex: 1 1 calc(100% - 58px); text-align: left; font-size: 15px; }
   .pointCard span   { flex: 1 1 100%; margin-left: 58px; text-align: left; font-size: 12.5px; }
+
+  /* Task 6: Pricing 手機版（<=640px）縮尺寸、按鈕加大 */
+  .planCard { padding: 22px 18px 20px; }
+  .planBtn { padding: 15px 16px; font-size: 16px; }
+  .planPrice { font-size: 40px; }
+  .planRibbon { top: 18px; right: -34px; padding: 5px 40px; font-size: 10px; }
 }
