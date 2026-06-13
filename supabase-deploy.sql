@@ -29,6 +29,7 @@ ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS carrier_type  TEXT,
   ADD COLUMN IF NOT EXISTS carrier_id    TEXT,
   ADD COLUMN IF NOT EXISTS invoice_error TEXT,        -- 最後一次開票失敗原因（成功時清為 null）
+  ADD COLUMN IF NOT EXISTS email_error   TEXT,        -- 最後一次寄開課信失敗原因（成功時清為 null）
   ADD COLUMN IF NOT EXISTS fulfilled_at  TIMESTAMPTZ; -- 首次付款成功處理時間；作為優惠券累計／寄信的去重旗標（與可重試的開發票分離）
 
 
