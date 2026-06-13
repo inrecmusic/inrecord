@@ -297,3 +297,22 @@
   .stickyBuyBar { display: flex; }
   .footer { padding-bottom: calc(40px + 64px + env(safe-area-inset-bottom)); }
 }
+
+/* === Task 5: Points 手機版（<=640px）改 1 欄清單列（圖左字右）=== */
+@media (max-width: 640px) {
+  .pointsSection { padding: 12px 0 48px; }
+  .pointBlock { padding: 40px 0; }
+  .pointTitle { margin-bottom: 24px; }
+  .pointGrid { grid-template-columns: 1fr; gap: 10px; }
+  .pointCard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    text-align: left;
+    gap: 14px;
+    padding: 14px 16px;
+  }
+  .pointCardIcon { width: 44px; height: 44px; border-radius: 12px; margin-bottom: 0; flex: 0 0 auto; }
+  .pointCard strong { flex: 1 1 calc(100% - 58px); text-align: left; font-size: 15px; }
+  .pointCard span   { flex: 1 1 100%; margin-left: 58px; text-align: left; font-size: 12.5px; }
+}
