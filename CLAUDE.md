@@ -109,6 +109,10 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 - 付款後 notify 若開發票或寄開課信失敗：落地 `orders.invoice_error` / `orders.email_error`，並即時寄 email 告警給 `ADMIN_EMAIL`（`lib/admin-alert.js`，純函式產信 + Brevo，內插值已 HTML 跳脫）。後台「訂單管理」頂部「待處理告警」面板集中顯示，可一鍵補開發票 / 補寄開課信（`/api/admin/issue-invoice`、`/api/admin/resend-email`）。
 - notify 對失敗仍回 200（PAYUNi 不重送）、履約區有原子 claim，故告警無需去重旗標。
 
+### 對帳彙整（後台訂單管理）
+
+- OrdersPage 頂部「對帳彙整（依日期區間）」面板：套用既有日期篩選，顯示有效收款（已付款，退款已排除）、退款、待付款、付款方式分佈、發票已開/未開、優惠折抵，並可「匯出對帳 CSV」。彙整邏輯為純函式 `lib/reconciliation.js`（`summarizeOrders`，有測試），無新後端 API。
+
 ### 影片防盜保護（Bunny）
 
 - 課程影片 embed URL 由 `/api/classroom/video-embed` 伺服器端簽發 Bunny Embed View Token（`SHA256_HEX(BUNNY_TOKEN_KEY + bunny_video_id + expires)`，預設 3h 到期），簽發前驗 Supabase JWT + enrollment。`lib/bunny.js` 為純函式（有測試）。缺 `BUNNY_TOKEN_KEY` 時回未簽 URL（平滑切換）。Vimeo legacy 維持未簽。
