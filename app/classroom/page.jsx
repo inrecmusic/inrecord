@@ -511,8 +511,13 @@ export default function ClassroomPage() {
 
   const gameCacheRef                      = useRef({});
   const [isTablet, setIsTablet]           = useState(false);
+  const [isPhone, setIsPhone]             = useState(false);
+  const [drawerOpen, setDrawerOpen]       = useState(false);
   useEffect(() => {
-    const check = () => setIsTablet(window.innerWidth <= 1024);
+    const check = () => {
+      setIsTablet(window.innerWidth <= 1024);
+      setIsPhone(window.innerWidth <= 640);
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -649,6 +654,7 @@ export default function ClassroomPage() {
 
   function handleSelect(v) {
     setCurrentVideo(v);
+    if (isPhone) setDrawerOpen(false);
   }
 
   async function handleLogout() {
@@ -730,6 +736,9 @@ export default function ClassroomPage() {
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+        @media (max-width: 640px) {
+          input, textarea, select { font-size: 16px !important; }
+        }
       `}</style>
 
       {/* ── Topbar ── */}
