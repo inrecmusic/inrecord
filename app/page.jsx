@@ -15,6 +15,7 @@ import {
 import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
+import PointCarousel from "@/components/PointCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
@@ -69,6 +70,57 @@ const POINTS = [
       { icon: BookOpen,     label: "看得懂和弦譜",       sub: "自學更多歌曲不求人" },
       { icon: GraduationCap,label: "扎實基礎銜接進階",   sub: "為下一階段學習鋪路" },
     ],
+  },
+];
+
+const POINT1_SLIDES = [
+  {
+    title: "認識鍵盤與音名",
+    sub: ["七個基本音名，一次記住——", "先學會在鍵盤上找到它們。"],
+    topLabel: "白鍵 7 音 · 黑鍵 2 ＋ 3 分組",
+    visual: {
+      type: "keyboard",
+      keys: [
+        { label: "C", active: true, tint: true },
+        { label: "D" }, { label: "E" }, { label: "F" },
+        { label: "G" }, { label: "A" }, { label: "B" },
+      ],
+    },
+    caption: <>黑鍵以 <b>2 ＋ 3</b> 分組，<span className="hl">C</span> 永遠在「兩個黑鍵」的左邊</>,
+  },
+  {
+    title: "唱名 Do-Re-Mi",
+    sub: ["跟著旋律唱出完整音階——", "把位置變成會唱的聲音。"],
+    topLabel: "低音 → 高音",
+    visual: {
+      type: "keyboard",
+      keys: [
+        { label: "Do", active: true, tint: true },
+        { label: "Re" }, { label: "Mi" }, { label: "Fa" },
+        { label: "So" }, { label: "La" }, { label: "Si" },
+      ],
+    },
+    caption: <><b>音名</b>記位置、<b>唱名</b>記聲音——同一顆鍵，兩種叫法</>,
+  },
+  {
+    title: "基本坐姿與手型",
+    sub: ["從第一課就養成好習慣——", "坐對、手對，彈久也不累。"],
+    visual: { type: "photo", src: "/points/p1_posture.jpg", alt: "正確的鋼琴坐姿與手型" },
+    caption: <>坐姿自然、肩頸放鬆，讓手臂的重量沉到指尖</>,
+  },
+  {
+    title: "C 大調音階",
+    sub: ["右手指法入門——", "五指接力，順順爬完一個八度。"],
+    topLabel: "右手指法 1 → 5",
+    visual: {
+      type: "keyboard",
+      keys: [
+        { label: "1" }, { label: "2" }, { label: "3" },
+        { label: "1", active: true, tint: true },
+        { label: "2" }, { label: "3" }, { label: "4" },
+      ],
+    },
+    caption: <>彈到 <span className="hl">F</span> 時，大拇指 <b>(1)</b> 從下方穿過，往上接續</>,
   },
 ];
 
@@ -380,24 +432,28 @@ export default function HomePage() {
               <RevealSection key={pt.n} className={styles.pointBlock}>
                 <div className={styles.pointBadge}>POINT {pt.n}</div>
                 <h2 className={styles.pointTitle}>{pt.title}</h2>
-                <motion.div
-                  className={styles.pointGrid}
-                  variants={stagger}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-40px" }}
-                >
-                  {pt.items.map(item => {
-                    const Icon = item.icon;
-                    return (
-                      <motion.div key={item.label} className={styles.pointCard} variants={fadeUp}>
-                        <div className={styles.pointCardIcon}><Icon size={28} strokeWidth={1.5} /></div>
-                        <strong>{item.label}</strong>
-                        <span>{item.sub}</span>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
+                {pt.n === 1 ? (
+                  <PointCarousel slides={POINT1_SLIDES} />
+                ) : (
+                  <motion.div
+                    className={styles.pointGrid}
+                    variants={stagger}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-40px" }}
+                  >
+                    {pt.items.map(item => {
+                      const Icon = item.icon;
+                      return (
+                        <motion.div key={item.label} className={styles.pointCard} variants={fadeUp}>
+                          <div className={styles.pointCardIcon}><Icon size={28} strokeWidth={1.5} /></div>
+                          <strong>{item.label}</strong>
+                          <span>{item.sub}</span>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                )}
               </RevealSection>
             ))}
           </div>

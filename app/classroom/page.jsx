@@ -505,6 +505,7 @@ export default function ClassroomPage() {
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
+  const [embedSrc, setEmbedSrc] = useState("");
   const [progress, setProgress]           = useState([]);
   const [tab, setTab]                     = useState("rating");
 
@@ -631,6 +632,19 @@ export default function ClassroomPage() {
 
     setup();
     return () => { cancelled = true; clearInterval(interval); player?.destroy(); };
+  }, [currentVideo?.id, token]);
+
+  // Bunny 影片：切換時向後端索取帶 token 的簽名 embed URL（Vimeo 不走此路徑）
+  useEffect(() => {
+    setEmbedSrc("");
+    const vid = currentVideo?.id;
+    if (!vid || !token || !currentVideo?.bunny_video_id) return;
+    fetch(`/api/classroom/video-embed?video_id=${vid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data?.src) setEmbedSrc(data.src); })
+      .catch(() => {});
   }, [currentVideo?.id, token]);
 
   function handleSelect(v) {
@@ -793,13 +807,19 @@ export default function ClassroomPage() {
           {/* Player */}
           <div style={{ flexShrink: 0, background: "#000" }}>
             {currentVideo?.bunny_video_id ? (
-              <div style={{ paddingTop: "44%", position: "relative" }}>
-                <iframe
-                  src={`https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${currentVideo.bunny_video_id}?autoplay=false&loop=false&muted=false&preload=true`}
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                />
+              <div style={{ paddingTop: "44%", position: "relative", background: "#000" }}>
+                {embedSrc ? (
+                  <iframe
+                    src={embedSrc}
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+                    載入影片中…
+                  </div>
+                )}
               </div>
             ) : currentVideo?.vimeo_id ? (
               <div style={{ paddingTop: "44%", position: "relative" }}>

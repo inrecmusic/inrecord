@@ -1,0 +1,88 @@
+.keyboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 448 / 192;
+  background: var(--card, #fff);
+  border: 1.5px solid var(--keyline, #cbd5e1);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* ── White keys ───────────────────────────────────── */
+.whites {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.white {
+  flex: 1;
+  height: 100%;
+  background: #fff;
+  border: 0;
+  border-right: 1px solid var(--line, #e2e8f0);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.06s ease;
+  transform-origin: top center;
+  -webkit-tap-highlight-color: transparent;
+}
+.white:last-child { border-right: 0; }
+.white:hover { background: var(--tint, #eff6ff); }
+.white:active { background: #dbeafe; transform: translateY(2px); }
+.tint { background: var(--tint, #eff6ff); }
+
+/* ── Black keys ───────────────────────────────────── */
+.blacks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.black {
+  position: absolute;
+  top: 0;
+  height: 60%;
+  width: calc(100% / 7 * 0.56);
+  background: #0f172a;
+  border: 0;
+  border-radius: 0 0 5px 5px;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.32);
+  transition: transform 0.06s ease, filter 0.12s ease;
+  transform-origin: top center;
+  -webkit-tap-highlight-color: transparent;
+}
+.black:hover { filter: brightness(1.7); }
+.black:active { transform: translateY(2px); filter: brightness(1.4); }
+
+/* ── Note / finger badges ─────────────────────────── */
+.labels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 16%;
+  height: 0;
+  pointer-events: none;
+}
+.badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: clamp(24px, 3.6vw, 36px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: clamp(12px, 1.5vw, 19px);
+  font-weight: 700;
+  background: #fff;
+  color: var(--ink, #0f172a);
+  border: 1.5px solid var(--keyline, #cbd5e1);
+}
+.badgeActive {
+  background: var(--brand, #2563eb);
+  color: #fff;
+  border-color: var(--brand, #2563eb);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
