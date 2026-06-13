@@ -163,124 +163,129 @@ export default function BuyModal({ open, onClose, plan, email }) {
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose?.()}>
       <div className={styles.box} role="dialog" aria-modal="true">
         <button className={styles.close} onClick={onClose}>×</button>
-        <h2>確認購買方案</h2>
-        <p className={styles.sub}>零基礎流行鋼琴入門課</p>
 
-        <div className={styles.planCard}>
-          <div>
-            <strong>{plan.label}</strong>
-            <span className={styles.desc}>{plan.desc}</span>
-          </div>
-          <div className={styles.price}>
-            {couponApplied
-              ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(plan.price).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
-              : <>NT${Number(plan.price).toLocaleString()}</>}
-          </div>
-        </div>
+        <div className={styles.sheetBody}>
+          <h2>確認購買方案</h2>
+          <p className={styles.sub}>零基礎流行鋼琴入門課</p>
 
-        <div className={styles.couponRow}>
-          <input
-            className={styles.couponInput}
-            type="text"
-            placeholder="輸入優惠碼（選填）"
-            value={couponInput}
-            disabled={!!couponApplied}
-            onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(""); }}
-            onKeyDown={e => { if (e.key === "Enter" && !couponApplied) { e.preventDefault(); applyCouponCode(); } }}
-          />
-          {couponApplied
-            ? <button type="button" className={styles.couponBtn} onClick={removeCoupon}>移除</button>
-            : <button type="button" className={styles.couponBtn} onClick={applyCouponCode} disabled={couponChecking || !couponInput.trim()}>{couponChecking ? "驗證中…" : "套用"}</button>}
-        </div>
-        {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Number(couponApplied.discount).toLocaleString()}</p>}
-        {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
-
-        {plan.features?.length > 0 && (
-          <ul className={styles.features}>
-            {plan.features.map(f => (
-              <li key={f}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className={styles.account}>
-          <span className={styles.accountLabel}>開通帳號</span>
-          <span className={styles.accountEmail}>{email || "（請先登入）"}</span>
-        </div>
-
-        <div className={styles.invoiceSection}>
-          <span className={styles.invoiceTitle}>發票開立方式</span>
-
-          <label className={`${styles.invoiceOption} ${invoiceType === "email" ? styles.invoiceOptionActive : ""}`}>
-            <input type="radio" name="invoiceType" value="email" checked={invoiceType === "email"} onChange={() => setInvoiceType("email")} />
-            <span>
-              <strong>電子信箱（推薦）</strong>
-              <small>發票通知寄到 {email || "購買 Email"}</small>
-            </span>
-          </label>
-
-          <label className={`${styles.invoiceOption} ${invoiceType === "mobile" ? styles.invoiceOptionActive : ""}`}>
-            <input type="radio" name="invoiceType" value="mobile" checked={invoiceType === "mobile"} onChange={() => setInvoiceType("mobile")} />
-            <span>
-              <strong>手機條碼</strong>
-              <small>存入手機條碼載具</small>
-            </span>
-          </label>
-          {invoiceType === "mobile" && (
-            <input
-              className={styles.invoiceInput}
-              type="text"
-              placeholder="/ABC+123（斜線開頭 7 碼）"
-              value={carrierId}
-              maxLength={8}
-              onChange={e => { setCarrierId(e.target.value.toUpperCase()); setVerifyError(""); }}
-            />
-          )}
-
-          <label className={`${styles.invoiceOption} ${invoiceType === "company" ? styles.invoiceOptionActive : ""}`}>
-            <input type="radio" name="invoiceType" value="company" checked={invoiceType === "company"} onChange={() => setInvoiceType("company")} />
-            <span>
-              <strong>公司統編</strong>
-              <small>開立統編發票（三聯式）</small>
-            </span>
-          </label>
-          {invoiceType === "company" && (
-            <div className={styles.invoiceCompany}>
-              <input
-                className={styles.invoiceInput}
-                type="text"
-                inputMode="numeric"
-                placeholder="統一編號（8 位數字）"
-                value={taxId}
-                maxLength={8}
-                onChange={e => { setTaxId(e.target.value.replace(/\D/g, "")); setVerifyError(""); }}
-              />
-              <input
-                className={styles.invoiceInput}
-                type="text"
-                placeholder="公司抬頭"
-                value={companyName}
-                onChange={e => setCompanyName(e.target.value)}
-              />
+          <div className={styles.planCard}>
+            <div>
+              <strong>{plan.label}</strong>
+              <span className={styles.desc}>{plan.desc}</span>
             </div>
+            <div className={styles.price}>
+              {couponApplied
+                ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(plan.price).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
+                : <>NT${Number(plan.price).toLocaleString()}</>}
+            </div>
+          </div>
+
+          <div className={styles.couponRow}>
+            <input
+              className={styles.couponInput}
+              type="text"
+              placeholder="輸入優惠碼（選填）"
+              value={couponInput}
+              disabled={!!couponApplied}
+              onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(""); }}
+              onKeyDown={e => { if (e.key === "Enter" && !couponApplied) { e.preventDefault(); applyCouponCode(); } }}
+            />
+            {couponApplied
+              ? <button type="button" className={styles.couponBtn} onClick={removeCoupon}>移除</button>
+              : <button type="button" className={styles.couponBtn} onClick={applyCouponCode} disabled={couponChecking || !couponInput.trim()}>{couponChecking ? "驗證中…" : "套用"}</button>}
+          </div>
+          {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Number(couponApplied.discount).toLocaleString()}</p>}
+          {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
+
+          {plan.features?.length > 0 && (
+            <ul className={styles.features}>
+              {plan.features.map(f => (
+                <li key={f}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  {f}
+                </li>
+              ))}
+            </ul>
           )}
+
+          <div className={styles.account}>
+            <span className={styles.accountLabel}>開通帳號</span>
+            <span className={styles.accountEmail}>{email || "（請先登入）"}</span>
+          </div>
+
+          <div className={styles.invoiceSection}>
+            <span className={styles.invoiceTitle}>發票開立方式</span>
+
+            <label className={`${styles.invoiceOption} ${invoiceType === "email" ? styles.invoiceOptionActive : ""}`}>
+              <input type="radio" name="invoiceType" value="email" checked={invoiceType === "email"} onChange={() => setInvoiceType("email")} />
+              <span>
+                <strong>電子信箱（推薦）</strong>
+                <small>發票通知寄到 {email || "購買 Email"}</small>
+              </span>
+            </label>
+
+            <label className={`${styles.invoiceOption} ${invoiceType === "mobile" ? styles.invoiceOptionActive : ""}`}>
+              <input type="radio" name="invoiceType" value="mobile" checked={invoiceType === "mobile"} onChange={() => setInvoiceType("mobile")} />
+              <span>
+                <strong>手機條碼</strong>
+                <small>存入手機條碼載具</small>
+              </span>
+            </label>
+            {invoiceType === "mobile" && (
+              <input
+                className={styles.invoiceInput}
+                type="text"
+                placeholder="/ABC+123（斜線開頭 7 碼）"
+                value={carrierId}
+                maxLength={8}
+                onChange={e => { setCarrierId(e.target.value.toUpperCase()); setVerifyError(""); }}
+              />
+            )}
+
+            <label className={`${styles.invoiceOption} ${invoiceType === "company" ? styles.invoiceOptionActive : ""}`}>
+              <input type="radio" name="invoiceType" value="company" checked={invoiceType === "company"} onChange={() => setInvoiceType("company")} />
+              <span>
+                <strong>公司統編</strong>
+                <small>開立統編發票（三聯式）</small>
+              </span>
+            </label>
+            {invoiceType === "company" && (
+              <div className={styles.invoiceCompany}>
+                <input
+                  className={styles.invoiceInput}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="統一編號（8 位數字）"
+                  value={taxId}
+                  maxLength={8}
+                  onChange={e => { setTaxId(e.target.value.replace(/\D/g, "")); setVerifyError(""); }}
+                />
+                <input
+                  className={styles.invoiceInput}
+                  type="text"
+                  placeholder="公司抬頭"
+                  value={companyName}
+                  onChange={e => setCompanyName(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          {verifyError && <p className={styles.couponErr} style={{ color: "#dc2626" }}>{verifyError}</p>}
         </div>
 
-        {verifyError && <p className={styles.couponErr} style={{ color: "#dc2626" }}>{verifyError}</p>}
-
-        <button className={styles.proceed} onClick={handleCheckout} disabled={loading || verifying}>
-          {loading ? "處理中…" : verifying ? "驗證中…" : "前往付款 →"}
-        </button>
-        {error && (
-          <>
-            <div className={styles.errorBox}>{error}</div>
-            <button className={styles.retry} onClick={() => { setError(""); handleCheckout(); }}>重新嘗試</button>
-          </>
-        )}
-        <p className={styles.note}>🔒 透過 PAYUNi 統一金流安全付款・支援信用卡、ATM、超商</p>
+        <div className={styles.sheetFooter}>
+          <button className={styles.proceed} onClick={handleCheckout} disabled={loading || verifying}>
+            {loading ? "處理中…" : verifying ? "驗證中…" : "前往付款 →"}
+          </button>
+          {error && (
+            <>
+              <div className={styles.errorBox}>{error}</div>
+              <button className={styles.retry} onClick={() => { setError(""); handleCheckout(); }}>重新嘗試</button>
+            </>
+          )}
+          <p className={styles.note}>🔒 透過 PAYUNi 統一金流安全付款・支援信用卡、ATM、超商</p>
+        </div>
       </div>
     </div>
   );
