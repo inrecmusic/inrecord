@@ -19,3 +19,6 @@ Thumbs.db
 # Claude Code worktrees
 .claude/worktrees/
 .claude/settings.local.json
+
+# Visual brainstorming companion
+.superpowers/
