@@ -347,3 +347,12 @@
   .heroFeature { padding: 12px 8px; }
   .sectionHead h2 { font-size: clamp(24px, 7vw, 30px); }
 }
+
+/* === Task 8: 平板（768–1024）專屬多欄佈局 === */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .container { width: calc(100% - 56px); }
+  .heroFeatures { grid-template-columns: repeat(4,1fr); }
+  .featureGrid { grid-template-columns: repeat(2,1fr); }
+  .pointGrid { grid-template-columns: repeat(2,1fr); }
+  .plansRow { grid-template-columns: repeat(2, minmax(0,340px)); }
+}
