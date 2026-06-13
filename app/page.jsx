@@ -232,6 +232,7 @@ export default function HomePage() {
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
+  const heroRef = useRef(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -314,9 +315,9 @@ export default function HomePage() {
 
       <main id="top">
         {/* HERO */}
-        <section className={styles.hero}>
+        <section ref={heroRef} className={styles.hero}>
           <div className={styles.container + " " + styles.heroGrid}>
-            <motion.div variants={stagger} initial="hidden" animate="visible">
+            <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
               <motion.div variants={fadeUp} className={styles.eyebrow}>流行鋼琴零基礎入門課</motion.div>
               <motion.h1 variants={fadeUp}>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
@@ -326,21 +327,8 @@ export default function HomePage() {
                   <Play size={16} />觀看試看影片
                 </button>
               </motion.div>
-              <motion.div variants={fadeUp} className={styles.heroFeatures}>
-                {[
-                  [Music2,        "零基礎可學",   "從認識鍵盤開始"],
-                  [Bot,           "AI 互動遊戲",  "學習不再枯燥"],
-                  [Music,         "流行曲目實戰", "學完就能彈歌"],
-                  [GraduationCap, "打好扎實基礎", "銜接進階更輕鬆"],
-                ].map(([Icon, title, sub]) => (
-                  <div key={title} className={styles.heroFeature}>
-                    <div className={styles.heroIcon}><Icon size={28} strokeWidth={1.5} /></div>
-                    <strong>{title}</strong>
-                    <span>{sub}</span>
-                  </div>
-                ))}
-              </motion.div>
             </motion.div>
+
             <motion.aside
               className={styles.videoCard}
               initial={{ opacity: 0, x: 24 }}
@@ -357,6 +345,21 @@ export default function HomePage() {
                 ))}
               </ul>
             </motion.aside>
+
+            <motion.div className={styles.heroFeatures} variants={fadeUp} initial="hidden" animate="visible">
+              {[
+                [Music2,        "零基礎可學",   "從認識鍵盤開始"],
+                [Bot,           "AI 互動遊戲",  "學習不再枯燥"],
+                [Music,         "流行曲目實戰", "學完就能彈歌"],
+                [GraduationCap, "打好扎實基礎", "銜接進階更輕鬆"],
+              ].map(([Icon, title, sub]) => (
+                <div key={title} className={styles.heroFeature}>
+                  <div className={styles.heroIcon}><Icon size={28} strokeWidth={1.5} /></div>
+                  <strong>{title}</strong>
+                  <span>{sub}</span>
+                </div>
+              ))}
+            </motion.div>
           </div>
         </section>
 
