@@ -35,9 +35,9 @@
 
 ## 🟠 P1 — 上線品質（強烈建議月底前）
 
-- [x] 🤖 ~~**優惠券超計 bug**~~：已改用 `orders.fulfilled_at` 獨立去重旗標，優惠券累計＋寄信與「可重試的開發票」分離（需執行 `supabase-deploy.sql` 補上 `fulfilled_at` 欄位）
+- [x] 🤖 ~~**優惠券超計 bug**~~：用 `orders.fulfilled_at` 獨立去重旗標（與可重試的開發票分離），並進一步改為**原子式 conditional claim**（`UPDATE … WHERE fulfilled_at IS NULL`），杜絕並發／重送 notify 重複累計＋重複寄信（需執行 `supabase-deploy.sql` 補上 `fulfilled_at` 欄位）
 - [ ] 👤 **Brevo 寄件網域 SPF/DKIM 驗證**（否則開課信易進垃圾桶）
-- [ ] 👤 付款失敗 / 取消的使用者引導文案（return 一律導 `/success`，需確認失敗畫面）
+- [x] 🤖 ~~付款失敗 / 取消的使用者引導文案~~：`return` 解密回呼判斷結果 → `/success?status=failed` 顯示「付款未完成（未收費）＋重新購買／聯絡客服」引導
 - [x] 🤖 ~~開發用一次性路由收口~~（已刪除 debug/fix-bunny/run-migration）
 - [x] 🤖 ~~Stripe 殘留清理 + 文件更新~~（README/env 已更新）
 
