@@ -1,10 +1,22 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
+import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+
+// 公開端點：每 IP 每分鐘 30 次，擋優惠碼/序號枚舉（全域，缺 Redis 時記憶體保底）
+const limiter = createDistributedLimiter({ limit: 30, windowMs: 60_000, prefix: "rl:coupon-validate" });
 
 // 公開：結帳前驗證優惠券並回傳折後價（顯示用；checkout 會再次後端驗證）
 export async function POST(req) {
   try {
+    const rl = await limiter(clientIp(req));
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { valid: false, error: "rate_limited" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const { code, plan } = await req.json();
     const catalog = PLAN_CATALOG[plan];
     if (!catalog) return NextResponse.json({ valid: false, error: "invalid_plan" }, { status: 400 });

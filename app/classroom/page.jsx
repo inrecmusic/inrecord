@@ -372,7 +372,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
           尚未開通 AI 遊戲
         </h3>
         <p style={{ color: "#475569", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
-          購買「學琴全攻略」或「AI 練功房」即可永久暢玩
+          購買「學琴全攻略」即可永久暢玩
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
           <a href="/#pricing"

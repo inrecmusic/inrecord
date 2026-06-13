@@ -52,7 +52,14 @@ export async function POST(req) {
 
     const plaintext = aesDecrypt(encryptInfo, hashKey, hashIV);
     const params    = Object.fromEntries(new URLSearchParams(plaintext));
-    console.log("[payuni notify]", params);
+    // 只記非敏感欄位，避免買家 PII（email/姓名/載具）落入 Vercel logs
+    console.log("[payuni notify]", {
+      MerTradeNo:  params.MerTradeNo,
+      TradeNo:     params.TradeNo,
+      TradeStatus: params.TradeStatus,
+      TradeAmt:    params.TradeAmt,
+      PaymentType: params.PaymentType || params.PayType,
+    });
 
     // 解密後 TradeStatus = 1 代表付款成功（外層 Status 為 'SUCCESS'）
     if (params.TradeStatus === "1") {
@@ -110,31 +117,39 @@ export async function POST(req) {
 
         // 一次性履約（優惠券累計 + 寄開課信）：以 fulfilled_at 作為去重旗標。
         // 與開發票分離 —— 開發票可能反覆失敗重試，不能讓它連帶造成優惠券重複累計／重複寄信。
+        //
+        // ⚠️ 原子性：用「條件式 claim」（UPDATE ... WHERE fulfilled_at IS NULL）取代先讀後寫，
+        // 確保 Payuni 並發／重送 notify 時只有第一個請求拿得到 row、執行副作用，
+        // 其餘拿到空 → 不重複累計優惠券、不重複寄信。needsFulfillment 僅作早退優化。
         if (needsFulfillment(order)) {
-          // 先打旗標再做副作用，避免 Payuni 短時間重送 notify 造成重複
-          await supabase
+          const { data: claimed } = await supabase
             .from("orders")
             .update({ fulfilled_at: new Date().toISOString() })
-            .eq("id", order.id);
+            .eq("id", order.id)
+            .is("fulfilled_at", null)
+            .select("id")
+            .maybeSingle();
 
-          // 優惠券使用次數累計（付款成功才計）
-          if (order.coupon_code) {
-            const { data: c } = await supabase.from("coupons").select("used").eq("code", order.coupon_code).single();
-            if (c) await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
-          }
+          if (claimed) {
+            // 優惠券使用次數累計（付款成功才計）
+            if (order.coupon_code) {
+              const { data: c } = await supabase.from("coupons").select("used").eq("code", order.coupon_code).single();
+              if (c) await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+            }
 
-          // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
-          if (order.email) {
-            const mailResult = await sendPurchaseEmail({
-              email:      order.email,
-              plan:       order.plan,
-              planLabel:  order.plan_label,
-              merTradeNo: params.MerTradeNo,
-            });
-            if (mailResult.success) {
-              console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
-            } else if (!mailResult.skipped) {
-              console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
+            // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
+            if (order.email) {
+              const mailResult = await sendPurchaseEmail({
+                email:      order.email,
+                plan:       order.plan,
+                planLabel:  order.plan_label,
+                merTradeNo: params.MerTradeNo,
+              });
+              if (mailResult.success) {
+                console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
+              } else if (!mailResult.skipped) {
+                console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
+              }
             }
           }
         }
