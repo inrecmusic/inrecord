@@ -15,6 +15,8 @@ import AssignmentsPage from "./AssignmentsPage";
 import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
+import { PLAN_CATALOG } from "@/lib/plans";
+import { summarizeOrders } from "@/lib/reconciliation";
 
 
 
@@ -803,6 +805,14 @@ function OrdersPage({leads,showToast}){
   const totalPages=Math.max(1,Math.ceil(filtered.length/PER));
   const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
 
+  // 對帳彙整：以原始 rows 只套日期區間（忽略狀態/搜尋），確保營收與退款都涵蓋
+  const dateRangeRows=useMemo(()=>rows.filter(o=>{
+    const d=new Date(o.created_at||o.updated_at);
+    if(dateFrom&&d<new Date(dateFrom))return false;
+    if(dateTo){const to=new Date(dateTo);to.setHours(23,59,59,999);if(d>to)return false;}
+    return true;
+  }),[rows,dateFrom,dateTo]);
+  const report=useMemo(()=>summarizeOrders(dateRangeRows,PLAN_CATALOG),[dateRangeRows]);
   const needsAttention=allOrders.filter(o=>o.status==="paid"&&(o.needInvoice||o.invoiceError||o.emailError));
   const paid=allOrders.filter(o=>o.status==="paid");
   const pending=allOrders.filter(o=>o.status==="pending");
@@ -818,6 +828,31 @@ function OrdersPage({leads,showToast}){
     const csv="﻿"+rows.map(r=>r.map(esc).join(",")).join("\n")+"\n"; // BOM 讓 Excel 正確顯示中文
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
     downloadRef.current.href=url;downloadRef.current.download="orders.csv";downloadRef.current.click();
+    setTimeout(()=>URL.revokeObjectURL(url),100);
+  }
+
+  function exportReconciliation(){
+    if(!downloadRef.current)return;
+    const esc=(s)=>{let v=String(s??"");const f=/^[=+\-@\t\r]/.test(v);if(f)v="'"+v;return f||/[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
+    const period=(dateFrom||dateTo)?`${dateFrom||"…"} ~ ${dateTo||"…"}`:"全部期間";
+    const lines=[
+      ["對帳彙整期間",period],
+      ["有效收款（已付款）金額",report.paid.amount],
+      ["有效收款筆數",report.paid.count],
+      ["退款金額",report.refunded.amount],
+      ["退款筆數",report.refunded.count],
+      ["待付款筆數",report.pending.count],
+      ["發票已開",report.invoice.issued],
+      ["發票未開",report.invoice.missing],
+      ["使用優惠券筆數",report.coupon.count],
+      ["優惠折抵總額",report.coupon.discount],
+      [],
+      ["付款方式","筆數","金額"],
+      ...Object.entries(report.byPayType).map(([k,v])=>[k,v.count,v.amount]),
+    ];
+    const csv="﻿"+lines.map(r=>r.map(esc).join(",")).join("\n")+"\n";
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    downloadRef.current.href=url;downloadRef.current.download="reconciliation.csv";downloadRef.current.click();
     setTimeout(()=>URL.revokeObjectURL(url),100);
   }
 
@@ -860,6 +895,32 @@ function OrdersPage({leads,showToast}){
           </div>
         </div>
       )}
+      <div className={styles.panel} style={{marginBottom:16}}>
+        <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
+          <h3 style={{margin:0}}>對帳彙整（依日期區間）</h3>
+          <button className={styles.btnSmall} onClick={exportReconciliation}><Download size={13}/> 匯出對帳 CSV</button>
+        </div>
+        <div style={{padding:"4px 16px 16px",fontSize:13}}>
+          <div style={{color:"#94a3b8",marginBottom:10}}>期間：{(dateFrom||dateTo)?`${dateFrom||"…"} ~ ${dateTo||"…"}`:"全部期間"}（不受狀態／搜尋篩選影響）</div>
+          <div style={{display:"flex",gap:24,flexWrap:"wrap",marginBottom:12}}>
+            <div><div style={{color:"#94a3b8"}}>有效收款（已付款）</div><div style={{fontWeight:800,fontSize:18,color:"#16a34a"}}>NT$ {report.paid.amount.toLocaleString()}</div><div style={{color:"#94a3b8",fontSize:12}}>{report.paid.count} 筆</div></div>
+            <div><div style={{color:"#94a3b8"}}>退款</div><div style={{fontWeight:800,fontSize:18,color:"#dc2626"}}>NT$ {report.refunded.amount.toLocaleString()}</div><div style={{color:"#94a3b8",fontSize:12}}>{report.refunded.count} 筆</div></div>
+            <div><div style={{color:"#94a3b8"}}>待付款</div><div style={{fontWeight:800,fontSize:18}}>{report.pending.count} 筆</div></div>
+            <div><div style={{color:"#94a3b8"}}>發票</div><div style={{fontWeight:700}}>已開 {report.invoice.issued}／未開 {report.invoice.missing}</div></div>
+            <div><div style={{color:"#94a3b8"}}>優惠折抵</div><div style={{fontWeight:700}}>{report.coupon.count} 筆 · NT$ {report.coupon.discount.toLocaleString()}</div></div>
+          </div>
+          {Object.keys(report.byPayType).length>0&&(
+            <div>
+              <div style={{color:"#94a3b8",marginBottom:4}}>付款方式分佈（已付款）</div>
+              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                {Object.entries(report.byPayType).map(([k,v])=>(
+                  <span key={k} style={{background:"#f1f5f9",borderRadius:6,padding:"4px 10px"}}>{k}：{v.count} 筆 · NT$ {v.amount.toLocaleString()}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       <div className={styles.panel}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
           <div className={styles.tableControls} style={{flexWrap:"wrap"}}>
