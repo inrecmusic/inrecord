@@ -104,6 +104,11 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 - 返回遊戲 HTML 時加入浮水印（`user.email · InRecord`）與 iframe 防盜嵌入 script
 - 遊戲資料存於 `games` 資料表（`id, title, chapter_id, html_content, sort_order`）
 
+### 影片防盜保護（Bunny）
+
+- 課程影片 embed URL 由 `/api/classroom/video-embed` 伺服器端簽發 Bunny Embed View Token（`SHA256_HEX(BUNNY_TOKEN_KEY + bunny_video_id + expires)`，預設 3h 到期），簽發前驗 Supabase JWT + enrollment。`lib/bunny.js` 為純函式（有測試）。缺 `BUNNY_TOKEN_KEY` 時回未簽 URL（平滑切換）。Vimeo legacy 維持未簽。
+- 👤 上線需於 Bunny 後台開啟該函式庫 **Token Authentication** 並設定 **Allowed Referrers** 為正式網域。
+
 ## 主要 API 路由
 
 | 路徑 | 方法 | 說明 |
@@ -111,6 +116,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 | `/api/classroom/verify-purchase` | POST | 驗證課程購買 |
 | `/api/classroom/verify-subscription` | POST | 驗證遊戲存取 |
 | `/api/classroom/games` | GET | 遊戲清單/內容（需有效遊戲存取） |
+| `/api/classroom/video-embed` | GET | 驗購買後簽發 Bunny 安全 embed URL（token+expires） |
 | `/api/payuni/checkout` | POST | 方案付款（course/bundle，支援 couponCode；game 已下架） |
 | `/api/payuni/notify` | POST | PAYUNi 背景通知（開通 + 開發票 + 累計優惠券） |
 | `/api/coupons/validate` | POST | 公開：結帳前驗證優惠券、回傳折後價 |
@@ -151,6 +157,7 @@ BREVO_API_KEY
 BREVO_SENDER_EMAIL
 BREVO_SENDER_NAME
 NEXT_PUBLIC_SITE_URL
+BUNNY_TOKEN_KEY
 CRON_SECRET
 JWT_SECRET
 ADMIN_EMAIL
