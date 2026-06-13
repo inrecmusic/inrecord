@@ -816,7 +816,7 @@ export default function ClassroomPage() {
           {/* Player */}
           <div style={{ flexShrink: 0, background: "#000" }}>
             {currentVideo?.bunny_video_id ? (
-              <div style={{ paddingTop: "44%", position: "relative", background: "#000" }}>
+              <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "#000" }}>
                 {embedSrc ? (
                   <iframe
                     src={embedSrc}
@@ -831,7 +831,7 @@ export default function ClassroomPage() {
                 )}
               </div>
             ) : currentVideo?.vimeo_id ? (
-              <div style={{ paddingTop: "44%", position: "relative" }}>
+              <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative" }}>
                 <iframe
                   id="vimeo-player"
                   src={`https://player.vimeo.com/video/${currentVideo.vimeo_id}?autoplay=0&title=0&byline=0&portrait=0`}
@@ -841,7 +841,7 @@ export default function ClassroomPage() {
                 />
               </div>
             ) : (
-              <div style={{ paddingTop: "44%", position: "relative", background: "#0A0A0A" }}>
+              <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "#0A0A0A" }}>
                 <div style={{
                   position: "absolute", inset: 0,
                   display: "flex", flexDirection: "column",
