@@ -224,13 +224,11 @@
   .hero h1 { font-size: clamp(30px, 7vw, 44px); margin-bottom: 16px; }
   .heroLead { font-size: 16px; line-height: 1.6; margin-bottom: 22px; }
   .videoThumb { height: 180px; }
-  .featureGrid { grid-template-columns: 1fr; }
   .stats { transform: translateY(-28px); }
   .statsCard { grid-template-columns: repeat(2,1fr); padding: 20px 14px; }
   .stat { border-right: 1px solid var(--line); border-bottom: 0; padding: 14px 8px; }
   .stat:nth-child(2n) { border-right: 0; }
   .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
-  .cta { padding: 44px 24px; }
 }
 
 /* === 三方案買斷制：新增樣式（2026-05 取消訂閱制） === */
@@ -322,4 +320,30 @@
   .planBtn { padding: 15px 16px; font-size: 16px; }
   .planPrice { font-size: 40px; }
   .planRibbon { top: 18px; right: -34px; padding: 5px 40px; font-size: 10px; }
+}
+
+/* === Task 7: 手機/小手機 區塊間距與字級收斂 === */
+@media (max-width: 640px) {
+  .introSection, .pricingSection, .instructorSection, .faqSection, .ctaSection, .curriculum { padding: 48px 0; }
+  .sectionHead { margin-bottom: 28px; }
+  .sectionHead p { font-size: 16px; }
+  .featureGrid { grid-template-columns: 1fr; gap: 12px; }
+  .featureCard { padding: 22px 20px; }
+  .introGrid { gap: 32px; }
+  .pianoPhoto { min-height: 220px; }
+  .instructorPhoto { min-height: 280px; }
+  .instructorGrid { gap: 28px; }
+  .moduleSummary { grid-template-columns: 44px 1fr 28px; gap: 12px; padding: 18px 16px; }
+  .moduleSummary h3 { font-size: 16px; }
+  .num { width: 32px; height: 32px; font-size: 13px; }
+  .moduleBody { padding: 0 16px 20px; }
+  .faqSummary { font-size: 15px; padding: 18px 16px; }
+  .faqContent p { padding: 0 16px 18px; }
+  .cta { padding: 40px 22px; border-radius: 22px; }
+}
+@media (max-width: 400px) {
+  .container { width: calc(100% - 32px); }
+  .hero h1 { font-size: clamp(27px, 7.5vw, 34px); }
+  .heroFeature { padding: 12px 8px; }
+  .sectionHead h2 { font-size: clamp(24px, 7vw, 30px); }
 }
