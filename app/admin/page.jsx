@@ -715,6 +715,7 @@ function OrdersPage({leads,showToast}){
   const [detailOrder,setDetailOrder]=useState(null);
   const [rows,setRows]=useState([]);
   const [issuing,setIssuing]=useState(null);
+  const [resending,setResending]=useState(null);
   const [refunding,setRefunding]=useState(false);
   const downloadRef=useRef(null);
   const [tablePage,setTablePage]=useState(1);
@@ -748,6 +749,18 @@ function OrdersPage({leads,showToast}){
     finally{setIssuing(null);}
   }
 
+  async function resendEmail(realId){
+    if(!realId||resending)return;
+    setResending(realId);
+    try{
+      const res=await _api("/api/admin/resend-email",{method:"POST",body:JSON.stringify({id:realId})});
+      const d=await res.json();
+      if(res.ok&&d.ok){await loadOrders();showToast?.("✅ 開課信已補寄");}
+      else showToast?.("❌ 補寄失敗："+(d.error||"unknown"));
+    }catch(e){showToast?.("❌ 補寄失敗："+e.message);}
+    finally{setResending(null);}
+  }
+
   async function refundOrder(realId){
     if(!realId||refunding)return;
     if(!window.confirm("確定要對此訂單申請退款嗎？\n退款成功後將同步撤銷該學員的課程／遊戲存取，且無法復原。"))return;
@@ -773,6 +786,7 @@ function OrdersPage({leads,showToast}){
     time:fmt(o.created_at||o.updated_at),
     invoiceNo:o.invoice_no||"",
     invoiceError:o.invoice_error||"",
+    emailError:o.email_error||"",
     needInvoice:(o.status==="paid" && !o.invoice_no), // 已付款但未開票（待補開）
   })),[rows]);
 
@@ -789,6 +803,7 @@ function OrdersPage({leads,showToast}){
   const totalPages=Math.max(1,Math.ceil(filtered.length/PER));
   const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
 
+  const needsAttention=allOrders.filter(o=>o.status==="paid"&&(o.needInvoice||o.invoiceError||o.emailError));
   const paid=allOrders.filter(o=>o.status==="paid");
   const pending=allOrders.filter(o=>o.status==="pending");
   const refunded=allOrders.filter(o=>o.status==="refunded");
@@ -821,6 +836,30 @@ function OrdersPage({leads,showToast}){
         <StatCard label="待處理訂單" value={pending.length} sub="筆待確認" icon={CreditCard} color="#f59e0b"/>
         <StatCard label="已退款訂單" value={refunded.length} sub="筆" icon={BarChart2} color="#dc2626"/>
       </div>
+      {needsAttention.length>0&&(
+        <div className={styles.panel} style={{borderLeft:"4px solid #dc2626",background:"#fff7f7",marginBottom:16}}>
+          <div className={styles.panelHead}><h3 style={{margin:0,color:"#b91c1c"}}>⚠️ 待處理告警（{needsAttention.length}）</h3></div>
+          <div style={{padding:"4px 16px 16px"}}>
+            {needsAttention.map(o=>(
+              <div key={o.realId} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"10px 0",borderBottom:"1px solid #fde2e2",flexWrap:"wrap"}}>
+                <div style={{fontSize:13}}>
+                  <code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code>
+                  <span style={{marginLeft:8,color:"#475569"}}>{o.email}</span>
+                  <div style={{marginTop:4,color:"#b91c1c",fontWeight:700}}>
+                    {o.emailError&&<span style={{marginRight:10}}>開課信寄送失敗：{o.emailError}</span>}
+                    {o.invoiceError&&<span style={{marginRight:10}}>開票失敗：{o.invoiceError}</span>}
+                    {!o.invoiceError&&o.needInvoice&&<span style={{marginRight:10}}>發票待補開</span>}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {o.needInvoice&&<button className={styles.btnSmall} disabled={issuing===o.realId} onClick={()=>issueInvoice(o.realId)}>{issuing===o.realId?"補開中…":"補開發票"}</button>}
+                  {o.emailError&&<button className={styles.btnSmall} disabled={resending===o.realId} onClick={()=>resendEmail(o.realId)}>{resending===o.realId?"補寄中…":"補寄開課信"}</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className={styles.panel}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
           <div className={styles.tableControls} style={{flexWrap:"wrap"}}>
