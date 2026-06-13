@@ -948,7 +948,24 @@ export default function ClassroomPage() {
         </div>
 
         {/* ── Right: chapter list ── */}
-        <div style={{
+        {isPhone && drawerOpen && (
+          <div
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,.4)", zIndex: 49,
+            }}
+          />
+        )}
+        <div style={isPhone ? {
+          position: "fixed", top: 0, right: 0, bottom: 0,
+          width: "min(330px, 85vw)", zIndex: 50,
+          display: "flex", flexDirection: "column",
+          background: "#fff", flexShrink: 0,
+          boxShadow: "-8px 0 32px rgba(0,0,0,.18)",
+          transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform .28s ease",
+        } : {
           width: isTablet ? "100%" : 288,
           maxHeight: isTablet ? 300 : "none",
           display: "flex", flexDirection: "column",
@@ -958,9 +975,20 @@ export default function ClassroomPage() {
 
           {/* Progress */}
           <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 500, marginBottom: 9 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 500, marginBottom: 9 }}>
               <span style={{ color: "#64748b" }}>學習進度</span>
-              <span style={{ color: "#2563eb", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "#2563eb", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
+                {isPhone && (
+                  <button
+                    onClick={() => setDrawerOpen(false)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontSize: 18, color: "#64748b", lineHeight: 1, padding: "2px 4px",
+                    }}
+                  >✕</button>
+                )}
+              </div>
             </div>
             <div style={{ height: 4, background: "#e2e8f0", borderRadius: 2, overflow: "hidden" }}>
               <div style={{
