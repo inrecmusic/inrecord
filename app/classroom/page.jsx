@@ -879,7 +879,19 @@ export default function ClassroomPage() {
               )}
             </div>
 
-            {currentVideo && (
+            {isPhone ? (
+              <button
+                onClick={() => setDrawerOpen(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "#eff6ff", border: "1.5px solid #bfdbfe",
+                  color: "#1d4ed8", borderRadius: 20, padding: "6px 14px",
+                  fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                📚 課程目錄 {doneCount}/{totalCount}
+              </button>
+            ) : currentVideo && (
               isDone ? (
                 <div style={{
                   display: "flex", alignItems: "center", gap: 5,
