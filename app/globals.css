@@ -93,3 +93,6 @@ h4, h5, h6 { font-weight: 600; }
   font-feature-settings: "lnum" 1, "tnum" 1;
 }
 
+/* ── Content-page card — responsive padding ──────────────────────────────── */
+.content-card { padding: 40px 44px; }
+@media (max-width: 640px) { .content-card { padding: 28px 20px; } }
