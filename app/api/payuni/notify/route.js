@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
+import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
 function aesDecrypt(encryptStr, key, iv) {
@@ -78,6 +79,8 @@ export async function POST(req) {
           },
           { onConflict: "mer_trade_no" }
         ).select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
+        let invoiceFailed = false, invoiceReason = "";
+        let emailFailed = false,   emailReason   = "";
         if (error) {
           console.error("[payuni notify] supabase error", error.message);
         } else if (order?.email) {
@@ -147,8 +150,12 @@ export async function POST(req) {
               });
               if (mailResult.success) {
                 console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
+                await supabase.from("orders").update({ email_error: null }).eq("id", order.id);
               } else if (!mailResult.skipped) {
                 console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
+                emailFailed = true;
+                emailReason = mailResult.error || "send_failed";
+                await supabase.from("orders").update({ email_error: emailReason }).eq("id", order.id);
               }
             }
           }
@@ -174,11 +181,28 @@ export async function POST(req) {
               .eq("id", order.id);
             console.log("[Invoice] 開立成功:", invoiceResult.invoiceNo);
           } else {
+            invoiceFailed = true;
+            invoiceReason = invoiceResult.error || `code_${invoiceResult.code || "unknown"}`;
             await supabase
               .from("orders")
-              .update({ invoice_error: invoiceResult.error || `code_${invoiceResult.code || "unknown"}` })
+              .update({ invoice_error: invoiceReason })
               .eq("id", order.id);
             console.error("[Invoice] 開立失敗:", invoiceResult.error);
+          }
+        }
+
+        // 開票／寄信失敗 → 主動寄信告警給管理員（失敗不影響付款回應）
+        if (invoiceFailed || emailFailed) {
+          try {
+            const alertOrder = { mer_trade_no: params.MerTradeNo, email: order?.email };
+            if (invoiceFailed) {
+              await sendAdminAlert(buildAdminAlertHtml({ kind: "invoice", order: alertOrder, reason: invoiceReason }));
+            }
+            if (emailFailed) {
+              await sendAdminAlert(buildAdminAlertHtml({ kind: "email", order: alertOrder, reason: emailReason }));
+            }
+          } catch (e) {
+            console.error("[admin alert error]", e);
           }
         }
       }
