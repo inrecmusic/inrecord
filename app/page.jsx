@@ -256,7 +256,7 @@ export default function HomePage() {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => setShowStickyBar(!entry.isIntersecting),
-      { rootMargin: "0px 0px -100% 0px" }
+      { threshold: 0 }
     );
     obs.observe(el);
     return () => obs.disconnect();
