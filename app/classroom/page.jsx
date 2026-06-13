@@ -511,8 +511,13 @@ export default function ClassroomPage() {
 
   const gameCacheRef                      = useRef({});
   const [isTablet, setIsTablet]           = useState(false);
+  const [isPhone, setIsPhone]             = useState(false);
+  const [drawerOpen, setDrawerOpen]       = useState(false);
   useEffect(() => {
-    const check = () => setIsTablet(window.innerWidth <= 1024);
+    const check = () => {
+      setIsTablet(window.innerWidth <= 1024);
+      setIsPhone(window.innerWidth <= 640);
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -649,6 +654,7 @@ export default function ClassroomPage() {
 
   function handleSelect(v) {
     setCurrentVideo(v);
+    if (isPhone) setDrawerOpen(false);
   }
 
   async function handleLogout() {
@@ -730,6 +736,9 @@ export default function ClassroomPage() {
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+        @media (max-width: 640px) {
+          input, textarea, select { font-size: 16px !important; }
+        }
       `}</style>
 
       {/* ── Topbar ── */}
@@ -807,7 +816,7 @@ export default function ClassroomPage() {
           {/* Player */}
           <div style={{ flexShrink: 0, background: "#000" }}>
             {currentVideo?.bunny_video_id ? (
-              <div style={{ paddingTop: "44%", position: "relative", background: "#000" }}>
+              <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "#000" }}>
                 {embedSrc ? (
                   <iframe
                     src={embedSrc}
@@ -822,7 +831,7 @@ export default function ClassroomPage() {
                 )}
               </div>
             ) : currentVideo?.vimeo_id ? (
-              <div style={{ paddingTop: "44%", position: "relative" }}>
+              <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative" }}>
                 <iframe
                   id="vimeo-player"
                   src={`https://player.vimeo.com/video/${currentVideo.vimeo_id}?autoplay=0&title=0&byline=0&portrait=0`}
@@ -832,7 +841,7 @@ export default function ClassroomPage() {
                 />
               </div>
             ) : (
-              <div style={{ paddingTop: "44%", position: "relative", background: "#0A0A0A" }}>
+              <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "#0A0A0A" }}>
                 <div style={{
                   position: "absolute", inset: 0,
                   display: "flex", flexDirection: "column",
@@ -870,7 +879,19 @@ export default function ClassroomPage() {
               )}
             </div>
 
-            {currentVideo && (
+            {isPhone ? (
+              <button
+                onClick={() => setDrawerOpen(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "#eff6ff", border: "1.5px solid #bfdbfe",
+                  color: "#1d4ed8", borderRadius: 20, padding: "6px 14px",
+                  fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                📚 課程目錄 {doneCount}/{totalCount}
+              </button>
+            ) : currentVideo && (
               isDone ? (
                 <div style={{
                   display: "flex", alignItems: "center", gap: 5,
@@ -927,7 +948,24 @@ export default function ClassroomPage() {
         </div>
 
         {/* ── Right: chapter list ── */}
-        <div style={{
+        {isPhone && drawerOpen && (
+          <div
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,.4)", zIndex: 49,
+            }}
+          />
+        )}
+        <div style={isPhone ? {
+          position: "fixed", top: 0, right: 0, bottom: 0,
+          width: "min(330px, 85vw)", zIndex: 50,
+          display: "flex", flexDirection: "column",
+          background: "#fff", flexShrink: 0,
+          boxShadow: "-8px 0 32px rgba(0,0,0,.18)",
+          transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform .28s ease",
+        } : {
           width: isTablet ? "100%" : 288,
           maxHeight: isTablet ? 300 : "none",
           display: "flex", flexDirection: "column",
@@ -937,9 +975,20 @@ export default function ClassroomPage() {
 
           {/* Progress */}
           <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 500, marginBottom: 9 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 500, marginBottom: 9 }}>
               <span style={{ color: "#64748b" }}>學習進度</span>
-              <span style={{ color: "#2563eb", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "#2563eb", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
+                {isPhone && (
+                  <button
+                    onClick={() => setDrawerOpen(false)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontSize: 18, color: "#64748b", lineHeight: 1, padding: "2px 4px",
+                    }}
+                  >✕</button>
+                )}
+              </div>
             </div>
             <div style={{ height: 4, background: "#e2e8f0", borderRadius: 2, overflow: "hidden" }}>
               <div style={{
