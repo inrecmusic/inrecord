@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getJwtSecret } from "@/lib/adminAuth";
 
 export async function POST(req) {
   const authHeader = req.headers.get("authorization");
@@ -23,7 +24,11 @@ export async function POST(req) {
     return NextResponse.json({ error: "not_admin" }, { status: 403 });
   }
 
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  const secret = getJwtSecret();
+  if (!secret) {
+    console.error("[admin google-login] JWT_SECRET 未設定或長度不足，拒絕簽發 token");
+    return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+  }
   const token = await new SignJWT({ email: user.email, role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()

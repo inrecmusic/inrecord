@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+import { getJwtSecret } from "@/lib/adminAuth";
 
 // 後台登入暴力破解防護：每 IP 15 分鐘最多 5 次「失敗」嘗試（全域，缺 Redis 時記憶體保底）。
 // 只在密碼錯誤時計次，登入成功不扣額 —— 保留原本的語意，但改為跨 instance 精準。
@@ -30,7 +31,11 @@ export async function POST(req) {
   }
 
   // 成功 —— 不消耗限流額度
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  const secret = getJwtSecret();
+  if (!secret) {
+    console.error("[admin login] JWT_SECRET 未設定或長度不足，拒絕簽發 token");
+    return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+  }
   const token = await new SignJWT({ email, role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
