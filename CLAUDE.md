@@ -104,6 +104,11 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 - 返回遊戲 HTML 時加入浮水印（`user.email · InRecord`）與 iframe 防盜嵌入 script
 - 遊戲資料存於 `games` 資料表（`id, title, chapter_id, html_content, sort_order`）
 
+### 失敗告警（開票／寄信）
+
+- 付款後 notify 若開發票或寄開課信失敗：落地 `orders.invoice_error` / `orders.email_error`，並即時寄 email 告警給 `ADMIN_EMAIL`（`lib/admin-alert.js`，純函式產信 + Brevo，內插值已 HTML 跳脫）。後台「訂單管理」頂部「待處理告警」面板集中顯示，可一鍵補開發票 / 補寄開課信（`/api/admin/issue-invoice`、`/api/admin/resend-email`）。
+- notify 對失敗仍回 200（PAYUNi 不重送）、履約區有原子 claim，故告警無需去重旗標。
+
 ### 影片防盜保護（Bunny）
 
 - 課程影片 embed URL 由 `/api/classroom/video-embed` 伺服器端簽發 Bunny Embed View Token（`SHA256_HEX(BUNNY_TOKEN_KEY + bunny_video_id + expires)`，預設 3h 到期），簽發前驗 Supabase JWT + enrollment。`lib/bunny.js` 為純函式（有測試）。缺 `BUNNY_TOKEN_KEY` 時回未簽 URL（平滑切換）。Vimeo legacy 維持未簽。
@@ -124,6 +129,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 | `/api/admin/orders` | GET | 後台訂單清單 |
 | `/api/admin/refund` | POST | 退款（trade/close → fallback trade/cancel）+ 撤銷存取 |
 | `/api/admin/issue-invoice` | POST | 後台手動開立發票（Amego） |
+| `/api/admin/resend-email` | POST | 後台補寄開課確認信（Brevo） |
 | `/api/admin/courses` | GET/POST/PATCH/DELETE | 後台課程 CRUD |
 | `/api/admin/coupons` | GET/POST/PATCH/DELETE | 後台優惠券 CRUD |
 
