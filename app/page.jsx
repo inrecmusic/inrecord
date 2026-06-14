@@ -283,6 +283,9 @@ export default function HomePage() {
 
   function onPreviewSuccess() { setPreviewOpen(false); }
 
+  // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
+  const presaleMode = process.env.NEXT_PUBLIC_PRESALE_MODE === "1";
+
   return (
     <>
       {/* NAV */}
@@ -297,7 +300,9 @@ export default function HomePage() {
             <a href="#" onClick={e => { e.preventDefault(); setPreviewOpen(true); }}>課程試看</a>
           </nav>
           {user
-            ? <a href="/classroom"       className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>
+            ? (presaleMode
+                ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
+                : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
             : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
           <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => startBuy(PLANS[1])}>立即購買課程</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
@@ -311,7 +316,9 @@ export default function HomePage() {
             ))}
             <a href="#" onClick={e => { e.preventDefault(); setMenuOpen(false); setPreviewOpen(true); }}>課程試看</a>
             {user
-              ? <a href="/classroom"       onClick={() => setMenuOpen(false)}>進入教室</a>
+              ? (presaleMode
+                  ? <span style={{ opacity: .55 }}>課程準備中（開課將以 Email 通知）</span>
+                  : <a href="/classroom" onClick={() => setMenuOpen(false)}>進入教室</a>)
               : <a href="/classroom/login" onClick={() => setMenuOpen(false)}>學員登入</a>}
           </div>
         )}
