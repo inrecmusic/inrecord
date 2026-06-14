@@ -10,12 +10,13 @@ const AUTOPLAY_MS = 4000;
 const SWIPE_THRESHOLD = 60; // px dragged before a slide change commits
 
 /**
- * Horizontal, auto-playing slide carousel for POINT 1.
- * Each slide is a self-contained 1120×480 SVG (title / progress / footer
- * already baked in), so the carousel only adds chrome: arrows, dots,
- * drag/keyboard navigation and the sliding transition.
+ * Horizontal, auto-playing slide carousel for the POINT sections (1 & 2).
+ * Each slide is a natively-rebuilt <PointSlide> (title / progress / footer /
+ * visual all real DOM); the carousel only adds chrome: arrows, dots,
+ * drag/keyboard navigation and the sliding transition. `point` numbers the
+ * eyebrow/footer of every slide.
  */
-export default function PointCarousel({ slides }) {
+export default function PointCarousel({ slides, point = 1 }) {
   // [activeIndex, direction] — direction drives the enter/exit x offset.
   const [[index, dir], setState] = useState([0, 0]);
   const [paused, setPaused] = useState(false);
@@ -54,7 +55,7 @@ export default function PointCarousel({ slides }) {
       className={styles.carousel}
       role="region"
       aria-roledescription="carousel"
-      aria-label="POINT 1 課程亮點"
+      aria-label={`POINT ${point} 課程亮點`}
       tabIndex={0}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -89,7 +90,7 @@ export default function PointCarousel({ slides }) {
               else if (info.offset.x > SWIPE_THRESHOLD) prev();
             }}
           >
-            <PointSlide slide={slides[index]} index={index} total={count} />
+            <PointSlide slide={slides[index]} index={index} total={count} point={point} />
           </motion.div>
         </AnimatePresence>
 

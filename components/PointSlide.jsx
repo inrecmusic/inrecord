@@ -1,21 +1,25 @@
 "use client";
 
 import PianoKeyboard from "./PianoKeyboard";
+import ChordKeyboard from "./ChordKeyboard";
+import EarTraining from "./EarTraining";
 import styles from "./PointSlide.module.css";
 
 /**
- * One natively-rebuilt POINT 1 slide. Mirrors the original SVG layout —
+ * One natively-rebuilt POINT slide. Mirrors the original SVG layout —
  * left info column · divider · right visual · brand footer — but as real,
- * responsive, selectable DOM (no <img> of text).
+ * responsive, selectable DOM (no <img> of text). Shared by POINT 1 & 2 via
+ * the `point` prop, which drives the eyebrow and footer numbering.
  */
-export default function PointSlide({ slide, index, total }) {
+export default function PointSlide({ slide, index, total, point = 1 }) {
   const num = String(index + 1).padStart(2, "0");
+  const pointNum = String(point).padStart(2, "0");
 
   return (
     <div className={styles.slide}>
       <div className={styles.body}>
         <div className={styles.info}>
-          <div className={styles.eyebrow}>POINT 01</div>
+          <div className={styles.eyebrow}>POINT {pointNum}</div>
           <h3 className={styles.title}>{slide.title}</h3>
           <div className={styles.underline} />
           <p className={styles.sub}>
@@ -46,6 +50,10 @@ export default function PointSlide({ slide, index, total }) {
 
           {slide.visual.type === "keyboard" ? (
             <PianoKeyboard keys={slide.visual.keys} ariaLabel={slide.title} />
+          ) : slide.visual.type === "chords" ? (
+            <ChordKeyboard {...slide.visual} ariaLabel={slide.title} />
+          ) : slide.visual.type === "ear" ? (
+            <EarTraining ariaLabel={slide.title} />
           ) : (
             <div className={styles.photoWrap}>
               <img
@@ -65,7 +73,7 @@ export default function PointSlide({ slide, index, total }) {
 
       <div className={styles.footer}>
         <span>InRecord ｜ 流行鋼琴零基礎入門課</span>
-        <span>Point 1 · 課程設計</span>
+        <span>Point {point} · 課程設計</span>
       </div>
     </div>
   );

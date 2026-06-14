@@ -124,6 +124,80 @@ const POINT1_SLIDES = [
   },
 ];
 
+const C_BRAND = "#2563eb";
+const C_NAVY = "#172554";
+const C_MUTED = "#64748b";
+
+const POINT2_SLIDES = [
+  {
+    title: "12 個大三和弦",
+    sub: ["開朗、明亮的音色——", "大三度＋小三度，套用到 12 個音。"],
+    visual: {
+      type: "chords",
+      variant: "major",
+      tintKeys: [0, 2, 4],
+      markers: [
+        { white: 0, label: "C", color: C_BRAND },
+        { white: 2, label: "E", color: C_BRAND },
+        { white: 4, label: "G", color: C_BRAND },
+      ],
+      intervals: [
+        { from: 0, to: 2, label: "大三度" },
+        { from: 2, to: 4, label: "小三度" },
+      ],
+      badge: { text: "× 12 個", color: C_BRAND },
+    },
+    caption: <>往上疊 <b>大三度</b> ＋ <b>小三度</b>，就是明亮的大三和弦</>,
+  },
+  {
+    title: "12 個小三和弦",
+    sub: ["柔和、憂鬱的情感——", "小三度＋大三度，套用到 12 個音。"],
+    visual: {
+      type: "chords",
+      variant: "minor",
+      tintKeys: [1, 3, 5],
+      markers: [
+        { white: 1, label: "D", color: C_NAVY },
+        { white: 3, label: "F", color: C_NAVY },
+        { white: 5, label: "A", color: C_NAVY },
+      ],
+      intervals: [
+        { from: 1, to: 3, label: "小三度" },
+        { from: 3, to: 5, label: "大三度" },
+      ],
+      badge: { text: "× 12 個", color: C_NAVY },
+    },
+    caption: <>往上疊 <b>小三度</b> ＋ <b>大三度</b>，就是憂鬱的小三和弦</>,
+  },
+  {
+    title: "大小和弦快速切換",
+    sub: ["不用重學指法——", "同一個和弦，只動中間一個音。"],
+    visual: {
+      type: "chords",
+      variant: "switch",
+      tintKeys: [2],
+      markers: [
+        { white: 0, label: "C", color: C_MUTED },
+        { white: 2, label: "E", color: C_BRAND, big: true },
+        { white: 4, label: "G", color: C_MUTED },
+      ],
+      float: { after: 1, label: "E♭", color: C_NAVY, tag: "小和弦" },
+      bottomLabels: [
+        { white: 0, text: "根音 · 不動" },
+        { white: 2, text: "大和弦", color: C_BRAND, strong: true },
+        { white: 4, text: "五音 · 不動" },
+      ],
+    },
+    caption: <>根音 C、五音 G 不動，只把中間的三度音移動<b>半音</b> ── 大和弦 ⇄ 小和弦</>,
+  },
+  {
+    title: "和弦耳訓練習",
+    sub: ["不只是會彈——", "還要能「聽出」大和小。"],
+    visual: { type: "ear" },
+    caption: <>不靠看譜，<b>用耳朵分辨明亮與陰暗</b>，就能聽出是大和弦還是小和弦</>,
+  },
+];
+
 const PLANS = [
   {
     plan: "course",
@@ -448,7 +522,9 @@ export default function HomePage() {
                 <div className={styles.pointBadge}>POINT {pt.n}</div>
                 <h2 className={styles.pointTitle}>{pt.title}</h2>
                 {pt.n === 1 ? (
-                  <PointCarousel slides={POINT1_SLIDES} />
+                  <PointCarousel slides={POINT1_SLIDES} point={1} />
+                ) : pt.n === 2 ? (
+                  <PointCarousel slides={POINT2_SLIDES} point={2} />
                 ) : (
                   <motion.div
                     className={styles.pointGrid}
