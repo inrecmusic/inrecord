@@ -883,8 +883,8 @@ export default function ClassroomPage() {
                 onClick={() => setDrawerOpen(true)}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  background: "#eff6ff", border: "1.5px solid #bfdbfe",
-                  color: "#1d4ed8", borderRadius: 20, padding: "6px 14px",
+                  minHeight: 44, background: "#eff6ff", border: "1.5px solid #bfdbfe",
+                  color: "#1d4ed8", borderRadius: 20, padding: "10px 16px",
                   fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
                 }}
               >
@@ -926,7 +926,7 @@ export default function ClassroomPage() {
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
-                  padding: "11px 14px", fontSize: 13.5, fontWeight: tab === t.id ? 600 : 400,
+                  minHeight: 44, padding: "12px 16px", fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
                   cursor: "pointer", border: 0, background: "none", fontFamily: F,
                   color: tab === t.id ? "#0f172a" : "#64748b",
                   borderBottom: tab === t.id ? "2px solid #2563eb" : "2px solid transparent",
