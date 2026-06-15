@@ -1,0 +1,86 @@
+.viz {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 2.6vw, 26px);
+  padding-top: 6px;
+}
+
+/* ── Headphone mark with sound waves ──────────────── */
+.phones {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--navy, #172554);
+}
+.wave {
+  position: absolute;
+  top: 50%;
+  left: -14px;
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid var(--brand, #2563eb);
+  border-color: var(--brand, #2563eb) transparent transparent var(--brand, #2563eb);
+  border-radius: 50% 0 0 0;
+  transform: translateY(-50%) rotate(-45deg);
+  opacity: 0.55;
+}
+.waveRight {
+  left: auto;
+  right: -14px;
+  border-color: var(--navy, #172554) var(--navy, #172554) transparent transparent;
+  border-radius: 0 50% 0 0;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* ── Waveform cards ───────────────────────────────── */
+.cards {
+  width: 100%;
+  display: flex;
+  gap: clamp(12px, 1.8vw, 20px);
+}
+.card {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(12px, 1.8vw, 18px);
+  border-radius: 14px;
+  background: var(--card, #fff);
+  border: 1.4px solid var(--keyline, #cbd5e1);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.12);
+}
+.cardDark {
+  background: linear-gradient(to bottom, #1b2a57, #0b1430);
+  border-color: #0b1226;
+}
+
+.bars {
+  height: clamp(54px, 8vw, 78px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(2px, 0.5vw, 4px);
+}
+.bar {
+  flex: 1;
+  min-width: 0;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #60a5fa, #1d4ed8);
+}
+.barDark {
+  background: linear-gradient(to bottom, #9dbcf2, #3b62b8);
+}
+
+.cap {
+  margin-top: clamp(8px, 1.4vw, 12px);
+  text-align: center;
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 700;
+}
+.capBright { color: var(--brand, #2563eb); }
+.capDark { color: #c7d6f5; }
+
+@media (max-width: 760px) {
+  .cards { gap: 12px; }
+}
