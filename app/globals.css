@@ -28,6 +28,12 @@
   --type-en-italic: var(--font-cormorant), Georgia, serif;
   /* Numerals — Inter */
   --type-numeric:   var(--font-inter), var(--font-noto-sans), sans-serif;
+
+  /* ── 響應式地基 Token（2026-06 手機/平板優化）──────────────────────── */
+  --container-max: 1120px;
+  --container-pad: clamp(20px, 5vw, 44px);   /* 容器左右留白：手機 20 → 桌機 44 */
+  --space-section: clamp(48px, 8vw, 80px);   /* 區塊上下留白：取代各頁 80↔48 硬切 */
+  --tap-min: 44px;                            /* 最小觸控目標（Apple HIG）*/
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -96,3 +102,24 @@ h4, h5, h6 { font-weight: 600; }
 /* ── Content-page card — responsive padding ──────────────────────────────── */
 .content-card { padding: 40px 44px; }
 @media (max-width: 640px) { .content-card { padding: 28px 20px; } }
+
+/* ── 全域安全網（2026-06 手機/平板優化）──────────────────────────────── */
+/* 防橫向溢出：任何子元素超寬都不產生水平捲軸 */
+body { overflow-x: clip; }
+
+/* 媒體不爆寬（img 已有 max-width，補齊 video/iframe/table）*/
+video, iframe, table { max-width: 100%; }
+
+/* 觸控回饋：移除點擊藍底 */
+a, button, summary, [role="button"] { -webkit-tap-highlight-color: transparent; }
+
+/* 觸控裝置停用位移型 hover，避免「卡住」的 hover 殘留 */
+@media (hover: none) {
+  a:hover, button:hover { transform: none; }
+}
+
+/* 統一容器類：供各頁逐步替換零散的 .container 定義 */
+.u-container {
+  width: min(var(--container-max), calc(100% - var(--container-pad) * 2));
+  margin-inline: auto;
+}
