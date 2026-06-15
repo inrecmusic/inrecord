@@ -200,10 +200,11 @@
 
 
 @media (max-width: 980px) {
-  .heroGrid { grid-template-columns: 1fr; grid-template-areas: none; gap: 0; }
-  .heroIntro    { order: 1; padding-bottom: 24px; }
-  .videoCard    { order: 2; margin: 0 0 24px; align-self: stretch; }
-  .heroFeatures { order: 3; grid-template-columns: repeat(2,1fr); max-width: none; margin-top: 0; }
+  /* 手機/平板：改 flex 直向堆疊，徹底避免 grid 具名區域殘留造成的三區塊重疊 */
+  .heroGrid { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .heroIntro    { order: 1; grid-area: auto; padding-bottom: 24px; }
+  .videoCard    { order: 2; grid-area: auto; margin: 0 0 24px; align-self: stretch; }
+  .heroFeatures { order: 3; grid-area: auto; grid-template-columns: repeat(2,1fr); max-width: none; margin-top: 0; }
   .introGrid, .instructorGrid { grid-template-columns: 1fr; }
   .statsCard, .featureGrid { grid-template-columns: repeat(2,1fr); }
   .plansRow { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
