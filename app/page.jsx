@@ -124,6 +124,193 @@ const POINT1_SLIDES = [
   },
 ];
 
+const C_BRAND = "#2563eb";
+const C_NAVY = "#172554";
+const C_MUTED = "#64748b";
+
+const POINT2_SLIDES = [
+  {
+    title: "12 個大三和弦",
+    sub: ["開朗、明亮的音色——", "大三度＋小三度，套用到 12 個音。"],
+    visual: {
+      type: "chords",
+      variant: "major",
+      tintKeys: [0, 2, 4],
+      markers: [
+        { white: 0, label: "C", color: C_BRAND },
+        { white: 2, label: "E", color: C_BRAND },
+        { white: 4, label: "G", color: C_BRAND },
+      ],
+      intervals: [
+        { from: 0, to: 2, label: "大三度" },
+        { from: 2, to: 4, label: "小三度" },
+      ],
+      badge: { text: "× 12 個", color: C_BRAND },
+    },
+    caption: <>往上疊 <b>大三度</b> ＋ <b>小三度</b>，就是明亮的大三和弦</>,
+  },
+  {
+    title: "12 個小三和弦",
+    sub: ["柔和、憂鬱的情感——", "小三度＋大三度，套用到 12 個音。"],
+    visual: {
+      type: "chords",
+      variant: "minor",
+      tintKeys: [1, 3, 5],
+      markers: [
+        { white: 1, label: "D", color: C_NAVY },
+        { white: 3, label: "F", color: C_NAVY },
+        { white: 5, label: "A", color: C_NAVY },
+      ],
+      intervals: [
+        { from: 1, to: 3, label: "小三度" },
+        { from: 3, to: 5, label: "大三度" },
+      ],
+      badge: { text: "× 12 個", color: C_NAVY },
+    },
+    caption: <>往上疊 <b>小三度</b> ＋ <b>大三度</b>，就是憂鬱的小三和弦</>,
+  },
+  {
+    title: "大小和弦快速切換",
+    sub: ["不用重學指法——", "同一個和弦，只動中間一個音。"],
+    visual: {
+      type: "chords",
+      variant: "switch",
+      tintKeys: [2],
+      markers: [
+        { white: 0, label: "C", color: C_MUTED },
+        { white: 2, label: "E", color: C_BRAND, big: true },
+        { white: 4, label: "G", color: C_MUTED },
+      ],
+      float: { after: 1, label: "E♭", color: C_NAVY, tag: "小和弦" },
+      bottomLabels: [
+        { white: 0, text: "根音 · 不動" },
+        { white: 2, text: "大和弦", color: C_BRAND, strong: true },
+        { white: 4, text: "五音 · 不動" },
+      ],
+    },
+    caption: <>根音 C、五音 G 不動，只把中間的三度音移動<b>半音</b> ── 大和弦 ⇄ 小和弦</>,
+  },
+  {
+    title: "和弦耳訓練習",
+    sub: ["不只是會彈——", "還要能「聽出」大和小。"],
+    visual: { type: "ear" },
+    caption: <>不靠看譜，<b>用耳朵分辨明亮與陰暗</b>，就能聽出是大和弦還是小和弦</>,
+  },
+];
+
+const POINT3_SLIDES = [
+  {
+    title: "柱式和弦",
+    tag: "BLOCK CHORD",
+    sub: ["最厚實的和弦彈法——", "三個音，疊成一根音柱。"],
+    visual: { type: "technique", mode: "stack" },
+    caption: <>三個音同時彈下、像一根「音柱」立起來 ── 這就是 <b>柱式和弦</b></>,
+  },
+  {
+    title: "分解和弦",
+    tag: "ARPEGGIO",
+    sub: ["把音柱拆開——", "一個一個、流動著彈。"],
+    visual: { type: "technique", mode: "stairs" },
+    caption: <>把和弦音 <b>一個一個依序彈出</b>，旋律就流動起來 ── 這就是 <b>分解和弦</b></>,
+  },
+  {
+    title: "卡農萬用進行",
+    tag: "CANON PROGRESSION",
+    sub: ["一套和弦走向——", "背起來，能彈很多歌。"],
+    visual: { type: "progression" },
+    caption: <>學會這一套 <b>卡農和弦進行</b>，就能伴奏無數流行歌 ── 萬用骨架</>,
+  },
+  {
+    title: "左右手配合",
+    tag: "BOTH HANDS",
+    sub: ["右手旋律、左手和弦——", "兩隻手，同時配合。"],
+    visual: { type: "staff" },
+    caption: <>左手按卡農和弦、右手彈旋律，<b>兩手一合</b> ── 就是你聽過的那首《卡農》</>,
+  },
+];
+
+const POINT4_SLIDES = [
+  {
+    title: "音名快閃",
+    tag: "NOTE FLASH",
+    sub: ["鍵盤閃一下——", "限時選音名、連對狂飆。"],
+    visual: { type: "noteflash" },
+    caption: <>琴鍵一閃就選音名，<b>連續答對衝高連擊</b> ── 反應越練越快</>,
+  },
+  {
+    title: "唱名階梯",
+    tag: "SOLFEGE STAIRS",
+    sub: ["聽音點唱名——", "一階一階往上爬。"],
+    visual: { type: "solfege" },
+    caption: <>聽到一個音，<b>點對唱名就往上爬一階</b> ── 音感越練越準</>,
+  },
+  {
+    title: "和弦俄羅斯",
+    tag: "CHORD BLOCKS",
+    sub: ["和弦往下掉——", "拼滿一行就消除。"],
+    visual: { type: "tetris" },
+    caption: <>和弦方塊往下掉，<b>拼滿一整行就消除</b> ── 全部和弦邊玩邊記住</>,
+  },
+  {
+    title: "節奏打點",
+    tag: "RHYTHM TAP",
+    sub: ["拍子打正中——", "不搶拍、不落拍。"],
+    visual: { type: "rhythm" },
+    caption: <>拍子落在正中圈就是 <b>Perfect</b> ── 練到不搶拍、不落拍</>,
+  },
+];
+
+const POINT5_SLIDES = [
+  {
+    title: "曲目實戰",
+    tag: "REAL SONGS",
+    sub: ["20+ 首真歌——", "學完就能上手彈。"],
+    visual: {
+      type: "musiccard",
+      variant: "playlist",
+      label: "播放清單 · PLAYLIST",
+      title: "可彈曲目",
+      sub: "20+ 首流行曲目 · 入門到進階",
+      tracks: [
+        { wave: true, title: "流行抒情曲", status: "正在練習" },
+        { n: "02", title: "經典流行金曲", time: "4:01" },
+      ],
+    },
+    caption: <>一首接一首解鎖，<b>學完就能彈出喜歡的歌</b> ── 真歌實戰，不只是練習曲</>,
+  },
+  {
+    title: "錄製成果",
+    tag: "RECORDING",
+    sub: ["完整錄下成果——", "累積成你的作品。"],
+    visual: {
+      type: "musiccard",
+      variant: "studio",
+      label: "錄音室 · STUDIO",
+      title: "我的學習成果",
+      sub: "完整錄下你彈的每一首",
+      tracks: [
+        { wave: true, title: "我的第一首完整作品", status: "已儲存" },
+        { n: "02", title: "卡農 · 完整版", time: "03:24" },
+      ],
+    },
+    caption: <>你彈的每一首都被完整錄下，<b>累積成你自己的作品</b> ── 看得見的學習成果</>,
+  },
+  {
+    title: "看懂和弦譜",
+    tag: "CHORD CHART",
+    sub: ["和弦標在詞上——", "看著就能彈。"],
+    visual: { type: "chordchart" },
+    caption: <>和弦就標在歌詞上方，<b>看著譜就能彈出整首歌</b> ── 看得懂，就會彈</>,
+  },
+  {
+    title: "完整演奏",
+    tag: "TO PERFORM",
+    sub: ["從單手——", "到雙手完整演奏。"],
+    visual: { type: "handslevel" },
+    caption: <>從單手旋律，<b>練到雙手能完整演奏一首歌</b> ── 基礎扎實，自然往演奏走</>,
+  },
+];
+
 const PLANS = [
   {
     plan: "course",
@@ -448,7 +635,15 @@ export default function HomePage() {
                 <div className={styles.pointBadge}>POINT {pt.n}</div>
                 <h2 className={styles.pointTitle}>{pt.title}</h2>
                 {pt.n === 1 ? (
-                  <PointCarousel slides={POINT1_SLIDES} />
+                  <PointCarousel slides={POINT1_SLIDES} point={1} />
+                ) : pt.n === 2 ? (
+                  <PointCarousel slides={POINT2_SLIDES} point={2} />
+                ) : pt.n === 3 ? (
+                  <PointCarousel slides={POINT3_SLIDES} point={3} />
+                ) : pt.n === 4 ? (
+                  <PointCarousel slides={POINT4_SLIDES} point={4} />
+                ) : pt.n === 5 ? (
+                  <PointCarousel slides={POINT5_SLIDES} point={5} />
                 ) : (
                   <motion.div
                     className={styles.pointGrid}

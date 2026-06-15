@@ -1,0 +1,226 @@
+.viz {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top zone: interval brackets · floating note · count badge ── */
+.top {
+  position: relative;
+  height: clamp(46px, 6vw, 64px);
+}
+
+.bracket {
+  position: absolute;
+  bottom: 6px;
+  height: 12px;
+  border: 1.4px solid var(--muted, #64748b);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  transform: translateX(-50%);
+}
+.bracketLabel {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  font-size: clamp(11px, 1.1vw, 13px);
+  letter-spacing: 0.08em;
+  color: var(--muted, #64748b);
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 14px;
+  border-radius: 15px;
+  font-size: clamp(12px, 1.3vw, 15px);
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* floating note (E♭) lifted above the keyboard */
+.floatNote {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.floatTag {
+  font-size: clamp(11px, 1.1vw, 13px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.floatChip {
+  width: clamp(28px, 3.6vw, 36px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: clamp(12px, 1.4vw, 16px);
+  font-weight: 800;
+  border: 2.5px solid #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28);
+}
+.semitone {
+  padding: 2px 9px;
+  border-radius: 11px;
+  background: #fff;
+  border: 1px solid var(--line, #e2e8f0);
+  font-size: clamp(11px, 1.1vw, 13px);
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  white-space: nowrap;
+}
+
+/* ── Keyboard ─────────────────────────────────────── */
+.kbWrap {
+  position: relative;
+  width: 100%;
+}
+.keyboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 448 / 192;
+  background: var(--card, #fff);
+  border: 1.5px solid var(--keyline, #cbd5e1);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  touch-action: manipulation;
+}
+.whites {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.white {
+  flex: 1;
+  height: 100%;
+  background: #fff;
+  border: 0;
+  border-right: 1px solid var(--line, #e2e8f0);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.06s ease;
+  transform-origin: top center;
+  -webkit-tap-highlight-color: transparent;
+}
+.white:last-child { border-right: 0; }
+.white:hover { background: var(--tint, #eff6ff); }
+.white:active { background: #dbeafe; transform: translateY(2px); }
+.tint { background: var(--tint, #eff6ff); }
+
+.blacks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.black {
+  position: absolute;
+  top: 0;
+  height: 60%;
+  width: calc(100% / 7 * 0.56);
+  background: #0f172a;
+  border: 0;
+  border-radius: 0 0 5px 5px;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.32);
+  transition: transform 0.06s ease, filter 0.12s ease;
+  transform-origin: top center;
+  -webkit-tap-highlight-color: transparent;
+}
+.black:hover { filter: brightness(1.7); }
+.black:active { transform: translateY(2px); filter: brightness(1.4); }
+
+/* minor: mute the whole keyboard so the navy chord notes read as darker */
+.dim .tint { background: #e2e8f0; }
+.dim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0.26),
+    rgba(15, 23, 42, 0.08)
+  );
+  pointer-events: none;
+}
+
+/* ── Semitone arrow (switch) ──────────────────────── */
+.arrow {
+  position: absolute;
+  top: -8px;
+  height: 22px;
+  width: 0;
+  border-left: 1.8px dashed var(--ink, #0f172a);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.arrow::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 6px solid var(--ink, #0f172a);
+}
+
+/* ── Chord-note circles on the keys ───────────────── */
+.markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.marker {
+  position: absolute;
+  top: 78%;
+  transform: translate(-50%, -50%);
+  width: clamp(28px, 3.8vw, 38px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: clamp(13px, 1.6vw, 20px);
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3);
+}
+.markerBig {
+  width: clamp(30px, 4.1vw, 41px);
+  border: 2.5px solid #fff;
+  z-index: 1;
+}
+
+/* ── Bottom labels under the chord notes ──────────── */
+.bottom {
+  position: relative;
+  height: 22px;
+  margin-top: 8px;
+}
+.bottomLabel {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: clamp(11px, 1.1vw, 13px);
+  color: var(--muted, #64748b);
+}
+.bottomStrong {
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .white { transition: none !important; }
+}

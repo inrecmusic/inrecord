@@ -1,0 +1,152 @@
+.card {
+  width: 100%;
+  padding: clamp(14px, 2vw, 20px);
+  border-radius: 14px;
+  background: var(--card, #fff);
+  border: 1.5px solid var(--keyline, #cbd5e1);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.8vw, 16px);
+}
+
+/* ── Header: album tile + meta ────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.8vw, 18px);
+}
+.tile {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(72px, 9vw, 92px);
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+.tileStudio {
+  background: var(--navy, #172554);
+  box-shadow: 0 8px 20px rgba(23, 37, 84, 0.3);
+}
+.tileBig {
+  font-family: "Cormorant Garamond", "Noto Serif TC", serif;
+  font-size: clamp(28px, 3.6vw, 40px);
+  font-weight: 700;
+  line-height: 1;
+}
+.tileSmall {
+  margin-top: 3px;
+  font-size: clamp(9px, 1vw, 10px);
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+}
+.play {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand, #2563eb);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+}
+.rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(9px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.recDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e5484d;
+  box-shadow: 0 0 0 4px rgba(229, 72, 77, 0.35), 0 0 0 8px rgba(229, 72, 77, 0.18);
+}
+
+.meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.label {
+  font-size: clamp(10px, 1.1vw, 11px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--muted, #64748b);
+}
+.title {
+  font-family: "Cormorant Garamond", "Noto Serif TC", "Source Han Serif TC", serif;
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+}
+.sub {
+  font-size: clamp(12px, 1.3vw, 13px);
+  color: var(--muted, #64748b);
+}
+
+/* ── Track list ───────────────────────────────────── */
+.tracks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.track {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 14px);
+  padding: clamp(7px, 1vw, 9px) clamp(10px, 1.2vw, 14px);
+  border-radius: 8px;
+}
+.track:first-child { background: var(--tint, #eff6ff); }
+.lead {
+  flex: 0 0 auto;
+  width: 26px;
+  display: grid;
+  place-items: center;
+}
+.num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+}
+.wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 18px;
+}
+.waveBar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--brand, #2563eb);
+}
+.trackTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: clamp(12px, 1.4vw, 14px);
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.right { flex: 0 0 auto; font-size: clamp(10px, 1.2vw, 12px); }
+.status { color: var(--brand, #2563eb); font-weight: 700; }
+.time { color: var(--muted, #64748b); }

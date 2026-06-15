@@ -1,0 +1,47 @@
+.viz {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 22px);
+  padding: clamp(10px, 2vw, 22px) 0;
+}
+.top {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 700;
+  color: var(--brand, #2563eb);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(5px, 0.7vw, 8px);
+}
+.chip {
+  min-width: clamp(32px, 3.8vw, 44px);
+  padding: clamp(8px, 1.1vw, 12px) clamp(5px, 0.7vw, 9px);
+  border-radius: 9px;
+  background: linear-gradient(90deg, #3b82f6, #2563eb 55%, #1d4ed8);
+  color: #fff;
+  font-size: clamp(15px, 1.8vw, 20px);
+  font-weight: 800;
+  text-align: center;
+  box-shadow: inset 5px 0 0 rgba(255, 255, 255, 0.18),
+    0 4px 12px rgba(37, 99, 235, 0.22);
+}
+
+.loop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--tint, #eff6ff);
+  color: var(--brand, #2563eb);
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 700;
+}
