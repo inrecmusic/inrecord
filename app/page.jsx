@@ -198,6 +198,68 @@ const POINT2_SLIDES = [
   },
 ];
 
+const POINT3_SLIDES = [
+  {
+    title: "柱式和弦",
+    tag: "BLOCK CHORD",
+    sub: ["最厚實的和弦彈法——", "三個音，疊成一根音柱。"],
+    visual: { type: "technique", mode: "stack" },
+    caption: <>三個音同時彈下、像一根「音柱」立起來 ── 這就是 <b>柱式和弦</b></>,
+  },
+  {
+    title: "分解和弦",
+    tag: "ARPEGGIO",
+    sub: ["把音柱拆開——", "一個一個、流動著彈。"],
+    visual: { type: "technique", mode: "stairs" },
+    caption: <>把和弦音 <b>一個一個依序彈出</b>，旋律就流動起來 ── 這就是 <b>分解和弦</b></>,
+  },
+  {
+    title: "卡農萬用進行",
+    tag: "CANON PROGRESSION",
+    sub: ["一套和弦走向——", "背起來，能彈很多歌。"],
+    visual: { type: "progression" },
+    caption: <>學會這一套 <b>卡農和弦進行</b>，就能伴奏無數流行歌 ── 萬用骨架</>,
+  },
+  {
+    title: "左右手配合",
+    tag: "BOTH HANDS",
+    sub: ["右手旋律、左手和弦——", "兩隻手，同時配合。"],
+    visual: { type: "staff" },
+    caption: <>左手按卡農和弦、右手彈旋律，<b>兩手一合</b> ── 就是你聽過的那首《卡農》</>,
+  },
+];
+
+const POINT4_SLIDES = [
+  {
+    title: "音名快閃",
+    tag: "NOTE FLASH",
+    sub: ["鍵盤閃一下——", "限時選音名、連對狂飆。"],
+    visual: { type: "noteflash" },
+    caption: <>琴鍵一閃就選音名，<b>連續答對衝高連擊</b> ── 反應越練越快</>,
+  },
+  {
+    title: "唱名階梯",
+    tag: "SOLFEGE STAIRS",
+    sub: ["聽音點唱名——", "一階一階往上爬。"],
+    visual: { type: "solfege" },
+    caption: <>聽到一個音，<b>點對唱名就往上爬一階</b> ── 音感越練越準</>,
+  },
+  {
+    title: "和弦俄羅斯",
+    tag: "CHORD BLOCKS",
+    sub: ["和弦往下掉——", "拼滿一行就消除。"],
+    visual: { type: "tetris" },
+    caption: <>和弦方塊往下掉，<b>拼滿一整行就消除</b> ── 全部和弦邊玩邊記住</>,
+  },
+  {
+    title: "節奏打點",
+    tag: "RHYTHM TAP",
+    sub: ["拍子打正中——", "不搶拍、不落拍。"],
+    visual: { type: "rhythm" },
+    caption: <>拍子落在正中圈就是 <b>Perfect</b> ── 練到不搶拍、不落拍</>,
+  },
+];
+
 const PLANS = [
   {
     plan: "course",
@@ -532,6 +594,10 @@ export default function HomePage() {
                   <PointCarousel slides={POINT1_SLIDES} point={1} />
                 ) : pt.n === 2 ? (
                   <PointCarousel slides={POINT2_SLIDES} point={2} />
+                ) : pt.n === 3 ? (
+                  <PointCarousel slides={POINT3_SLIDES} point={3} />
+                ) : pt.n === 4 ? (
+                  <PointCarousel slides={POINT4_SLIDES} point={4} />
                 ) : (
                   <motion.div
                     className={styles.pointGrid}
