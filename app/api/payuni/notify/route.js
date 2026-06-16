@@ -172,6 +172,7 @@ export async function POST(req) {
             productName: order.plan_label || "零基礎流行鋼琴入門課",
             carrierType: order.carrier_type || "",
             carrierId: order.carrier_id || "",
+            trackApiCode: process.env.AMEGO_TRACK_API_CODE || "",
           });
 
           if (invoiceResult.success) {
