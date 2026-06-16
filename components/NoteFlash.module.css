@@ -1,0 +1,124 @@
+.viz {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.8vw, 18px);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.q {
+  font-size: clamp(14px, 1.6vw, 17px);
+  font-weight: 800;
+  color: var(--ink, #0f172a);
+}
+.combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  font-size: clamp(11px, 1.2vw, 13px);
+  font-weight: 800;
+}
+
+/* ── Mini keyboard ────────────────────────────────── */
+.keyboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 448 / 150;
+  background: var(--card, #fff);
+  border: 1.5px solid var(--keyline, #cbd5e1);
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  touch-action: manipulation;
+}
+.whites { position: absolute; inset: 0; display: flex; }
+.white {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  background: #fff;
+  border: 0;
+  border-right: 1px solid var(--line, #e2e8f0);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.white:last-child { border-right: 0; }
+.white:hover { background: var(--tint, #eff6ff); }
+.flash {
+  background: var(--gold, #f7d68a);
+  box-shadow: inset 0 0 0 2px rgba(247, 214, 138, 0.9);
+}
+.spark {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #b45309;
+}
+.blacks { position: absolute; inset: 0; pointer-events: none; }
+.black {
+  position: absolute;
+  top: 0;
+  height: 58%;
+  width: calc(100% / 7 * 0.56);
+  background: #0f172a;
+  border: 0;
+  border-radius: 0 0 4px 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.32);
+}
+
+/* ── Answer chips ─────────────────────────────────── */
+.answers {
+  display: flex;
+  justify-content: center;
+  gap: clamp(8px, 1.4vw, 14px);
+}
+.answer {
+  position: relative;
+  min-width: clamp(38px, 4.6vw, 48px);
+  padding: clamp(7px, 1vw, 10px) 0;
+  text-align: center;
+  border-radius: 9px;
+  background: #fff;
+  border: 1.4px solid var(--keyline, #cbd5e1);
+  color: var(--muted, #64748b);
+  font-size: clamp(14px, 1.6vw, 18px);
+  font-weight: 800;
+}
+.correct {
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-color: transparent;
+  color: #fff;
+}
+.check {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .white { transition: none !important; }
+}
+
+/* 手機加高迷你鍵盤，鍵更好點（實測安全上限 164px，取保守值）*/
+@media (max-width: 760px) {
+  .keyboard { min-height: 135px; }
+}

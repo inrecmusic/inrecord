@@ -1,0 +1,111 @@
+.viz {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(18px, 2.6vw, 28px);
+  padding: clamp(8px, 1.6vw, 16px) 0;
+}
+.head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 800;
+  color: var(--ink, #0f172a);
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(8px, 2vw, 28px);
+  box-sizing: border-box;
+}
+.line {
+  position: absolute;
+  left: clamp(8px, 2vw, 28px);
+  right: clamp(8px, 2vw, 28px);
+  top: 50%;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--keyline, #cbd5e1);
+  transform: translateY(-50%);
+}
+.beat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 1;
+}
+
+.dot {
+  width: clamp(16px, 2vw, 20px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--card, #fff);
+  border: 2px solid var(--keyline, #cbd5e1);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.hit {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.target {
+  position: relative;
+  width: clamp(42px, 5.4vw, 52px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle, var(--gold, #f7d68a) 0 36%, transparent 37%),
+    radial-gradient(circle, transparent 0 52%, var(--brand, #2563eb) 53% 60%, transparent 61%);
+  box-shadow: 0 0 0 3px var(--gold, #f7d68a);
+  outline: 2px solid var(--gold, #f7d68a);
+  outline-offset: 4px;
+}
+.targetCheck {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+}
+.perfect {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: clamp(11px, 1.2vw, 13px);
+  font-weight: 800;
+  color: #b45309;
+}
+
+.label {
+  font-size: clamp(10px, 1.1vw, 12px);
+  color: var(--muted, #64748b);
+  min-height: 1em;
+}
+.labelOn {
+  font-weight: 800;
+  color: var(--brand, #2563eb);
+}
+
+.tag {
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 700;
+  color: var(--brand, #2563eb);
+}

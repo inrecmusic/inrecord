@@ -654,7 +654,7 @@ export default function ClassroomPage() {
 
   function handleSelect(v) {
     setCurrentVideo(v);
-    if (isPhone) setDrawerOpen(false);
+    if (isTablet) setDrawerOpen(false);
   }
 
   async function handleLogout() {
@@ -800,17 +800,16 @@ export default function ClassroomPage() {
       {/* ── Body ── */}
       <div style={{
         flex: 1, display: "flex",
-        flexDirection: isTablet ? "column" : "row",
+        flexDirection: "row",
         minHeight: 0,
         overflow: isTablet ? "visible" : "hidden",
       }}>
 
         {/* ── Left: player + info + comments + tabs ── */}
         <div style={{
-          flex: 1, display: "flex", flexDirection: "column",
+          flex: 1, minWidth: 0, display: "flex", flexDirection: "column",
           overflowY: isTablet ? "visible" : "auto",
           borderRight: isTablet ? "none" : "1px solid rgba(0,0,0,0.07)",
-          borderBottom: isTablet ? "1px solid rgba(0,0,0,0.07)" : "none",
         }}>
 
           {/* Player */}
@@ -879,13 +878,13 @@ export default function ClassroomPage() {
               )}
             </div>
 
-            {isPhone ? (
+            {isTablet ? (
               <button
                 onClick={() => setDrawerOpen(true)}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  background: "#eff6ff", border: "1.5px solid #bfdbfe",
-                  color: "#1d4ed8", borderRadius: 20, padding: "6px 14px",
+                  minHeight: 44, background: "#eff6ff", border: "1.5px solid #bfdbfe",
+                  color: "#1d4ed8", borderRadius: 20, padding: "10px 16px",
                   fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
                 }}
               >
@@ -927,7 +926,7 @@ export default function ClassroomPage() {
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
-                  padding: "11px 14px", fontSize: 13.5, fontWeight: tab === t.id ? 600 : 400,
+                  minHeight: 44, padding: "12px 16px", fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
                   cursor: "pointer", border: 0, background: "none", fontFamily: F,
                   color: tab === t.id ? "#0f172a" : "#64748b",
                   borderBottom: tab === t.id ? "2px solid #2563eb" : "2px solid transparent",
@@ -948,7 +947,7 @@ export default function ClassroomPage() {
         </div>
 
         {/* ── Right: chapter list ── */}
-        {isPhone && drawerOpen && (
+        {isTablet && drawerOpen && (
           <div
             onClick={() => setDrawerOpen(false)}
             style={{
@@ -957,7 +956,7 @@ export default function ClassroomPage() {
             }}
           />
         )}
-        <div style={isPhone ? {
+        <div style={isTablet ? {
           position: "fixed", top: 0, right: 0, bottom: 0,
           width: "min(330px, 85vw)", zIndex: 50,
           display: "flex", flexDirection: "column",
@@ -966,11 +965,9 @@ export default function ClassroomPage() {
           transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform .28s ease",
         } : {
-          width: isTablet ? "100%" : 288,
-          maxHeight: isTablet ? 300 : "none",
+          width: 288,
           display: "flex", flexDirection: "column",
           background: "#fff", flexShrink: 0,
-          borderTop: isTablet ? "1px solid rgba(0,0,0,0.07)" : "none",
         }}>
 
           {/* Progress */}
@@ -979,7 +976,7 @@ export default function ClassroomPage() {
               <span style={{ color: "#64748b" }}>學習進度</span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ color: "#2563eb", fontWeight: 600 }}>{doneCount} / {totalCount} 完成</span>
-                {isPhone && (
+                {isTablet && (
                   <button
                     onClick={() => setDrawerOpen(false)}
                     style={{

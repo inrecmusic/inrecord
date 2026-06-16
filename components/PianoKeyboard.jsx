@@ -4,8 +4,8 @@ import styles from "./PianoKeyboard.module.css";
 
 // Real acoustic-grand-piano samples (FluidR3_GM, MIT). One octave, C4 → B4.
 // White keys by position; black keys sit after white indices 0,1,3,4,5.
-const WHITE_NOTES = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
-const BLACK = [
+export const WHITE_NOTES = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
+export const BLACK = [
   { after: 0, note: "Db4" },
   { after: 1, note: "Eb4" },
   { after: 3, note: "Gb4" },
@@ -66,7 +66,7 @@ function prefetchAll() {
   }
 }
 
-function playNote(note) {
+export function playNote(note) {
   if (!note) return;
   const ctx = getCtx();
   if (!ctx) return;

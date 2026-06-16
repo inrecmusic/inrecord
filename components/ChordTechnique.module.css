@@ -1,0 +1,138 @@
+.viz {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 2vw, 20px) 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 3vw, 34px);
+}
+
+/* ── Left: the three chord notes ──────────────────── */
+.input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.note {
+  position: relative;
+  width: clamp(40px, 5vw, 52px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(15px, 1.8vw, 20px);
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.08s ease;
+}
+.note:active { transform: translateY(2px); }
+.finger {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand, #2563eb);
+  border: 1.5px solid var(--brand, #2563eb);
+  font-size: 11px;
+  display: grid;
+  place-items: center;
+}
+.inputLabel,
+.outputLabel {
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 700;
+  color: var(--brand, #2563eb);
+}
+
+.op {
+  font-family: "Cormorant Garamond", "Noto Serif TC", serif;
+  font-size: clamp(34px, 4.5vw, 52px);
+  font-weight: 600;
+  color: var(--keyline, #cbd5e1);
+  line-height: 1;
+}
+
+/* ── Right: pillar (stack) ────────────────────────── */
+.output {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.pillar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: clamp(96px, 12vw, 130px);
+}
+.cap {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--ink, #0f172a);
+  opacity: 0.85;
+}
+.brick {
+  height: clamp(30px, 3.6vw, 38px);
+  border-radius: 7px;
+  background: linear-gradient(90deg, #3b82f6, #2563eb 55%, #1d4ed8);
+  color: #fff;
+  font-size: clamp(15px, 1.8vw, 20px);
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 5px 0 0 rgba(255, 255, 255, 0.18);
+}
+
+/* ── Right: staircase (stairs) ────────────────────── */
+.stairs {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(6px, 0.9vw, 10px);
+  padding-bottom: 20px;
+  border-bottom: 1.2px solid var(--line, #e2e8f0);
+}
+.step {
+  width: clamp(34px, 4.2vw, 46px);
+  height: clamp(34px, 4.2vw, 46px);
+  margin-bottom: calc(var(--i) * clamp(18px, 2.4vw, 26px));
+  border-radius: 7px;
+  background: linear-gradient(90deg, #3b82f6, #2563eb 55%, #1d4ed8);
+  color: #fff;
+  font-size: clamp(14px, 1.7vw, 19px);
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 5px 0 0 rgba(255, 255, 255, 0.18);
+}
+.timeAxis {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  font-size: 10.5px;
+  color: var(--muted, #64748b);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note { transition: none !important; }
+}
