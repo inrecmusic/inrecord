@@ -31,33 +31,56 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_sub_purchase_order
 
 
 -- ─────────────────────────────────────────────
--- 2) RLS 稽核：找出 public schema 中「沒開 RLS」的表
---    anon key 是公開的，沒開 RLS 的表會被任何人經 PostgREST 直接讀取。
+-- 2) RLS 稽核：擋掉未登入 anon 讀取
+--    存取模型：app 讀資料只走 (a) service_role（繞過 RLS）或
+--    (b) getUserClient = anon key + 使用者 JWT（authenticated 身分）。
+--    前端 0 處用 anon client 直接 supabase.from() 讀表。
+--    => 未登入 anon 不該、也不需要讀任何表。
 -- ─────────────────────────────────────────────
 
--- 2a. 先看哪些表 rowsecurity = false（這些就是要補的）
+-- 2a. 查每張表的 RLS 開關（rowsecurity = false 代表完全沒鎖）。
+--     2026-06-17 實測：public schema 17 張表全部 = true（這關已過）。
 SELECT tablename, rowsecurity
 FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY rowsecurity ASC, tablename;
 
--- 2b. 對每個「該鎖」的敏感表，套用下面範本（把 <TABLE> 換成表名）。
---     service_role 會繞過 RLS，所以開了 RLS + 只給 service_role policy
---     ＝ 前端 anon 一律讀不到，但你的後端 API（service role）照常運作。
---
+-- 2b. 但「RLS 開啟」≠「anon 讀不到」：要看 policy 允許哪個 role。
+--     roles = {public} 含 anon；只要 qual 寬鬆（true / 非 auth 條件）anon 就讀得到。
+SELECT tablename, policyname, roles, cmd, qual
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename, policyname;
+
+-- 2c. 2026-06-17 實際修補（依 2b 結果，把 anon 破口收乾淨）。
+--     安全性：service_role 繞過 RLS 不受影響；登入者走 authenticated 仍命中；
+--     只擋掉未登入 anon。純 DB 變更、不需重新部署。
+
+--   (i) 付費 / 受保護內容：完全移除公開讀。
+--       games 的公開讀會讓 anon 直接撈 html_content（繞過付費＋浮水印）；
+--       videos 會洩漏 bunny_video_id。兩者 app 都只經 service role 提供。
+DROP POLICY IF EXISTS "public_read_active_games"     ON games;
+DROP POLICY IF EXISTS "public_read_published_videos" ON videos;
+
+--   (ii) 登入後才需要的內容：把讀取 policy 由 TO public 收窄成 TO authenticated。
+--        （這些 policy 由 schema 建立時預設 TO public；ALTER 沒有 IF EXISTS，
+--         若 policy 名稱不存在會報錯——新環境請先用 2b 對照實際名稱。）
+ALTER POLICY "user_read_all_comments"   ON comments        TO authenticated;
+ALTER POLICY "read_all_replies"         ON comment_replies TO authenticated;
+ALTER POLICY "user_read_all_ratings"    ON ratings         TO authenticated;
+ALTER POLICY "read_all_rating_replies"  ON rating_replies  TO authenticated;
+ALTER POLICY "public_read_chapters"     ON chapters        TO authenticated;
+ALTER POLICY "public_read_assignments"  ON assignments     TO authenticated;
+
+-- 2d. 修補後應達成的狀態（重跑 2b 驗證）：
+--     - games / videos 只剩 service_role_* policy。
+--     - 上面 6 條讀取 policy 的 roles 變成 {authenticated}。
+--     - 其餘 {public} policy 都被 auth.role()='service_role' 或 auth.uid()=user_id 把關。
+--     => public schema 無任何「anon 可讀」的寬鬆 policy。
+
+-- 2e. 新增敏感表時的鎖定範本（把 <TABLE> 換成表名）：
 --     ALTER TABLE <TABLE> ENABLE ROW LEVEL SECURITY;
 --     DROP POLICY IF EXISTS "service_role_<TABLE>" ON <TABLE>;
 --     CREATE POLICY "service_role_<TABLE>" ON <TABLE>
 --       USING (auth.role() = 'service_role')
 --       WITH CHECK (auth.role() = 'service_role');
---
---  建議至少確認以下含 PII / 交易資料的表都已開 RLS：
---    orders, enrollments, subscriptions, leads,
---    ratings, submissions, progress, unit_comments
---
---  範例（orders）：
--- ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
--- DROP POLICY IF EXISTS "service_role_orders" ON orders;
--- CREATE POLICY "service_role_orders" ON orders
---   USING (auth.role() = 'service_role')
---   WITH CHECK (auth.role() = 'service_role');
