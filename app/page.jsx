@@ -23,7 +23,7 @@ import { motion } from "framer-motion";
 const POINTS = [
   {
     n: 1,
-    title: "零基礎也能輕鬆開始",
+    title: "零基礎也能輕鬆上手",
     items: [
       { icon: Music2,       label: "認識鍵盤與音名",  sub: "七個基本音名，一次記住" },
       { icon: Mic2,         label: "唱名 Do-Re-Mi",   sub: "跟著旋律唱出完整音階" },
@@ -33,7 +33,7 @@ const POINTS = [
   },
   {
     n: 2,
-    title: "系統掌握全部 24 個三和弦",
+    title: "系統掌握 24 個三和弦",
     items: [
       { icon: Sun,        label: "12 個大三和弦",    sub: "開朗明亮的音色" },
       { icon: Moon,       label: "12 個小三和弦",    sub: "柔和憂鬱的情感" },
@@ -43,7 +43,7 @@ const POINTS = [
   },
   {
     n: 3,
-    title: "兩種伴奏技法全面學會",
+    title: "兩種伴奏技法一次學會",
     items: [
       { icon: Layers,    label: "Block Chord 全和弦", sub: "穩定扎實的節奏感" },
       { icon: Waves,     label: "分解和弦 Arpeggio",  sub: "讓音樂流動起來" },
@@ -53,7 +53,7 @@ const POINTS = [
   },
   {
     n: 4,
-    title: "AI 互動遊戲，練習不枯燥",
+    title: "AI 遊戲讓練習不枯燥",
     items: [
       { icon: Zap,        label: "音名快閃",       sub: "鍵盤反應速度大幅提升" },
       { icon: TrendingUp, label: "唱名階梯",       sub: "音感訓練遊戲化" },
@@ -77,7 +77,7 @@ const POINT1_SLIDES = [
   {
     title: "認識鍵盤與音名",
     sub: ["七個基本音名，一次記住——", "先學會在鍵盤上找到它們。"],
-    topLabel: "白鍵 7 音 · 黑鍵 2 ＋ 3 分組",
+    topLabel: "白鍵 7 音 · 黑鍵 5 音",
     visual: {
       type: "keyboard",
       keys: [
@@ -110,7 +110,7 @@ const POINT1_SLIDES = [
   },
   {
     title: "C 大調音階",
-    sub: ["右手指法入門——", "五指接力，順順爬完一個八度。"],
+    sub: ["五指接力——", "順順爬完一個八度。"],
     topLabel: "右手指法 1 → 5",
     visual: {
       type: "keyboard",
