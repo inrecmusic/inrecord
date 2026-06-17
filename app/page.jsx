@@ -546,26 +546,11 @@ export default function HomePage() {
               </div>
               <h3>課程介紹影片</h3>
               <ul className={styles.checkList}>
-                {["10 章節完整課程","20+ 首流行歌曲實戰","AI 互動遊戲強化學習","樂譜下載","無限次觀看，隨時學習","專屬學員社群，老師答疑"].map(i => (
+                {["10 章節完整課程","20+ 首流行歌曲實戰","AI 互動遊戲強化學習","無限次觀看，隨時學習"].map(i => (
                   <li key={i}>{i}</li>
                 ))}
               </ul>
             </motion.aside>
-
-            <motion.div className={styles.heroFeatures} variants={fadeUp} initial="hidden" animate="visible">
-              {[
-                [Music2,        "零基礎可學",   "從認識鍵盤開始"],
-                [Bot,           "AI 互動遊戲",  "學習不再枯燥"],
-                [Music,         "流行曲目實戰", "學完就能彈歌"],
-                [GraduationCap, "打好扎實基礎", "銜接進階更輕鬆"],
-              ].map(([Icon, title, sub]) => (
-                <div key={title} className={styles.heroFeature}>
-                  <div className={styles.heroIcon}><Icon size={28} strokeWidth={1.5} /></div>
-                  <strong>{title}</strong>
-                  <span>{sub}</span>
-                </div>
-              ))}
-            </motion.div>
           </div>
         </section>
 
