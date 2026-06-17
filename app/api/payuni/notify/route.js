@@ -95,26 +95,24 @@ export async function POST(req) {
             if (enrollErr) console.error("[payuni notify] enroll error", enrollErr.message);
           }
 
-          // AI 遊戲永久開通（遊戲單買 or 課程包）；以遠期到期日表示永久
+          // AI 遊戲永久開通（遊戲單買 or 課程包）；以遠期到期日表示永久。
+          // ⚠️ 冪等：用 upsert + ignoreDuplicates（DB 端 ON CONFLICT DO NOTHING）取代「先 count 後 insert」，
+          // 確保 Payuni 並發／重送 notify 時不會重複插入存取列。
+          // 需搭配唯一索引：CREATE UNIQUE INDEX uniq_sub_purchase_order
+          //   ON subscriptions (payuni_order_id) WHERE source = 'purchase' AND payuni_order_id IS NOT NULL;
           if (order.plan === "game" || order.plan === "bundle") {
-            const { count: gameExists } = await supabase
-              .from("subscriptions")
-              .select("id", { count: "exact", head: true })
-              .eq("email", order.email)
-              .eq("source", "purchase")
-              .eq("payuni_order_id", order.id);
-
-            if (!gameExists) {
-              const { error: gameErr } = await supabase.from("subscriptions").insert({
+            const { error: gameErr } = await supabase.from("subscriptions").upsert(
+              {
                 email:           order.email,
                 plan_type:       order.plan === "bundle" ? "bundle" : "game",
                 status:          "active",
                 expires_at:      PERMANENT,
                 source:          "purchase",
                 payuni_order_id: order.id,
-              });
-              if (gameErr) console.error("[payuni notify] game access insert error", gameErr.message);
-            }
+              },
+              { onConflict: "payuni_order_id", ignoreDuplicates: true }
+            );
+            if (gameErr) console.error("[payuni notify] game access upsert error", gameErr.message);
           }
         }
 
@@ -149,7 +147,7 @@ export async function POST(req) {
                 merTradeNo: params.MerTradeNo,
               });
               if (mailResult.success) {
-                console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
+                console.log("[mail] 開課確認信已寄出:", params.MerTradeNo, mailResult.messageId || "");
                 await supabase.from("orders").update({ email_error: null }).eq("id", order.id);
               } else if (!mailResult.skipped) {
                 console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
