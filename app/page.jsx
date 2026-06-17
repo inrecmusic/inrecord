@@ -260,6 +260,57 @@ const POINT4_SLIDES = [
   },
 ];
 
+const POINT5_SLIDES = [
+  {
+    title: "曲目實戰",
+    tag: "REAL SONGS",
+    sub: ["20+ 首真歌——", "學完就能上手彈。"],
+    visual: {
+      type: "musiccard",
+      variant: "playlist",
+      label: "播放清單 · PLAYLIST",
+      title: "可彈曲目",
+      sub: "20+ 首流行曲目 · 入門到進階",
+      tracks: [
+        { wave: true, title: "流行抒情曲", status: "正在練習" },
+        { n: "02", title: "經典流行金曲", time: "4:01" },
+      ],
+    },
+    caption: <>一首接一首解鎖，<b>學完就能彈出喜歡的歌</b> ── 真歌實戰，不只是練習曲</>,
+  },
+  {
+    title: "錄製成果",
+    tag: "RECORDING",
+    sub: ["完整錄下成果——", "累積成你的作品。"],
+    visual: {
+      type: "musiccard",
+      variant: "studio",
+      label: "錄音室 · STUDIO",
+      title: "我的學習成果",
+      sub: "完整錄下你彈的每一首",
+      tracks: [
+        { wave: true, title: "我的第一首完整作品", status: "已儲存" },
+        { n: "02", title: "卡農 · 完整版", time: "03:24" },
+      ],
+    },
+    caption: <>你彈的每一首都被完整錄下，<b>累積成你自己的作品</b> ── 看得見的學習成果</>,
+  },
+  {
+    title: "看懂和弦譜",
+    tag: "CHORD CHART",
+    sub: ["和弦標在詞上——", "看著就能彈。"],
+    visual: { type: "chordchart" },
+    caption: <>和弦就標在歌詞上方，<b>看著譜就能彈出整首歌</b> ── 看得懂，就會彈</>,
+  },
+  {
+    title: "完整演奏",
+    tag: "TO PERFORM",
+    sub: ["從單手——", "到雙手完整演奏。"],
+    visual: { type: "handslevel" },
+    caption: <>從單手旋律，<b>練到雙手能完整演奏一首歌</b> ── 基礎扎實，自然往演奏走</>,
+  },
+];
+
 const PLANS = [
   {
     plan: "course",
@@ -599,24 +650,7 @@ export default function HomePage() {
                 ) : pt.n === 4 ? (
                   <PointCarousel slides={POINT4_SLIDES} point={4} />
                 ) : (
-                  <motion.div
-                    className={styles.pointGrid}
-                    variants={stagger}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-40px" }}
-                  >
-                    {pt.items.map(item => {
-                      const Icon = item.icon;
-                      return (
-                        <motion.div key={item.label} className={styles.pointCard} variants={fadeUp}>
-                          <div className={styles.pointCardIcon}><Icon size={28} strokeWidth={1.5} /></div>
-                          <strong>{item.label}</strong>
-                          <span>{item.sub}</span>
-                        </motion.div>
-                      );
-                    })}
-                  </motion.div>
+                  <PointCarousel slides={POINT5_SLIDES} point={5} />
                 )}
               </RevealSection>
             ))}

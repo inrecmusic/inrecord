@@ -10,6 +10,9 @@ import NoteFlash from "./NoteFlash";
 import SolfegeStairs from "./SolfegeStairs";
 import ChordTetris from "./ChordTetris";
 import RhythmTap from "./RhythmTap";
+import MusicCard from "./MusicCard";
+import ChordChart from "./ChordChart";
+import HandsLevel from "./HandsLevel";
 import styles from "./PointSlide.module.css";
 
 /** Render the right-hand visual for a slide based on its `visual.type`. */
@@ -35,6 +38,12 @@ function SlideVisual({ visual, title }) {
       return <ChordTetris ariaLabel={title} />;
     case "rhythm":
       return <RhythmTap ariaLabel={title} />;
+    case "musiccard":
+      return <MusicCard {...visual} ariaLabel={title} />;
+    case "chordchart":
+      return <ChordChart ariaLabel={title} />;
+    case "handslevel":
+      return <HandsLevel ariaLabel={title} />;
     default:
       return (
         <div className={styles.photoWrap}>

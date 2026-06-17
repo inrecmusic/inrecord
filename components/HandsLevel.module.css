@@ -1,0 +1,84 @@
+.viz {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.8vw, 22px);
+  padding: clamp(14px, 2.4vw, 26px) 0;
+}
+.stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.stageLabel {
+  font-size: clamp(13px, 1.5vw, 16px);
+  font-weight: 800;
+  color: var(--ink, #0f172a);
+}
+.arrow {
+  flex: 0 0 auto;
+  color: var(--brand, #2563eb);
+}
+
+/* ── Mini keyboard ────────────────────────────────── */
+.keyboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 182 / 96;
+  background: var(--card, #fff);
+  border: 1.4px solid var(--keyline, #cbd5e1);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+.whites { position: absolute; inset: 0; display: flex; }
+.white {
+  flex: 1;
+  height: 100%;
+  background: #fff;
+  border: 0;
+  border-right: 1px solid var(--line, #e2e8f0);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.white:last-child { border-right: 0; }
+.white:hover { background: var(--tint, #eff6ff); }
+.blacks { position: absolute; inset: 0; pointer-events: none; }
+.black {
+  position: absolute;
+  top: 0;
+  height: 58%;
+  width: calc(100% / 7 * 0.56);
+  background: #0f172a;
+  border: 0;
+  border-radius: 0 0 4px 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32);
+}
+
+/* note dots floating above pressed keys */
+.dots { position: absolute; inset: 0; pointer-events: none; }
+.dot {
+  position: absolute;
+  bottom: 14%;
+  width: clamp(9px, 1.2vw, 12px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: var(--brand, #2563eb);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.45);
+}
+.dotLeft {
+  background: var(--navy, #172554);
+  box-shadow: 0 2px 6px rgba(23, 37, 84, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .white { transition: none !important; }
+}
