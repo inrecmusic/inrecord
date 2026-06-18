@@ -32,9 +32,20 @@ function makeHashInfo(encryptInfo, key, iv) {
 // Payuni 背景通知（POST）
 export async function POST(req) {
   try {
-    const body        = await req.formData();
+    let body;
+    try {
+      body = await req.formData();
+    } catch {
+      // 非表單格式（垃圾/探測請求）→ 乾淨回 400，而非 500
+      return new Response("FAIL", { status: 400 });
+    }
     const encryptInfo = body.get("EncryptInfo");
     const hashInfo    = body.get("HashInfo");
+
+    // 缺必要欄位（非真實 PAYUNi 回呼）→ 400
+    if (!encryptInfo || !hashInfo) {
+      return new Response("FAIL", { status: 400 });
+    }
 
     const hashKey = process.env.PAYUNI_HASH_KEY;
     const hashIV  = process.env.PAYUNI_HASH_IV;
