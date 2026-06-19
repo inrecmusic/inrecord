@@ -9,13 +9,14 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle
+  AlertTriangle, CalendarClock
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
 import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
+import SaleSettingsPage from "./SaleSettingsPage";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { summarizeOrders } from "@/lib/reconciliation";
 
@@ -36,6 +37,7 @@ const NAV_GROUPS = [
     { id:"analytics",     label:"銷售分析",   icon:TrendingUp },
   ]},
   { title:"設定", items:[
+    { id:"sale",        label:"銷售設定",   icon:CalendarClock },
     { id:"integration", label:"系統設定",   icon:Settings },
     { id:"privacy",     label:"隱私權政策", icon:Shield },
     { id:"terms",       label:"服務條款",   icon:FileText },
@@ -2475,6 +2477,7 @@ export default function AdminPage(){
           {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
+          {page==="sale"        &&<SaleSettingsPage showToast={showToast}/>}
           {page==="integration" &&<IntegrationPage showToast={showToast}/>}
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
           {page==="terms"       &&<TermsPage showToast={showToast}/>}
