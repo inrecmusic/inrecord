@@ -61,20 +61,20 @@ function SlideVisual({ visual, title }) {
 }
 
 /**
- * One natively-rebuilt POINT slide. Mirrors the original SVG layout —
- * left info column · divider · right visual · brand footer — but as real,
- * responsive, selectable DOM (no <img> of text). Shared by every POINT
- * carousel via the `point` prop, which drives the eyebrow and footer numbering.
+ * One natively-rebuilt POINT slide: left info column · divider · right visual,
+ * as real, responsive, selectable DOM (no <img> of text). The POINT number is
+ * shown once by the section header above the carousel, so the slide itself
+ * carries no eyebrow/footer — only a big, faint decorative numeral behind the
+ * title. Position within the set is shown by the carousel dots.
  */
-export default function PointSlide({ slide, index, total, point = 1 }) {
+export default function PointSlide({ slide, index }) {
   const num = String(index + 1).padStart(2, "0");
-  const pointNum = String(point).padStart(2, "0");
 
   return (
     <div className={styles.slide}>
       <div className={styles.body}>
         <div className={styles.info}>
-          <div className={styles.eyebrow}>POINT {pointNum}</div>
+          <span className={styles.ghostNum} aria-hidden="true">{num}</span>
           <h3 className={styles.title}>{slide.title}</h3>
           <div className={styles.underline} />
           {slide.tag && <div className={styles.tag}>{slide.tag}</div>}
@@ -83,20 +83,6 @@ export default function PointSlide({ slide, index, total, point = 1 }) {
               <span key={i}>{line}<br /></span>
             ))}
           </p>
-          <div className={styles.progress}>
-            <div className={styles.progNum}>
-              <span className={styles.progNumActive}>{num}</span>
-              <span> / {String(total).padStart(2, "0")}</span>
-            </div>
-            <div className={styles.bars}>
-              {Array.from({ length: total }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`${styles.bar} ${i === index ? styles.barActive : ""}`}
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className={styles.divider} />
@@ -106,11 +92,6 @@ export default function PointSlide({ slide, index, total, point = 1 }) {
           <SlideVisual visual={slide.visual} title={slide.title} />
           <p className={styles.caption}>{slide.caption}</p>
         </div>
-      </div>
-
-      <div className={styles.footer}>
-        <span>InRecord ｜ 流行鋼琴零基礎入門課</span>
-        <span>Point {point} · 課程設計</span>
       </div>
     </div>
   );

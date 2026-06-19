@@ -21,56 +21,11 @@ import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 
 const POINTS = [
-  {
-    n: 1,
-    title: "零基礎也能輕鬆上手",
-    items: [
-      { icon: Music2,       label: "認識鍵盤與音名",  sub: "七個基本音名，一次記住" },
-      { icon: Mic2,         label: "唱名 Do-Re-Mi",   sub: "跟著旋律唱出完整音階" },
-      { icon: Hand,         label: "基本坐姿與手型",  sub: "從第一課建立良好習慣" },
-      { icon: BarChart2,    label: "C 大調音階練習",  sub: "右手流暢指法入門" },
-    ],
-  },
-  {
-    n: 2,
-    title: "系統掌握 24 個三和弦",
-    items: [
-      { icon: Sun,        label: "12 個大三和弦",    sub: "開朗明亮的音色" },
-      { icon: Moon,       label: "12 個小三和弦",    sub: "柔和憂鬱的情感" },
-      { icon: Shuffle,    label: "大小和弦快速切換", sub: "豐富歌曲音樂層次" },
-      { icon: Headphones, label: "和弦耳訓練習",     sub: "聽聲辨弦，立刻反應" },
-    ],
-  },
-  {
-    n: 3,
-    title: "兩種伴奏技法一次學會",
-    items: [
-      { icon: Layers,    label: "Block Chord 全和弦", sub: "穩定扎實的節奏感" },
-      { icon: Waves,     label: "分解和弦 Arpeggio",  sub: "讓音樂流動起來" },
-      { icon: RotateCcw, label: "卡農萬用進行",        sub: "解鎖流行歌背後的共同密碼" },
-      { icon: Heart,     label: "左右手完美配合",      sub: "彈出有感情的完整旋律" },
-    ],
-  },
-  {
-    n: 4,
-    title: "AI 遊戲讓練習不枯燥",
-    items: [
-      { icon: Zap,        label: "音名快閃",       sub: "鍵盤反應速度大幅提升" },
-      { icon: TrendingUp, label: "唱名階梯",       sub: "音感訓練遊戲化" },
-      { icon: Gamepad2,   label: "和弦俄羅斯方塊", sub: "邊玩邊記住全部和弦" },
-      { icon: Clock,      label: "節奏打點師",     sub: "穩定節拍，不再搶拍落拍" },
-    ],
-  },
-  {
-    n: 5,
-    title: "學完就能彈出喜歡的歌",
-    items: [
-      { icon: Music,        label: "20+ 首流行曲目實戰", sub: "學完即能開口唱彈" },
-      { icon: Video,        label: "完整錄製學習成果",   sub: "留下屬於你的第一首錄音" },
-      { icon: BookOpen,     label: "看得懂和弦譜",       sub: "自學更多歌曲不求人" },
-      { icon: GraduationCap,label: "扎實基礎銜接進階",   sub: "為下一階段學習鋪路" },
-    ],
-  },
+  { n: 1, title: "零基礎也能輕鬆上手" },
+  { n: 2, title: "系統掌握 24 個三和弦" },
+  { n: 3, title: "兩種伴奏技法一次學會" },
+  { n: 4, title: "AI 遊戲讓練習不枯燥" },
+  { n: 5, title: "學完就能彈出喜歡的歌" },
 ];
 
 const POINT1_SLIDES = [

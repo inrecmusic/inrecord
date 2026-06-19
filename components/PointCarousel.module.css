@@ -5,14 +5,26 @@
 }
 
 .viewport {
+  /* warm "method book" theme — CONFINED to the card; the page around it stays
+     white. Warm vars cascade into the visual sub-components so they sit naturally
+     on the cream paper; the blue interactive bits stay blue, like inked diagrams. */
+  --ink: #2b211a;
+  --muted: #6a5b48;
+  --card: #fffdf8;
+  --keyline: #cdbf9f;
+  --line: #e4d8bf;
+
   position: relative;
   width: 100%;
   height: clamp(440px, 44vw, 540px);
   border-radius: 22px;
   overflow: hidden;
-  background: var(--bg, #f8fafc);
-  border: 1.5px solid var(--line, #e2e8f0);
-  box-shadow: 0 20px 52px rgba(15, 23, 42, 0.12);
+  /* very pale warm paper (almost white) + faint printed staff lines */
+  background:
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(70, 48, 28, 0.05) 27px 28px),
+    linear-gradient(180deg, #fefdfb 0%, #fbf9f3 100%);
+  border: 1px solid #e4d8bf;
+  box-shadow: 0 18px 44px rgba(70, 48, 28, 0.14);
   touch-action: pan-y;
 }
 
@@ -67,7 +79,7 @@
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: var(--line, #cbd5e1);
+  background: var(--line, #cbd5e1);     /* dots sit on the white section, not the card */
   cursor: pointer;
   transition: background .2s, width .25s ease;
 }

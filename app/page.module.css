@@ -101,7 +101,9 @@
 
 .buySecurity { text-align: center; color: #aaa; font-size: 12px; margin: 4px 0 0; }
 
-/* POINTS */
+/* POINTS — kept on the page's white background for site-wide consistency; the
+   warm cream method-book card (see .viewport in PointCarousel) is the only color,
+   sitting on white via its border + soft shadow. */
 .pointsSection { padding: 20px 0 var(--space-section); }
 .pointBlock { padding: 60px 0; border-bottom: 1px solid var(--line); }
 .pointBlock:last-child { border-bottom: none; padding-bottom: 0; }
