@@ -68,20 +68,29 @@ DROP POLICY IF EXISTS "public_read_published_videos" ON videos;
 --        報錯並 ROLLBACK，連同上面兩條 DROP 一起失效，等於完全沒修到 games/videos。
 --        改用「實際存在的名稱 + DO/IF EXISTS」包起來：冪等、可重複執行，
 --        某條 policy 不存在時只是略過、不會中斷整批。
---        實際名稱來自 schema（classroom / music 兩檔，以 pg_policies 為準）：
---          comments        → auth_read_comments
---          comment_replies → public_read_comment_replies
---          ratings         → public_read_visible_ratings
---          rating_replies  → public_read_rating_replies
---        （chapters 本來就只有 service_role_only_chapters、無公開讀；assignments 表不存在，皆已移除。）
+--        ⚠️ 命名漂移（2026-06-19 以正式庫 pg_policies 實測）：正式庫的 policy 名稱與
+--        repo schema 檔不一致——正式庫是 user_read_all_comments / read_all_replies /
+--        user_read_all_ratings / read_all_rating_replies / public_read_chapters /
+--        public_read_assignments（且正式庫確實有 chapters、assignments 表）；schema 檔則是
+--        auth_read_comments / public_read_* 那組。為同時涵蓋兩邊，下面兩組名稱都列、各自用
+--        IF EXISTS 略過不存在者（冪等）。實測正式庫這幾張表的讀取 policy 已是 authenticated，
+--        故此段對正式庫為 no-op；games/videos 也已無公開讀。
 DO $$
 DECLARE r record;
 BEGIN
   FOR r IN SELECT * FROM (VALUES
+      -- repo schema 檔命名（fresh deploy 會建這些）
       ('comments',        'auth_read_comments'),
       ('comment_replies', 'public_read_comment_replies'),
       ('ratings',         'public_read_visible_ratings'),
-      ('rating_replies',  'public_read_rating_replies')
+      ('rating_replies',  'public_read_rating_replies'),
+      -- 正式庫實際命名（與 schema 檔分歧）
+      ('comments',        'user_read_all_comments'),
+      ('comment_replies', 'read_all_replies'),
+      ('ratings',         'user_read_all_ratings'),
+      ('rating_replies',  'read_all_rating_replies'),
+      ('chapters',        'public_read_chapters'),
+      ('assignments',     'public_read_assignments')
     ) AS t(tbl, pol)
   LOOP
     IF EXISTS (
