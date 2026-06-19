@@ -105,3 +105,33 @@ CREATE POLICY "service_role_coupon_batches" ON coupon_batches
 ALTER TABLE coupons ADD COLUMN IF NOT EXISTS batch_id UUID
   REFERENCES coupon_batches(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS coupons_batch_idx ON coupons (batch_id);
+
+-- ════════════════════════════════════════
+-- 銷售期間設定 sale_settings（單列）
+-- 開課日/早鳥截止日/各方案價格/手動覆寫/開課通知冪等旗標
+-- ════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS sale_settings (
+  id                 TEXT PRIMARY KEY DEFAULT 'default',
+  open_at            TIMESTAMPTZ,
+  early_bird_ends_at TIMESTAMPTZ,
+  plan_pricing       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  lock_override      TEXT,
+  launch_notified_at TIMESTAMPTZ,
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT sale_settings_singleton CHECK (id = 'default'),
+  CONSTRAINT sale_settings_lock_override_chk
+    CHECK (lock_override IS NULL OR lock_override IN ('open','locked'))
+);
+
+INSERT INTO sale_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE sale_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "service_role_write_sale_settings" ON sale_settings;
+CREATE POLICY "service_role_write_sale_settings" ON sale_settings
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- SELECT 刻意對 public 開放（開課日/價格本就公開顯示；供 middleware 用 anon 讀）。
+DROP POLICY IF EXISTS "public_read_sale_settings" ON sale_settings;
+CREATE POLICY "public_read_sale_settings" ON sale_settings
+  FOR SELECT USING (true);
