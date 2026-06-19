@@ -1,13 +1,32 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
+import { isClassroomOpen } from "@/lib/sale";
+
+let _saleCache = { value: null, at: 0 };
+async function readSaleSettingsCached() {
+  if (Date.now() - _saleCache.at < 60_000 && _saleCache.value !== null) return _saleCache.value;
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const res = await fetch(
+      `${url}/rest/v1/sale_settings?id=eq.default&select=open_at,lock_override`,
+      { headers: { apikey: anon, Authorization: `Bearer ${anon}` } }
+    );
+    const rows = await res.json();
+    _saleCache = { value: Array.isArray(rows) ? (rows[0] || null) : null, at: Date.now() };
+  } catch {
+    // 刷新失敗：沿用舊值；無舊值則維持 null（→ 鎖站，與「未設開課日」一致）
+  }
+  return _saleCache.value;
+}
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // 預售鎖站：開課前一律鎖住教室內容，導回銷售頁。
-  // 僅放行 /classroom/login（買課需先登入）。下週開課時把
-  // NEXT_PUBLIC_PRESALE_MODE 關掉（移除或設非 "1"）並重新部署即可解鎖。
-  const presaleMode = process.env.NEXT_PUBLIC_PRESALE_MODE === "1";
+  // 預售鎖站：依 sale_settings.open_at / lock_override 自動切換。
+  // 快取 60 秒（module-scope），用 anon REST 讀取（public SELECT policy）。
+  const settings = await readSaleSettingsCached();
+  const presaleMode = !isClassroomOpen(settings, new Date());
   if (presaleMode) {
     const isClassroomLogin =
       pathname === "/classroom/login" || pathname.startsWith("/classroom/login/");
