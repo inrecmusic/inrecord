@@ -79,6 +79,12 @@ export async function POST(req) {
 
       const supabase = getSupabaseAdmin();
       if (supabase) {
+        // 先讀原狀態：若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
+        // 付款仍要認（顧客已付錢），但限量券的預扣已被退回，稍後需補回扣抵 + 告警。
+        const { data: prior } = await supabase
+          .from("orders").select("status").eq("mer_trade_no", params.MerTradeNo).maybeSingle();
+        const wasExpired = prior?.status === "expired";
+
         const { data: order, error } = await supabase.from("orders").upsert(
           {
             mer_trade_no:    params.MerTradeNo,
@@ -143,10 +149,16 @@ export async function POST(req) {
             .maybeSingle();
 
           if (claimed) {
-            // 優惠券使用次數累計（付款成功才計）
+            // 優惠券使用次數累計：
+            //   - 限量券：已在 checkout 原子預扣（防 TOCTOU 重複折抵），notify 不再加。
+            //   - 無限量券：checkout 未預扣，此處補記已付使用數（純統計）。
+            //   - 例外：若訂單曾逾時釋放(wasExpired)，限量券的預扣已被退回 →
+            //           這裡補回一次，避免「釋放後付款」造成重複折抵。
             if (order.coupon_code) {
-              const { data: c } = await supabase.from("coupons").select("used").eq("code", order.coupon_code).single();
-              if (c) await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+              const { data: c } = await supabase.from("coupons").select("used, usage_limit").eq("code", order.coupon_code).single();
+              if (c && (c.usage_limit == null || wasExpired)) {
+                await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+              }
             }
 
             // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
@@ -211,6 +223,19 @@ export async function POST(req) {
             if (emailFailed) {
               await sendAdminAlert(buildAdminAlertHtml({ kind: "email", order: alertOrder, reason: emailReason }));
             }
+          } catch (e) {
+            console.error("[admin alert error]", e);
+          }
+        }
+
+        // 逾時釋放後又收到付款 → 告警人工確認限量券用量（限量券已自動補回扣抵）
+        if (wasExpired) {
+          try {
+            await sendAdminAlert(buildAdminAlertHtml({
+              kind: "late_paid",
+              order: { mer_trade_no: params.MerTradeNo, email: order?.email },
+              reason: "訂單逾時釋放後仍收到付款；限量優惠券已自動補回扣抵，請確認用量無誤。",
+            }));
           } catch (e) {
             console.error("[admin alert error]", e);
           }

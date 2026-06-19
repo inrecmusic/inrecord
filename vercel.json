@@ -1,4 +1,7 @@
 {
   "cleanUrls": true,
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    { "path": "/api/cron/release-coupons", "schedule": "0 4 * * *" }
+  ]
 }

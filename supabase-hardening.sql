@@ -62,15 +62,36 @@ ORDER BY tablename, policyname;
 DROP POLICY IF EXISTS "public_read_active_games"     ON games;
 DROP POLICY IF EXISTS "public_read_published_videos" ON videos;
 
---   (ii) 登入後才需要的內容：把讀取 policy 由 TO public 收窄成 TO authenticated。
---        （這些 policy 由 schema 建立時預設 TO public；ALTER 沒有 IF EXISTS，
---         若 policy 名稱不存在會報錯——新環境請先用 2b 對照實際名稱。）
-ALTER POLICY "user_read_all_comments"   ON comments        TO authenticated;
-ALTER POLICY "read_all_replies"         ON comment_replies TO authenticated;
-ALTER POLICY "user_read_all_ratings"    ON ratings         TO authenticated;
-ALTER POLICY "read_all_rating_replies"  ON rating_replies  TO authenticated;
-ALTER POLICY "public_read_chapters"     ON chapters        TO authenticated;
-ALTER POLICY "public_read_assignments"  ON assignments     TO authenticated;
+--   (ii) 登入後才需要的內容：把讀取 policy 由 public 收窄成 authenticated。
+--        ⚠️ 修正（2026-06-19）：舊版這裡寫死了不存在的 policy 名稱，且 ALTER POLICY
+--        沒有 IF EXISTS——整批貼進 SQL Editor 執行時會在第一條就 "policy does not exist"
+--        報錯並 ROLLBACK，連同上面兩條 DROP 一起失效，等於完全沒修到 games/videos。
+--        改用「實際存在的名稱 + DO/IF EXISTS」包起來：冪等、可重複執行，
+--        某條 policy 不存在時只是略過、不會中斷整批。
+--        實際名稱來自 schema（classroom / music 兩檔，以 pg_policies 為準）：
+--          comments        → auth_read_comments
+--          comment_replies → public_read_comment_replies
+--          ratings         → public_read_visible_ratings
+--          rating_replies  → public_read_rating_replies
+--        （chapters 本來就只有 service_role_only_chapters、無公開讀；assignments 表不存在，皆已移除。）
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+      ('comments',        'auth_read_comments'),
+      ('comment_replies', 'public_read_comment_replies'),
+      ('ratings',         'public_read_visible_ratings'),
+      ('rating_replies',  'public_read_rating_replies')
+    ) AS t(tbl, pol)
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname = 'public' AND tablename = r.tbl AND policyname = r.pol
+    ) THEN
+      EXECUTE format('ALTER POLICY %I ON %I TO authenticated', r.pol, r.tbl);
+    END IF;
+  END LOOP;
+END $$;
 
 -- 2d. 修補後應達成的狀態（重跑 2b 驗證）：
 --     - games / videos 只剩 service_role_* policy。

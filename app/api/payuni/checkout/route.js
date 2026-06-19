@@ -29,6 +29,10 @@ function makeHashInfo(encryptInfo, key, iv) {
 }
 
 export async function POST(req) {
+  // 優惠券原子預扣的狀態（hoist 到 try 外，讓 catch 也能釋放）
+  let couponCode = null;
+  let couponPrevUsed = 0;
+  let couponClaimed = false;
   try {
     const body = await req.json();
     const { plan, email } = body;
@@ -42,20 +46,39 @@ export async function POST(req) {
     let price = catalog.price;
     const label = catalog.label;
 
-    // 2.5) 優惠券：後端重新驗證並計算折後價（不信任前端傳入的折扣）
-    let couponCode = null;
+    // 2.5) 優惠券：後端重新驗證、計算折後價，並對「限量券」原子預扣一次額度。
+    //   ⚠️ 安全性：折扣此刻就寫進 PayUni TradeAmt，因此限量額度必須在 checkout 當下
+    //   原子消耗，不能等 notify 才 used++ —— 否則同一張單次券能在付款前並發多開、
+    //   每筆都拿到折扣（TOCTOU 重複折抵）。用樂觀鎖 CAS：UPDATE ... WHERE used=<讀到值>，
+    //   並發時只有第一個成功、其餘 0 列即拒絕。無限量券無上限可超用，不需預扣。
     if (body.couponCode) {
       const sb = getSupabaseAdmin();
       if (sb) {
+        const code = String(body.couponCode).trim().toUpperCase();
         const { data: coupon } = await sb
           .from("coupons")
           .select("*")
-          .eq("code", String(body.couponCode).trim().toUpperCase())
+          .eq("code", code)
           .maybeSingle();
         const cErr = couponError(coupon);
         if (cErr) return NextResponse.json({ error: cErr }, { status: 400 });
+
+        if (coupon.usage_limit != null) {
+          const prevUsed = coupon.used || 0;
+          const { data: claimed } = await sb
+            .from("coupons")
+            .update({ used: prevUsed + 1 })
+            .eq("code", code)
+            .eq("used", prevUsed)            // CAS：used 未被其他並發請求動過才成功
+            .select("id");
+          if (!claimed || claimed.length === 0) {
+            return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
+          }
+          couponPrevUsed = prevUsed;
+          couponClaimed = true;
+        }
         price = applyCoupon(price, coupon);
-        couponCode = coupon.code;
+        couponCode = code;
       }
     }
     if (price < 1) return NextResponse.json({ error: "amount_too_low" }, { status: 400 });
@@ -138,7 +161,14 @@ export async function POST(req) {
         carrier_id:   carrierId || null,
         coupon_code:  couponCode || null,
       });
-      if (error) console.error("[payuni checkout] supabase error", error.message);
+      if (error) {
+        console.error("[payuni checkout] supabase error", error.message);
+        // 訂單沒寫進去 → 釋放剛才預扣的限量券額度（CAS 還原本人那一次）
+        if (couponClaimed) {
+          await supabase.from("coupons").update({ used: couponPrevUsed })
+            .eq("code", couponCode).eq("used", couponPrevUsed + 1);
+        }
+      }
     }
 
     return NextResponse.json({
@@ -147,6 +177,14 @@ export async function POST(req) {
     });
   } catch (err) {
     console.error("[payuni checkout error]", err);
+    // 例外中斷 → 釋放已預扣的限量券額度（best-effort）
+    if (couponClaimed) {
+      try {
+        const sb = getSupabaseAdmin();
+        if (sb) await sb.from("coupons").update({ used: couponPrevUsed })
+          .eq("code", couponCode).eq("used", couponPrevUsed + 1);
+      } catch {}
+    }
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
