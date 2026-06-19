@@ -23,7 +23,7 @@ import { motion } from "framer-motion";
 const POINTS = [
   {
     n: 1,
-    title: "零基礎也能輕鬆開始",
+    title: "零基礎也能輕鬆上手",
     items: [
       { icon: Music2,       label: "認識鍵盤與音名",  sub: "七個基本音名，一次記住" },
       { icon: Mic2,         label: "唱名 Do-Re-Mi",   sub: "跟著旋律唱出完整音階" },
@@ -33,7 +33,7 @@ const POINTS = [
   },
   {
     n: 2,
-    title: "系統掌握全部 24 個三和弦",
+    title: "系統掌握 24 個三和弦",
     items: [
       { icon: Sun,        label: "12 個大三和弦",    sub: "開朗明亮的音色" },
       { icon: Moon,       label: "12 個小三和弦",    sub: "柔和憂鬱的情感" },
@@ -43,7 +43,7 @@ const POINTS = [
   },
   {
     n: 3,
-    title: "兩種伴奏技法全面學會",
+    title: "兩種伴奏技法一次學會",
     items: [
       { icon: Layers,    label: "Block Chord 全和弦", sub: "穩定扎實的節奏感" },
       { icon: Waves,     label: "分解和弦 Arpeggio",  sub: "讓音樂流動起來" },
@@ -53,7 +53,7 @@ const POINTS = [
   },
   {
     n: 4,
-    title: "AI 互動遊戲，練習不枯燥",
+    title: "AI 遊戲讓練習不枯燥",
     items: [
       { icon: Zap,        label: "音名快閃",       sub: "鍵盤反應速度大幅提升" },
       { icon: TrendingUp, label: "唱名階梯",       sub: "音感訓練遊戲化" },
@@ -77,7 +77,7 @@ const POINT1_SLIDES = [
   {
     title: "認識鍵盤與音名",
     sub: ["七個基本音名，一次記住——", "先學會在鍵盤上找到它們。"],
-    topLabel: "白鍵 7 音 · 黑鍵 2 ＋ 3 分組",
+    topLabel: "白鍵 7 音 · 黑鍵 5 音",
     visual: {
       type: "keyboard",
       keys: [
@@ -110,7 +110,7 @@ const POINT1_SLIDES = [
   },
   {
     title: "C 大調音階",
-    sub: ["右手指法入門——", "五指接力，順順爬完一個八度。"],
+    sub: ["五指接力——", "順順爬完一個八度。"],
     topLabel: "右手指法 1 → 5",
     visual: {
       type: "keyboard",
@@ -470,6 +470,9 @@ export default function HomePage() {
 
   function onPreviewSuccess() { setPreviewOpen(false); }
 
+  // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
+  const presaleMode = process.env.NEXT_PUBLIC_PRESALE_MODE === "1";
+
   return (
     <>
       {/* NAV */}
@@ -484,7 +487,9 @@ export default function HomePage() {
             <a href="#" onClick={e => { e.preventDefault(); setPreviewOpen(true); }}>課程試看</a>
           </nav>
           {user
-            ? <a href="/classroom"       className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>
+            ? (presaleMode
+                ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
+                : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
             : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
           <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => startBuy(PLANS[1])}>立即購買課程</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
@@ -498,7 +503,9 @@ export default function HomePage() {
             ))}
             <a href="#" onClick={e => { e.preventDefault(); setMenuOpen(false); setPreviewOpen(true); }}>課程試看</a>
             {user
-              ? <a href="/classroom"       onClick={() => setMenuOpen(false)}>進入教室</a>
+              ? (presaleMode
+                  ? <span style={{ opacity: .55 }}>課程準備中（開課將以 Email 通知）</span>
+                  : <a href="/classroom" onClick={() => setMenuOpen(false)}>進入教室</a>)
               : <a href="/classroom/login" onClick={() => setMenuOpen(false)}>學員登入</a>}
           </div>
         )}
@@ -539,26 +546,11 @@ export default function HomePage() {
               </div>
               <h3>課程介紹影片</h3>
               <ul className={styles.checkList}>
-                {["10 章節完整課程","20+ 首流行歌曲實戰","AI 互動遊戲強化學習","樂譜下載","無限次觀看，隨時學習","專屬學員社群，老師答疑"].map(i => (
+                {["10 章節完整課程","20+ 首流行歌曲實戰","AI 互動遊戲強化學習","無限次觀看，隨時學習"].map(i => (
                   <li key={i}>{i}</li>
                 ))}
               </ul>
             </motion.aside>
-
-            <motion.div className={styles.heroFeatures} variants={fadeUp} initial="hidden" animate="visible">
-              {[
-                [Music2,        "零基礎可學",   "從認識鍵盤開始"],
-                [Bot,           "AI 互動遊戲",  "學習不再枯燥"],
-                [Music,         "流行曲目實戰", "學完就能彈歌"],
-                [GraduationCap, "打好扎實基礎", "銜接進階更輕鬆"],
-              ].map(([Icon, title, sub]) => (
-                <div key={title} className={styles.heroFeature}>
-                  <div className={styles.heroIcon}><Icon size={28} strokeWidth={1.5} /></div>
-                  <strong>{title}</strong>
-                  <span>{sub}</span>
-                </div>
-              ))}
-            </motion.div>
           </div>
         </section>
 
@@ -642,27 +634,8 @@ export default function HomePage() {
                   <PointCarousel slides={POINT3_SLIDES} point={3} />
                 ) : pt.n === 4 ? (
                   <PointCarousel slides={POINT4_SLIDES} point={4} />
-                ) : pt.n === 5 ? (
-                  <PointCarousel slides={POINT5_SLIDES} point={5} />
                 ) : (
-                  <motion.div
-                    className={styles.pointGrid}
-                    variants={stagger}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-40px" }}
-                  >
-                    {pt.items.map(item => {
-                      const Icon = item.icon;
-                      return (
-                        <motion.div key={item.label} className={styles.pointCard} variants={fadeUp}>
-                          <div className={styles.pointCardIcon}><Icon size={28} strokeWidth={1.5} /></div>
-                          <strong>{item.label}</strong>
-                          <span>{item.sub}</span>
-                        </motion.div>
-                      );
-                    })}
-                  </motion.div>
+                  <PointCarousel slides={POINT5_SLIDES} point={5} />
                 )}
               </RevealSection>
             ))}

@@ -38,6 +38,7 @@
   border-radius: 12px;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
   overflow: hidden;
+  touch-action: manipulation;
 }
 .whites { position: absolute; inset: 0; display: flex; }
 .white {
@@ -115,4 +116,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .white { transition: none !important; }
+}
+
+/* 手機加高迷你鍵盤，鍵更好點（實測安全上限 164px，取保守值）*/
+@media (max-width: 760px) {
+  .keyboard { min-height: 135px; }
 }

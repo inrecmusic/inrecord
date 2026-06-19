@@ -86,3 +86,8 @@
   border-color: var(--brand, #2563eb);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
+
+/* 手機加高鍵盤，鍵更好點（實測安全上限 269px，取保守值）*/
+@media (max-width: 760px) {
+  .keyboard { min-height: 175px; }
+}

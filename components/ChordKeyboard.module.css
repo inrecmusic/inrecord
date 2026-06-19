@@ -224,3 +224,8 @@
 @media (prefers-reduced-motion: reduce) {
   .white { transition: none !important; }
 }
+
+/* 手機加高鍵盤，鍵更好點（實測安全上限 259px，取保守值）*/
+@media (max-width: 760px) {
+  .keyboard { min-height: 175px; }
+}

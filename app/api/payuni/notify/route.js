@@ -32,9 +32,20 @@ function makeHashInfo(encryptInfo, key, iv) {
 // Payuni 背景通知（POST）
 export async function POST(req) {
   try {
-    const body        = await req.formData();
+    let body;
+    try {
+      body = await req.formData();
+    } catch {
+      // 非表單格式（垃圾/探測請求）→ 乾淨回 400，而非 500
+      return new Response("FAIL", { status: 400 });
+    }
     const encryptInfo = body.get("EncryptInfo");
     const hashInfo    = body.get("HashInfo");
+
+    // 缺必要欄位（非真實 PAYUNi 回呼）→ 400
+    if (!encryptInfo || !hashInfo) {
+      return new Response("FAIL", { status: 400 });
+    }
 
     const hashKey = process.env.PAYUNI_HASH_KEY;
     const hashIV  = process.env.PAYUNI_HASH_IV;
@@ -68,6 +79,12 @@ export async function POST(req) {
 
       const supabase = getSupabaseAdmin();
       if (supabase) {
+        // 先讀原狀態：若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
+        // 付款仍要認（顧客已付錢），但限量券的預扣已被退回，稍後需補回扣抵 + 告警。
+        const { data: prior } = await supabase
+          .from("orders").select("status").eq("mer_trade_no", params.MerTradeNo).maybeSingle();
+        const wasExpired = prior?.status === "expired";
+
         const { data: order, error } = await supabase.from("orders").upsert(
           {
             mer_trade_no:    params.MerTradeNo,
@@ -95,26 +112,24 @@ export async function POST(req) {
             if (enrollErr) console.error("[payuni notify] enroll error", enrollErr.message);
           }
 
-          // AI 遊戲永久開通（遊戲單買 or 課程包）；以遠期到期日表示永久
+          // AI 遊戲永久開通（遊戲單買 or 課程包）；以遠期到期日表示永久。
+          // ⚠️ 冪等：用 upsert + ignoreDuplicates（DB 端 ON CONFLICT DO NOTHING）取代「先 count 後 insert」，
+          // 確保 Payuni 並發／重送 notify 時不會重複插入存取列。
+          // 需搭配唯一索引：CREATE UNIQUE INDEX uniq_sub_purchase_order
+          //   ON subscriptions (payuni_order_id) WHERE source = 'purchase' AND payuni_order_id IS NOT NULL;
           if (order.plan === "game" || order.plan === "bundle") {
-            const { count: gameExists } = await supabase
-              .from("subscriptions")
-              .select("id", { count: "exact", head: true })
-              .eq("email", order.email)
-              .eq("source", "purchase")
-              .eq("payuni_order_id", order.id);
-
-            if (!gameExists) {
-              const { error: gameErr } = await supabase.from("subscriptions").insert({
+            const { error: gameErr } = await supabase.from("subscriptions").upsert(
+              {
                 email:           order.email,
                 plan_type:       order.plan === "bundle" ? "bundle" : "game",
                 status:          "active",
                 expires_at:      PERMANENT,
                 source:          "purchase",
                 payuni_order_id: order.id,
-              });
-              if (gameErr) console.error("[payuni notify] game access insert error", gameErr.message);
-            }
+              },
+              { onConflict: "payuni_order_id", ignoreDuplicates: true }
+            );
+            if (gameErr) console.error("[payuni notify] game access upsert error", gameErr.message);
           }
         }
 
@@ -134,10 +149,16 @@ export async function POST(req) {
             .maybeSingle();
 
           if (claimed) {
-            // 優惠券使用次數累計（付款成功才計）
+            // 優惠券使用次數累計：
+            //   - 限量券：已在 checkout 原子預扣（防 TOCTOU 重複折抵），notify 不再加。
+            //   - 無限量券：checkout 未預扣，此處補記已付使用數（純統計）。
+            //   - 例外：若訂單曾逾時釋放(wasExpired)，限量券的預扣已被退回 →
+            //           這裡補回一次，避免「釋放後付款」造成重複折抵。
             if (order.coupon_code) {
-              const { data: c } = await supabase.from("coupons").select("used").eq("code", order.coupon_code).single();
-              if (c) await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+              const { data: c } = await supabase.from("coupons").select("used, usage_limit").eq("code", order.coupon_code).single();
+              if (c && (c.usage_limit == null || wasExpired)) {
+                await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+              }
             }
 
             // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
@@ -149,7 +170,7 @@ export async function POST(req) {
                 merTradeNo: params.MerTradeNo,
               });
               if (mailResult.success) {
-                console.log("[mail] 開課確認信已寄出:", order.email, mailResult.messageId || "");
+                console.log("[mail] 開課確認信已寄出:", params.MerTradeNo, mailResult.messageId || "");
                 await supabase.from("orders").update({ email_error: null }).eq("id", order.id);
               } else if (!mailResult.skipped) {
                 console.error("[mail] 開課確認信寄送失敗:", mailResult.error);
@@ -172,6 +193,7 @@ export async function POST(req) {
             productName: order.plan_label || "零基礎流行鋼琴入門課",
             carrierType: order.carrier_type || "",
             carrierId: order.carrier_id || "",
+            trackApiCode: process.env.AMEGO_TRACK_API_CODE || "",
           });
 
           if (invoiceResult.success) {
@@ -201,6 +223,19 @@ export async function POST(req) {
             if (emailFailed) {
               await sendAdminAlert(buildAdminAlertHtml({ kind: "email", order: alertOrder, reason: emailReason }));
             }
+          } catch (e) {
+            console.error("[admin alert error]", e);
+          }
+        }
+
+        // 逾時釋放後又收到付款 → 告警人工確認限量券用量（限量券已自動補回扣抵）
+        if (wasExpired) {
+          try {
+            await sendAdminAlert(buildAdminAlertHtml({
+              kind: "late_paid",
+              order: { mer_trade_no: params.MerTradeNo, email: order?.email },
+              reason: "訂單逾時釋放後仍收到付款；限量優惠券已自動補回扣抵，請確認用量無誤。",
+            }));
           } catch (e) {
             console.error("[admin alert error]", e);
           }

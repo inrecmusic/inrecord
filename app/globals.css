@@ -3,7 +3,8 @@
   --brand: #2563eb;
   --brand-dark: #1d4ed8;
   --brand-soft: #eff6ff;
-  --gold: #f7d68a;
+  --brand-light: #93c5fd;   /* 深底上的淡品牌藍點綴（取代金色） */
+  --gold: #f7d68a;          /* 保留 token，hero 已改用 brand-light */
   --ink: #0f172a;
   --ink-2: #334155;
   --ink-3: #64748b;
@@ -12,8 +13,16 @@
   --bg: #f8fafc;
   --paper: #f8fafc;
   --surface: #ffffff;
-  --shadow: 0 20px 60px rgba(15, 23, 42, 0.1);
-  --radius: 18px;
+  /* Radius scale — 3 階收斂（取代原本散落的 2/8/10/14/16/18/20/28px） */
+  --radius-sm: 10px;   /* 按鈕、小晶片、icon 方塊、縮圖 */
+  --radius-md: 16px;   /* 內容卡片：方案/重點/特色/章節/FAQ */
+  --radius-lg: 24px;   /* 大型媒體與 CTA 區塊 */
+  --radius: var(--radius-md);  /* legacy 別名 */
+  /* Shadow scale — 細陰影（取代原本 0 20px 60px/.1 重陰影與 28 處散落值） */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, .06);
+  --shadow-lg: 0 16px 40px rgba(15, 23, 42, .08);
+  --shadow: var(--shadow-md);  /* legacy 別名 */
 
   /* Typography system — v3 Two-tier: Main-visual serif (Hero only) + Content sans (黑體) */
   /* Layer 1 · Main-visual ONLY — EN: Cormorant 中庸, CJK: Noto Serif TC 厚重 */
@@ -28,6 +37,12 @@
   --type-en-italic: var(--font-cormorant), Georgia, serif;
   /* Numerals — Inter */
   --type-numeric:   var(--font-inter), var(--font-noto-sans), sans-serif;
+
+  /* ── 響應式地基 Token（2026-06 手機/平板優化）──────────────────────── */
+  --container-max: 1120px;
+  --container-pad: clamp(20px, 5vw, 44px);   /* 容器左右留白：手機 20 → 桌機 44 */
+  --space-section: clamp(56px, 8vw, 96px);   /* 區塊上下留白：手機 56 → 桌機 96，簡約更有呼吸感 */
+  --tap-min: 44px;                            /* 最小觸控目標（Apple HIG）*/
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -93,3 +108,28 @@ h4, h5, h6 { font-weight: 600; }
   font-feature-settings: "lnum" 1, "tnum" 1;
 }
 
+/* ── Content-page card — responsive padding ──────────────────────────────── */
+.content-card { padding: 40px 44px; }
+@media (max-width: 640px) { .content-card { padding: 28px 20px; } }
+
+/* ── 全域安全網（2026-06 手機/平板優化）──────────────────────────────── */
+/* 防橫向溢出：html+body 同時 clip，徹底擋掉手機「縮小露右側白邊」。
+   用 clip 而非 hidden 才不會破壞 position:sticky（導覽列）；現代 Safari 支援。 */
+html, body { overflow-x: clip; }
+
+/* 媒體不爆寬（img 已有 max-width，補齊 video/iframe/table）*/
+video, iframe, table { max-width: 100%; }
+
+/* 觸控回饋：移除點擊藍底 */
+a, button, summary, [role="button"] { -webkit-tap-highlight-color: transparent; }
+
+/* 觸控裝置停用位移型 hover，避免「卡住」的 hover 殘留 */
+@media (hover: none) {
+  a:hover, button:hover { transform: none; }
+}
+
+/* 統一容器類：供各頁逐步替換零散的 .container 定義 */
+.u-container {
+  width: min(var(--container-max), calc(100% - var(--container-pad) * 2));
+  margin-inline: auto;
+}

@@ -21,7 +21,7 @@ export default function ContactPage() {
           ← 返回首頁
         </Link>
 
-        <div style={{ background: "#fff", borderRadius: 20, padding: "40px 44px", boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
+        <div className="content-card" style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
           <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>聯絡我們</h1>
           <p style={{ fontSize: 14, color: "#64748b", margin: "0 0 32px", lineHeight: 1.7 }}>
             有任何課程問題、退款申請或合作洽詢，歡迎透過以下方式聯繫，我們將於 2 個工作天內回覆。

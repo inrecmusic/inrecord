@@ -12,7 +12,7 @@ export default function TermsPage() {
           ← 返回首頁
         </Link>
 
-        <div style={{ background: "#fff", borderRadius: 20, padding: "40px 44px", boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
+        <div className="content-card" style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
           <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>服務條款</h1>
           <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜流行鋼琴零基礎入門課 ／ 最後更新：2026 年 5 月 1 日</p>
 

@@ -8,7 +8,8 @@ import {
   DollarSign, RefreshCw, Download, LogOut, ExternalLink,
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
-  Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2
+  Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
+  AlertTriangle
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
@@ -872,21 +873,26 @@ function OrdersPage({leads,showToast}){
         <StatCard label="已退款訂單" value={refunded.length} sub="筆" icon={BarChart2} color="#dc2626"/>
       </div>
       {needsAttention.length>0&&(
-        <div className={styles.panel} style={{borderLeft:"4px solid #dc2626",background:"#fff7f7",marginBottom:16}}>
-          <div className={styles.panelHead}><h3 style={{margin:0,color:"#b91c1c"}}>⚠️ 待處理告警（{needsAttention.length}）</h3></div>
-          <div style={{padding:"4px 16px 16px"}}>
+        <div className={styles.alertPanel} style={{marginBottom:16}}>
+          <div className={styles.alertPanelHead}>
+            <span className={styles.alertPanelTitle}><AlertTriangle size={16}/> 待處理告警</span>
+            <span className={styles.alertCount}>{needsAttention.length}</span>
+          </div>
+          <div className={styles.alertList}>
             {needsAttention.map(o=>(
-              <div key={o.realId} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"10px 0",borderBottom:"1px solid #fde2e2",flexWrap:"wrap"}}>
-                <div style={{fontSize:13}}>
-                  <code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code>
-                  <span style={{marginLeft:8,color:"#475569"}}>{o.email}</span>
-                  <div style={{marginTop:4,color:"#b91c1c",fontWeight:700}}>
-                    {o.emailError&&<span style={{marginRight:10}}>開課信寄送失敗：{o.emailError}</span>}
-                    {o.invoiceError&&<span style={{marginRight:10}}>開票失敗：{o.invoiceError}</span>}
-                    {!o.invoiceError&&o.needInvoice&&<span style={{marginRight:10}}>發票待補開</span>}
+              <div key={o.realId} className={styles.alertItem}>
+                <div className={styles.alertItemInfo}>
+                  <div className={styles.alertItemTop}>
+                    <code className={styles.codeChip}>{o.id}</code>
+                    <span className={styles.alertEmail}>{o.email}</span>
+                  </div>
+                  <div className={styles.alertReason}>
+                    {o.emailError&&<span>開課信寄送失敗：{o.emailError}</span>}
+                    {o.invoiceError&&<span>開票失敗：{o.invoiceError}</span>}
+                    {!o.invoiceError&&o.needInvoice&&<span>發票待補開</span>}
                   </div>
                 </div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <div className={styles.alertItemActions}>
                   {o.needInvoice&&<button className={styles.btnSmall} disabled={issuing===o.realId} onClick={()=>issueInvoice(o.realId)}>{issuing===o.realId?"補開中…":"補開發票"}</button>}
                   {o.emailError&&<button className={styles.btnSmall} disabled={resending===o.realId} onClick={()=>resendEmail(o.realId)}>{resending===o.realId?"補寄中…":"補寄開課信"}</button>}
                 </div>
@@ -900,26 +906,44 @@ function OrdersPage({leads,showToast}){
           <h3 style={{margin:0}}>對帳彙整（依日期區間）</h3>
           <button className={styles.btnSmall} onClick={exportReconciliation}><Download size={13}/> 匯出對帳 CSV</button>
         </div>
-        <div style={{padding:"4px 16px 16px",fontSize:13}}>
-          <div style={{color:"#94a3b8",marginBottom:10}}>期間：{(dateFrom||dateTo)?`${dateFrom||"…"} ~ ${dateTo||"…"}`:"全部期間"}（不受狀態／搜尋篩選影響）</div>
-          <div style={{display:"flex",gap:24,flexWrap:"wrap",marginBottom:12}}>
-            <div><div style={{color:"#94a3b8"}}>有效收款（已付款）</div><div style={{fontWeight:800,fontSize:18,color:"#16a34a"}}>NT$ {report.paid.amount.toLocaleString()}</div><div style={{color:"#94a3b8",fontSize:12}}>{report.paid.count} 筆</div></div>
-            <div><div style={{color:"#94a3b8"}}>退款</div><div style={{fontWeight:800,fontSize:18,color:"#dc2626"}}>NT$ {report.refunded.amount.toLocaleString()}</div><div style={{color:"#94a3b8",fontSize:12}}>{report.refunded.count} 筆</div></div>
-            <div><div style={{color:"#94a3b8"}}>待付款</div><div style={{fontWeight:800,fontSize:18}}>{report.pending.count} 筆</div></div>
-            <div><div style={{color:"#94a3b8"}}>發票</div><div style={{fontWeight:700}}>已開 {report.invoice.issued}／未開 {report.invoice.missing}</div></div>
-            <div><div style={{color:"#94a3b8"}}>優惠折抵</div><div style={{fontWeight:700}}>{report.coupon.count} 筆 · NT$ {report.coupon.discount.toLocaleString()}</div></div>
+        <div className={styles.reconPeriod}>期間：{(dateFrom||dateTo)?`${dateFrom||"…"} ~ ${dateTo||"…"}`:"全部期間"}（不受狀態／搜尋篩選影響）</div>
+        <div className={styles.reconGrid}>
+          <div className={styles.reconTile}>
+            <div className={styles.reconLabel}>有效收款</div>
+            <div className={`${styles.reconValue} ${styles.pos}`}>NT$ {report.paid.amount.toLocaleString()}</div>
+            <div className={styles.reconSub}>{report.paid.count} 筆 · 已付款</div>
           </div>
-          {Object.keys(report.byPayType).length>0&&(
-            <div>
-              <div style={{color:"#94a3b8",marginBottom:4}}>付款方式分佈（已付款）</div>
-              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-                {Object.entries(report.byPayType).map(([k,v])=>(
-                  <span key={k} style={{background:"#f1f5f9",borderRadius:6,padding:"4px 10px"}}>{k}：{v.count} 筆 · NT$ {v.amount.toLocaleString()}</span>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className={styles.reconTile}>
+            <div className={styles.reconLabel}>退款</div>
+            <div className={`${styles.reconValue} ${styles.neg}`}>NT$ {report.refunded.amount.toLocaleString()}</div>
+            <div className={styles.reconSub}>{report.refunded.count} 筆</div>
+          </div>
+          <div className={styles.reconTile}>
+            <div className={styles.reconLabel}>待付款</div>
+            <div className={styles.reconValue}>{report.pending.count}<span className={styles.reconUnit}> 筆</span></div>
+            <div className={styles.reconSub}>尚未付款</div>
+          </div>
+          <div className={styles.reconTile}>
+            <div className={styles.reconLabel}>發票</div>
+            <div className={styles.reconValue}>{report.invoice.issued}<span className={styles.reconUnit}> / {report.invoice.issued+report.invoice.missing}</span></div>
+            <div className={styles.reconSub}>已開 {report.invoice.issued}／未開 {report.invoice.missing}</div>
+          </div>
+          <div className={styles.reconTile}>
+            <div className={styles.reconLabel}>優惠折抵</div>
+            <div className={styles.reconValue}>NT$ {report.coupon.discount.toLocaleString()}</div>
+            <div className={styles.reconSub}>{report.coupon.count} 筆</div>
+          </div>
         </div>
+        {Object.keys(report.byPayType).length>0&&(
+          <div className={styles.reconPayTypes}>
+            <div className={styles.reconLabel} style={{marginBottom:8}}>付款方式分佈（已付款）</div>
+            <div className={styles.payChips}>
+              {Object.entries(report.byPayType).map(([k,v])=>(
+                <span key={k} className={styles.payChip}><b>{k}</b>{v.count} 筆 · NT$ {v.amount.toLocaleString()}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <div className={styles.panel}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
