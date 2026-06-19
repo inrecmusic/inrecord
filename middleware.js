@@ -12,6 +12,7 @@ async function readSaleSettingsCached() {
       `${url}/rest/v1/sale_settings?id=eq.default&select=open_at,lock_override`,
       { headers: { apikey: anon, Authorization: `Bearer ${anon}` } }
     );
+    if (!res.ok) throw new Error(`sale_settings fetch ${res.status}`);
     const rows = await res.json();
     _saleCache = { value: Array.isArray(rows) ? (rows[0] || null) : null, at: Date.now() };
   } catch {

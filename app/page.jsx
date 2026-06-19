@@ -26,9 +26,9 @@ export default async function Page() {
 
   // 開課通知 lazy trigger（免費方案無 sub-daily cron）：開課後首位訪客觸發，CAS 去重。
   if (phase.classroomOpen && settings && !settings.launch_notified_at) {
-    const site = process.env.NEXT_PUBLIC_SITE_URL;
+    const site = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
     const secret = process.env.CRON_SECRET;
-    if (site && secret) {
+    if (secret) {
       fetch(`${site}/api/cron/sale-launch-notify`, { headers: { Authorization: `Bearer ${secret}` } }).catch(() => {});
     }
   }
