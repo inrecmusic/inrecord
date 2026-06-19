@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
+import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
@@ -163,11 +164,13 @@ export async function POST(req) {
 
             // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷
             if (order.email) {
+              const saleSettings = await getSaleSettings();
               const mailResult = await sendPurchaseEmail({
                 email:      order.email,
                 plan:       order.plan,
                 planLabel:  order.plan_label,
                 merTradeNo: params.MerTradeNo,
+                presale:    isPresale(saleSettings, new Date()),
               });
               if (mailResult.success) {
                 console.log("[mail] 開課確認信已寄出:", params.MerTradeNo, mailResult.messageId || "");
