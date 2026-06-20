@@ -11,6 +11,8 @@ const PLANS = [
   { key: "bundle", label: "學琴全攻略（課程包）" },
 ];
 
+const EMPTY_SETTINGS = { open_at: null, early_bird_ends_at: null, plan_pricing: {}, lock_override: null, launch_notified_at: null };
+
 // timestamptz <-> <input type="datetime-local">（以瀏覽器本地時區即台灣時間呈現）
 function toLocalInput(iso) {
   if (!iso) return "";
@@ -28,7 +30,8 @@ export default function SaleSettingsPage({ showToast }) {
   useEffect(() => {
     adminFetch("/api/admin/sale-settings")
       .then((r) => r.json())
-      .then((d) => setS(d.data || { open_at: null, early_bird_ends_at: null, plan_pricing: {}, lock_override: null, launch_notified_at: null }))
+      .then((d) => setS(d.data || EMPTY_SETTINGS))
+      .catch(() => { setS(EMPTY_SETTINGS); showToast?.("載入銷售設定失敗，顯示空白表單"); })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
 
@@ -41,16 +44,18 @@ export default function SaleSettingsPage({ showToast }) {
 
   const save = async () => {
     setSaving(true);
-    const res = await adminFetch("/api/admin/sale-settings", {
-      method: "PATCH",
-      body: JSON.stringify({
-        open_at: s.open_at, early_bird_ends_at: s.early_bird_ends_at,
-        plan_pricing: s.plan_pricing, lock_override: s.lock_override,
-      }),
-    });
-    const d = await res.json();
-    setSaving(false);
-    if (res.ok) { setS(d.data); showToast?.("已儲存"); } else { showToast?.(`儲存失敗：${d.error}`); }
+    try {
+      const res = await adminFetch("/api/admin/sale-settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          open_at: s.open_at, early_bird_ends_at: s.early_bird_ends_at,
+          plan_pricing: s.plan_pricing, lock_override: s.lock_override,
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) { setS(d.data); showToast?.("已儲存"); } else { showToast?.(`儲存失敗：${d.error || res.status}`); }
+    } catch { showToast?.("儲存失敗，請稍後再試"); }
+    finally { setSaving(false); }
   };
 
   const sendLaunch = async () => {
