@@ -20,7 +20,6 @@ export async function PATCH(req) {
   const patch = { id: "default", updated_at: new Date().toISOString() };
 
   if ("open_at" in body) patch.open_at = body.open_at || null;
-  if ("early_bird_ends_at" in body) patch.early_bird_ends_at = body.early_bird_ends_at || null;
 
   if ("lock_override" in body) {
     const v = body.lock_override;
@@ -30,17 +29,35 @@ export async function PATCH(req) {
     patch.lock_override = v;
   }
 
-  if ("plan_pricing" in body) {
-    const pricing = body.plan_pricing || {};
-    for (const k of Object.keys(pricing)) {
-      const p = pricing[k] || {};
-      for (const f of ["original", "earlyBird"]) {
-        if (p[f] != null && (!Number.isInteger(p[f]) || p[f] < 0)) {
-          return NextResponse.json({ error: `invalid_price_${k}_${f}` }, { status: 400 });
+  if ("list_price" in body) {
+    const lp = body.list_price || {};
+    for (const k of Object.keys(lp)) {
+      if (lp[k] != null && (!Number.isInteger(lp[k]) || lp[k] < 0)) {
+        return NextResponse.json({ error: `invalid_list_price_${k}` }, { status: 400 });
+      }
+    }
+    patch.list_price = lp;
+  }
+
+  if ("waves" in body) {
+    const waves = Array.isArray(body.waves) ? body.waves : null;
+    if (!waves) return NextResponse.json({ error: "invalid_waves" }, { status: 400 });
+    for (let i = 0; i < waves.length; i++) {
+      const w = waves[i] || {};
+      if (!w.starts_at || isNaN(Date.parse(w.starts_at)) || !w.ends_at || isNaN(Date.parse(w.ends_at))) {
+        return NextResponse.json({ error: `invalid_wave_${i}_dates` }, { status: 400 });
+      }
+      if (Date.parse(w.starts_at) >= Date.parse(w.ends_at)) {
+        return NextResponse.json({ error: `invalid_wave_${i}_range` }, { status: 400 });
+      }
+      const prices = w.prices || {};
+      for (const k of Object.keys(prices)) {
+        if (prices[k] != null && (!Number.isInteger(prices[k]) || prices[k] < 0)) {
+          return NextResponse.json({ error: `invalid_wave_${i}_price_${k}` }, { status: 400 });
         }
       }
     }
-    patch.plan_pricing = pricing;
+    patch.waves = waves;
   }
 
   const { data, error } = await sb.from("sale_settings")
