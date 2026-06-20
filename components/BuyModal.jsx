@@ -184,7 +184,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing }) {
                 : earlyBird
                   ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
                   : <>NT${Number(basePrice).toLocaleString()}</>}
-              {earlyBird && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
+              {earlyBird && !couponApplied && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
             </div>
           </div>
 
