@@ -6,10 +6,11 @@
 --   1. 打開 Supabase → SQL Editor → New query
 --   2. 整份貼上、按 Run（全部為 IF NOT EXISTS / idempotent，可安全重複執行）
 --
--- 內含三組變更：
+-- 內含四組變更：
 --   ①  發票（Amego）         — orders 表新增發票相關欄位
 --   ②  優惠券                — coupons 表 + orders.coupon_code
 --   ③  課程管理              — courses 表（含預設課程種子）
+--   ④  銷售期間設定          — sale_settings 表（單列；開課日/早鳥/各方案價/手動覆寫）
 --
 -- 前置：本檔假設 orders 表已存在（見 supabase-schema.sql）。
 -- 對應的單獨檔案：

@@ -14,7 +14,7 @@ export async function GET(req) {
   if (!sb) return NextResponse.json({ error: "no_db" }, { status: 500 });
 
   // 僅在「課程已開放」時才寄（override='locked' 不誤發）
-  const { data: settings } = await sb.from("sale_settings").select("*").eq("id", "default").maybeSingle();
+  const { data: settings } = await sb.from("sale_settings").select("open_at, lock_override").eq("id", "default").maybeSingle();
   if (!isClassroomOpen(settings, new Date())) {
     return NextResponse.json({ ok: true, skipped: "not_open" });
   }
