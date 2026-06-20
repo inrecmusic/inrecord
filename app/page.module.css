@@ -63,13 +63,38 @@
 
 /* INTRO */
 .introSection { padding: var(--space-section) 0; }
+
+/* INTRO — editorial "polished symmetric": gold eyebrow + serif head + numbered index */
+.introHeader { margin-bottom: 42px; }
+.introEyebrow { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: #c9a227; font-weight: 700; }
+.introHead { font-family: var(--type-display); font-weight: 600; font-size: clamp(32px, 4.4vw, 52px); line-height: 1.12; letter-spacing: .01em; color: var(--ink); margin: 8px 0 0; }
+.introRule { width: 60px; height: 2px; background: #c9a227; margin: 18px 0 14px; }
+.introSubline { color: var(--muted); font-size: clamp(15px, 1.6vw, 17px); line-height: 1.7; margin: 0; max-width: 640px; }
+.introIndex { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 56px; }
+.introIx { padding: 26px 24px; border-left: 1px solid var(--line); }
+.introIx:first-child { border-left: 0; padding-left: 0; }
+.introIxNo { font-family: var(--type-display); font-size: 34px; font-weight: 600; color: var(--brand); line-height: 1; }
+.introIx h3 { font-size: 16px; font-weight: 600; margin: 14px 0 8px; color: var(--ink); }
+.introIx p { text-wrap: pretty; font-size: 13.5px; line-height: 1.7; color: var(--muted); margin: 0; }
+@media (max-width: 900px) and (min-width: 601px) {
+  .introIndex { grid-template-columns: 1fr 1fr; }
+  .introIx { padding: 24px 22px; }
+  .introIx:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .introIx:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 600px) {
+  .introIndex { grid-template-columns: 1fr; }
+  .introIx { border-left: 0; border-top: 1px solid var(--line); padding: 20px 0; }
+  .introIx:first-child { border-top: 0; padding-top: 2px; }
+  .outcomes { columns: 1 !important; }
+}
 .introGrid { display: grid; grid-template-columns: 1fr 420px; gap: 56px; align-items: center; }
 .introCopy small { color: var(--brand); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
-.introCopy h2 { font-family: var(--type-heading); font-weight: 600; text-wrap: balance; font-size: clamp(30px,4vw,42px); line-height: 1.2; letter-spacing: -.01em; margin: 8px 0 20px; }
+.introCopy h2 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(30px,4vw,42px); line-height: 1.22; letter-spacing: .01em; margin: 8px 0 18px; }
 .introCopy p { text-wrap: pretty; max-width: 620px; color: var(--muted); }
-.outcomes { list-style: none; padding: 0; display: grid; gap: 12px; margin-top: 24px; font-weight: 500; }
-.outcomes li { display: flex; align-items: flex-start; gap: 10px; }
-.outcomes li::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-top: 7px; flex-shrink: 0; }
+.outcomes { list-style: none; padding: 0; margin: 24px 0 0; counter-reset: o; columns: 2; column-gap: 36px; }
+.outcomes li { counter-increment: o; position: relative; padding: 11px 0 11px 38px; border-top: 1px solid var(--line); font-size: 14px; font-weight: 500; color: #334155; break-inside: avoid; }
+.outcomes li::before { content: counter(o, decimal-leading-zero); position: absolute; left: 0; top: 11px; font-family: var(--type-display); font-size: 15px; font-weight: 600; color: #c9a227; }
 .pianoPhoto { min-height: 390px; border-radius: var(--radius-lg); background: url("/rick-piano.jpg"); background-size: cover; background-position: center top; box-shadow: var(--shadow-lg); }
 
 /* PRICING */

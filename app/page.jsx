@@ -527,28 +527,30 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* INTRO */}
+        {/* INTRO — editorial "polished symmetric" */}
         <RevealSection id="intro" className={styles.introSection}>
           <div className={styles.container}>
-            <div className={styles.sectionHead} style={{ marginBottom: "32px" }}>
-              <h2>課程設計與說明</h2>
+            <div className={styles.introHeader}>
+              <div className={styles.introEyebrow}>Course Design</div>
+              <h2 className={styles.introHead}>課程設計與說明</h2>
+              <div className={styles.introRule} />
+              <p className={styles.introSubline}>10 章節循序漸進，從零基礎到能彈出自己喜歡的歌。</p>
             </div>
             <motion.div
-              className={styles.featureGrid}
-              style={{ marginBottom: "56px" }}
+              className={styles.introIndex}
               variants={stagger}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-40px" }}
             >
               {[
-                [Music2, "零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
-                [Bot,    "AI 互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
-                [Music,  "流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
-                [Award,  "成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
-              ].map(([Icon, title, desc]) => (
-                <motion.div key={title} className={styles.featureCard} variants={fadeUp}>
-                  <div className={styles.featureIcon}><Icon size={22} strokeWidth={1.5} /></div>
+                ["零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
+                ["AI 互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
+                ["流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
+                ["成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
+              ].map(([title, desc], i) => (
+                <motion.div key={title} className={styles.introIx} variants={fadeUp}>
+                  <div className={styles.introIxNo}>{String(i + 1).padStart(2, "0")}</div>
                   <h3>{title}</h3>
                   <p>{desc}</p>
                 </motion.div>
