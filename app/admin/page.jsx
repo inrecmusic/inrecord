@@ -1434,7 +1434,7 @@ function CouponsPage({ showToast }){
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup} style={{flex:1}}>
-                  <label>綁定方案（選填）</label>
+                  <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
                   <select className={styles.selectInput} style={{width:"100%"}} value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}>
                     <option value="">不限方案</option>
                     <option value="course">鋼琴自學全課程</option>
@@ -1498,7 +1498,7 @@ function CouponsPage({ showToast }){
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup} style={{flex:1}}>
-                  <label>綁定方案（選填）</label>
+                  <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
                   <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.plan} onChange={e=>setBatchForm(p=>({...p,plan:e.target.value}))}>
                     <option value="">不限方案</option>
                     <option value="course">鋼琴自學全課程</option>

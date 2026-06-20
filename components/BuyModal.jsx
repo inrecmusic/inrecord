@@ -195,7 +195,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
             <input
               className={styles.couponInput}
               type="text"
-              placeholder="輸入優惠碼（選填）"
+              placeholder={onSale ? "輸入優惠碼（選填）" : "輸入序號兌換"}
               value={couponInput}
               disabled={!!couponApplied}
               onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(""); }}

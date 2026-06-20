@@ -565,7 +565,7 @@ export default function HomeClient({ sale }) {
                   <NotifyMeForm />
                   <p style={{ marginTop: 10, fontSize: 13, wordBreak: "keep-all", lineBreak: "strict" }}>
                     持有序號／優惠碼？
-                    <button onClick={() => startBuy(PLANS[1])}
+                    <button type="button" onClick={() => startBuy(PLANS[1])}
                       style={{ background: "none", border: 0, color: "#2563eb", fontWeight: 800, cursor: "pointer", textDecoration: "underline", padding: 0 }}>
                       點此兌換
                     </button>
