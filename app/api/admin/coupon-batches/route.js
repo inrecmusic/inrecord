@@ -32,7 +32,8 @@ export async function POST(req) {
 
   const body = await req.json();
   const name  = String(body.name || "").trim();
-  const type  = body.type === "fixed" ? "fixed" : "percent";
+  const type  = ["fixed", "price"].includes(body.type) ? body.type : "percent";
+  const plan  = ["course", "bundle"].includes(body.plan) ? body.plan : null;
   const value = Number(body.value);
   const prefix = String(body.prefix || "").trim().toUpperCase() || null;
   const note  = String(body.note || "").trim() || null;
@@ -71,14 +72,14 @@ export async function POST(req) {
 
   // 3) 寫入批次
   const { data: batch, error: bErr } = await supabase.from("coupon_batches")
-    .insert({ name, type, value: Math.round(value), prefix, note, starts_at, ends_at })
+    .insert({ name, type, value: Math.round(value), prefix, note, starts_at, ends_at, plan })
     .select().single();
   if (bErr) return NextResponse.json({ error: bErr.message }, { status: 500 });
 
   // 4) 寫入序號（usage_limit=1）
   const rows = wantCodes.map((code) => ({
     name, code, type, value: Math.round(value),
-    usage_limit: 1, status: "active", starts_at, ends_at, batch_id: batch.id,
+    usage_limit: 1, status: "active", starts_at, ends_at, batch_id: batch.id, plan,
   }));
   const { error: cErr } = await supabase.from("coupons").insert(rows);
   if (cErr) {
