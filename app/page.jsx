@@ -16,9 +16,14 @@ import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
 import PointCarousel from "@/components/PointCarousel";
+import Countdown from "@/components/Countdown";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
+
+// 早鳥第一波開賣日（台北時間）。今天 < 此日 = 預售倒數、暫不開放購買。
+// 開賣後的波段價格由「銷售自動化」backbone 提供（本區只負責 Hero 視覺）。
+const EARLY_BIRD_LAUNCH = "2026-07-08T00:00:00+08:00";
 
 const POINTS = [
   { n: 1, title: "零基礎也能輕鬆上手" },
@@ -475,37 +480,25 @@ export default function HomePage() {
       )}
 
       <main id="top">
-        {/* HERO */}
+        {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
+          <div className={styles.heroPhoto} aria-hidden="true" />
           <div className={styles.container + " " + styles.heroGrid}>
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
-              <motion.div variants={fadeUp} className={styles.eyebrow}>流行鋼琴零基礎入門課</motion.div>
               <motion.h1 variants={fadeUp}>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
-              <motion.div variants={fadeUp} className={styles.heroCtas}>
-                <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={openBuy}>立即購買課程</button>
-                <button className={styles.btnOutline} onClick={() => setPreviewOpen(true)}>
-                  <Play size={16} />觀看試看影片
-                </button>
+              <motion.div variants={fadeUp} className={styles.offerCard}>
+                <span className={styles.offerPill}>早鳥即將開賣 · 倒數 <Countdown target={EARLY_BIRD_LAUNCH} /></span>
+                <div className={styles.offerSoon}>早鳥 7/8 開賣</div>
+                <div className={styles.offerBtns}>
+                  <button className={styles.btnRed} disabled style={{ opacity: .55, cursor: "default" }}>早鳥 7/8 開賣</button>
+                  <button className={styles.btnOutline} onClick={() => setPreviewOpen(true)}>
+                    <Play size={16} />免費試看
+                  </button>
+                </div>
+                <div className={styles.offerGuard}><Check size={14} strokeWidth={3} />一次買斷 · 永久無限回看</div>
               </motion.div>
             </motion.div>
-
-            <motion.aside
-              className={styles.videoCard}
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className={styles.videoThumb} onClick={() => setPreviewOpen(true)} role="button" tabIndex={0}>
-                <div className={styles.play}><Play size={22} fill="currentColor" /></div>
-              </div>
-              <h3>課程介紹影片</h3>
-              <ul className={styles.checkList}>
-                {["10 章節完整課程","20+ 首流行歌曲實戰","AI 互動遊戲強化學習","無限次觀看，隨時學習"].map(i => (
-                  <li key={i}>{i}</li>
-                ))}
-              </ul>
-            </motion.aside>
           </div>
         </section>
 

@@ -28,16 +28,26 @@
 .btnLogin:hover { border-color: var(--brand); color: var(--brand); }
 
 /* HERO */
-.hero { position: relative; overflow: hidden; color: white; background: linear-gradient(90deg,rgba(0,0,0,.88),rgba(0,0,0,.70),rgba(0,0,0,.55)), url("/rick-hero.jpg"); background-size: cover; background-position: center 30%; padding: 80px 0 100px; }
-.heroGrid {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  grid-template-areas: "intro video";
-  gap: 0 48px;
-  align-items: center;
+.hero { position: relative; overflow: hidden; color: #fff; background: #07080d; padding: 0 0 80px; }
+.heroPhoto {
+  position: absolute; inset: 0 0 0 auto; width: 56%; z-index: 0;
+  background:
+    linear-gradient(90deg, #07080d 0%, rgba(7,8,13,.82) 26%, rgba(7,8,13,.14) 54%, transparent 74%),
+    var(--hero-photo, url("/hero-pianist.jpg"));
+  background-size: cover; background-position: center;
 }
-.heroIntro    { grid-area: intro; }
-.videoCard    { grid-area: video; align-self: center; }
+.heroGrid { position: relative; z-index: 1; display: block; }
+.heroIntro { max-width: 580px; padding: 92px 0 44px; }
+/* Hero 限時優惠卡 */
+.offerCard { margin-top: 36px; width: min(480px, 100%); border-radius: 22px; padding: 26px 30px;
+  background: linear-gradient(180deg, rgba(22,26,38,.92), rgba(13,16,26,.94));
+  border: 1px solid rgba(255,255,255,.10); box-shadow: 0 30px 70px rgba(0,0,0,.5); backdrop-filter: blur(8px); }
+.offerPill { display: inline-flex; align-items: center; gap: 8px; background: #d8b25a; color: #2a1d05;
+  font-size: 13px; font-weight: 800; padding: 7px 16px; border-radius: 999px; }
+.offerSoon { font-size: clamp(26px, 3vw, 32px); font-weight: 900; margin: 18px 0; letter-spacing: .01em; }
+.offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
+.offerGuard { display: flex; align-items: center; gap: 8px; margin-top: 18px; color: #aeb6c6; font-size: 14px; }
+.offerGuard svg { color: var(--brand-light); }
 .eyebrow { color: rgba(255,255,255,.6); font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
 .hero h1 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(44px,6vw,72px); line-height: 1.08; letter-spacing: .018em; margin: 0 0 22px; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
 .hero h1 span { color: var(--brand-light); }
@@ -222,7 +232,9 @@
 @media (max-width: 980px) {
   /* 手機/平板：改 flex 直向堆疊，徹底避免 grid 具名區域殘留造成的三區塊重疊 */
   .heroGrid { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
-  .heroIntro    { order: 1; grid-area: auto; padding-bottom: 24px; }
+  .heroPhoto    { width: 100%; opacity: .42; }
+  .heroIntro    { order: 1; grid-area: auto; max-width: 100%; padding: 60px 0 32px; }
+  .offerCard    { width: 100%; }
   .videoCard    { order: 2; grid-area: auto; margin: 0 0 24px; align-self: stretch; }
   .introGrid, .instructorGrid { grid-template-columns: 1fr; }
   .statsCard, .featureGrid { grid-template-columns: repeat(2,1fr); }
