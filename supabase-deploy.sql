@@ -109,13 +109,13 @@ CREATE INDEX IF NOT EXISTS coupons_batch_idx ON coupons (batch_id);
 
 -- ════════════════════════════════════════
 -- 銷售期間設定 sale_settings（單列）
--- 開課日/早鳥截止日/各方案價格/手動覆寫/開課通知冪等旗標
+-- 開課日/波段定價/手動覆寫/開課通知冪等旗標
 -- ════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS sale_settings (
   id                 TEXT PRIMARY KEY DEFAULT 'default',
   open_at            TIMESTAMPTZ,
-  early_bird_ends_at TIMESTAMPTZ,
-  plan_pricing       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  list_price         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  waves              JSONB NOT NULL DEFAULT '[]'::jsonb,
   lock_override      TEXT,
   launch_notified_at TIMESTAMPTZ,
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -136,3 +136,9 @@ CREATE POLICY "service_role_write_sale_settings" ON sale_settings
 DROP POLICY IF EXISTS "public_read_sale_settings" ON sale_settings;
 CREATE POLICY "public_read_sale_settings" ON sale_settings
   FOR SELECT USING (true);
+
+-- 遷移：既有 sale_settings 從單一早鳥 → 波段模型
+ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS list_price JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS waves      JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE sale_settings DROP COLUMN IF EXISTS plan_pricing;
+ALTER TABLE sale_settings DROP COLUMN IF EXISTS early_bird_ends_at;
