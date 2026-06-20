@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
-import { currentPrice, getSaleSettings } from "@/lib/sale";
+import { currentPrice, getSaleSettings, isOnSale } from "@/lib/sale";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 
@@ -45,6 +45,9 @@ export async function POST(req) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }
     const saleSettings = await getSaleSettings();
+    if (!isOnSale(saleSettings, new Date())) {
+      return NextResponse.json({ error: "not_on_sale" }, { status: 400 });
+    }
     let price = currentPrice(plan, saleSettings, new Date());
     const label = catalog.label;
 
