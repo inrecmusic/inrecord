@@ -30,7 +30,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email }) {
+export default function BuyModal({ open, onClose, plan, email, pricing }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -48,6 +48,11 @@ export default function BuyModal({ open, onClose, plan, email }) {
   useEffect(() => { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); }, [plan?.plan]);
 
   if (!open || !plan) return null;
+
+  // 早鳥/原價：由首頁 sale 設定傳入（pricing）；未傳入時退回方案靜態價。
+  const basePrice = pricing?.price ?? plan.price;          // 當下實收基準價（早鳥或原價），優惠券疊加於此
+  const listPrice = pricing?.originalPrice ?? plan.price;  // 原價（早鳥時顯示刪除線）
+  const earlyBird = !!pricing?.isEarlyBird;
 
   async function applyCouponCode() {
     const code = couponInput.trim().toUpperCase();
@@ -135,7 +140,7 @@ export default function BuyModal({ open, onClose, plan, email }) {
       const res = await fetch("/api/payuni/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: plan.plan, price: plan.price, label: plan.label, email, couponCode: couponApplied?.code || undefined, ...invoiceFields }),
+        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, couponCode: couponApplied?.code || undefined, ...invoiceFields }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "checkout_failed");
@@ -175,8 +180,11 @@ export default function BuyModal({ open, onClose, plan, email }) {
             </div>
             <div className={styles.price}>
               {couponApplied
-                ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(plan.price).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
-                : <>NT${Number(plan.price).toLocaleString()}</>}
+                ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
+                : earlyBird
+                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
+                  : <>NT${Number(basePrice).toLocaleString()}</>}
+              {earlyBird && !couponApplied && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
             </div>
           </div>
 

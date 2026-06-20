@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
+import { currentPrice, getSaleSettings } from "@/lib/sale";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 
@@ -43,7 +44,8 @@ export async function POST(req) {
     if (!email || typeof email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }
-    let price = catalog.price;
+    const saleSettings = await getSaleSettings();
+    let price = currentPrice(plan, saleSettings, new Date());
     const label = catalog.label;
 
     // 2.5) 優惠券：後端重新驗證、計算折後價，並對「限量券」原子預扣一次額度。

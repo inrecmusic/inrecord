@@ -13,17 +13,15 @@
 
 ## 🔑 B2 — 登入測試
 
-**前置**：因預售鎖站（`NEXT_PUBLIC_PRESALE_MODE=1`），登入後要進教室需先解鎖。
-解鎖方式：帶 `?preview=<PRESALE_BYPASS_TOKEN>` 進 `/classroom`，middleware 驗證後會種 7 天 cookie（`inrec_preview`）並導到乾淨網址。
-Token 值在 Vercel → Settings → Environment Variables（Production，加密），或 `npx vercel env pull` 取。
+**前置**：教室開放狀態由 `sale_settings` 表的 `open_at` / `lock_override` 決定（無須環境變數、無須重新部署）。測試時，在後台「銷售設定」tab 設定開課日 `open_at` 或手動設 `lock_override='open'` 來解鎖教室；測試完需改回 `lock_override='locked'` 或未來日期。
 
 | # | 步驟 | ✅ 應該看到 | 📸 出錯截這個 |
 |---|---|---|---|
 | B2-1 | 開 `inrecordmusic.com/classroom/login` | 登入頁：Google 登入鈕 + email/密碼欄 | 整頁 + Console |
 | B2-2 | 點 Google 登入 → 選帳號 | Google 同意畫面（App 名 InRecord）→ 授權後回站 | Google 那一頁 + 回站後網址列 |
 | B2-3 | 回站後狀態 | 已登入（右上顯示帳號/登出，或自動進流程） | 回站畫面 + Network `/auth` 有無 4xx/5xx |
-| B2-4 | 解鎖教室：開 `inrecordmusic.com/classroom?preview=<TOKEN>` | 網址列 `?preview=` 自動消失（種 cookie 後導乾淨網址），**不被導回首頁** | 仍被導回 `/` → 截網址列（多半 token 打錯） |
-| B2-5 | 直接再開 `inrecordmusic.com/classroom` | cookie 已種，能進教室（課程目錄／播放器） | 整頁 + Console |
+| B2-4 | 後台解鎖（若教室被鎖）：到 `/admin` 登入 → 「銷售設定」tab 設 `lock_override='open'` 儲存 | 設定存檔後 middleware cache 60s 內刷新，再訪 `/classroom` 應進得去 | 仍被導回首頁 → 檢查後台設定值、等 60s 重試 |
+| B2-5 | 直接開 `inrecordmusic.com/classroom` | 能進教室（課程目錄／播放器） | 整頁 + Console |
 | B2-6 | email 註冊/登入（另測一次） | email+密碼能登入；忘記密碼流程有寄信 | 登入失敗錯誤訊息 + Network |
 
 > ⚠️ 已知限制：Google「選擇帳戶」頁仍顯示 `supabase.co`——Supabase 限制、已決定維持現狀，**不算 bug**。
