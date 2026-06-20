@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
+import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/plans";
 import { currentPrice, getSaleSettings } from "@/lib/sale";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 
@@ -34,6 +34,9 @@ export async function POST(req) {
 
     const err = couponError(coupon);
     if (err) return NextResponse.json({ valid: false, error: err }, { status: 200 });
+
+    const pErr = couponPlanError(coupon, plan);
+    if (pErr) return NextResponse.json({ valid: false, error: pErr }, { status: 200 });
 
     // 基準價走 sale_settings（早鳥/原價），與 checkout 後端一致；前端顯示用，checkout 會再次後端驗證
     const settings = await getSaleSettings();

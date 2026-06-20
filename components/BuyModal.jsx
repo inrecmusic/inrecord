@@ -9,6 +9,7 @@ const COUPON_ERRORS = {
   coupon_not_started: "優惠碼尚未開始",
   coupon_expired:     "優惠碼已過期",
   coupon_used_up:     "優惠碼已達使用上限",
+  coupon_wrong_plan:  "此優惠碼不適用於此方案",
 };
 
 // checkout 失敗時對使用者顯示的友善文案（不洩露系統設定細節）
@@ -30,7 +31,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -179,12 +180,14 @@ export default function BuyModal({ open, onClose, plan, email, pricing }) {
               <span className={styles.desc}>{plan.desc}</span>
             </div>
             <div className={styles.price}>
-              {couponApplied
-                ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
-                : earlyBird
-                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
-                  : <>NT${Number(basePrice).toLocaleString()}</>}
-              {earlyBird && !couponApplied && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
+              {!onSale && !couponApplied
+                ? <span style={{ fontSize: 14, color: "#2563eb", fontWeight: 700, wordBreak: "keep-all", lineBreak: "strict" }}>輸入序號查看價格</span>
+                : couponApplied
+                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
+                  : earlyBird
+                    ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
+                    : <>NT${Number(basePrice).toLocaleString()}</>}
+              {earlyBird && !couponApplied && onSale && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
             </div>
           </div>
 
@@ -192,7 +195,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing }) {
             <input
               className={styles.couponInput}
               type="text"
-              placeholder="輸入優惠碼（選填）"
+              placeholder={onSale ? "輸入優惠碼（選填）" : "輸入序號兌換"}
               value={couponInput}
               disabled={!!couponApplied}
               onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(""); }}
@@ -283,8 +286,9 @@ export default function BuyModal({ open, onClose, plan, email, pricing }) {
         </div>
 
         <div className={styles.sheetFooter}>
-          <button className={styles.proceed} onClick={handleCheckout} disabled={loading || verifying}>
-            {loading ? "處理中…" : verifying ? "驗證中…" : "前往付款 →"}
+          <button className={styles.proceed} onClick={handleCheckout}
+            disabled={loading || verifying || (!onSale && couponApplied?.type !== "price")}>
+            {loading ? "處理中…" : verifying ? "驗證中…" : (!onSale && couponApplied?.type !== "price") ? "請先輸入有效序號" : "前往付款 →"}
           </button>
           {error && (
             <>

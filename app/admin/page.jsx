@@ -1054,7 +1054,7 @@ function CouponsPage({ showToast }){
   const [showCreate,setShowCreate]=useState(false);
   const [deleteId,setDeleteId]=useState(null);
   const [saving,setSaving]=useState(false);
-  const [form,setForm]=useState({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
+  const [form,setForm]=useState({name:"",code:"",type:"percent",value:"",plan:"",limit:"",start:"",end:""});
   const [formErr,setFormErr]=useState("");
 
   // ── 序號庫 ──
@@ -1063,7 +1063,7 @@ function CouponsPage({ showToast }){
   const [showBatchCreate,setShowBatchCreate]=useState(false);
   const [batchSaving,setBatchSaving]=useState(false);
   const [batchErr,setBatchErr]=useState("");
-  const [batchForm,setBatchForm]=useState({name:"",type:"percent",value:"",prefix:"",note:"",start:"",end:"",mode:"auto",quantity:"50",codes:""});
+  const [batchForm,setBatchForm]=useState({name:"",type:"percent",value:"",plan:"",prefix:"",note:"",start:"",end:"",mode:"auto",quantity:"50",codes:""});
   const [expandId,setExpandId]=useState(null);
   const [expandCodes,setExpandCodes]=useState([]);
   const [expandLoading,setExpandLoading]=useState(false);
@@ -1081,7 +1081,7 @@ function CouponsPage({ showToast }){
   },[]);
   useEffect(()=>{fetchBatches();},[fetchBatches]);
 
-  function discountLabel(b){return b.type==="percent"?`${b.value}% 折扣`:`折 NT$${b.value}`;}
+  function discountLabel(b){return b.type==="percent"?`${b.value}% 折扣`:b.type==="price"?`指定價 NT$${b.value}`:`折 NT$${b.value}`;}
 
   const shownBatches=batches.filter(b=>{
     if(!batchSearch.trim())return true;
@@ -1125,6 +1125,7 @@ function CouponsPage({ showToast }){
     try{
       const r=await _api("/api/admin/coupon-batches",{method:"POST",body:JSON.stringify({
         name:batchForm.name.trim(),type:batchForm.type,value:Number(batchForm.value),
+        plan:batchForm.plan||null,
         prefix:batchForm.prefix.trim()||null,note:batchForm.note.trim()||null,
         starts_at:batchForm.start||null,ends_at:batchForm.end||null,
         mode:batchForm.mode,
@@ -1141,7 +1142,7 @@ function CouponsPage({ showToast }){
       }
       showToast?.(`✅ 已建立批次，共 ${d.data.total} 組序號`);
       setShowBatchCreate(false);
-      setBatchForm({name:"",type:"percent",value:"",prefix:"",note:"",start:"",end:"",mode:"auto",quantity:"50",codes:""});
+      setBatchForm({name:"",type:"percent",value:"",plan:"",prefix:"",note:"",start:"",end:"",mode:"auto",quantity:"50",codes:""});
       fetchBatches();
     }catch(err){setBatchErr(err.message);}
     finally{setBatchSaving(false);}
@@ -1214,12 +1215,13 @@ function CouponsPage({ showToast }){
     try{
       const r=await _api("/api/admin/coupons",{method:"POST",body:JSON.stringify({
         name:form.name.trim(),code:form.code.trim().toUpperCase(),type:form.type,value:Number(form.value),
+        plan:form.plan||null,
         usage_limit:form.limit?Number(form.limit):null,starts_at:form.start||null,ends_at:form.end||null,
       })});
       const d=await r.json();
       if(!r.ok)throw new Error(d.error==="code_exists"?"優惠碼已存在，請換一個":d.error||"建立失敗");
       showToast?.("✅ 優惠券已建立");
-      setShowCreate(false);setForm({name:"",code:"",type:"percent",value:"",limit:"",start:"",end:""});
+      setShowCreate(false);setForm({name:"",code:"",type:"percent",value:"",plan:"",limit:"",start:"",end:""});
       fetchCoupons();
     }catch(err){setFormErr(err.message);}
     finally{setSaving(false);}
@@ -1275,8 +1277,8 @@ function CouponsPage({ showToast }){
                     </div>
                   </td>
                   <td>
-                    <span className={styles.discountBadge} style={{background:c.type==="percent"?"#eff6ff":"#fef3c7",color:c.type==="percent"?"#1d4ed8":"#92400e"}}>
-                      {c.type==="percent"?<><Percent size={11}/> {c.value}%</>:<>NT$ {c.value}</>}
+                    <span className={styles.discountBadge} style={{background:c.type==="percent"?"#eff6ff":c.type==="price"?"#dcfce7":"#fef3c7",color:c.type==="percent"?"#1d4ed8":c.type==="price"?"#166534":"#92400e"}}>
+                      {c.type==="percent"?<><Percent size={11}/> {c.value}%</>:c.type==="price"?<>指定價 NT${c.value}</>:<>NT$ {c.value}</>}
                     </span>
                   </td>
                   <td>
@@ -1329,8 +1331,8 @@ function CouponsPage({ showToast }){
                 <tr>
                   <td><strong>{b.name}</strong></td>
                   <td>
-                    <span className={styles.discountBadge} style={{background:b.type==="percent"?"#eff6ff":"#fef3c7",color:b.type==="percent"?"#1d4ed8":"#92400e"}}>
-                      {b.type==="percent"?<><Percent size={11}/> {b.value}%</>:<>NT$ {b.value}</>}
+                    <span className={styles.discountBadge} style={{background:b.type==="percent"?"#eff6ff":b.type==="price"?"#dcfce7":"#fef3c7",color:b.type==="percent"?"#1d4ed8":b.type==="price"?"#166534":"#92400e"}}>
+                      {b.type==="percent"?<><Percent size={11}/> {b.value}%</>:b.type==="price"?<>指定價 NT${b.value}</>:<>NT$ {b.value}</>}
                     </span>
                   </td>
                   <td>{(()=>{const[,label,bg,fg]=batchStatus(b);return<span className={styles.pill} style={{background:bg,color:fg,whiteSpace:"nowrap"}}>{label}</span>;})()}</td>
@@ -1422,11 +1424,22 @@ function CouponsPage({ showToast }){
                   <select className={styles.selectInput} style={{width:"100%"}} value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
                     <option value="percent">百分比折扣 (%)</option>
                     <option value="fixed">固定金額折扣 (NT$)</option>
+                    <option value="price">指定價</option>
                   </select>
                 </div>
                 <div className={styles.formGroup} style={{flex:1}}>
-                  <label>折扣值 * {form.type==="percent"?"(%)":"(NT$)"}</label>
+                  <label>折扣值 * {form.type==="percent"?"(%)":form.type==="price"?"成交價 NT$":"(NT$)"}</label>
                   <input className={styles.input} type="number" min="1" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))} placeholder={form.type==="percent"?"10":"300"}/>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup} style={{flex:1}}>
+                  <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
+                  <select className={styles.selectInput} style={{width:"100%"}} value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}>
+                    <option value="">不限方案</option>
+                    <option value="course">鋼琴自學全課程</option>
+                    <option value="bundle">學琴全攻略（課程包）</option>
+                  </select>
                 </div>
               </div>
               <div className={styles.formRow}>
@@ -1475,11 +1488,22 @@ function CouponsPage({ showToast }){
                   <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.type} onChange={e=>setBatchForm(p=>({...p,type:e.target.value}))}>
                     <option value="percent">百分比折扣 (%)</option>
                     <option value="fixed">固定金額折扣 (NT$)</option>
+                    <option value="price">指定價</option>
                   </select>
                 </div>
                 <div className={styles.formGroup} style={{flex:1}}>
-                  <label>折扣值 * {batchForm.type==="percent"?"(%)":"(NT$)"}</label>
+                  <label>折扣值 * {batchForm.type==="percent"?"(%)":batchForm.type==="price"?"成交價 NT$":"(NT$)"}</label>
                   <input className={styles.input} type="number" min="1" value={batchForm.value} onChange={e=>setBatchForm(p=>({...p,value:e.target.value}))} placeholder={batchForm.type==="percent"?"90":"500"}/>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup} style={{flex:1}}>
+                  <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
+                  <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.plan} onChange={e=>setBatchForm(p=>({...p,plan:e.target.value}))}>
+                    <option value="">不限方案</option>
+                    <option value="course">鋼琴自學全課程</option>
+                    <option value="bundle">學琴全攻略（課程包）</option>
+                  </select>
                 </div>
               </div>
               <div className={styles.formRow}>

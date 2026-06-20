@@ -563,6 +563,13 @@ export default function HomeClient({ sale }) {
                 <motion.div variants={fadeUp} style={{ marginTop: 12, wordBreak: "keep-all", lineBreak: "strict" }}>
                   {sale.salesStartAt && <Countdown to={sale.salesStartAt} prefix="早鳥開賣倒數 " style={{ fontWeight: 800, color: "#2563eb" }} />}
                   <NotifyMeForm />
+                  <p style={{ marginTop: 10, fontSize: 13, wordBreak: "keep-all", lineBreak: "strict" }}>
+                    持有序號／優惠碼？
+                    <button type="button" onClick={() => startBuy(PLANS[1])}
+                      style={{ background: "none", border: 0, color: "#2563eb", fontWeight: 800, cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                      點此兌換
+                    </button>
+                  </p>
                 </motion.div>
               )}
             </motion.div>
@@ -896,7 +903,7 @@ export default function HomeClient({ sale }) {
       </footer>
 
       <PreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} onSuccess={onPreviewSuccess} />
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} />
     </>
   );
 }

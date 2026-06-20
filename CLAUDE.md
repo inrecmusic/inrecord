@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS coupons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   code TEXT NOT NULL UNIQUE,              -- 大寫
-  type TEXT NOT NULL DEFAULT 'percent',   -- 'percent' | 'fixed'
-  value INTEGER NOT NULL,                 -- percent: 1-100；fixed: NT$
+  type TEXT NOT NULL DEFAULT 'percent',   -- 'percent' | 'fixed' | 'price'
+  value INTEGER NOT NULL,                 -- percent: 1-100；fixed: NT$；price: 成交價 NT$
   used INTEGER NOT NULL DEFAULT 0,        -- 付款成功才累計
   usage_limit INTEGER,                    -- NULL = 無限制
   status TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'disabled'
@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS coupons (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
+
+**指定價券（`type='price'`）**：`value` 為成交價，`applyCoupon` 回 `Math.max(0, Math.min(value, 基準價))`（基準價 = `currentPrice`，當下波段售價；不超過原價且不低於 0）；可加 `plan` 欄位鎖定方案（不符回 `coupon_wrong_plan`）。用於現場序號卡（$2,500）／粉絲序號（$3,499，皆 bundle）。checkout 對**有效指定價券繞過 `not_on_sale` 限制**（開賣前可兌換）；首頁 `pre_launch` 狀態有「輸入序號」兌換入口（`BuyModal` 未開賣模式）；後台優惠券／序號庫表單可建 `price` 型＋指定方案批次。`coupons` 表需加 `plan TEXT` 欄位（`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS plan TEXT`）。
 
 ### 優惠序號庫（coupon_batches）
 

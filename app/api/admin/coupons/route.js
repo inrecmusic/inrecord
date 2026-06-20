@@ -25,7 +25,8 @@ export async function POST(req) {
   const body = await req.json();
   const name  = String(body.name || "").trim();
   const code  = String(body.code || "").trim().toUpperCase();
-  const type  = body.type === "fixed" ? "fixed" : "percent";
+  const type  = ["fixed", "price"].includes(body.type) ? body.type : "percent";
+  const plan  = ["course", "bundle"].includes(body.plan) ? body.plan : null;
   const value = Number(body.value);
 
   if (!name) return NextResponse.json({ error: "missing_name" }, { status: 400 });
@@ -42,6 +43,7 @@ export async function POST(req) {
     starts_at: body.starts_at || null,
     ends_at:   body.ends_at || null,
     status:    "active",
+    plan,
   }).select().single();
 
   if (error) {
@@ -61,7 +63,7 @@ export async function PATCH(req) {
 
   // 僅允許更新白名單欄位
   const allowed = {};
-  for (const k of ["name", "type", "value", "usage_limit", "starts_at", "ends_at", "status"]) {
+  for (const k of ["name", "type", "value", "usage_limit", "starts_at", "ends_at", "status", "plan"]) {
     if (k in fields) allowed[k] = fields[k];
   }
 
