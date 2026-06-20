@@ -2,12 +2,18 @@
 import { useEffect, useState } from "react";
 
 // 顯示到 target（ISO）的倒數；過期回 null（不顯示）
+// 超過 1 天時每分鐘 tick 一次（僅顯示天/時），1 天內每秒 tick 一次。
 export default function Countdown({ to, prefix = "", style }) {
   const [now, setNow] = useState(() => Date.now());
+  // 當剩餘 >1 天時標記 true，用於切換 interval 頻率
+  const multiDay = to ? new Date(to).getTime() - now > 86400000 : false;
+
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    if (!to) return;
+    const id = setInterval(() => setNow(Date.now()), multiDay ? 60000 : 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [to, multiDay]);
+
   if (!to) return null;
   const diff = new Date(to).getTime() - now;
   if (diff <= 0) return null;

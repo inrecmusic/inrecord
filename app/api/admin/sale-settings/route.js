@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { PLAN_CATALOG } from "@/lib/plans";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -55,6 +56,18 @@ export async function PATCH(req) {
         if (prices[k] != null && (!Number.isInteger(prices[k]) || prices[k] < 0)) {
           return NextResponse.json({ error: `invalid_wave_${i}_price_${k}` }, { status: 400 });
         }
+      }
+      for (const plan of Object.keys(PLAN_CATALOG)) {
+        if (!Number.isInteger(prices[plan]) || prices[plan] < 0) {
+          return NextResponse.json({ error: `invalid_wave_${i}_missing_${plan}` }, { status: 400 });
+        }
+      }
+    }
+    // reject overlapping waves
+    const sorted = [...waves].sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
+    for (let i = 1; i < sorted.length; i++) {
+      if (Date.parse(sorted[i].starts_at) < Date.parse(sorted[i - 1].ends_at)) {
+        return NextResponse.json({ error: "waves_overlap" }, { status: 400 });
       }
     }
     patch.waves = waves;
