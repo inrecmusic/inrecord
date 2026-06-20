@@ -1,6 +1,5 @@
 import HomeClient from "./HomeClient";
-import { getSaleSettings, salePhase, currentPrice } from "@/lib/sale";
-import { PLAN_CATALOG } from "@/lib/plans";
+import { getSaleSettings, salePhase } from "@/lib/sale";
 
 export const revalidate = 60;
 
@@ -9,19 +8,13 @@ export default async function Page() {
   const settings = await getSaleSettings();
   const phase = salePhase(settings, now);
 
-  const plans = {};
-  for (const key of Object.keys(PLAN_CATALOG)) {
-    const price = currentPrice(key, settings, now);
-    const original = settings?.plan_pricing?.[key]?.original ?? PLAN_CATALOG[key].price;
-    plans[key] = { price, originalPrice: original, isEarlyBird: phase.earlyBird && price < original };
-  }
-
   const sale = {
+    state: phase.state,
+    onSale: phase.onSale,
     classroomOpen: phase.classroomOpen,
-    earlyBird: phase.earlyBird,
-    openAt: settings?.open_at ?? null,
-    earlyBirdEndsAt: settings?.early_bird_ends_at ?? null,
-    plans,
+    salesStartAt: phase.salesStartAt,
+    nextIncreaseAt: phase.nextIncreaseAt,
+    plans: phase.plans,
   };
 
   // 開課通知 lazy trigger（免費方案無 sub-daily cron）：開課後首位訪客觸發，CAS 去重。

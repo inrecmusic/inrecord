@@ -15,6 +15,7 @@ import {
 import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
+import Countdown from "@/components/Countdown";
 import PointCarousel from "@/components/PointCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
@@ -319,7 +320,6 @@ const PLANS = [
     price: 3800,
     desc: "10 章節完整課程，一次買斷、永久觀看。",
     features: ["10 章節系統化課程", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
-    cta: "購買課程",
   },
   {
     plan: "bundle",
@@ -330,7 +330,6 @@ const PLANS = [
     features: ["完整 10 章節課程", "全部 AI 互動遊戲永久使用", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
     featured: true,
     ribbon: "最推薦",
-    cta: "購買課程包",
   },
 ];
 
@@ -411,6 +410,29 @@ function StatItem({ icon: Icon, value, suffix, label }) {
   );
 }
 
+function NotifyMeForm() {
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState("");
+  const submit = async () => {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr("請輸入正確 Email"); return; }
+    setErr("");
+    try {
+      const r = await fetch("/api/brevo/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+      if (r.ok) setDone(true); else setErr("訂閱失敗，請稍後再試");
+    } catch { setErr("訂閱失敗，請稍後再試"); }
+  };
+  if (done) return <p style={{ marginTop: 8, color: "#16a34a", fontWeight: 700, wordBreak: "keep-all", lineBreak: "strict" }}>✅ 開賣會 Email 通知你！</p>;
+  return (
+    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <input type="email" value={email} placeholder="留 Email，開賣通知我" onChange={(e) => setEmail(e.target.value)}
+        style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14 }} />
+      <button onClick={submit} style={{ background: "#2563eb", color: "#fff", border: 0, borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", wordBreak: "keep-all", lineBreak: "strict" }}>通知我</button>
+      {err && <span style={{ color: "#dc2626", fontSize: 13, wordBreak: "keep-all", lineBreak: "strict" }}>{err}</span>}
+    </div>
+  );
+}
+
 export default function HomeClient({ sale }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -473,6 +495,10 @@ export default function HomeClient({ sale }) {
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = !sale.classroomOpen;
 
+  // 購買鈕三態文案：開賣前 → 即將開賣；波段 → 立即預購；牌價（教室已開）→ 立即購買
+  const buyLabel = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買課程" : "立即預購課程");
+  const buyShort = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買" : "立即預購");
+
   return (
     <>
       {/* NAV */}
@@ -491,7 +517,7 @@ export default function HomeClient({ sale }) {
                 ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
                 : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
             : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => startBuy(PLANS[1])}>{sale.classroomOpen ? "立即購買課程" : "立即預購課程"}</button>
+          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>{buyLabel}</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -528,11 +554,17 @@ export default function HomeClient({ sale }) {
               <motion.h1 variants={fadeUp}>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.heroCtas}>
-                <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={openBuy}>{sale.classroomOpen ? "立即購買課程" : "立即預購課程"}</button>
+                <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={openBuy} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>{buyLabel}</button>
                 <button className={styles.btnOutline} onClick={() => setPreviewOpen(true)}>
                   <Play size={16} />觀看試看影片
                 </button>
               </motion.div>
+              {!sale.onSale && (
+                <motion.div variants={fadeUp} style={{ marginTop: 12, wordBreak: "keep-all", lineBreak: "strict" }}>
+                  {sale.salesStartAt && <Countdown to={sale.salesStartAt} prefix="早鳥開賣倒數 " style={{ fontWeight: 800, color: "#2563eb" }} />}
+                  <NotifyMeForm />
+                </motion.div>
+              )}
             </motion.div>
 
             <motion.aside
@@ -734,18 +766,29 @@ export default function HomeClient({ sale }) {
                   </div>
                   <h3 className={styles.planName}>{p.label}</h3>
                   <div className={styles.planPriceBlock}>
-                    <div className={styles.planPriceRow}>
-                      <span className={styles.planCurrency}>NT$</span>
-                      <span className={styles.planPrice}>{sale.plans[p.plan].price.toLocaleString()}</span>
-                      <span className={styles.planUnit}>／永久</span>
-                    </div>
-                    {sale.plans[p.plan].isEarlyBird && (
-                      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700, wordBreak: "keep-all" }}>
-                        <span style={{ textDecoration: "line-through", color: "#94a3b8", marginRight: 8 }}>
-                          NT${sale.plans[p.plan].originalPrice.toLocaleString()}
-                        </span>
-                        <span style={{ color: "#D4192C" }}>早鳥優惠</span>
+                    {sale.state === "pre_launch" ? (
+                      <div className={styles.planPriceRow} style={{ fontWeight: 800, color: "#2563eb", wordBreak: "keep-all", lineBreak: "strict" }}>
+                        即將開賣
                       </div>
+                    ) : (
+                      <>
+                        <div className={styles.planPriceRow}>
+                          <span className={styles.planCurrency}>NT$</span>
+                          <span className={styles.planPrice}>{sale.plans[p.plan].price.toLocaleString()}</span>
+                          <span className={styles.planUnit}>／永久</span>
+                        </div>
+                        {sale.plans[p.plan].isEarlyBird && (
+                          <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700, wordBreak: "keep-all", lineBreak: "strict" }}>
+                            <span style={{ textDecoration: "line-through", color: "#94a3b8", marginRight: 8 }}>
+                              NT${sale.plans[p.plan].originalPrice.toLocaleString()}
+                            </span>
+                            <span style={{ color: "#D4192C" }}>早鳥優惠</span>
+                            {sale.nextIncreaseAt && (
+                              <Countdown to={sale.nextIncreaseAt} prefix="・漲價倒數 " style={{ color: "#D4192C", marginLeft: 4 }} />
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   <p className={styles.planDesc}>{p.desc}</p>
@@ -757,9 +800,13 @@ export default function HomeClient({ sale }) {
                   <button
                     className={`${styles.planBtn} ${p.featured ? styles.planBtnFeatured : ""}`}
                     onClick={() => startBuy(p)}
+                    disabled={!sale.onSale}
+                    style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}
                   >
                     <ShoppingCart size={17} />
-                    {`${p.cta}　NT$${sale.plans[p.plan].price.toLocaleString()}`}
+                    {!sale.onSale
+                      ? "即將開賣"
+                      : `${sale.classroomOpen ? "立即購買" : "立即預購"}　NT$${sale.plans[p.plan].price.toLocaleString()}`}
                   </button>
                 </motion.div>
               ))}
@@ -804,8 +851,8 @@ export default function HomeClient({ sale }) {
             <div className={styles.cta}>
               <h2>現在開始，彈出你的第一首流行歌曲</h2>
               <p>從零基礎開始，透過系統化課程與 AI 互動遊戲，建立真正彈得出來的鋼琴能力。</p>
-              <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
-                {sale.classroomOpen ? "立即購買課程" : "立即預購課程"}
+              <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>
+                {buyLabel}
               </button>
             </div>
           </div>
@@ -814,11 +861,11 @@ export default function HomeClient({ sale }) {
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>
         <div className={styles.stickyBuyInfo}>
-          <span className={styles.stickyBuyPrice}>NT${sale.plans.bundle.price.toLocaleString()}</span>
+          <span className={styles.stickyBuyPrice} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>{!sale.onSale ? "即將開賣" : `NT$${sale.plans.bundle.price.toLocaleString()}`}</span>
           <span className={styles.stickyBuyLabel}>學琴全攻略</span>
         </div>
-        <button className={styles.stickyBuyBtn} onClick={() => startBuy(PLANS[1])}>
-          <ShoppingCart size={17} />{sale.classroomOpen ? "立即購買" : "立即預購"}
+        <button className={styles.stickyBuyBtn} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>
+          <ShoppingCart size={17} />{buyShort}
         </button>
       </div>
 

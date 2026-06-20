@@ -11,7 +11,7 @@ const PLANS = [
   { key: "bundle", label: "學琴全攻略（課程包）" },
 ];
 
-const EMPTY_SETTINGS = { open_at: null, early_bird_ends_at: null, plan_pricing: {}, lock_override: null, launch_notified_at: null };
+const EMPTY_SETTINGS = { open_at: null, lock_override: null, launch_notified_at: null, list_price: {}, waves: [] };
 
 // timestamptz <-> <input type="datetime-local">（以瀏覽器本地時區即台灣時間呈現）
 function toLocalInput(iso) {
@@ -37,10 +37,10 @@ export default function SaleSettingsPage({ showToast }) {
 
   if (loading || !s) return <div style={{ padding: 24 }}>載入中…</div>;
 
-  const setPrice = (plan, field, val) => {
-    const v = val === "" ? null : Number(val);
-    setS((prev) => ({ ...prev, plan_pricing: { ...prev.plan_pricing, [plan]: { ...(prev.plan_pricing?.[plan] || {}), [field]: v } } }));
-  };
+  const setWave = (i, key, val) =>
+    setS((prev) => ({ ...prev, waves: prev.waves.map((w, j) => (j === i ? { ...w, [key]: val } : w)) }));
+  const setWavePrice = (i, plan, val) =>
+    setS((prev) => ({ ...prev, waves: prev.waves.map((w, j) => (j === i ? { ...w, prices: { ...(w.prices || {}), [plan]: val === "" ? null : Number(val) } } : w)) }));
 
   const save = async () => {
     setSaving(true);
@@ -48,8 +48,8 @@ export default function SaleSettingsPage({ showToast }) {
       const res = await adminFetch("/api/admin/sale-settings", {
         method: "PATCH",
         body: JSON.stringify({
-          open_at: s.open_at, early_bird_ends_at: s.early_bird_ends_at,
-          plan_pricing: s.plan_pricing, lock_override: s.lock_override,
+          open_at: s.open_at, lock_override: s.lock_override,
+          list_price: s.list_price || {}, waves: s.waves || [],
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -78,22 +78,44 @@ export default function SaleSettingsPage({ showToast }) {
           onChange={(e) => setS({ ...s, open_at: fromLocalInput(e.target.value) })} />
       </label>
 
-      <label style={field}>早鳥截止日（之後恢復原價）
-        <br /><input type="datetime-local" style={input} value={toLocalInput(s.early_bird_ends_at)}
-          onChange={(e) => setS({ ...s, early_bird_ends_at: fromLocalInput(e.target.value) })} />
-      </label>
+      <div style={{ ...field, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10 }}>
+        <strong>正式牌價（NT$，刪除線錨點＋波段後常態價）</strong><br />
+        {PLANS.map((p) => (
+          <span key={p.key} style={{ marginRight: 16, display: "inline-block" }}>
+            {p.label}：<input type="number" min="0" style={input}
+              value={s.list_price?.[p.key] ?? ""}
+              onChange={(e) => setS((prev) => ({ ...prev, list_price: { ...prev.list_price, [p.key]: e.target.value === "" ? null : Number(e.target.value) } }))} />
+          </span>
+        ))}
+      </div>
 
-      {PLANS.map((p) => (
-        <div key={p.key} style={{ ...field, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10 }}>
-          <strong>{p.label}</strong><br />
-          <span>原價 NT$ </span>
-          <input type="number" min="0" style={input} value={s.plan_pricing?.[p.key]?.original ?? ""}
-            onChange={(e) => setPrice(p.key, "original", e.target.value)} />
-          <span style={{ marginLeft: 12 }}>早鳥價 NT$ </span>
-          <input type="number" min="0" style={input} value={s.plan_pricing?.[p.key]?.earlyBird ?? ""}
-            onChange={(e) => setPrice(p.key, "earlyBird", e.target.value)} />
-        </div>
-      ))}
+      <div style={field}>
+        <strong>早鳥波段（依時間自動切換；起含、迄不含）</strong>
+        {(s.waves || []).map((w, i) => (
+          <div key={i} style={{ padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, marginTop: 8 }}>
+            <div style={{ marginBottom: 6 }}>第 {i + 1} 波
+              <button onClick={() => setS((prev) => ({ ...prev, waves: prev.waves.filter((_, j) => j !== i) }))}
+                style={{ marginLeft: 10, color: "#dc2626", border: 0, background: "none", cursor: "pointer" }}>刪除</button>
+            </div>
+            <label style={{ marginRight: 12 }}>起 <input type="datetime-local" style={input}
+              value={toLocalInput(w.starts_at)}
+              onChange={(e) => setWave(i, "starts_at", fromLocalInput(e.target.value))} /></label>
+            <label style={{ marginRight: 12 }}>迄 <input type="datetime-local" style={input}
+              value={toLocalInput(w.ends_at)}
+              onChange={(e) => setWave(i, "ends_at", fromLocalInput(e.target.value))} /></label>
+            <br />
+            {PLANS.map((p) => (
+              <span key={p.key} style={{ marginRight: 16, display: "inline-block", marginTop: 6 }}>
+                {p.label} NT$ <input type="number" min="0" style={input}
+                  value={w.prices?.[p.key] ?? ""}
+                  onChange={(e) => setWavePrice(i, p.key, e.target.value)} />
+              </span>
+            ))}
+          </div>
+        ))}
+        <button onClick={() => setS((prev) => ({ ...prev, waves: [...(prev.waves || []), { starts_at: null, ends_at: null, prices: {} }] }))}
+          style={{ marginTop: 10, border: "1px solid #cbd5e1", background: "#f8fafc", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>＋ 新增波段</button>
+      </div>
 
       <label style={field}>手動覆寫
         <br />
