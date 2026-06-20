@@ -41,11 +41,12 @@ CREATE TABLE IF NOT EXISTS coupons (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT NOT NULL,
   code        TEXT NOT NULL UNIQUE,            -- 優惠碼（大寫）
-  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed'
-  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$
+  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed' | 'price'
+  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$；price: 指定成交價 NT$
   used        INTEGER NOT NULL DEFAULT 0,      -- 已使用次數（付款成功才累計）
   usage_limit INTEGER,                         -- NULL = 無限制
   status      TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'disabled'
+  plan        TEXT,                            -- 鎖定方案 'course'|'bundle'；NULL = 不限
   starts_at   DATE,                            -- NULL = 不限開始
   ends_at     DATE,                            -- NULL = 不限結束
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -90,10 +91,11 @@ WHERE NOT EXISTS (SELECT 1 FROM courses);
 CREATE TABLE IF NOT EXISTS coupon_batches (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT NOT NULL,                   -- 例：2026 春季演奏會
-  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed'
-  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$
+  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed' | 'price'
+  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$；price: 指定成交價 NT$
   prefix      TEXT,                            -- 序號前綴，例 LIVE
   note        TEXT,                            -- 活動備註
+  plan        TEXT,                            -- 鎖定方案 'course'|'bundle'；NULL = 不限
   starts_at   DATE,
   ends_at     DATE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -142,3 +144,7 @@ ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS list_price JSONB NOT NULL DEF
 ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS waves      JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE sale_settings DROP COLUMN IF EXISTS plan_pricing;
 ALTER TABLE sale_settings DROP COLUMN IF EXISTS early_bird_ends_at;
+
+-- 遷移：指定價通路（Sub-2）
+ALTER TABLE coupons        ADD COLUMN IF NOT EXISTS plan TEXT;
+ALTER TABLE coupon_batches ADD COLUMN IF NOT EXISTS plan TEXT;
