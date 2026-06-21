@@ -1,0 +1,43 @@
+.page { min-height: 100vh; display: flex; flex-direction: column; background: #fff; color: #0f172a; }
+
+/* 頂部列 */
+.bar { display: flex; align-items: center; justify-content: space-between; padding: 13px 18px; background: #fff; border-bottom: 1px solid #eef1f5; }
+.logo { font-weight: 800; font-size: 17px; letter-spacing: .3px; }
+.logo span { color: #2563eb; }
+.barRight { display: flex; align-items: center; gap: 14px; }
+.timer { display: inline-flex; align-items: center; gap: 2px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 700; font-size: 14px; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 12px; }
+.timerEnded { color: #94a3b8; background: #f1f5f9; border-color: #e2e8f0; }
+.cursor { animation: blink 1.05s steps(1) infinite; }
+.timerEnded .cursor { display: none; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* CTA 按鈕（藍實心） */
+.ctaBtn { background: #2563eb; color: #fff; border: none; border-radius: 9px; padding: 10px 20px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; box-shadow: 0 2px 8px rgba(37,99,235,.28); white-space: nowrap; }
+.ctaBtn:hover { background: #1d4ed8; }
+.ctaDisabled { background: #e2e8f0 !important; color: #94a3b8 !important; box-shadow: none !important; cursor: not-allowed; pointer-events: none; }
+
+/* 遊戲區 */
+.stage { position: relative; flex: 1; background: #f8fafc; display: flex; }
+.tag { position: absolute; top: 12px; left: 16px; z-index: 2; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #94a3b8; pointer-events: none; }
+.game { flex: 1; width: 100%; border: 0; background: transparent; }
+.gameLocked { filter: blur(6px); pointer-events: none; }
+
+/* 結束遮罩 + pop up */
+.overlay { position: absolute; inset: 0; background: rgba(248,250,252,.6); display: grid; place-items: center; z-index: 3; }
+.popup { width: min(340px, 90vw); background: #fff; border: 1px solid #e6eaf0; border-radius: 16px; padding: 26px 22px; text-align: center; box-shadow: 0 24px 60px rgba(15,23,42,.18); }
+.popupTag { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #2563eb; margin-bottom: 10px; }
+.popupTitle { font-size: 19px; font-weight: 800; margin-bottom: 8px; }
+.popupBody { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 20px; }
+.popupCta { display: block; width: 100%; background: #2563eb; color: #fff; border: none; border-radius: 11px; padding: 13px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; box-shadow: 0 4px 14px rgba(37,99,235,.32); margin-bottom: 9px; }
+.popupCta:hover { background: #1d4ed8; }
+.replayBtn { width: 100%; background: #fff; color: #475569; border: 1px solid #e2e8f0; border-radius: 11px; padding: 11px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.replayBtn:hover { border-color: #cbd5e1; }
+
+/* 底部 */
+.foot { padding: 12px 18px; background: #fff; border-top: 1px solid #eef1f5; text-align: center; color: #64748b; font-size: 13px; }
+.foot b { color: #2563eb; }
+
+@media (max-width: 560px) {
+  .bar { flex-wrap: wrap; gap: 10px; }
+  .ctaBtn { padding: 9px 16px; }
+}
