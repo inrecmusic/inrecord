@@ -1,4 +1,4 @@
-import { Cormorant_Garamond, Noto_Serif_TC, Inter, Noto_Sans_TC } from "next/font/google";
+import { Cormorant_Garamond, Noto_Serif_TC, Inter, Noto_Sans_TC, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 // v3 Two-tier type system —
@@ -25,7 +25,7 @@ const notoSerif = Noto_Serif_TC({
 // Layer 2 · Content — Latin sans + numerals
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
   variable: "--font-inter",
 });
@@ -36,6 +36,14 @@ const notoSans = Noto_Sans_TC({
   weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-noto-sans",
+});
+
+// 技術標籤 — JetBrains Mono（金色膠囊標籤、導覽小字）
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  display: "swap",
+  variable: "--font-jetbrains",
 });
 
 export const metadata = {
@@ -52,7 +60,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="zh-Hant"
-      className={`${cormorant.variable} ${notoSerif.variable} ${inter.variable} ${notoSans.variable}`}
+      className={`${cormorant.variable} ${notoSerif.variable} ${inter.variable} ${notoSans.variable} ${jetbrains.variable}`}
     >
       <body>{children}</body>
     </html>

@@ -90,15 +90,17 @@
 }
 
 @media (max-width: 760px) {
-  .viewport { height: 660px; }
+  /* 平板：鍵盤 aspect-ratio 隨寬度放高，需較高卡片避免裁切 */
+  .viewport { height: 620px; }
 }
 @media (max-width: 640px) {
   /* swipe + dots cover navigation; arrows would overlap the keyboard keys */
   .arrow { display: none; }
   .dots { margin-top: 16px; }
 }
-@media (max-width: 420px) {
-  .viewport { height: 600px; }
+@media (max-width: 560px) {
+  /* 所有手機：鍵盤被壓到 min-height 175，內容約 430–480px，540 足夠且置中後留白平均 */
+  .viewport { height: 540px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

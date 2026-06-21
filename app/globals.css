@@ -133,3 +133,10 @@ a, button, summary, [role="button"] { -webkit-tap-highlight-color: transparent; 
   width: min(var(--container-max), calc(100% - var(--container-pad) * 2));
   margin-inline: auto;
 }
+
+/* 高音譜記號自訂游標啟用時隱藏全站原生游標。
+   .music-cursor class 由首頁掛載時加到 <html>，離開首頁即移除，不影響其他頁。 */
+.music-cursor, .music-cursor * { cursor: none !important; }
+@media (hover: none) {
+  .music-cursor, .music-cursor * { cursor: auto !important; }
+}

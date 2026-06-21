@@ -142,10 +142,12 @@
 
 /* ── Mobile: stack info over visual ───────────────── */
 @media (max-width: 760px) {
+  .slide { padding: 20px 22px; }        /* 收緊內距 */
   .body {
     flex-direction: column;
     align-items: stretch;
-    gap: 22px;
+    justify-content: center;            /* 內容垂直置中，多的留白平均分到上下當頁邊 */
+    gap: 18px;                          /* 22 → 18 */
   }
   .info,
   .visual {
@@ -153,13 +155,18 @@
     max-width: 100%;
     width: 100%;
   }
+  .visual { gap: 12px; }                /* 16 → 12 */
+  .underline { margin: 13px 0; }        /* 18 → 13 */
   .ghostNum {
-    font-size: 96px;
-    top: -22px;
+    font-size: 88px;
+    top: -18px;
   }
   .divider {
     display: none;
   }
+  /* 照片改固定高度上限：原 aspect-ratio 在寬一點的手機會被放到 200px+，
+     是 Point 區塊過高的主因。字級維持不動。 */
+  .photoWrap { aspect-ratio: auto; height: clamp(128px, 32vw, 165px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

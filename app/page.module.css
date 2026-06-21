@@ -1,7 +1,17 @@
 .container { width: min(1120px, calc(100% - 44px)); margin: 0 auto; }
 
 /* NAV */
-.nav { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+.nav { position: sticky; top: 0; z-index: 50; transition: background .35s ease, border-color .35s ease, box-shadow .35s ease; }
+.navSolid { background: rgba(255,255,255,.96); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+.navTransparent { background: linear-gradient(180deg, rgba(5,7,11,.78), rgba(5,7,11,0)); border-bottom: 0; }
+.navTransparent .navLinks a { color: rgba(255,255,255,.9); }
+.navTransparent .navLinks a:hover { color: #fff; }
+.navTransparent .hamburger { color: #fff; }
+/* nav buttons → pills (two-class specificity beats .btnRed/.btnLogin) */
+.btnLogin.navBtn, .btnRed.navBtn { border-radius: 999px; padding-left: 20px; padding-right: 20px; font-size: 17px; }
+.btnRed.navBtn { background: #2c68e7; }
+.navTransparent .btnLogin { background: transparent; border-color: rgba(255,255,255,.5); color: #fff; }
+.navTransparent .btnLogin:hover { border-color: #fff; background: rgba(255,255,255,.12); color: #fff; }
 .navInner { height: 72px; display: flex; align-items: center; gap: 24px; }
 .navLinks { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; margin-left: auto; }
 .navLinks a { color: #374151; transition: color .2s; text-decoration: none; }
@@ -28,30 +38,40 @@
 .btnLogin:hover { border-color: var(--brand); color: var(--brand); }
 
 /* HERO */
-.hero { position: relative; overflow: hidden; color: #fff; background: #07080d; padding: 0 0 80px; }
+.hero { position: relative; overflow: hidden; color: #fff; background: #05070b; padding: 0 0 80px; margin-top: -72px; }
 .heroPhoto {
-  position: absolute; inset: 0 0 0 auto; width: 56%; z-index: 0;
+  /* 寬螢幕收斂：照片寬度上限 760px、右緣對齊置中構圖（避免被拉寬變矮裁到人物） */
+  position: absolute; top: 0; bottom: 0;
+  right: max(0px, calc((100% - 1440px) / 2)); width: min(56%, 760px); z-index: 0;
   background:
+    radial-gradient(54% 64% at 26% 48%, rgba(59,110,246,.30), transparent 62%),
     linear-gradient(90deg, #07080d 0%, rgba(7,8,13,.82) 26%, rgba(7,8,13,.14) 54%, transparent 74%),
     var(--hero-photo, url("/hero-pianist.jpg"));
   background-size: cover; background-position: center;
+  background-blend-mode: screen, normal, normal;
 }
-.heroGrid { position: relative; z-index: 1; display: block; }
-.heroIntro { max-width: 580px; padding: 92px 0 44px; }
+.heroGrid { position: relative; z-index: 1; display: block; padding: 0 0 0 max(clamp(32px, 13vw, 260px), calc((100% - 1440px) / 2)); }
+.heroIntro { max-width: 640px; padding: 150px 0 56px; }
 /* Hero 限時優惠卡 */
 .offerCard { margin-top: 36px; width: min(480px, 100%); border-radius: 22px; padding: 26px 30px;
-  background: linear-gradient(180deg, rgba(22,26,38,.92), rgba(13,16,26,.94));
-  border: 1px solid rgba(255,255,255,.10); box-shadow: 0 30px 70px rgba(0,0,0,.5); backdrop-filter: blur(8px); }
-.offerPill { display: inline-flex; align-items: center; gap: 8px; background: #d8b25a; color: #2a1d05;
-  font-size: 13px; font-weight: 800; padding: 7px 16px; border-radius: 999px; }
-.offerSoon { font-size: clamp(26px, 3vw, 32px); font-weight: 900; margin: 18px 0; letter-spacing: .01em; }
+  background: rgba(18,28,52,.45);
+  border: 1px solid rgba(120,160,255,.22); box-shadow: 0 30px 70px rgba(0,0,0,.5); backdrop-filter: blur(14px); }
+.offerPill { display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(95deg, #f5d488, #ecbf5c 55%, #d9a13a); color: #3a2a08;
+  font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: 13px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase; padding: 7px 16px; border-radius: 999px; }
+.offerPriceRow { display: flex; align-items: baseline; gap: 14px; margin: 18px 0 20px; }
+.offerPrice { font-family: var(--font-inter), sans-serif; font-size: 46px; font-weight: 800; letter-spacing: -.01em; color: #fff; line-height: 1; }
+.offerWas { font-family: var(--font-inter), sans-serif; font-size: 22px; font-weight: 500; color: rgba(255,255,255,.45); text-decoration: line-through; }
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
-.offerGuard { display: flex; align-items: center; gap: 8px; margin-top: 18px; color: #aeb6c6; font-size: 14px; }
-.offerGuard svg { color: var(--brand-light); }
+.offerBtns .btnRed { flex: 1; justify-content: center; padding: 15px 22px; font-size: 18px; font-weight: 600; background: #2c68e7; }
+.offerBtns .btnOutline { font-size: 17px; }
+.offerGuard { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; color: rgba(255,255,255,.62); font-size: 15px; }
+.offerGuard svg { width: 18px; height: 18px; padding: 2px; border-radius: 5px; background: #2c68e7; color: #fff; flex-shrink: 0; }
 .eyebrow { color: rgba(255,255,255,.6); font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
-.hero h1 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(44px,6vw,72px); line-height: 1.08; letter-spacing: .018em; margin: 0 0 22px; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
-.hero h1 span { color: var(--brand-light); }
-.heroLead { text-wrap: pretty; font-size: 20px; color: rgba(255,255,255,.88); max-width: 560px; margin: 0 0 34px; font-weight: 400; line-height: 1.7; }
+.hero h1 { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 600; text-wrap: balance; font-size: clamp(40px,4.9vw,70px); line-height: 1.14; letter-spacing: .01em; margin: 0 0 22px; color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
+.hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.heroLead { text-wrap: pretty; font-family: var(--font-noto-sans), "Noto Sans TC", sans-serif; font-size: 20px; color: rgba(255,255,255,.66); max-width: 540px; margin: 0 0 34px; font-weight: 400; line-height: 1.8; }
 .heroCtas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 0; }
 .videoCard { background: rgba(15,15,20,.92); border: 1px solid rgba(255,255,255,.1); border-radius: var(--radius-md); padding: 20px; }
 .videoThumb { height: 160px; border-radius: var(--radius-sm); display: grid; place-items: center; background: linear-gradient(rgba(0,0,0,.32),rgba(0,0,0,.48)), url("https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80"); background-size: cover; background-position: center; margin-bottom: 18px; cursor: pointer; transition: opacity .2s; }
@@ -63,11 +83,47 @@
 .checkList li::before { content: ""; display: inline-block; width: 16px; height: 16px; background: var(--brand-light); border-radius: 50%; flex-shrink: 0; }
 
 /* STATS */
-.stats { transform: translateY(-52px); position: relative; z-index: 5; }
-.statsCard { background: white; border-radius: var(--radius-md); box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(4,1fr); padding: 28px 20px; }
-.stat { text-align: center; border-right: 1px solid var(--line); padding: 4px 12px; }
-.stat:last-child { border-right: 0; }
-.statIcon { color: var(--brand); display: flex; justify-content: center; margin-bottom: 8px; }
+.stats { transform: translateY(-26px); position: relative; z-index: 5; text-align: center; }
+/* 終端機風格小視窗：等寬字、紅黃綠燈、藍鍵綠值、閃爍游標 */
+/* 滑鼠停在右側照片才浮現的終端機懸浮層 */
+.heroPhotoZone { position: absolute; top: 0; bottom: 0; right: max(0px, calc((100% - 1440px) / 2)); width: min(46%, 700px); z-index: 3; }
+.statsCard {
+  position: absolute; top: 0; left: 0; z-index: 4;
+  display: inline-block; text-align: left; min-width: min(420px, 100%);
+  font-family: var(--font-jetbrains), monospace;
+  background: rgba(8,12,22,.92); border: 1px solid rgba(120,160,255,.22);
+  border-radius: 12px; overflow: hidden; backdrop-filter: blur(10px);
+  box-shadow: 0 22px 50px rgba(0,0,0,.55);
+  opacity: 0; pointer-events: none;            /* 不吃滑鼠，讓 zone 持續追蹤游標 */
+  transition: opacity .2s ease, transform .12s ease-out;
+}
+.statsShow { opacity: 1; }
+@media (hover: none) { .statsCard { display: none; } }
+
+/* 高音譜記號自訂游標（藍色 𝄞）；全站隱藏原生游標由 globals.css 的 .music-cursor 控制 */
+.musicCursor {
+  position: fixed; top: 0; left: 0; z-index: 99999; pointer-events: none;
+  font-family: "Apple Symbols", "Noto Music", "Segoe UI Symbol", serif;
+  font-size: 34px; line-height: 1; color: #3b82f6;
+  text-shadow: 0 0 10px rgba(59,130,246,.6), 0 1px 3px rgba(0,0,0,.25);
+  margin-left: -7px; margin-top: -22px;
+  opacity: 0; transition: opacity .2s ease; will-change: transform;
+}
+@media (hover: none) { .musicCursor { display: none; } }
+.termBar { display: flex; align-items: center; gap: 7px; padding: 8px 13px; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); }
+.termDot { width: 10px; height: 10px; border-radius: 50%; background: #3a4358; }
+.termDot:nth-child(1) { background: #ff5f57; }
+.termDot:nth-child(2) { background: #febc2e; }
+.termDot:nth-child(3) { background: #28c840; }
+.termTitle { margin-left: 8px; font-size: 11.5px; color: #5d6b85; }
+.termBody { padding: 13px 16px; font-size: 13px; line-height: 2; }
+.termLn { white-space: nowrap; }
+.termP { color: #4f6aa0; margin-right: 8px; }
+.statKey { color: #5d8bd6; }
+.stat { display: inline-flex; align-items: baseline; gap: 6px; margin-right: 20px; }
+.stat strong { color: #8fe3b0; font-weight: 500; }
+.termCur { display: inline-block; width: 8px; height: 15px; background: #7ea6ff; vertical-align: -2px; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 .stat strong { display: block; font-size: 34px; line-height: 1.1; font-weight: 700; letter-spacing: -.03em; }
 .stat span { color: #64748b; font-weight: 400; font-size: 14px; }
 
@@ -183,8 +239,9 @@
 .instructorCopy small { color: var(--brand); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
 .instructorCopy h2 { font-family: var(--type-heading); font-weight: 600; text-wrap: balance; font-size: clamp(34px,4vw,52px); line-height: 1.1; letter-spacing: -.01em; margin: 10px 0 6px; }
 .instructorCopy h2 span { color: var(--brand); }
-.instructorRole { font-size: 16px; color: var(--muted); font-weight: 400; margin: 0 0 22px; letter-spacing: .02em; }
-.instructorCopy > p { text-wrap: pretty; color: #374151; line-height: 1.8; font-size: 16px; max-width: 520px; margin-bottom: 28px; }
+.instructorRole { font-size: 15px; color: var(--muted); font-weight: 400; margin: 0 0 18px; letter-spacing: .02em; }
+.instructorCopy > p { text-wrap: pretty; color: #374151; line-height: 1.75; font-size: 15px; max-width: 520px; margin-bottom: 14px; }
+.instructorCopy > p:last-of-type { margin-bottom: 28px; }
 .instructorCreds { list-style: none; padding: 0; display: grid; gap: 12px; }
 .instructorCreds li { display: flex; align-items: center; gap: 12px; font-weight: 500; color: #1e293b; font-size: 15px; }
 .credIcon { width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex-shrink: 0; }
@@ -231,7 +288,8 @@
 
 @media (max-width: 980px) {
   /* 手機/平板：改 flex 直向堆疊，徹底避免 grid 具名區域殘留造成的三區塊重疊 */
-  .heroGrid { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .heroGrid { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0 20px; }
+  .heroPhotoZone { display: none; }   /* 手機關掉終端機 hover 區，避免擋住右半觸控 */
   .heroPhoto    { width: 100%; opacity: .42; }
   .heroIntro    { order: 1; grid-area: auto; max-width: 100%; padding: 60px 0 32px; }
   .offerCard    { width: 100%; }
@@ -256,11 +314,6 @@
   .hero h1 { font-size: clamp(30px, 7vw, 44px); margin-bottom: 16px; }
   .heroLead { font-size: 16px; line-height: 1.6; margin-bottom: 22px; }
   .videoThumb { height: 180px; }
-  .stats { transform: translateY(-28px); }
-  .statsCard { grid-template-columns: repeat(2,1fr); padding: 20px 14px; }
-  .stat { border-right: 1px solid var(--line); border-bottom: 0; padding: 14px 8px; }
-  .stat:nth-child(2n) { border-right: 0; }
-  .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
 }
 
 /* === 三方案買斷制：新增樣式（2026-05 取消訂閱制） === */
@@ -395,4 +448,34 @@
   .btnRed:hover:not(:disabled) { transform: none; }
   .planBtn:hover { transform: none; background: #fff; }
   .planBtnFeatured:hover { background: var(--brand); }
+}
+
+/* === 手機/平板 RWD 修正（2026-06-21）—— 置於檔尾，source order 最後必定生效 === */
+@media (max-width: 980px) {
+  /* 1) Hero 最上方全黑：頂端 nav 由半透明漸層改實心深色，
+        消除漸層露出底下淺色 body 造成的「淺/深兩色交界」 */
+  .navTransparent { background: #05070b; border-bottom: 0; }
+
+  /* 1b) Hero 在手機填滿整個視窗高度、內容垂直置中。
+        原本 hero 只有內容高度（約 550px），比視窗矮 → 首屏下方會露出
+        白色的「課程設計」區塊，看起來像「黑色區塊最下方有淺色」。 */
+  .hero { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
+
+  /* 2) 課程定位區：改 block 直堆。原 grid 1fr 420px 在手機殘留的 1fr 欄
+        因中文 keep-all 不斷行、min-content 撐爆容器，右側被 overflow-x:clip 切字。
+        改 display:block 讓子元素自然堆疊、文字依容器寬正常換行。 */
+  .introGrid { display: block; }
+  .introCopy h2,
+  .introCopy p,
+  .introSubline,
+  .outcomes { max-width: 100%; }
+  .outcomes { columns: 1; column-gap: 0; }
+  .pianoPhoto { margin-top: 28px; }
+
+  /* 3) 講師介紹：grid 改 block 直堆，根治 grid 1fr 的 min-content 撐爆、文字超版被裁
+        （與定位區同一修法）；照片改全寬區塊、與下方文字留間距。 */
+  .instructorGrid { display: block; }
+  .instructorPhoto { width: 100%; margin-bottom: 28px; }
+  .instructorCopy > p { font-size: 14px; line-height: 1.75; max-width: 100%; }
+  .instructorCreds li { font-size: 14px; line-height: 1.6; }
 }

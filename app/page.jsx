@@ -16,14 +16,9 @@ import Logo from "@/components/Logo";
 import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
 import PointCarousel from "@/components/PointCarousel";
-import Countdown from "@/components/Countdown";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-
-// 早鳥第一波開賣日（台北時間）。今天 < 此日 = 預售倒數、暫不開放購買。
-// 開賣後的波段價格由「銷售自動化」backbone 提供（本區只負責 Hero 視覺）。
-const EARLY_BIRD_LAUNCH = "2026-07-08T00:00:00+08:00";
 
 const POINTS = [
   { n: 1, title: "零基礎也能輕鬆上手" },
@@ -360,14 +355,13 @@ function RevealSection({ className = "", ...props }) {
   );
 }
 
-function StatItem({ icon: Icon, value, suffix, label }) {
+function StatItem({ value, suffix, en, label }) {
   const [count, ref] = useCountUp(value ?? 0);
   return (
-    <div className={styles.stat} ref={ref}>
-      <div className={styles.statIcon}><Icon size={26} strokeWidth={1.5} /></div>
+    <span className={styles.stat} ref={ref} title={label}>
+      <span className={styles.statKey}>{en}</span>
       <strong>{value != null ? `${count.toLocaleString()}${suffix}` : "—"}</strong>
-      <span>{label}</span>
-    </div>
+    </span>
   );
 }
 
@@ -380,6 +374,9 @@ export default function HomePage() {
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [photoHover, setPhotoHover] = useState(false);
+  const termRef = useRef(null);
+  const musicCursorRef = useRef(null);
   const heroRef = useRef(null);
 
   useEffect(() => {
@@ -409,6 +406,36 @@ export default function HomePage() {
     return () => obs.disconnect();
   }, []);
 
+  // 高音譜記號游標：預設用原生游標；只有「按下（點擊）」時才變成高音譜記號並跟隨，
+  // 放開即恢復原生游標（音符留在點擊處淡出）。觸控裝置由 CSS @media(hover:none) 停用。
+  useEffect(() => {
+    const cursor = musicCursorRef.current;
+    if (!cursor) return;
+    let pressed = false;
+    const place = (e) => { cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`; };
+    const down = (e) => {
+      pressed = true;
+      place(e);
+      cursor.style.opacity = "1";
+      document.documentElement.classList.add("music-cursor");   // 按住期間隱藏原生游標
+    };
+    const move = (e) => { if (pressed) place(e); };
+    const up = () => {
+      pressed = false;
+      cursor.style.opacity = "0";
+      document.documentElement.classList.remove("music-cursor"); // 放開即恢復原生游標
+    };
+    window.addEventListener("mousedown", down);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => {
+      document.documentElement.classList.remove("music-cursor");
+      window.removeEventListener("mousedown", down);
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) {
@@ -435,10 +462,12 @@ export default function HomePage() {
 
   return (
     <>
+      {/* 高音譜記號自訂游標（滑入 Hero 時顯示並跟隨） */}
+      <div ref={musicCursorRef} className={styles.musicCursor} aria-hidden="true">𝄞</div>
       {/* NAV */}
-      <header className={styles.nav}>
+      <header className={`${styles.nav} ${showStickyBar ? styles.navSolid : styles.navTransparent}`}>
         <div className={styles.container + " " + styles.navInner}>
-          <a href="/" aria-label="InRecord"><Logo /></a>
+          <a href="/" aria-label="InRecord"><Logo white={!showStickyBar} /></a>
           <nav className={styles.navLinks}>
             <a href="#intro">課程介紹</a>
             <a href="#curriculum">課程大綱</a>
@@ -483,39 +512,60 @@ export default function HomePage() {
         {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
           <div className={styles.heroPhoto} aria-hidden="true" />
-          <div className={styles.container + " " + styles.heroGrid}>
+          <div
+            className={styles.heroPhotoZone}
+            aria-hidden="true"
+            onMouseEnter={() => setPhotoHover(true)}
+            onMouseLeave={() => setPhotoHover(false)}
+            onMouseMove={(e) => {
+              const term = termRef.current;
+              if (!term) return;
+              const z = e.currentTarget.getBoundingClientRect();
+              const x = Math.max(8, Math.min(e.clientX - z.left - term.offsetWidth / 2, z.width - term.offsetWidth - 8));
+              const y = Math.max(8, Math.min(e.clientY - z.top + 20, z.height - term.offsetHeight - 8));
+              term.style.transform = `translate(${x}px, ${y}px)`;
+            }}
+          >
+            {/* 終端機：跟著游標在右側照片區內浮現移動（觸控裝置隱藏） */}
+            <div ref={termRef} className={`${styles.statsCard} ${photoHover ? styles.statsShow : ""}`}>
+              <div className={styles.termBar}>
+                <span className={styles.termDot} /><span className={styles.termDot} /><span className={styles.termDot} />
+                <span className={styles.termTitle}>inrecord — stats.sh</span>
+              </div>
+              <div className={styles.termBody}>
+                <div className={styles.termLn}>
+                  <span className={styles.termP}>›</span>
+                  <StatItem value={stats ? stats.purchases : null}                              suffix="+" en="members"  label="學員加入學習" />
+                  <StatItem value={stats && stats.rating != null ? Number(stats.rating) : null} suffix=""  en="rating"   label="學員平均評分" />
+                </div>
+                <div className={styles.termLn}>
+                  <span className={styles.termP}>›</span>
+                  <StatItem value={10} suffix=""  en="chapters" label="系統化章節" />
+                  <StatItem value={20} suffix="+" en="songs"    label="流行曲目實戰" />
+                  <span className={styles.termCur} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={styles.heroGrid}>
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
               <motion.h1 variants={fadeUp}>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
-                <span className={styles.offerPill}>早鳥即將開賣 · 倒數 <Countdown target={EARLY_BIRD_LAUNCH} /></span>
-                <div className={styles.offerSoon}>早鳥 7/8 開賣</div>
+                {/* ⚠ 內容為示意（價格/倒數/保證待接「銷售自動化」sale 資料）；版面照參考圖 */}
+                <span className={styles.offerPill}>限時優惠 · 倒數 3 天</span>
+                <div className={styles.offerPriceRow}>
+                  <span className={styles.offerPrice}>NT$2,980</span>
+                  <span className={styles.offerWas}>NT$4,800</span>
+                </div>
                 <div className={styles.offerBtns}>
-                  <button className={styles.btnRed} disabled style={{ opacity: .55, cursor: "default" }}>早鳥 7/8 開賣</button>
+                  <button className={styles.btnRed} onClick={openBuy}>立即購買課程</button>
                   <button className={styles.btnOutline} onClick={() => setPreviewOpen(true)}>
                     <Play size={16} />免費試看
                   </button>
                 </div>
-                <div className={styles.offerGuard}><Check size={14} strokeWidth={3} />一次買斷 · 永久無限回看</div>
+                <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天不滿意，全額退費保證</span>
               </motion.div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* STATS */}
-        <section className={styles.stats}>
-          <div className={styles.container}>
-            <motion.div
-              className={styles.statsCard}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <StatItem icon={Users}    value={stats ? stats.purchases : null}                               suffix="+" label="學員加入學習" />
-              <StatItem icon={Star}     value={stats && stats.rating != null ? Number(stats.rating) : null}  suffix=" / 5" label="學員平均評分" />
-              <StatItem icon={BookOpen} value={10}  suffix=""  label="系統化章節" />
-              <StatItem icon={Music}    value={20}  suffix="+" label="流行曲目實戰" />
             </motion.div>
           </div>
         </section>
@@ -635,7 +685,8 @@ export default function HomePage() {
               <small>講師介紹</small>
               <h2>Rick Chang<br/><span>張育瑞老師</span></h2>
               <p className={styles.instructorRole}>音樂製作人・鋼琴演奏者・流行鋼琴老師</p>
-              <p>美國波士頓 Berklee College of Music 音樂碩士，簽約碩樂國際娛樂（Universal Music Publishing 台灣授權公司），首張個人專輯《Fire!》登上 iTunes 流行榜冠軍。榮獲 Global Music Awards 銅獎；2024 巴黎奧運主題歌曲累計超過 200 萬次觀看；與布達佩斯交響樂團合作錄製管弦樂作品。</p>
+              <p>美國波士頓 <span style={{ whiteSpace: "nowrap" }}>Berklee College of Music</span> 音樂碩士，簽約碩樂國際娛樂（<span style={{ whiteSpace: "nowrap" }}>Universal Music Publishing</span> 台灣授權公司），首張個人專輯《Fire!》登上 iTunes 流行榜冠軍。</p>
+              <p>榮獲 <span style={{ whiteSpace: "nowrap" }}>Global Music Awards</span> 銅獎，2024 巴黎奧運主題歌曲累計超過 200 萬次觀看，並與布達佩斯交響樂團合作錄製管弦樂作品。</p>
               <ul className={styles.instructorCreds}>
                 {[
                   [GraduationCap, "Berklee College of Music 音樂碩士"],

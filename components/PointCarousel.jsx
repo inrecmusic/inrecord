@@ -67,7 +67,7 @@ export default function PointCarousel({ slides, point = 1 }) {
       }}
     >
       <div className={styles.viewport}>
-        <AnimatePresence initial={false} custom={dir} mode="popLayout">
+        <AnimatePresence initial={false} custom={dir}>
           <motion.div
             key={index}
             className={styles.slide}
