@@ -20,6 +20,7 @@
   position: relative;
   flex: 0 0 39%;
   max-width: 39%;
+  margin-left: clamp(20px, 3.5vw, 56px);   /* 左欄文字整體往右一些（連幽靈數字一起移）*/
 }
 
 /* Big, faint decorative numeral behind the title (replaces the old "POINT 0X"
@@ -48,6 +49,7 @@
   line-height: 1.2;
   color: var(--ink, #2b211a);
   margin: 0;
+  text-wrap: balance;                 /* 會換行的標題自動平衡成兩行，避免單字落單 */
 }
 .underline {
   position: relative;
@@ -155,6 +157,7 @@
     max-width: 100%;
     width: 100%;
   }
+  .info { margin-left: 0; }             /* 手機：取消左欄右移 */
   .visual { gap: 12px; }                /* 16 → 12 */
   .underline { margin: 13px 0; }        /* 18 → 13 */
   .ghostNum {
