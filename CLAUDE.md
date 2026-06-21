@@ -180,6 +180,7 @@ BREVO_LIST_ID
 # Upstash Redis（限流；Vercel Marketplace 整合自動注入 KV_ 命名，缺則退回記憶體限流）
 KV_REST_API_URL
 KV_REST_API_TOKEN
+NEXT_PUBLIC_WORDPRESS_BUY_URL   # /demo 體驗頁 CTA → WordPress 預購頁；未設則 CTA 顯示「即將開放」停用
 ```
 
 ## 部署需執行的 SQL
