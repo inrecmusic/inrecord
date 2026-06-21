@@ -35,11 +35,11 @@ export default function DemoPage() {
       </header>
 
       <main className={styles.stage}>
-        <span className={styles.tag}>// ai_game · live demo</span>
+        <span className={styles.tag}>// live demo</span>
         <iframe
           className={`${styles.game} ${ended ? styles.gameLocked : ""}`}
           src="/demo-game/index.html"
-          title="AI 遊戲試玩"
+          title="遊戲試玩"
           sandbox="allow-scripts"
         />
         {ended && (
@@ -47,7 +47,7 @@ export default function DemoPage() {
             <div className={styles.popup}>
               <div className={styles.popupTag}>▸ trial_ended</div>
               <div className={styles.popupTitle}>試玩結束！</div>
-              <p className={styles.popupBody}>預購完整版，解鎖<br />全部 AI 遊戲 + 10 章節完整課程</p>
+              <p className={styles.popupBody}>預購完整版，解鎖<br />全部遊戲 + 10 章節完整課程</p>
               <Cta url={url} className={styles.popupCta}>立即預購課程 →</Cta>
               <button className={styles.replayBtn} onClick={() => window.location.reload()}>↻ 重新試玩</button>
             </div>
@@ -56,7 +56,7 @@ export default function DemoPage() {
       </main>
 
       <footer className={styles.foot}>
-        試玩 2 分鐘 · 預購完整版解鎖 <b>全部 AI 遊戲 + 10 章節完整課程</b>
+        試玩 2 分鐘 · 預購完整版解鎖 <b>全部遊戲 + 10 章節完整課程</b>
       </footer>
     </div>
   );

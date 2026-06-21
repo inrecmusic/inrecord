@@ -23,7 +23,7 @@ const POINTS = [
   { n: 1, title: "零基礎也能輕鬆上手" },
   { n: 2, title: "系統掌握 24 個三和弦" },
   { n: 3, title: "兩種伴奏技法一次學會" },
-  { n: 4, title: "AI 遊戲讓練習不枯燥" },
+  { n: 4, title: "遊戲讓練習不枯燥" },
   { n: 5, title: "學完就能彈出喜歡的歌" },
 ];
 
@@ -280,8 +280,8 @@ const PLANS = [
     label: "學琴全攻略",
     pillLabel: "最超值全配",
     price: 3999,
-    desc: "課程 + AI 互動遊戲，永久使用、一次擁有全部。",
-    features: ["完整 10 章節課程", "全部 AI 互動遊戲永久使用", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
+    desc: "課程 + 互動遊戲，永久使用、一次擁有全部。",
+    features: ["完整 10 章節課程", "全部互動遊戲永久使用", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
     featured: true,
     ribbon: "最推薦",
     cta: "購買課程包",
@@ -546,8 +546,10 @@ export default function HomePage() {
           </div>
           <div className={styles.heroGrid}>
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
-              <motion.h1 variants={fadeUp}>從零開始彈出<br/>你喜歡的<span>流行歌曲</span></motion.h1>
-              <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配 AI 互動遊戲練習，讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
+              <motion.span variants={fadeUp} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
+              <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
+              <motion.p variants={fadeUp} className={styles.heroSub}>搞懂三和弦與基礎伴奏</motion.p>
+              <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
                 {/* ⚠ 內容為示意（價格/倒數/保證待接「銷售自動化」sale 資料）；版面照參考圖 */}
                 <span className={styles.offerPill}>限時優惠 · 倒數 3 天</span>
@@ -558,7 +560,7 @@ export default function HomePage() {
                 <div className={styles.offerBtns}>
                   <button className={styles.btnRed} onClick={openBuy}>立即購買課程</button>
                   <a href="/demo" className={styles.btnOutline}>
-                    <Play size={16} />免費試看
+                    <Play size={16} />課程 Demo 體驗
                   </a>
                 </div>
                 <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天不滿意，全額退費保證</span>
@@ -585,7 +587,7 @@ export default function HomePage() {
             >
               {[
                 ["零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
-                ["AI 互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
+                ["互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
                 ["流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
                 ["成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
               ].map(([title, desc], i) => (
@@ -663,7 +665,7 @@ export default function HomePage() {
                       {!m.isAppendix && (
                         <div className={styles.moduleMetaRow}>
                           <div className={styles.meta}><Music size={14} className={styles.metaIcon} />實戰曲目：{m.song}</div>
-                          <div className={styles.meta}><Bot size={14} className={styles.metaIcon} />AI 遊戲：{m.game}</div>
+                          <div className={styles.meta}><Bot size={14} className={styles.metaIcon} />遊戲：{m.game}</div>
                         </div>
                       )}
                     </div>
@@ -708,7 +710,7 @@ export default function HomePage() {
             <div className={styles.sectionHead}>
               <small>課程方案</small>
               <h2>選擇最適合你的方案</h2>
-              <p>一次購買，永久擁有。課程與 AI 遊戲皆為買斷制，無訂閱、無月費。</p>
+              <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
             <motion.div
               className={styles.plansRow}
@@ -768,10 +770,10 @@ export default function HomePage() {
             <div className={styles.faq}>
               {[
                 ["完全零基礎可以上嗎？",         "可以。課程從鍵盤佈局、音名、唱名與基本坐姿開始，循序漸進進入三和弦與伴奏，不需要任何音樂基礎。"],
-                ["我需要準備鋼琴嗎？",           "AI 互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
+                ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
                 ["學完後可以彈哪些歌？",         "課程實戰練習包含《Do-Re-Mi》、《Happy Birthday》、《稻香》、《告白氣球》、《刻在我心底的名字》、《Always With Me》等 20+ 首。"],
-                ["課程包和單買有什麼差別？",     "學琴全攻略（NT$3,999）一次擁有完整課程與全部 AI 互動遊戲，最超值；也可只買鋼琴自學全課程（NT$3,800），兩者皆為一次買斷、永久使用。"],
+                ["課程包和單買有什麼差別？",     "學琴全攻略（NT$3,999）一次擁有完整課程與全部互動遊戲，最超值；也可只買鋼琴自學全課程（NT$3,800），兩者皆為一次買斷、永久使用。"],
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -793,7 +795,7 @@ export default function HomePage() {
           <div className={styles.container}>
             <div className={styles.cta}>
               <h2>現在開始，彈出你的第一首流行歌曲</h2>
-              <p>從零基礎開始，透過系統化課程與 AI 互動遊戲，建立真正彈得出來的鋼琴能力。</p>
+              <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
               <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
                 立即購買課程
               </button>

@@ -369,7 +369,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
         <h3 style={{ margin: "0 0 8px", fontFamily: "var(--type-display)", fontSize: 22, fontWeight: 500, color: "#0f172a", letterSpacing: "-.01em" }}>
-          尚未開通 AI 遊戲
+          尚未開通遊戲
         </h3>
         <p style={{ color: "#475569", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
           購買「學琴全攻略」即可永久暢玩
@@ -463,7 +463,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     return (
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 14 }}>🎮</div>
-        <p style={{ fontWeight: 600, color: "#0f172a", fontSize: 16, margin: "0 0 6px" }}>此單元暫無 AI 遊戲</p>
+        <p style={{ fontWeight: 600, color: "#0f172a", fontSize: 16, margin: "0 0 6px" }}>此單元暫無遊戲</p>
         <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>已開通，更多遊戲陸續上線中</p>
       </div>
     );
@@ -771,7 +771,7 @@ export default function ClassroomPage() {
                 width: 7, height: 7, borderRadius: "50%",
                 background: "#16a34a", display: "inline-block",
               }} />
-              AI 遊戲・已開通
+              遊戲・已開通
             </div>
           ) : (
             <a href="/#pricing" style={{
@@ -779,7 +779,7 @@ export default function ClassroomPage() {
               color: "#fff", borderRadius: 980, padding: "4px 12px",
               fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: F,
             }}>
-              🎮 購買 AI 遊戲
+              🎮 購買遊戲
             </a>
           )}
 
