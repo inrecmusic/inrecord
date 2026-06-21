@@ -13,7 +13,6 @@ import {
   Check,
 } from "lucide-react";
 import Logo from "@/components/Logo";
-import PreviewModal from "@/components/PreviewModal";
 import BuyModal from "@/components/BuyModal";
 import PointCarousel from "@/components/PointCarousel";
 import styles from "./page.module.css";
@@ -366,7 +365,6 @@ function StatItem({ value, suffix, en, label }) {
 }
 
 export default function HomePage() {
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -455,7 +453,6 @@ export default function HomePage() {
     startBuy(selectedPlan || PLANS[1]);
   }
 
-  function onPreviewSuccess() { setPreviewOpen(false); }
 
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = process.env.NEXT_PUBLIC_PRESALE_MODE === "1";
@@ -473,7 +470,7 @@ export default function HomePage() {
             <a href="#curriculum">課程大綱</a>
             <a href="#instructor">講師介紹</a>
             <a href="#pricing">課程方案</a>
-            <a href="#" onClick={e => { e.preventDefault(); setPreviewOpen(true); }}>課程試看</a>
+            <a href="/demo">課程試看</a>
           </nav>
           {user
             ? (presaleMode
@@ -490,7 +487,7 @@ export default function HomePage() {
             {[["#intro","課程介紹"],["#curriculum","課程大綱"],["#instructor","講師介紹"],["#pricing","課程方案"]].map(([href, label]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
-            <a href="#" onClick={e => { e.preventDefault(); setMenuOpen(false); setPreviewOpen(true); }}>課程試看</a>
+            <a href="/demo" onClick={() => setMenuOpen(false)}>課程試看</a>
             {user
               ? (presaleMode
                   ? <span style={{ opacity: .55 }}>課程準備中（開課將以 Email 通知）</span>
@@ -560,9 +557,9 @@ export default function HomePage() {
                 </div>
                 <div className={styles.offerBtns}>
                   <button className={styles.btnRed} onClick={openBuy}>立即購買課程</button>
-                  <button className={styles.btnOutline} onClick={() => setPreviewOpen(true)}>
+                  <a href="/demo" className={styles.btnOutline}>
                     <Play size={16} />免費試看
-                  </button>
+                  </a>
                 </div>
                 <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天不滿意，全額退費保證</span>
               </motion.div>
@@ -841,7 +838,6 @@ export default function HomePage() {
         </div>
       </footer>
 
-      <PreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} onSuccess={onPreviewSuccess} />
       <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} />
     </>
   );
