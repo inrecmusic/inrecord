@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { normalizeCouponType, normalizeCouponPlan, couponValueError } from "@/lib/plans";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -25,14 +26,14 @@ export async function POST(req) {
   const body = await req.json();
   const name  = String(body.name || "").trim();
   const code  = String(body.code || "").trim().toUpperCase();
-  const type  = ["fixed", "price"].includes(body.type) ? body.type : "percent";
-  const plan  = ["course", "bundle"].includes(body.plan) ? body.plan : null;
+  const type  = normalizeCouponType(body.type);
+  const plan  = normalizeCouponPlan(body.plan);
   const value = Number(body.value);
 
   if (!name) return NextResponse.json({ error: "missing_name" }, { status: 400 });
   if (!code) return NextResponse.json({ error: "missing_code" }, { status: 400 });
-  if (!Number.isFinite(value) || value <= 0) return NextResponse.json({ error: "invalid_value" }, { status: 400 });
-  if (type === "percent" && value > 100) return NextResponse.json({ error: "percent_over_100" }, { status: 400 });
+  const vErr = couponValueError(type, value);
+  if (vErr) return NextResponse.json({ error: vErr }, { status: 400 });
 
   const { data, error } = await supabase.from("coupons").insert({
     name,
@@ -65,6 +66,26 @@ export async function PATCH(req) {
   const allowed = {};
   for (const k of ["name", "type", "value", "usage_limit", "starts_at", "ends_at", "status", "plan"]) {
     if (k in fields) allowed[k] = fields[k];
+  }
+
+  // 正規化受控欄位（與 POST 同規則，避免繞過 UI 直接 PATCH 出非法狀態）
+  if ("type"  in allowed) allowed.type  = normalizeCouponType(allowed.type);
+  if ("plan"  in allowed) allowed.plan  = normalizeCouponPlan(allowed.plan);
+  if ("value" in allowed) allowed.value = Math.round(Number(allowed.value));
+  if ("status" in allowed && !["active", "disabled"].includes(allowed.status)) {
+    return NextResponse.json({ error: "invalid_status" }, { status: 400 });
+  }
+
+  // 調整 type 或 value 時，以「合併後」的有效值驗證
+  //（擋 percent 券被改成 value=150，或 type 改 price/percent 後沿用不相容舊值的情況）
+  if ("type" in allowed || "value" in allowed) {
+    const { data: existing } = await supabase
+      .from("coupons").select("type, value").eq("id", id).maybeSingle();
+    if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const effType  = "type"  in allowed ? allowed.type  : existing.type;
+    const effValue = "value" in allowed ? allowed.value : existing.value;
+    const vErr = couponValueError(effType, effValue);
+    if (vErr) return NextResponse.json({ error: vErr }, { status: 400 });
   }
 
   const { error } = await supabase.from("coupons").update(allowed).eq("id", id);

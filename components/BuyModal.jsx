@@ -31,7 +31,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, onPlanChange, plans }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -66,8 +66,11 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
         body: JSON.stringify({ code, plan: plan.plan }),
       });
       const d = await r.json();
-      if (d.valid) setCouponApplied(d);
-      else setCouponMsg(COUPON_ERRORS[d.error] || "優惠碼無效");
+      if (d.valid) {
+        // 開賣前（pre_launch）僅接受「指定價」序號兌換；一般折扣碼待開賣後才生效
+        if (!onSale && d.type !== "price") { setCouponMsg("開賣前僅接受指定序號兌換，折扣碼將於開賣後生效"); return; }
+        setCouponApplied(d);
+      } else setCouponMsg(COUPON_ERRORS[d.error] || "優惠碼無效");
     } catch { setCouponMsg("驗證失敗，請稍後再試"); }
     finally { setCouponChecking(false); }
   }
@@ -173,6 +176,31 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
         <div className={styles.sheetBody}>
           <h2>確認購買方案</h2>
           <p className={styles.sub}>零基礎流行鋼琴入門課</p>
+
+          {/* 開賣前序號兌換：讓使用者選擇序號綁定的方案（避免方案鎖序號無從兌換） */}
+          {!onSale && onPlanChange && plans?.length > 1 && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              {plans.map(p => {
+                const active = p.plan === plan.plan;
+                return (
+                  <button
+                    key={p.plan}
+                    type="button"
+                    onClick={() => onPlanChange(p)}
+                    style={{
+                      flex: 1, padding: "8px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                      cursor: "pointer", wordBreak: "keep-all", lineBreak: "strict",
+                      border: active ? "2px solid #2563eb" : "1px solid #e2e8f0",
+                      background: active ? "#eff6ff" : "#fff",
+                      color: active ? "#1d4ed8" : "#475569",
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className={styles.planCard}>
             <div>

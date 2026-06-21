@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { generateBatchCodes, normalizeManualCodes, MAX_BATCH_QUANTITY } from "@/lib/serial-codes";
+import { normalizeCouponType, normalizeCouponPlan, couponValueError } from "@/lib/plans";
 
 // GET：批次清單 + 每批 total / used 統計
 export async function GET(req) {
@@ -32,8 +33,8 @@ export async function POST(req) {
 
   const body = await req.json();
   const name  = String(body.name || "").trim();
-  const type  = ["fixed", "price"].includes(body.type) ? body.type : "percent";
-  const plan  = ["course", "bundle"].includes(body.plan) ? body.plan : null;
+  const type  = normalizeCouponType(body.type);
+  const plan  = normalizeCouponPlan(body.plan);
   const value = Number(body.value);
   const prefix = String(body.prefix || "").trim().toUpperCase() || null;
   const note  = String(body.note || "").trim() || null;
@@ -42,8 +43,8 @@ export async function POST(req) {
   const mode  = body.mode === "manual" ? "manual" : "auto";
 
   if (!name) return NextResponse.json({ error: "missing_name" }, { status: 400 });
-  if (!Number.isFinite(value) || value <= 0) return NextResponse.json({ error: "invalid_value" }, { status: 400 });
-  if (type === "percent" && value > 100) return NextResponse.json({ error: "percent_over_100" }, { status: 400 });
+  const vErr = couponValueError(type, value);
+  if (vErr) return NextResponse.json({ error: vErr }, { status: 400 });
 
   // 1) 決定要寫入的序號清單
   let wantCodes;
