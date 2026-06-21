@@ -60,13 +60,15 @@ export async function POST(req) {
       if (pErr) return NextResponse.json({ error: pErr }, { status: 400 });
     }
 
-    // pre_launch：僅在有有效「指定價」券時放行（一般購買未開）
-    const hasPriceCoupon = !!(coupon && coupon.type === "price");
+    const basePrice = currentPrice(plan, saleSettings, new Date());
+
+    // pre_launch：僅在有「實際折讓」的指定價券時放行（value ≥ 牌價的券不得繞過開賣前封鎖）
+    const hasPriceCoupon = !!(coupon && coupon.type === "price" && coupon.value < basePrice);
     if (!isOnSale(saleSettings, new Date()) && !hasPriceCoupon) {
       return NextResponse.json({ error: "not_on_sale" }, { status: 400 });
     }
 
-    let price = currentPrice(plan, saleSettings, new Date());
+    let price = basePrice;
 
     // 限量券原子預扣（序號 usage_limit=1）＋套用折扣
     if (coupon) {

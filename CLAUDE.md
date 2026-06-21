@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS coupons (
 );
 ```
 
-**指定價券（`type='price'`）**：`value` 為成交價，`applyCoupon` 回 `Math.max(0, Math.min(value, 基準價))`（基準價 = `currentPrice`，當下波段售價；不超過原價且不低於 0）；可加 `plan` 欄位鎖定方案（不符回 `coupon_wrong_plan`）。用於現場序號卡（$2,500）／粉絲序號（$3,499，皆 bundle）。checkout 對**有效指定價券繞過 `not_on_sale` 限制**（開賣前可兌換）；首頁 `pre_launch` 狀態有「輸入序號」兌換入口（`BuyModal` 未開賣模式）；後台優惠券／序號庫表單可建 `price` 型＋指定方案批次。`coupons` 表需加 `plan TEXT` 欄位（`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS plan TEXT`）。
+**指定價券（`type='price'`）**：`value` 為成交價，`applyCoupon` 回 `Math.max(0, Math.min(value, 基準價))`（基準價 = `currentPrice`，當下波段售價；不超過原價且不低於 0）；可加 `plan` 欄位鎖定方案（不符回 `coupon_wrong_plan`）。用於現場序號卡（$2,500）／粉絲序號（$3,499，皆 bundle）。checkout 對**有實際折讓的有效指定價券（`value < 基準價`）繞過 `not_on_sale` 限制**（開賣前可兌換；`value ≥ 牌價`的券不放行，避免開賣前以全額成交）；首頁 `pre_launch` 狀態有「輸入序號」兌換入口（`BuyModal` 未開賣模式，會擋下一般折扣碼、僅收 `price` 型序號，並提供方案切換以兌換 plan 鎖定序號）；後台優惠券／序號庫表單可建 `price` 型＋指定方案批次（admin POST/PATCH 共用 `normalizeCouponType`/`normalizeCouponPlan`/`couponValueError` 驗證）。`coupons` 表需加 `plan TEXT` 欄位（`ALTER TABLE coupons ADD COLUMN IF NOT EXISTS plan TEXT`）。
 
 ### 優惠序號庫（coupon_batches）
 

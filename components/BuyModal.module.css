@@ -123,8 +123,8 @@
 }
 .couponBtn:hover { opacity: .9; }
 .couponBtn:disabled { opacity: .5; cursor: not-allowed; }
-.couponOk  { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: #16a34a; }
-.couponErr { margin: 8px 0 0; font-size: 13px; color: #dc2626; }
+.couponOk  { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: #16a34a; word-break: keep-all; line-break: strict; }
+.couponErr { margin: 8px 0 0; font-size: 13px; color: #dc2626; word-break: keep-all; line-break: strict; }
 
 /* === 底部抽屜 wrapper（桌機中性：display:contents 讓版面如同未包裝）=== */
 .sheetBody, .sheetFooter { display: contents; }

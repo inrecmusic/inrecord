@@ -1048,6 +1048,28 @@ function OrdersPage({leads,showToast}){
 }
 
 // ── Coupons Page ───────────────────────────────────────────────────────────
+// 折扣徽章（percent|fixed|price）—— 優惠券列表與序號批次列表共用
+function CouponDiscountBadge({ type, value }){
+  const c = type==="percent" ? {bg:"#eff6ff",fg:"#1d4ed8"} : type==="price" ? {bg:"#dcfce7",fg:"#166534"} : {bg:"#fef3c7",fg:"#92400e"};
+  return (
+    <span className={styles.discountBadge} style={{background:c.bg,color:c.fg}}>
+      {type==="percent"?<><Percent size={11}/> {value}%</>:type==="price"?<>指定價 NT${value}</>:<>NT$ {value}</>}
+    </span>
+  );
+}
+// 綁定方案下拉（選填）—— 優惠券表單與序號批次表單共用
+function PlanLockSelect({ value, onChange }){
+  return (
+    <div className={styles.formGroup} style={{flex:1}}>
+      <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
+      <select className={styles.selectInput} style={{width:"100%"}} value={value} onChange={onChange}>
+        <option value="">不限方案</option>
+        <option value="course">鋼琴自學全課程</option>
+        <option value="bundle">學琴全攻略（課程包）</option>
+      </select>
+    </div>
+  );
+}
 function CouponsPage({ showToast }){
   const [coupons,setCoupons]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -1277,9 +1299,7 @@ function CouponsPage({ showToast }){
                     </div>
                   </td>
                   <td>
-                    <span className={styles.discountBadge} style={{background:c.type==="percent"?"#eff6ff":c.type==="price"?"#dcfce7":"#fef3c7",color:c.type==="percent"?"#1d4ed8":c.type==="price"?"#166534":"#92400e"}}>
-                      {c.type==="percent"?<><Percent size={11}/> {c.value}%</>:c.type==="price"?<>指定價 NT${c.value}</>:<>NT$ {c.value}</>}
-                    </span>
+                    <CouponDiscountBadge type={c.type} value={c.value}/>
                   </td>
                   <td>
                     <div style={{fontSize:13}}><span style={{fontWeight:800}}>{c.used||0}</span> / {limit==null?"∞":limit}</div>
@@ -1331,9 +1351,7 @@ function CouponsPage({ showToast }){
                 <tr>
                   <td><strong>{b.name}</strong></td>
                   <td>
-                    <span className={styles.discountBadge} style={{background:b.type==="percent"?"#eff6ff":b.type==="price"?"#dcfce7":"#fef3c7",color:b.type==="percent"?"#1d4ed8":b.type==="price"?"#166534":"#92400e"}}>
-                      {b.type==="percent"?<><Percent size={11}/> {b.value}%</>:b.type==="price"?<>指定價 NT${b.value}</>:<>NT$ {b.value}</>}
-                    </span>
+                    <CouponDiscountBadge type={b.type} value={b.value}/>
                   </td>
                   <td>{(()=>{const[,label,bg,fg]=batchStatus(b);return<span className={styles.pill} style={{background:bg,color:fg,whiteSpace:"nowrap"}}>{label}</span>;})()}</td>
                   <td><span style={{fontWeight:800}}>{b.used}</span> / {b.total}</td>
@@ -1433,14 +1451,7 @@ function CouponsPage({ showToast }){
                 </div>
               </div>
               <div className={styles.formRow}>
-                <div className={styles.formGroup} style={{flex:1}}>
-                  <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
-                  <select className={styles.selectInput} style={{width:"100%"}} value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}>
-                    <option value="">不限方案</option>
-                    <option value="course">鋼琴自學全課程</option>
-                    <option value="bundle">學琴全攻略（課程包）</option>
-                  </select>
-                </div>
+                <PlanLockSelect value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}/>
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup} style={{flex:1}}><label>使用上限（留空=無限制）</label><input className={styles.input} type="number" min="1" value={form.limit} onChange={e=>setForm(p=>({...p,limit:e.target.value}))} placeholder="100"/></div>
@@ -1497,14 +1508,7 @@ function CouponsPage({ showToast }){
                 </div>
               </div>
               <div className={styles.formRow}>
-                <div className={styles.formGroup} style={{flex:1}}>
-                  <label style={{ wordBreak: "keep-all", lineBreak: "strict" }}>綁定方案（選填）</label>
-                  <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.plan} onChange={e=>setBatchForm(p=>({...p,plan:e.target.value}))}>
-                    <option value="">不限方案</option>
-                    <option value="course">鋼琴自學全課程</option>
-                    <option value="bundle">學琴全攻略（課程包）</option>
-                  </select>
-                </div>
+                <PlanLockSelect value={batchForm.plan} onChange={e=>setBatchForm(p=>({...p,plan:e.target.value}))}/>
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup} style={{flex:1}}>
