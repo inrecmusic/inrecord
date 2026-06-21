@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>InRecord AI 遊戲試玩</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,"PingFang TC","Microsoft JhengHei",sans-serif}
+  html,body{height:100%}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:#f8fafc;color:#0f172a;user-select:none}
+  .hint{font-size:15px;color:#475569}
+  .score{font-size:14px;color:#2563eb;font-weight:700}
+  .keys{display:flex;gap:8px}
+  .key{width:54px;height:150px;border:1px solid #e2e8f0;border-radius:0 0 8px 8px;background:#fff;box-shadow:0 3px 8px rgba(15,23,42,.08);cursor:pointer;transition:transform .05s,background .15s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px;font-size:13px;color:#94a3b8}
+  .key:active{transform:translateY(3px)}
+  .key.target{background:#2563eb;color:#fff;box-shadow:0 6px 18px rgba(37,99,235,.45)}
+</style>
+</head>
+<body>
+  <div class="hint">🎹 點亮的鍵就是目標，依序彈奏！</div>
+  <div class="score">得分：<span id="score">0</span></div>
+  <div class="keys" id="keys"></div>
+<script>
+  var NOTES=[["C",261.63],["D",293.66],["E",329.63],["F",349.23],["G",392.00],["A",440.00],["B",493.88]];
+  var keysEl=document.getElementById("keys");
+  var scoreEl=document.getElementById("score");
+  var score=0, target=0, ac=null;
+  NOTES.forEach(function(n,i){
+    var k=document.createElement("div");
+    k.className="key"; k.textContent=n[0]; k.dataset.i=i;
+    k.addEventListener("click",function(){ play(n[1]); hit(i); });
+    keysEl.appendChild(k);
+  });
+  function render(){
+    [].forEach.call(keysEl.children,function(k,i){ k.classList.toggle("target", i===target); });
+  }
+  function nextTarget(){ var t; do{ t=Math.floor(Math.random()*NOTES.length); }while(t===target&&NOTES.length>1); target=t; render(); }
+  function hit(i){ if(i===target){ score++; scoreEl.textContent=score; nextTarget(); } }
+  function play(freq){
+    try{
+      ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+      var o=ac.createOscillator(), g=ac.createGain();
+      o.type="sine"; o.frequency.value=freq; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(0.0001,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.25,ac.currentTime+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+0.5);
+      o.start(); o.stop(ac.currentTime+0.5);
+    }catch(e){}
+  }
+  render();
+</script>
+</body>
+</html>
