@@ -75,7 +75,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     } catch { setCouponMsg("驗證失敗，請稍後再試"); }
     finally { setCouponChecking(false); }
   }
-  function removeCoupon() { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); }
+  function removeCoupon() { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); setProofUrl(null); }
 
   async function handleFanProof(file) {
     if (!file) return;
@@ -241,7 +241,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
             <div className={styles.couponRow} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
               <label style={{ fontWeight: 700, fontSize: 14 }}>🎫 粉絲憑證（演奏會票／專輯／樂譜）— 折 $500</label>
               {proofUrl
-                ? <span style={{ color: "#15803d", fontSize: 13 }}>✅ 憑證已上傳，已套用粉絲價 NT$3,499</span>
+                ? <span style={{ color: "#15803d", fontSize: 13 }}>✅ 憑證已上傳，已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? 3499).toLocaleString()}</span>
                 : <input type="file" accept="image/jpeg,image/png" disabled={fanUploading}
                     onChange={e => handleFanProof(e.target.files?.[0])} />}
               {fanUploading && <span style={{ fontSize: 12, color: "#6a5b48" }}>上傳中…</span>}
