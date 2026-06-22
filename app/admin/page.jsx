@@ -852,6 +852,13 @@ function OrdersPage({leads,showToast}){
     finally{setRefunding(false);}
   }
 
+  async function reviewFan(id, fan_review){
+    const res=await _api(`/api/admin/orders/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fan_review})});
+    const d=await res.json();
+    if(d.ok){showToast?.(fan_review==="approved"?"已標記通過":"已標記不符");await loadOrders();}
+    else showToast?.("更新失敗","error");
+  }
+
   const allOrders=useMemo(()=>rows.map(o=>({
     id:o.mer_trade_no||o.id,
     realId:o.id,
@@ -866,9 +873,12 @@ function OrdersPage({leads,showToast}){
     invoiceError:o.invoice_error||"",
     emailError:o.email_error||"",
     needInvoice:(o.status==="paid" && !o.invoice_no), // 已付款但未開票（待補開）
+    proofUrl:o.proof_url||null,
+    fanReview:o.fan_review||null,
   })),[rows]);
 
   const filtered=useMemo(()=>allOrders.filter(o=>{
+    if(statusFilter==="fan_pending")return o.fanReview==="pending";
     if(statusFilter!=="all"&&o.status!==statusFilter)return false;
     if(search&&!o.student.toLowerCase().includes(search.toLowerCase())&&!o.email?.toLowerCase().includes(search.toLowerCase())&&!o.id.toLowerCase().includes(search.toLowerCase()))return false;
     if(dateFrom){const od=new Date(o.time.replace(/\//g,"-"));if(od<new Date(dateFrom))return false;}
@@ -1032,6 +1042,7 @@ function OrdersPage({leads,showToast}){
               <option value="refunded">已退款</option>
               <option value="failed">付款失敗</option>
               <option value="cancelled">已取消</option>
+              <option value="fan_pending">粉絲待審核</option>
             </select>
             <input className={styles.selectInput} type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} title="開始日期"/>
             <input className={styles.selectInput} type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} title="結束日期"/>
@@ -1109,6 +1120,21 @@ function OrdersPage({leads,showToast}){
                 </div>
               ))}
             </div>
+            {detailOrder?.fanReview&&(
+              <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #eee"}}>
+                <div style={{fontWeight:700,marginBottom:6}}>粉絲憑證審核：{detailOrder.fanReview==="pending"?"待審核":detailOrder.fanReview==="approved"?"✅ 通過":"❌ 不符"}</div>
+                {detailOrder.proofUrl
+                  ?<a href={detailOrder.proofUrl} target="_blank" rel="noreferrer"><img src={detailOrder.proofUrl} alt="憑證" style={{maxWidth:"100%",maxHeight:280,borderRadius:8,border:"1px solid #ddd"}}/></a>
+                  :<span style={{color:"#999"}}>（無憑證圖）</span>}
+                {detailOrder.fanReview==="pending"&&(
+                  <div style={{display:"flex",gap:8,marginTop:10}}>
+                    <button onClick={()=>reviewFan(detailOrder.realId,"approved")} style={{flex:1,padding:10,borderRadius:8,border:0,background:"#15803d",color:"#fff",fontWeight:700,cursor:"pointer"}}>通過</button>
+                    <button onClick={()=>reviewFan(detailOrder.realId,"rejected")} style={{flex:1,padding:10,borderRadius:8,border:0,background:"#dc2626",color:"#fff",fontWeight:700,cursor:"pointer"}}>不符</button>
+                  </div>
+                )}
+                <p style={{fontSize:12,color:"#888",marginTop:8}}>標記僅供記錄，不會自動撤銷開通或退款。</p>
+              </div>
+            )}
             <div className={styles.modalActions}>
               <button className={styles.btnSmall} onClick={()=>setDetailOrder(null)}>關閉</button>
               {detailOrder.status==="paid"&&detailOrder.realId&&<button className={`${styles.btnSmall} ${styles.btnDanger}`} disabled={refunding} onClick={()=>refundOrder(detailOrder.realId)}>{refunding?"退款中…":"申請退款"}</button>}
