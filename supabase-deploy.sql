@@ -60,6 +60,12 @@ CREATE POLICY "service_role_coupons" ON coupons
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
 
+-- WordPress(WooCommerce) 現場購買橋接：訂單來源 + 後台手動寄信/開通的去重旗標
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS source                TEXT NOT NULL DEFAULT 'payuni', -- 'payuni' | 'wordpress'
+  ADD COLUMN IF NOT EXISTS presale_email_sent_at TIMESTAMPTZ,                     -- WordPress 預購信已寄時間（null=未寄）
+  ADD COLUMN IF NOT EXISTS access_granted_at     TIMESTAMPTZ;                     -- WordPress 手動開通存取時間（null=未開通）
+
 
 -- ────────────────────────────────────────────────────────────────────────
 -- ③ 課程管理：courses 表（含預設課程種子）

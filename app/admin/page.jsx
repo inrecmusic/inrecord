@@ -712,6 +712,79 @@ function OrderStatusPill({status}){
 }
 
 // ── Orders Page ────────────────────────────────────────────────────────────
+// WordPress(WooCommerce) 現場購買付款名單：手動批次「寄預購信 / 開通課程存取」。
+// 進名單由 /api/webhook/woocommerce 自動寫入(source=wordpress)；此面板只負責手動觸發。
+function WordpressLeadsPanel({rows,reload,showToast}){
+  const wp=useMemo(()=>(rows||[]).filter(o=>o.source==="wordpress"),[rows]);
+  const [sel,setSel]=useState(()=>new Set());
+  const [busy,setBusy]=useState("");
+
+  // rows 變動時清掉已不存在的選取
+  useEffect(()=>{setSel(prev=>{const ids=new Set(wp.map(o=>o.id));const n=new Set();prev.forEach(id=>{if(ids.has(id))n.add(id);});return n;});},[wp]);
+
+  if(!wp.length) return null;
+
+  const toggle=(id)=>setSel(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+  const allChecked=sel.size===wp.length;
+  const toggleAll=()=>setSel(allChecked?new Set():new Set(wp.map(o=>o.id)));
+
+  async function run(kind){
+    if(busy)return;
+    const ids=Array.from(sel);
+    const labels={email:"寄送預購信",grant:"開通課程存取"};
+    if(!ids.length&&!window.confirm(`未勾選任何項目，要對「全部未處理」執行「${labels[kind]}」嗎？`))return;
+    setBusy(kind);
+    try{
+      const path=kind==="email"?"/api/admin/send-presale-email":"/api/admin/grant-access";
+      const res=await _api(path,{method:"POST",body:JSON.stringify(ids.length?{ids}:{})});
+      const d=await res.json();
+      if(!res.ok||d.ok===false){showToast?.("❌ "+labels[kind]+"失敗："+(d.error||"unknown"));}
+      else{
+        const done=kind==="email"?d.sent:d.granted;
+        showToast?.(`✅ ${labels[kind]}完成：成功 ${done||0} 筆${d.failed?`，失敗 ${d.failed} 筆`:""}`);
+        setSel(new Set());
+        await reload?.();
+      }
+    }catch(e){showToast?.("❌ "+labels[kind]+"失敗："+e.message);}
+    finally{setBusy("");}
+  }
+
+  return(
+    <div className={styles.panel} style={{marginBottom:16}}>
+      <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
+        <h3 style={{margin:0}}>WordPress 付款名單（現場購買）<span className={styles.dim} style={{fontWeight:400,fontSize:13}}>　{wp.length} 筆</span></h3>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button className={styles.btnSmall} disabled={!!busy} onClick={()=>run("email")}>{busy==="email"?"寄送中…":`寄送預購信${sel.size?`（${sel.size}）`:"（全部未寄）"}`}</button>
+          <button className={styles.btnSmall} disabled={!!busy} onClick={()=>run("grant")}>{busy==="grant"?"開通中…":`開通課程存取${sel.size?`（${sel.size}）`:"（全部未開通）"}`}</button>
+        </div>
+      </div>
+      <div className={styles.reconPeriod}>勾選指定名單則只處理勾選者；未勾選則處理「全部未寄／未開通」。已處理者自動跳過、不會重複。</div>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead><tr>
+            <th style={{width:32}}><input type="checkbox" checked={allChecked} onChange={toggleAll}/></th>
+            <th>Email</th><th>方案</th><th>訂單編號</th><th>金額</th><th>預購信</th><th>開通</th><th>時間</th>
+          </tr></thead>
+          <tbody>
+            {wp.map(o=>(
+              <tr key={o.id}>
+                <td><input type="checkbox" checked={sel.has(o.id)} onChange={()=>toggle(o.id)}/></td>
+                <td style={{fontSize:13}}>{o.email}</td>
+                <td className={styles.dim}>{o.plan_label||o.plan}</td>
+                <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.mer_trade_no}</code></td>
+                <td style={{fontWeight:800}}>NT$ {(Number(o.amount)||0).toLocaleString()}</td>
+                <td>{o.presale_email_sent_at?<span style={{color:"#047857",fontWeight:700,fontSize:12}}>已寄</span>:<span style={{color:"#b45309",fontSize:12}}>未寄</span>}</td>
+                <td>{o.access_granted_at?<span style={{color:"#047857",fontWeight:700,fontSize:12}}>已開通</span>:<span style={{color:"#b45309",fontSize:12}}>未開通</span>}</td>
+                <td className={styles.dim} style={{fontSize:12,whiteSpace:"nowrap"}}>{fmt(o.created_at||o.updated_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function OrdersPage({leads,showToast}){
   const [statusFilter,setStatusFilter]=useState("all");
   const [search,setSearch]=useState("");
@@ -903,6 +976,7 @@ function OrdersPage({leads,showToast}){
           </div>
         </div>
       )}
+      <WordpressLeadsPanel rows={rows} reload={loadOrders} showToast={showToast}/>
       <div className={styles.panel} style={{marginBottom:16}}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
           <h3 style={{margin:0}}>對帳彙整（依日期區間）</h3>

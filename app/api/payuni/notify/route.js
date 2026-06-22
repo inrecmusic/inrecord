@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
+import { grantAccess } from "@/lib/fulfillment-grant";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
 
@@ -102,36 +103,12 @@ export async function POST(req) {
         if (error) {
           console.error("[payuni notify] supabase error", error.message);
         } else if (order?.email) {
-          const PERMANENT = "2999-12-31T00:00:00.000Z";
-
-          // 課程開通（課程單賣 or 課程包）
-          if (order.plan === "course" || order.plan === "bundle") {
-            const { error: enrollErr } = await supabase.from("enrollments").upsert(
-              { email: order.email, course_id: "piano-101", order_id: order.id },
-              { onConflict: "email,course_id" }
-            );
-            if (enrollErr) console.error("[payuni notify] enroll error", enrollErr.message);
-          }
-
-          // AI 遊戲永久開通（遊戲單買 or 課程包）；以遠期到期日表示永久。
-          // ⚠️ 冪等：用 upsert + ignoreDuplicates（DB 端 ON CONFLICT DO NOTHING）取代「先 count 後 insert」，
-          // 確保 Payuni 並發／重送 notify 時不會重複插入存取列。
-          // 需搭配唯一索引：CREATE UNIQUE INDEX uniq_sub_purchase_order
-          //   ON subscriptions (payuni_order_id) WHERE source = 'purchase' AND payuni_order_id IS NOT NULL;
-          if (order.plan === "game" || order.plan === "bundle") {
-            const { error: gameErr } = await supabase.from("subscriptions").upsert(
-              {
-                email:           order.email,
-                plan_type:       order.plan === "bundle" ? "bundle" : "game",
-                status:          "active",
-                expires_at:      PERMANENT,
-                source:          "purchase",
-                payuni_order_id: order.id,
-              },
-              { onConflict: "payuni_order_id", ignoreDuplicates: true }
-            );
-            if (gameErr) console.error("[payuni notify] game access upsert error", gameErr.message);
-          }
+          // 課程／遊戲存取開通（共用 lib/fulfillment-grant，與後台手動開通同一來源）。
+          // ⚠️ 冪等：enrollments(onConflict email,course_id) + subscriptions(onConflict payuni_order_id,
+          //   ignoreDuplicates) 確保 Payuni 並發／重送 notify 不會重複開通。
+          //   subscriptions 需搭配唯一索引 uniq_sub_purchase_order（見 supabase-hardening.sql）。
+          const grant = await grantAccess(supabase, order);
+          if (!grant.ok) console.error("[payuni notify] grantAccess error", grant.errors.join("; "));
         }
 
         // 一次性履約（優惠券累計 + 寄開課信）：以 fulfilled_at 作為去重旗標。
