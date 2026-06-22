@@ -36,7 +36,7 @@ export async function POST(req) {
   let couponClaimed = false;
   try {
     const body = await req.json();
-    const { plan, email } = body;
+    const { plan, email, proofUrl } = body;
 
     // 1) 方案合法性 + 價格/品名一律由後端決定
     const catalog = PLAN_CATALOG[plan];
@@ -164,6 +164,7 @@ export async function POST(req) {
         carrier_type: carrierType || null,
         carrier_id:   carrierId || null,
         coupon_code:  couponCode || null,
+        ...(typeof proofUrl === "string" && proofUrl ? { proof_url: proofUrl, fan_review: "pending" } : {}),
       });
       if (error) {
         console.error("[payuni checkout] supabase error", error.message);
