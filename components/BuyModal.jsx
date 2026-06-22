@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import styles from "./BuyModal.module.css";
 import { MOBILE_BARCODE_RE, TAX_ID_RE, MOBILE_CARRIER_TYPE, isValidTaxId } from "@/lib/invoice-fields";
+import { supabase } from "@/lib/supabase";
 
 const COUPON_ERRORS = {
   coupon_not_found:   "查無此優惠碼",
@@ -31,7 +32,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -44,6 +45,9 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const [couponApplied, setCouponApplied]   = useState(null); // 驗證通過的優惠券
   const [couponMsg, setCouponMsg]           = useState("");
   const [couponChecking, setCouponChecking] = useState(false);
+  const [proofUrl, setProofUrl]             = useState(null);
+  const [fanUploading, setFanUploading]     = useState(false);
+  const [fanError, setFanError]             = useState("");
 
   // 切換方案時清除已套用的優惠券（折扣與方案綁定）
   useEffect(() => { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); }, [plan?.plan]);
@@ -72,6 +76,31 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     finally { setCouponChecking(false); }
   }
   function removeCoupon() { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); }
+
+  async function handleFanProof(file) {
+    if (!file) return;
+    setFanError(""); setFanUploading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/fan-proof", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const d = await res.json();
+      if (!d.ok) { setFanError(fanErrText(d.error)); return; }
+      setProofUrl(d.proofUrl);
+      // 自動套用回傳的一次性粉絲券（複用既有驗證/顯示流程）
+      const vr = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: d.couponCode, plan: plan.plan }) });
+      const vd = await vr.json();
+      if (vd.valid) { setCouponApplied(vd); setCouponInput(d.couponCode); }
+    } catch { setFanError("上傳失敗，請重試"); }
+    finally { setFanUploading(false); }
+  }
+  function fanErrText(e) {
+    return e === "closed" ? "粉絲憑證申請已截止（9/3）" :
+           e === "too_large" ? "圖片需小於 5MB" :
+           (e === "bad_type" || e === "bad_magic") ? "僅接受 JPG / PNG 圖片" :
+           e === "unauthorized" ? "請先登入" : "上傳失敗，請重試";
+  }
 
   function validateInvoice() {
     if (invoiceType === "mobile") {
@@ -141,7 +170,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
       const res = await fetch("/api/payuni/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, couponCode: couponApplied?.code || undefined, ...invoiceFields }),
+        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, couponCode: couponApplied?.code || undefined, proofUrl: proofUrl || undefined, ...invoiceFields }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "checkout_failed");
@@ -207,6 +236,19 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
           </div>
           {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Number(couponApplied.discount).toLocaleString()}</p>}
           {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
+
+          {fanProof && plan.plan === "bundle" && (
+            <div className={styles.couponRow} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+              <label style={{ fontWeight: 700, fontSize: 14 }}>🎫 粉絲憑證（演奏會票／專輯／樂譜）— 折 $500</label>
+              {proofUrl
+                ? <span style={{ color: "#15803d", fontSize: 13 }}>✅ 憑證已上傳，已套用粉絲價 NT$3,499</span>
+                : <input type="file" accept="image/jpeg,image/png" disabled={fanUploading}
+                    onChange={e => handleFanProof(e.target.files?.[0])} />}
+              {fanUploading && <span style={{ fontSize: 12, color: "#6a5b48" }}>上傳中…</span>}
+              {fanError && <span style={{ fontSize: 12, color: "#dc2626" }}>{fanError}</span>}
+              <span style={{ fontSize: 11, color: "#6a5b48" }}>先購買、後台再人工審核（不擋付款、立即開通）。</span>
+            </div>
+          )}
 
           {plan.features?.length > 0 && (
             <ul className={styles.features}>
