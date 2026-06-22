@@ -853,10 +853,12 @@ function OrdersPage({leads,showToast}){
   }
 
   async function reviewFan(id, fan_review){
-    const res=await _api(`/api/admin/orders/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fan_review})});
-    const d=await res.json();
-    if(d.ok){showToast?.(fan_review==="approved"?"已標記通過":"已標記不符");await loadOrders();}
-    else showToast?.("更新失敗","error");
+    try{
+      const res=await _api(`/api/admin/orders/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fan_review})});
+      const d=await res.json();
+      if(d.ok){showToast?.(fan_review==="approved"?"已標記通過":"已標記不符");await loadOrders();}
+      else showToast?.("更新失敗","error");
+    }catch(e){showToast?.("更新失敗："+e.message,"error");}
   }
 
   const allOrders=useMemo(()=>rows.map(o=>({
@@ -878,8 +880,8 @@ function OrdersPage({leads,showToast}){
   })),[rows]);
 
   const filtered=useMemo(()=>allOrders.filter(o=>{
-    if(statusFilter==="fan_pending")return o.fanReview==="pending";
-    if(statusFilter!=="all"&&o.status!==statusFilter)return false;
+    if(statusFilter==="fan_pending"){if(o.fanReview!=="pending")return false;}
+    else if(statusFilter!=="all"&&o.status!==statusFilter)return false;
     if(search&&!o.student.toLowerCase().includes(search.toLowerCase())&&!o.email?.toLowerCase().includes(search.toLowerCase())&&!o.id.toLowerCase().includes(search.toLowerCase()))return false;
     if(dateFrom){const od=new Date(o.time.replace(/\//g,"-"));if(od<new Date(dateFrom))return false;}
     if(dateTo){const od=new Date(o.time.replace(/\//g,"-"));const to=new Date(dateTo);to.setHours(23,59,59);if(od>to)return false;}
