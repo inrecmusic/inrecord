@@ -3,6 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { validateProofImage } from "@/lib/proof-image";
 import { isFanProofOpen, buildFanCoupon } from "@/lib/fan-proof";
 import { generateCode } from "@/lib/serial-codes";
+import { createDistributedLimiter } from "@/lib/rate-limit";
+
+// 已驗證身份的端點：每用戶每分鐘 5 次，擋儲存空間/優惠券表濫發
+const limiter = createDistributedLimiter({ limit: 5, windowMs: 60_000, prefix: "rl:fan-proof" });
 
 export async function POST(req) {
   // 1) 截止 gate（伺服器端）
@@ -23,6 +27,15 @@ export async function POST(req) {
   const { data: { user }, error: authErr } = await userClient.auth.getUser();
   if (authErr || !user) {
     return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  // 2.5) 速率限制（已有 user.id，以使用者為 key，比 IP 更精準）
+  const rl = await limiter(user.id);
+  if (!rl.allowed) {
+    return Response.json(
+      { ok: false, error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
   }
 
   // 3) 讀檔 + 驗證

@@ -52,6 +52,15 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   // 切換方案時清除已套用的優惠券（折扣與方案綁定）
   useEffect(() => { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); }, [plan?.plan]);
 
+  // 以「直接購買」重新開啟 Modal 時，清除前次粉絲憑證流程殘留的狀態，
+  // 避免 FAN 券/憑證 URL 帶進非粉絲購買流程；不影響使用者自行輸入的一般優惠碼。
+  useEffect(() => {
+    if (open && !fanProof) {
+      setProofUrl(null);
+      if (couponApplied?.code?.startsWith("FAN")) { setCouponApplied(null); setCouponInput(""); }
+    }
+  }, [open, fanProof]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!open || !plan) return null;
 
   // 早鳥/原價：由首頁 sale 設定傳入（pricing）；未傳入時退回方案靜態價。
