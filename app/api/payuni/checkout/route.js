@@ -5,6 +5,7 @@ import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/p
 import { currentPrice, getSaleSettings, isOnSale } from "@/lib/sale";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
+import { isOwnProofUrl } from "@/lib/fan-proof";
 
 // Payuni 統一金流 AES-256-GCM 加密
 // 輸出格式：hex( base64(密文) + ':::' + base64(GCM tag) )，與官方 SDK 一致
@@ -164,7 +165,7 @@ export async function POST(req) {
         carrier_type: carrierType || null,
         carrier_id:   carrierId || null,
         coupon_code:  couponCode || null,
-        ...(typeof proofUrl === "string" && proofUrl.length <= 2048 && /^https:\/\//.test(proofUrl) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
+        ...(isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
       });
       if (error) {
         console.error("[payuni checkout] supabase error", error.message);
