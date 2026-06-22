@@ -21,56 +21,11 @@ import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 
 const POINTS = [
-  {
-    n: 1,
-    title: "零基礎也能輕鬆上手",
-    items: [
-      { icon: Music2,       label: "認識鍵盤與音名",  sub: "七個基本音名，一次記住" },
-      { icon: Mic2,         label: "唱名 Do-Re-Mi",   sub: "跟著旋律唱出完整音階" },
-      { icon: Hand,         label: "基本坐姿與手型",  sub: "從第一課建立良好習慣" },
-      { icon: BarChart2,    label: "C 大調音階練習",  sub: "右手流暢指法入門" },
-    ],
-  },
-  {
-    n: 2,
-    title: "系統掌握 24 個三和弦",
-    items: [
-      { icon: Sun,        label: "12 個大三和弦",    sub: "開朗明亮的音色" },
-      { icon: Moon,       label: "12 個小三和弦",    sub: "柔和憂鬱的情感" },
-      { icon: Shuffle,    label: "大小和弦快速切換", sub: "豐富歌曲音樂層次" },
-      { icon: Headphones, label: "和弦耳訓練習",     sub: "聽聲辨弦，立刻反應" },
-    ],
-  },
-  {
-    n: 3,
-    title: "兩種伴奏技法一次學會",
-    items: [
-      { icon: Layers,    label: "Block Chord 全和弦", sub: "穩定扎實的節奏感" },
-      { icon: Waves,     label: "分解和弦 Arpeggio",  sub: "讓音樂流動起來" },
-      { icon: RotateCcw, label: "卡農萬用進行",        sub: "解鎖流行歌背後的共同密碼" },
-      { icon: Heart,     label: "左右手完美配合",      sub: "彈出有感情的完整旋律" },
-    ],
-  },
-  {
-    n: 4,
-    title: "遊戲讓練習不枯燥",
-    items: [
-      { icon: Zap,        label: "音名快閃",       sub: "鍵盤反應速度大幅提升" },
-      { icon: TrendingUp, label: "唱名階梯",       sub: "音感訓練遊戲化" },
-      { icon: Gamepad2,   label: "和弦俄羅斯方塊", sub: "邊玩邊記住全部和弦" },
-      { icon: Clock,      label: "節奏打點師",     sub: "穩定節拍，不再搶拍落拍" },
-    ],
-  },
-  {
-    n: 5,
-    title: "學完就能彈出喜歡的歌",
-    items: [
-      { icon: Music,        label: "20+ 首流行曲目實戰", sub: "學完即能開口唱彈" },
-      { icon: Video,        label: "完整錄製學習成果",   sub: "留下屬於你的第一首錄音" },
-      { icon: BookOpen,     label: "看得懂和弦譜",       sub: "自學更多歌曲不求人" },
-      { icon: GraduationCap,label: "扎實基礎銜接進階",   sub: "為下一階段學習鋪路" },
-    ],
-  },
+  { n: 1, title: "零基礎也能輕鬆上手" },
+  { n: 2, title: "系統掌握 24 個三和弦" },
+  { n: 3, title: "兩種伴奏技法一次學會" },
+  { n: 4, title: "遊戲讓練習不枯燥" },
+  { n: 5, title: "學完就能彈出喜歡的歌" },
 ];
 
 const POINT1_SLIDES = [
@@ -319,6 +274,7 @@ const PLANS = [
     price: 3800,
     desc: "10 章節完整課程，一次買斷、永久觀看。",
     features: ["10 章節系統化課程", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
+    cta: "購買課程",
   },
   {
     plan: "bundle",
@@ -329,6 +285,7 @@ const PLANS = [
     features: ["完整 10 章節課程", "全部互動遊戲永久使用", "20+ 首流行歌曲實戰", "完整樂譜下載", "無限次重複觀看", "專屬學員社群答疑"],
     featured: true,
     ribbon: "最推薦",
+    cta: "購買課程包",
   },
 ];
 
@@ -398,37 +355,13 @@ function RevealSection({ className = "", ...props }) {
   );
 }
 
-function StatItem({ icon: Icon, value, suffix, label }) {
+function StatItem({ value, suffix, en, label }) {
   const [count, ref] = useCountUp(value ?? 0);
   return (
-    <div className={styles.stat} ref={ref}>
-      <div className={styles.statIcon}><Icon size={26} strokeWidth={1.5} /></div>
+    <span className={styles.stat} ref={ref} title={label}>
+      <span className={styles.statKey}>{en}</span>
       <strong>{value != null ? `${count.toLocaleString()}${suffix}` : "—"}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function NotifyMeForm() {
-  const [email, setEmail] = useState("");
-  const [done, setDone] = useState(false);
-  const [err, setErr] = useState("");
-  const submit = async () => {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr("請輸入正確 Email"); return; }
-    setErr("");
-    try {
-      const r = await fetch("/api/brevo/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
-      if (r.ok) setDone(true); else setErr("訂閱失敗，請稍後再試");
-    } catch { setErr("訂閱失敗，請稍後再試"); }
-  };
-  if (done) return <p style={{ marginTop: 8, color: "#16a34a", fontWeight: 700, wordBreak: "keep-all", lineBreak: "strict" }}>✅ 開賣會 Email 通知你！</p>;
-  return (
-    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <input type="email" value={email} placeholder="留 Email，開賣通知我" onChange={(e) => setEmail(e.target.value)}
-        style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14 }} />
-      <button onClick={submit} style={{ background: "#2563eb", color: "#fff", border: 0, borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", wordBreak: "keep-all", lineBreak: "strict" }}>通知我</button>
-      {err && <span style={{ color: "#dc2626", fontSize: 13, wordBreak: "keep-all", lineBreak: "strict" }}>{err}</span>}
-    </div>
+    </span>
   );
 }
 
@@ -440,6 +373,9 @@ export default function HomeClient({ sale }) {
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [photoHover, setPhotoHover] = useState(false);
+  const termRef = useRef(null);
+  const musicCursorRef = useRef(null);
   const heroRef = useRef(null);
 
   useEffect(() => {
@@ -469,6 +405,36 @@ export default function HomeClient({ sale }) {
     return () => obs.disconnect();
   }, []);
 
+  // 高音譜記號游標：預設用原生游標；只有「按下（點擊）」時才變成高音譜記號並跟隨，
+  // 放開即恢復原生游標（音符留在點擊處淡出）。觸控裝置由 CSS @media(hover:none) 停用。
+  useEffect(() => {
+    const cursor = musicCursorRef.current;
+    if (!cursor) return;
+    let pressed = false;
+    const place = (e) => { cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`; };
+    const down = (e) => {
+      pressed = true;
+      place(e);
+      cursor.style.opacity = "1";
+      document.documentElement.classList.add("music-cursor");   // 按住期間隱藏原生游標
+    };
+    const move = (e) => { if (pressed) place(e); };
+    const up = () => {
+      pressed = false;
+      cursor.style.opacity = "0";
+      document.documentElement.classList.remove("music-cursor"); // 放開即恢復原生游標
+    };
+    window.addEventListener("mousedown", down);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => {
+      document.documentElement.classList.remove("music-cursor");
+      window.removeEventListener("mousedown", down);
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) {
@@ -488,19 +454,23 @@ export default function HomeClient({ sale }) {
     startBuy(selectedPlan || PLANS[1]);
   }
 
+
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = !sale.classroomOpen;
 
   // 購買鈕三態文案：開賣前 → 即將開賣；波段 → 立即預購；牌價（教室已開）→ 立即購買
   const buyLabel = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買課程" : "立即預購課程");
-  const buyShort = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買" : "立即預購");
+  // Hero 優惠卡綁定主推方案（bundle）的波段定價
+  const offer = sale.plans[PLANS[1].plan];
 
   return (
     <>
+      {/* 高音譜記號自訂游標（滑入 Hero 時顯示並跟隨） */}
+      <div ref={musicCursorRef} className={styles.musicCursor} aria-hidden="true">𝄞</div>
       {/* NAV */}
-      <header className={styles.nav}>
+      <header className={`${styles.nav} ${showStickyBar ? styles.navSolid : styles.navTransparent}`}>
         <div className={styles.container + " " + styles.navInner}>
-          <a href="/" aria-label="InRecord"><Logo /></a>
+          <a href="/" aria-label="InRecord"><Logo white={!showStickyBar} /></a>
           <nav className={styles.navLinks}>
             <a href="#intro">課程介紹</a>
             <a href="#curriculum">課程大綱</a>
@@ -542,106 +512,95 @@ export default function HomeClient({ sale }) {
       )}
 
       <main id="top">
-        {/* HERO */}
+        {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
-          <div className={styles.container + " " + styles.heroGrid}>
+          <div className={styles.heroPhoto} aria-hidden="true" />
+          <div
+            className={styles.heroPhotoZone}
+            aria-hidden="true"
+            onMouseEnter={() => setPhotoHover(true)}
+            onMouseLeave={() => setPhotoHover(false)}
+            onMouseMove={(e) => {
+              const term = termRef.current;
+              if (!term) return;
+              const z = e.currentTarget.getBoundingClientRect();
+              const x = Math.max(8, Math.min(e.clientX - z.left - term.offsetWidth / 2, z.width - term.offsetWidth - 8));
+              const y = Math.max(8, Math.min(e.clientY - z.top + 20, z.height - term.offsetHeight - 8));
+              term.style.transform = `translate(${x}px, ${y}px)`;
+            }}
+          >
+            {/* 終端機：跟著游標在右側照片區內浮現移動（觸控裝置隱藏） */}
+            <div ref={termRef} className={`${styles.statsCard} ${photoHover ? styles.statsShow : ""}`}>
+              <div className={styles.termBar}>
+                <span className={styles.termDot} /><span className={styles.termDot} /><span className={styles.termDot} />
+                <span className={styles.termTitle}>inrecord — stats.sh</span>
+              </div>
+              <div className={styles.termBody}>
+                <div className={styles.termLn}>
+                  <span className={styles.termP}>›</span>
+                  <StatItem value={stats ? stats.purchases : null}                              suffix="+" en="members"  label="學員加入學習" />
+                  <StatItem value={stats && stats.rating != null ? Number(stats.rating) : null} suffix=""  en="rating"   label="學員平均評分" />
+                </div>
+                <div className={styles.termLn}>
+                  <span className={styles.termP}>›</span>
+                  <StatItem value={10} suffix=""  en="chapters" label="系統化章節" />
+                  <StatItem value={20} suffix="+" en="songs"    label="流行曲目實戰" />
+                  <span className={styles.termCur} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={styles.heroGrid}>
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
               <motion.span variants={fadeUp} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
               <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroSub}>搞懂三和弦與基礎伴奏</motion.p>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
-                {sale.plans[PLANS[1].plan].isEarlyBird && (
-                  <span className={styles.offerPill}>早鳥優惠{sale.nextIncreaseAt && <Countdown to={sale.nextIncreaseAt} prefix=" · 漲價倒數 " />}</span>
-                )}
+                <span className={styles.offerPill}>
+                  {offer.isEarlyBird ? "早鳥優惠" : "課程方案"}
+                  {offer.isEarlyBird && sale.nextIncreaseAt && <Countdown to={sale.nextIncreaseAt} prefix=" · 漲價倒數 " />}
+                </span>
                 <div className={styles.offerPriceRow}>
-                  <span className={styles.offerPrice}>NT${sale.plans[PLANS[1].plan].price.toLocaleString()}</span>
-                  {sale.plans[PLANS[1].plan].isEarlyBird && (
-                    <span className={styles.offerWas}>NT${sale.plans[PLANS[1].plan].originalPrice.toLocaleString()}</span>
-                  )}
+                  <span className={styles.offerPrice}>NT${offer.price.toLocaleString()}</span>
+                  {offer.isEarlyBird && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
                 </div>
                 <div className={styles.offerBtns}>
-                  <button className={styles.btnRed} onClick={openBuy} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>{buyLabel}</button>
+                  <button className={styles.btnRed} onClick={openBuy} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>{buyLabel}</button>
                   <a href="/demo" className={styles.btnOutline}>
                     <Play size={16} />課程 Demo 體驗
                   </a>
                 </div>
                 <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天不滿意，全額退費保證</span>
               </motion.div>
-              {!sale.onSale && (
-                <motion.div variants={fadeUp} style={{ marginTop: 12, wordBreak: "keep-all", lineBreak: "strict" }}>
-                  {sale.salesStartAt && <Countdown to={sale.salesStartAt} prefix="早鳥開賣倒數 " style={{ fontWeight: 800, color: "#2563eb" }} />}
-                  <NotifyMeForm />
-                  <p style={{ marginTop: 10, fontSize: 13, wordBreak: "keep-all", lineBreak: "strict" }}>
-                    持有序號／優惠碼？
-                    <button type="button" onClick={() => startBuy(PLANS[1])}
-                      style={{ background: "none", border: 0, color: "#2563eb", fontWeight: 800, cursor: "pointer", textDecoration: "underline", padding: 0 }}>
-                      點此兌換
-                    </button>
-                  </p>
-                </motion.div>
-              )}
-            </motion.div>
-
-            <motion.aside
-              className={styles.videoCard}
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className={styles.videoThumb} onClick={() => { window.location.href = "/demo"; }} role="button" tabIndex={0}>
-                <div className={styles.play}><Play size={22} fill="currentColor" /></div>
-              </div>
-              <h3>課程介紹影片</h3>
-              <ul className={styles.checkList}>
-                {["10 章節完整課程","20+ 首流行歌曲實戰","互動遊戲強化學習","無限次觀看，隨時學習"].map(i => (
-                  <li key={i}>{i}</li>
-                ))}
-              </ul>
-            </motion.aside>
-          </div>
-        </section>
-
-        {/* STATS */}
-        <section className={styles.stats}>
-          <div className={styles.container}>
-            <motion.div
-              className={styles.statsCard}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <StatItem icon={Users}    value={stats ? stats.purchases : null}                               suffix="+" label="學員加入學習" />
-              <StatItem icon={Star}     value={stats && stats.rating != null ? Number(stats.rating) : null}  suffix=" / 5" label="學員平均評分" />
-              <StatItem icon={BookOpen} value={10}  suffix=""  label="系統化章節" />
-              <StatItem icon={Music}    value={20}  suffix="+" label="流行曲目實戰" />
             </motion.div>
           </div>
         </section>
 
-        {/* INTRO */}
+        {/* INTRO — editorial "polished symmetric" */}
         <RevealSection id="intro" className={styles.introSection}>
           <div className={styles.container}>
-            <div className={styles.sectionHead} style={{ marginBottom: "32px" }}>
-              <h2>課程設計與說明</h2>
+            <div className={styles.introHeader}>
+              <div className={styles.introEyebrow}>Course Design</div>
+              <h2 className={styles.introHead}>課程設計與說明</h2>
+              <div className={styles.introRule} />
+              <p className={styles.introSubline}>10 章節循序漸進，從零基礎到能彈出自己喜歡的歌。</p>
             </div>
             <motion.div
-              className={styles.featureGrid}
-              style={{ marginBottom: "56px" }}
+              className={styles.introIndex}
               variants={stagger}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-40px" }}
             >
               {[
-                [Music2, "零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
-                [Bot,    "互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
-                [Music,  "流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
-                [Award,  "成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
-              ].map(([Icon, title, desc]) => (
-                <motion.div key={title} className={styles.featureCard} variants={fadeUp}>
-                  <div className={styles.featureIcon}><Icon size={22} strokeWidth={1.5} /></div>
+                ["零基礎友善",   "從鍵盤、中央 C、音名開始，不跳步、不硬塞。"],
+                ["互動遊戲",  "音名快閃、唱名階梯、和弦辨識家，讓練習變有趣。"],
+                ["流行曲目實戰", "用熟悉歌曲練習，提升成就感與持續學習動機。"],
+                ["成果導向",     "最後完成一首完整曲目，建立下一階段學習基礎。"],
+              ].map(([title, desc], i) => (
+                <motion.div key={title} className={styles.introIx} variants={fadeUp}>
+                  <div className={styles.introIxNo}>{String(i + 1).padStart(2, "0")}</div>
                   <h3>{title}</h3>
                   <p>{desc}</p>
                 </motion.div>
@@ -733,7 +692,8 @@ export default function HomeClient({ sale }) {
               <small>講師介紹</small>
               <h2>Rick Chang<br/><span>張育瑞老師</span></h2>
               <p className={styles.instructorRole}>音樂製作人・鋼琴演奏者・流行鋼琴老師</p>
-              <p>美國波士頓 Berklee College of Music 音樂碩士，簽約碩樂國際娛樂（Universal Music Publishing 台灣授權公司），首張個人專輯《Fire!》登上 iTunes 流行榜冠軍。榮獲 Global Music Awards 銅獎；2024 巴黎奧運主題歌曲累計超過 200 萬次觀看；與布達佩斯交響樂團合作錄製管弦樂作品。</p>
+              <p>美國波士頓 <span style={{ whiteSpace: "nowrap" }}>Berklee College of Music</span> 音樂碩士，簽約碩樂國際娛樂（<span style={{ whiteSpace: "nowrap" }}>Universal Music Publishing</span> 台灣授權公司），首張個人專輯《Fire!》登上 iTunes 流行榜冠軍。</p>
+              <p>榮獲 <span style={{ whiteSpace: "nowrap" }}>Global Music Awards</span> 銅獎，2024 巴黎奧運主題歌曲累計超過 200 萬次觀看，並與布達佩斯交響樂團合作錄製管弦樂作品。</p>
               <ul className={styles.instructorCreds}>
                 {[
                   [GraduationCap, "Berklee College of Music 音樂碩士"],
@@ -782,30 +742,11 @@ export default function HomeClient({ sale }) {
                   </div>
                   <h3 className={styles.planName}>{p.label}</h3>
                   <div className={styles.planPriceBlock}>
-                    {sale.state === "pre_launch" ? (
-                      <div className={styles.planPriceRow} style={{ fontWeight: 800, color: "#2563eb", wordBreak: "keep-all", lineBreak: "strict" }}>
-                        即將開賣
-                      </div>
-                    ) : (
-                      <>
-                        <div className={styles.planPriceRow}>
-                          <span className={styles.planCurrency}>NT$</span>
-                          <span className={styles.planPrice}>{sale.plans[p.plan].price.toLocaleString()}</span>
-                          <span className={styles.planUnit}>／永久</span>
-                        </div>
-                        {sale.plans[p.plan].isEarlyBird && (
-                          <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700, wordBreak: "keep-all", lineBreak: "strict" }}>
-                            <span style={{ textDecoration: "line-through", color: "#94a3b8", marginRight: 8 }}>
-                              NT${sale.plans[p.plan].originalPrice.toLocaleString()}
-                            </span>
-                            <span style={{ color: "#D4192C" }}>早鳥優惠</span>
-                            {sale.nextIncreaseAt && (
-                              <Countdown to={sale.nextIncreaseAt} prefix="・漲價倒數 " style={{ color: "#D4192C", marginLeft: 4 }} />
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
+                    <div className={styles.planPriceRow}>
+                      <span className={styles.planCurrency}>NT$</span>
+                      <span className={styles.planPrice}>{sale.plans[p.plan].price.toLocaleString()}</span>
+                      <span className={styles.planUnit}>／永久</span>
+                    </div>
                   </div>
                   <p className={styles.planDesc}>{p.desc}</p>
                   <ul className={styles.planFeatures}>
@@ -817,12 +758,10 @@ export default function HomeClient({ sale }) {
                     className={`${styles.planBtn} ${p.featured ? styles.planBtnFeatured : ""}`}
                     onClick={() => startBuy(p)}
                     disabled={!sale.onSale}
-                    style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}
+                    style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}
                   >
                     <ShoppingCart size={17} />
-                    {!sale.onSale
-                      ? "即將開賣"
-                      : `${sale.classroomOpen ? "立即購買" : "立即預購"}　NT$${sale.plans[p.plan].price.toLocaleString()}`}
+                    {sale.onSale ? `${p.cta}　NT$${sale.plans[p.plan].price.toLocaleString()}` : "即將開賣"}
                   </button>
                 </motion.div>
               ))}
@@ -844,7 +783,7 @@ export default function HomeClient({ sale }) {
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
                 ["學完後可以彈哪些歌？",         "課程實戰練習包含《Do-Re-Mi》、《Happy Birthday》、《稻香》、《告白氣球》、《刻在我心底的名字》、《Always With Me》等 20+ 首。"],
-                ["課程包和單買有什麼差別？",     `學琴全攻略（NT$${sale.plans.bundle.price.toLocaleString()}）一次擁有完整課程與全部互動遊戲，最超值；也可只買鋼琴自學全課程（NT$${sale.plans.course.price.toLocaleString()}），兩者皆為一次買斷、永久使用。`],
+                ["課程包和單買有什麼差別？",     "學琴全攻略（NT$3,999）一次擁有完整課程與全部互動遊戲，最超值；也可只買鋼琴自學全課程（NT$3,800），兩者皆為一次買斷、永久使用。"],
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -867,8 +806,8 @@ export default function HomeClient({ sale }) {
             <div className={styles.cta}>
               <h2>現在開始，彈出你的第一首流行歌曲</h2>
               <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
-              <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>
-                {buyLabel}
+              <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
+                立即購買課程
               </button>
             </div>
           </div>
@@ -877,11 +816,11 @@ export default function HomeClient({ sale }) {
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>
         <div className={styles.stickyBuyInfo}>
-          <span className={styles.stickyBuyPrice} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>{!sale.onSale ? "即將開賣" : `NT$${sale.plans.bundle.price.toLocaleString()}`}</span>
+          <span className={styles.stickyBuyPrice}>NT${offer.price.toLocaleString()}</span>
           <span className={styles.stickyBuyLabel}>學琴全攻略</span>
         </div>
-        <button className={styles.stickyBuyBtn} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>
-          <ShoppingCart size={17} />{buyShort}
+        <button className={styles.stickyBuyBtn} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>
+          <ShoppingCart size={17} />{!sale.onSale ? "即將開賣" : "立即購買"}
         </button>
       </div>
 
