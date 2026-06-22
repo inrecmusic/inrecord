@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import BuyModal from "@/components/BuyModal";
+import { isFanProofOpen } from "@/lib/fan-proof";
 import Countdown from "@/components/Countdown";
 import PointCarousel from "@/components/PointCarousel";
 import styles from "./page.module.css";
@@ -369,6 +370,8 @@ export default function HomeClient({ sale }) {
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [fanChoice, setFanChoice] = useState("direct");   // 粉絲卡選項
+  const [fanProofMode, setFanProofMode] = useState(false); // 傳給 BuyModal
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
@@ -444,9 +447,10 @@ export default function HomeClient({ sale }) {
     }
   }, []);
 
-  function startBuy(plan) {
+  function startBuy(plan, opts = {}) {
     if (!user?.email) { window.location.href = "/classroom/login"; return; }
     setSelectedPlan(plan);
+    setFanProofMode(!!opts.fanProof);
     setBuyOpen(true);
   }
 
@@ -460,8 +464,15 @@ export default function HomeClient({ sale }) {
 
   // 購買鈕三態文案：開賣前 → 即將開賣；波段 → 立即預購；牌價（教室已開）→ 立即購買
   const buyLabel = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買課程" : "立即預購課程");
+  const buyShort = sale.classroomOpen ? "立即購買" : "立即預購";
   // Hero 優惠卡綁定主推方案（bundle）的波段定價
   const offer = sale.plans[PLANS[1].plan];
+
+  const fanRowStyle = (on) => ({
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    border: `1.5px solid ${on ? "#9c3540" : "#d8c9ad"}`, background: on ? "#fbf3ef" : "transparent",
+    borderRadius: 12, padding: "11px 14px", cursor: "pointer", fontSize: 14,
+  });
 
   return (
     <>
@@ -720,51 +731,58 @@ export default function HomeClient({ sale }) {
               <h2>選擇最適合你的方案</h2>
               <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
-            <motion.div
-              className={styles.plansRow}
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-40px" }}
-            >
-              {PLANS.map(p => (
-                <motion.div
-                  key={p.plan}
-                  className={[styles.planCard, p.featured ? styles.planCardFeatured : ""].join(" ")}
-                  variants={fadeUp}
-                >
-                  {p.ribbon && <div className={styles.planRibbon}>{p.ribbon}</div>}
-                  <div className={styles.planHeaderRow}>
-                    <div className={`${styles.planPill} ${p.featured ? styles.planPillDark : ""}`}>
-                      <span className={styles.planPillDot} />
-                      {p.pillLabel}
-                    </div>
-                  </div>
-                  <h3 className={styles.planName}>{p.label}</h3>
-                  <div className={styles.planPriceBlock}>
-                    <div className={styles.planPriceRow}>
-                      <span className={styles.planCurrency}>NT$</span>
-                      <span className={styles.planPrice}>{sale.plans[p.plan].price.toLocaleString()}</span>
-                      <span className={styles.planUnit}>／永久</span>
-                    </div>
-                  </div>
-                  <p className={styles.planDesc}>{p.desc}</p>
-                  <ul className={styles.planFeatures}>
-                    {p.features.map(f => (
-                      <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>
-                    ))}
-                  </ul>
-                  <button
-                    className={`${styles.planBtn} ${p.featured ? styles.planBtnFeatured : ""}`}
-                    onClick={() => startBuy(p)}
-                    disabled={!sale.onSale}
-                    style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}
-                  >
-                    <ShoppingCart size={17} />
-                    {sale.onSale ? `${p.cta}　NT$${sale.plans[p.plan].price.toLocaleString()}` : "即將開賣"}
-                  </button>
-                </motion.div>
-              ))}
+            <motion.div className={styles.plansRow} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
+              {/* 學琴全攻略（bundle） */}
+              <motion.div className={styles.planCard} variants={fadeUp}>
+                <div className={styles.planHeaderRow}>
+                  <div className={styles.planPill}><span className={styles.planPillDot} />最超值全配</div>
+                </div>
+                <h3 className={styles.planName}>學琴全攻略</h3>
+                <div className={styles.planPriceBlock}><div className={styles.planPriceRow}>
+                  <span className={styles.planCurrency}>NT$</span>
+                  <span className={styles.planPrice}>{sale.plans[PLANS[1].plan].price.toLocaleString()}</span>
+                  <span className={styles.planUnit}>／永久</span>
+                </div></div>
+                <p className={styles.planDesc}>課程 + 互動遊戲，永久使用、一次擁有全部。</p>
+                <ul className={styles.planFeatures}>
+                  {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
+                </ul>
+                <button className={styles.planBtn} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale}
+                  style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>
+                  <ShoppingCart size={17} />{sale.onSale ? `${buyLabel}　NT$${sale.plans[PLANS[1].plan].price.toLocaleString()}` : buyLabel}
+                </button>
+              </motion.div>
+
+              {/* 粉絲限定方案（卡內兩選項） */}
+              <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
+                <div className={styles.planRibbon}>★ 粉絲限定</div>
+                <div className={styles.planHeaderRow}>
+                  <div className={`${styles.planPill} ${styles.planPillDark}`}><span className={styles.planPillDot} />演奏會／專輯／樂譜粉絲</div>
+                </div>
+                <h3 className={styles.planName}>粉絲限定方案</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }}>
+                  <label style={fanRowStyle(fanChoice === "direct")} onClick={() => setFanChoice("direct")}>
+                    <span>直接購買</span>
+                    <strong>NT$3,999</strong>
+                  </label>
+                  {isFanProofOpen() && (
+                    <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")}>
+                      <span>上傳憑證 · 粉絲價</span>
+                      <strong><s style={{ color: "#9a8", fontWeight: 400, marginRight: 6 }}>$3,999</s>NT$3,499</strong>
+                    </label>
+                  )}
+                </div>
+                <ul className={styles.planFeatures}>
+                  {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
+                </ul>
+                <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
+                  onClick={() => startBuy(PLANS[1], { fanProof: fanChoice === "proof" })}
+                  disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>
+                  <ShoppingCart size={17} />
+                  {!sale.onSale ? buyLabel : fanChoice === "proof" ? `上傳憑證並${buyShort}　NT$3,499` : `${buyLabel}　NT$3,999`}
+                </button>
+                {isFanProofOpen() && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 9/3 截止</span>}
+              </motion.div>
             </motion.div>
             <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・購買後立即開通・永久有效</p>
           </div>
@@ -850,7 +868,7 @@ export default function HomeClient({ sale }) {
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} />
     </>
   );
 }
