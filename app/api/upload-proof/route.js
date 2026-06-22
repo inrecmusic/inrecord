@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
-
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
-
-function isValidImageBytes(buf, mime) {
-  if (mime === "image/jpeg") return buf[0] === 0xff && buf[1] === 0xd8;
-  if (mime === "image/png")  return buf[0] === 0x89 && buf[1] === 0x50;
-  return false;
-}
+import { validateProofImage } from "@/lib/proof-image";
 
 export async function POST(req) {
   // Require authenticated Supabase user
@@ -31,21 +24,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "no_file" }, { status: 400 });
     }
 
-    const allowed = ["image/jpeg", "image/png"];
-    if (!allowed.includes(file.type)) {
-      return NextResponse.json({ error: "invalid_type" }, { status: 400 });
-    }
-
-    const bytes = await file.arrayBuffer();
-    if (bytes.byteLength > MAX_BYTES) {
-      return NextResponse.json({ error: "file_too_large" }, { status: 400 });
-    }
-
-    const buffer = Buffer.from(bytes);
-    if (!isValidImageBytes(buffer, file.type)) {
-      return NextResponse.json({ error: "invalid_file" }, { status: 400 });
-    }
-    const ext = file.type === "image/png" ? "png" : "jpg";
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const v = validateProofImage(buf, file.type);
+    if (!v.ok) return NextResponse.json({ url: null, error: v.error }, { status: 400 });
+    const ext = v.ext;
     const filename = `proofs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
     const supabase = getSupabaseAdmin();
@@ -53,7 +35,7 @@ export async function POST(req) {
 
     const { error } = await supabase.storage
       .from("proof-uploads")
-      .upload(filename, buffer, { contentType: file.type, upsert: false });
+      .upload(filename, buf, { contentType: file.type, upsert: false });
 
     if (error) {
       console.error("[upload-proof] storage error:", error.message);
