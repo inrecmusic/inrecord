@@ -33,6 +33,10 @@ ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS email_error   TEXT,        -- 最後一次寄開課信失敗原因（成功時清為 null）
   ADD COLUMN IF NOT EXISTS fulfilled_at  TIMESTAMPTZ; -- 首次付款成功處理時間；作為優惠券累計／寄信的去重旗標（與可重試的開發票分離）
 
+-- 粉絲限定憑證折價：訂單帶憑證與審核狀態（idempotent）
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS proof_url TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS fan_review TEXT;   -- NULL=非粉絲單；'pending'|'approved'|'rejected'
+
 
 -- ────────────────────────────────────────────────────────────────────────
 -- ② 優惠券：coupons 表 + orders.coupon_code
