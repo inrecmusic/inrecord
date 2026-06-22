@@ -21,7 +21,7 @@ export async function POST(req) {
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
   const { data: { user }, error: authErr } = await userClient.auth.getUser();
-  if (authErr || !user?.email) {
+  if (authErr || !user) {
     return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
@@ -61,8 +61,9 @@ export async function POST(req) {
   for (let i = 0; i < 2 && !couponCode; i++) {
     const code = generateCode("FAN", 8);
     const { error } = await supabase.from("coupons").insert(buildFanCoupon({ code }));
-    if (!error) couponCode = code;
-    // error.code === "23505" → 碰撞，下一輪重試；其他錯誤繼續嘗試一次
+    if (!error) { couponCode = code; break; }
+    if (error.code !== "23505") { console.error("[fan-proof] coupon insert error:", error.message); break; }
+    // 23505 = 序號碰撞 → 重試
   }
   if (!couponCode) {
     return Response.json({ ok: false, error: "coupon_failed" }, { status: 500 });
