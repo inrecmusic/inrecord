@@ -464,6 +464,7 @@ export default function HomeClient({ sale }) {
 
   // 購買鈕三態文案：開賣前 → 即將開賣；波段 → 立即預購；牌價（教室已開）→ 立即購買
   const buyLabel = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買課程" : "立即預購課程");
+  // 短版購買鈕文案（粉絲卡用）
   const buyShort = sale.classroomOpen ? "立即購買" : "立即預購";
   // Hero 優惠卡綁定主推方案（bundle）的波段定價
   const offer = sale.plans[PLANS[1].plan];
@@ -760,13 +761,13 @@ export default function HomeClient({ sale }) {
                   <div className={`${styles.planPill} ${styles.planPillDark}`}><span className={styles.planPillDot} />演奏會／專輯／樂譜粉絲</div>
                 </div>
                 <h3 className={styles.planName}>粉絲限定方案</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }}>
-                  <label style={fanRowStyle(fanChoice === "direct")} onClick={() => setFanChoice("direct")}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }} role="radiogroup" aria-label="粉絲限定購買方式">
+                  <label style={fanRowStyle(fanChoice === "direct")} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
                     <span>直接購買</span>
                     <strong>NT$3,999</strong>
                   </label>
                   {isFanProofOpen() && (
-                    <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")}>
+                    <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
                       <span>上傳憑證 · 粉絲價</span>
                       <strong><s style={{ color: "#9a8", fontWeight: 400, marginRight: 6 }}>$3,999</s>NT$3,499</strong>
                     </label>
