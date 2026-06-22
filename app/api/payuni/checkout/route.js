@@ -164,7 +164,7 @@ export async function POST(req) {
         carrier_type: carrierType || null,
         carrier_id:   carrierId || null,
         coupon_code:  couponCode || null,
-        ...(typeof proofUrl === "string" && proofUrl ? { proof_url: proofUrl, fan_review: "pending" } : {}),
+        ...(typeof proofUrl === "string" && proofUrl.length <= 2048 && /^https:\/\//.test(proofUrl) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
       });
       if (error) {
         console.error("[payuni checkout] supabase error", error.message);
