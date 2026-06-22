@@ -2,6 +2,7 @@
   "cleanUrls": true,
   "framework": "nextjs",
   "crons": [
-    { "path": "/api/cron/release-coupons", "schedule": "0 4 * * *" }
+    { "path": "/api/cron/release-coupons", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/sale-launch-notify", "schedule": "5 4 * * *" }
   ]
 }

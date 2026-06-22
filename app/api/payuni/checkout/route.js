@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
+import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/plans";
+import { currentPrice, getSaleSettings, isOnSale } from "@/lib/sale";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 
@@ -43,43 +44,46 @@ export async function POST(req) {
     if (!email || typeof email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }
-    let price = catalog.price;
+    const saleSettings = await getSaleSettings();
     const label = catalog.label;
 
-    // 2.5) 優惠券：後端重新驗證、計算折後價，並對「限量券」原子預扣一次額度。
-    //   ⚠️ 安全性：折扣此刻就寫進 PayUni TradeAmt，因此限量額度必須在 checkout 當下
-    //   原子消耗，不能等 notify 才 used++ —— 否則同一張單次券能在付款前並發多開、
-    //   每筆都拿到折扣（TOCTOU 重複折抵）。用樂觀鎖 CAS：UPDATE ... WHERE used=<讀到值>，
-    //   並發時只有第一個成功、其餘 0 列即拒絕。無限量券無上限可超用，不需預扣。
-    if (body.couponCode) {
-      const sb = getSupabaseAdmin();
-      if (sb) {
-        const code = String(body.couponCode).trim().toUpperCase();
-        const { data: coupon } = await sb
-          .from("coupons")
-          .select("*")
-          .eq("code", code)
-          .maybeSingle();
-        const cErr = couponError(coupon);
-        if (cErr) return NextResponse.json({ error: cErr }, { status: 400 });
+    // 先取得並驗證優惠券（讓有效「指定價」券可繞過開賣前封鎖）
+    let coupon = null;
+    const sb = getSupabaseAdmin();
+    if (body.couponCode && sb) {
+      const code = String(body.couponCode).trim().toUpperCase();
+      const { data } = await sb.from("coupons").select("*").eq("code", code).maybeSingle();
+      coupon = data;
+      const cErr = couponError(coupon);
+      if (cErr) return NextResponse.json({ error: cErr }, { status: 400 });
+      const pErr = couponPlanError(coupon, plan);
+      if (pErr) return NextResponse.json({ error: pErr }, { status: 400 });
+    }
 
-        if (coupon.usage_limit != null) {
-          const prevUsed = coupon.used || 0;
-          const { data: claimed } = await sb
-            .from("coupons")
-            .update({ used: prevUsed + 1 })
-            .eq("code", code)
-            .eq("used", prevUsed)            // CAS：used 未被其他並發請求動過才成功
-            .select("id");
-          if (!claimed || claimed.length === 0) {
-            return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
-          }
-          couponPrevUsed = prevUsed;
-          couponClaimed = true;
+    // pre_launch：僅在有有效「指定價」券時放行（一般購買未開）
+    const hasPriceCoupon = !!(coupon && coupon.type === "price");
+    if (!isOnSale(saleSettings, new Date()) && !hasPriceCoupon) {
+      return NextResponse.json({ error: "not_on_sale" }, { status: 400 });
+    }
+
+    let price = currentPrice(plan, saleSettings, new Date());
+
+    // 限量券原子預扣（序號 usage_limit=1）＋套用折扣
+    if (coupon) {
+      const codeUp = coupon.code;
+      if (coupon.usage_limit != null) {
+        const prevUsed = coupon.used || 0;
+        const { data: claimed } = await sb
+          .from("coupons").update({ used: prevUsed + 1 })
+          .eq("code", codeUp).eq("used", prevUsed).select("id");
+        if (!claimed || claimed.length === 0) {
+          return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
         }
-        price = applyCoupon(price, coupon);
-        couponCode = code;
+        couponPrevUsed = prevUsed;
+        couponClaimed = true;
       }
+      price = applyCoupon(price, coupon);
+      couponCode = codeUp;
     }
     if (price < 1) return NextResponse.json({ error: "amount_too_low" }, { status: 400 });
 

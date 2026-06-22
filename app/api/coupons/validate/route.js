@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { PLAN_CATALOG, applyCoupon, couponError } from "@/lib/plans";
+import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/plans";
+import { currentPrice, getSaleSettings } from "@/lib/sale";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 
 // 公開端點：每 IP 每分鐘 30 次，擋優惠碼/序號枚舉（全域，缺 Redis 時記憶體保底）
@@ -34,16 +35,22 @@ export async function POST(req) {
     const err = couponError(coupon);
     if (err) return NextResponse.json({ valid: false, error: err }, { status: 200 });
 
-    const finalPrice = applyCoupon(catalog.price, coupon);
+    const pErr = couponPlanError(coupon, plan);
+    if (pErr) return NextResponse.json({ valid: false, error: pErr }, { status: 200 });
+
+    // 基準價走 sale_settings（早鳥/原價），與 checkout 後端一致；前端顯示用，checkout 會再次後端驗證
+    const settings = await getSaleSettings();
+    const basePrice = currentPrice(plan, settings, new Date());
+    const finalPrice = applyCoupon(basePrice, coupon);
     return NextResponse.json({
       valid: true,
       code: coupon.code,
       name: coupon.name,
       type: coupon.type,
       value: coupon.value,
-      originalPrice: catalog.price,
+      originalPrice: basePrice,
       finalPrice,
-      discount: catalog.price - finalPrice,
+      discount: basePrice - finalPrice,
     });
   } catch (e) {
     return NextResponse.json({ valid: false, error: e.message }, { status: 500 });

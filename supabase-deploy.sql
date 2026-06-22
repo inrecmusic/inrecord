@@ -6,10 +6,11 @@
 --   1. 打開 Supabase → SQL Editor → New query
 --   2. 整份貼上、按 Run（全部為 IF NOT EXISTS / idempotent，可安全重複執行）
 --
--- 內含三組變更：
+-- 內含四組變更：
 --   ①  發票（Amego）         — orders 表新增發票相關欄位
 --   ②  優惠券                — coupons 表 + orders.coupon_code
 --   ③  課程管理              — courses 表（含預設課程種子）
+--   ④  銷售期間設定          — sale_settings 表（單列；開課日/早鳥/各方案價/手動覆寫）
 --
 -- 前置：本檔假設 orders 表已存在（見 supabase-schema.sql）。
 -- 對應的單獨檔案：
@@ -40,11 +41,12 @@ CREATE TABLE IF NOT EXISTS coupons (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT NOT NULL,
   code        TEXT NOT NULL UNIQUE,            -- 優惠碼（大寫）
-  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed'
-  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$
+  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed' | 'price'
+  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$；price: 指定成交價 NT$
   used        INTEGER NOT NULL DEFAULT 0,      -- 已使用次數（付款成功才累計）
   usage_limit INTEGER,                         -- NULL = 無限制
   status      TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'disabled'
+  plan        TEXT,                            -- 鎖定方案 'course'|'bundle'；NULL = 不限
   starts_at   DATE,                            -- NULL = 不限開始
   ends_at     DATE,                            -- NULL = 不限結束
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -89,10 +91,11 @@ WHERE NOT EXISTS (SELECT 1 FROM courses);
 CREATE TABLE IF NOT EXISTS coupon_batches (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT NOT NULL,                   -- 例：2026 春季演奏會
-  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed'
-  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$
+  type        TEXT NOT NULL DEFAULT 'percent', -- 'percent' | 'fixed' | 'price'
+  value       INTEGER NOT NULL,                -- percent: 1-100；fixed: NT$；price: 指定成交價 NT$
   prefix      TEXT,                            -- 序號前綴，例 LIVE
   note        TEXT,                            -- 活動備註
+  plan        TEXT,                            -- 鎖定方案 'course'|'bundle'；NULL = 不限
   starts_at   DATE,
   ends_at     DATE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -105,3 +108,43 @@ CREATE POLICY "service_role_coupon_batches" ON coupon_batches
 ALTER TABLE coupons ADD COLUMN IF NOT EXISTS batch_id UUID
   REFERENCES coupon_batches(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS coupons_batch_idx ON coupons (batch_id);
+
+-- ════════════════════════════════════════
+-- 銷售期間設定 sale_settings（單列）
+-- 開課日/波段定價/手動覆寫/開課通知冪等旗標
+-- ════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS sale_settings (
+  id                 TEXT PRIMARY KEY DEFAULT 'default',
+  open_at            TIMESTAMPTZ,
+  list_price         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  waves              JSONB NOT NULL DEFAULT '[]'::jsonb,
+  lock_override      TEXT,
+  launch_notified_at TIMESTAMPTZ,
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT sale_settings_singleton CHECK (id = 'default'),
+  CONSTRAINT sale_settings_lock_override_chk
+    CHECK (lock_override IS NULL OR lock_override IN ('open','locked'))
+);
+
+INSERT INTO sale_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE sale_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "service_role_write_sale_settings" ON sale_settings;
+CREATE POLICY "service_role_write_sale_settings" ON sale_settings
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- SELECT 刻意對 public 開放（開課日/價格本就公開顯示；供 middleware 用 anon 讀）。
+DROP POLICY IF EXISTS "public_read_sale_settings" ON sale_settings;
+CREATE POLICY "public_read_sale_settings" ON sale_settings
+  FOR SELECT USING (true);
+
+-- 遷移：既有 sale_settings 從單一早鳥 → 波段模型
+ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS list_price JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS waves      JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE sale_settings DROP COLUMN IF EXISTS plan_pricing;
+ALTER TABLE sale_settings DROP COLUMN IF EXISTS early_bird_ends_at;
+
+-- 遷移：指定價通路（Sub-2）
+ALTER TABLE coupons        ADD COLUMN IF NOT EXISTS plan TEXT;
+ALTER TABLE coupon_batches ADD COLUMN IF NOT EXISTS plan TEXT;
