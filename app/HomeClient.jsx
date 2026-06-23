@@ -771,9 +771,9 @@ export default function HomeClient({ sale }) {
                   )}
                 </div>
                 {isFanProofOpen() && (
-                  <p style={{ fontSize: 12.5, color: "#6a5b48", margin: "-2px 0 14px", lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 12.5, color: "#6a5b48", background: "#faf6ef", border: "1px solid #ecdfc9", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
                     ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT$3,499 購買。
-                  </p>
+                  </div>
                 )}
                 <ul className={styles.planFeatures}>
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
@@ -784,7 +784,7 @@ export default function HomeClient({ sale }) {
                   <ShoppingCart size={17} />
                   {!sale.onSale ? buyLabel : fanChoice === "proof" ? `上傳憑證並${buyShort}　NT$3,499` : `${buyLabel}　NT$3,999`}
                 </button>
-                {isFanProofOpen() && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 9/3 截止</span>}
+                {isFanProofOpen() && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 7/31 截止</span>}
               </motion.div>
             </motion.div>
             <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・購買後立即開通・永久有效</p>

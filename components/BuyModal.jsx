@@ -105,7 +105,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     finally { setFanUploading(false); }
   }
   function fanErrText(e) {
-    return e === "closed" ? "粉絲憑證申請已截止（9/3）" :
+    return e === "closed" ? "粉絲憑證申請已截止（7/31）" :
            e === "too_large" ? "圖片需小於 5MB" :
            (e === "bad_type" || e === "bad_magic") ? "僅接受 JPG / PNG 圖片" :
            e === "unauthorized" ? "請先登入" : "上傳失敗，請重試";
