@@ -566,7 +566,7 @@ export default function HomeClient({ sale }) {
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
               <motion.span variants={fadeUp} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
               <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
-              <motion.p variants={fadeUp} className={styles.heroSub}>搞懂三和弦與基礎伴奏</motion.p>
+              <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
                 <span className={styles.offerPill}>
@@ -757,9 +757,6 @@ export default function HomeClient({ sale }) {
               {/* 粉絲限定方案（卡內兩選項） */}
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
                 <div className={styles.planRibbon}>★ 粉絲限定</div>
-                <div className={styles.planHeaderRow}>
-                  <div className={`${styles.planPill} ${styles.planPillDark}`}><span className={styles.planPillDot} />演奏會／專輯／樂譜粉絲</div>
-                </div>
                 <h3 className={styles.planName}>粉絲限定方案</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }} role="radiogroup" aria-label="粉絲限定購買方式">
                   <label style={fanRowStyle(fanChoice === "direct")} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
