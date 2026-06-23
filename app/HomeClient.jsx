@@ -471,7 +471,7 @@ export default function HomeClient({ sale }) {
 
   const fanRowStyle = (on) => ({
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    border: `1.5px solid ${on ? "#9c3540" : "#d8c9ad"}`, background: on ? "#fbf3ef" : "transparent",
+    border: `1.5px solid ${on ? "#2563eb" : "#d8c9ad"}`, background: on ? "#eef4ff" : "transparent",
     borderRadius: 12, padding: "11px 14px", cursor: "pointer", fontSize: 14,
   });
 
