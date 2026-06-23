@@ -773,6 +773,11 @@ export default function HomeClient({ sale }) {
                     </label>
                   )}
                 </div>
+                {isFanProofOpen() && (
+                  <p style={{ fontSize: 12.5, color: "#6a5b48", margin: "-2px 0 14px", lineHeight: 1.6 }}>
+                    ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT$3,499 購買。
+                  </p>
+                )}
                 <ul className={styles.planFeatures}>
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
