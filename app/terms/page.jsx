@@ -2,6 +2,10 @@ import Link from "next/link";
 
 export const metadata = { title: "服務條款 | InRecord" };
 
+const subHead = { fontWeight: 800, color: "#0f172a", margin: "18px 0 6px" };
+const cellTh = { textAlign: "left", padding: "8px 12px", border: "1px solid #e2e8f0", fontWeight: 800, color: "#0f172a" };
+const cellTd = { padding: "8px 12px", border: "1px solid #e2e8f0" };
+
 export default function TermsPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "40px 20px 80px" }}>
@@ -14,7 +18,7 @@ export default function TermsPage() {
 
         <div className="content-card" style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
           <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>服務條款</h1>
-          <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜流行鋼琴零基礎入門課 ／ 最後更新：2026 年 5 月 1 日</p>
+          <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜流行鋼琴零基礎入門課 ／ 最後更新：2026 年 6 月 23 日</p>
 
           <Section title="1. 服務說明">
             InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程的試看、購買與學習服務。使用本平台服務，即表示您同意遵守本服務條款。
@@ -37,12 +41,58 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="4. 退款政策">
+          <Section title="4. 退費政策">
+            <p style={subHead}>一、費用計算基準</p>
             <ul>
-              <li>課程購買後 <b>7 天內</b>，如對課程內容不滿意，可申請全額退款。</li>
-              <li>退款申請請 Email 至 <a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a>，說明購買日期及退款原因。</li>
-              <li>超過 7 天後恕不受理退款申請。</li>
-              <li>已完整觀看超過 <b>50% 課程內容</b>者，本平台保留拒絕退款之權利。</li>
+              <li>本課程退費一律以您<b>實際支付之優惠總價</b>為計算基準，不以課程原價或單堂定價回算已使用部分。</li>
+              <li>組合方案（含贈送單元）以整筆訂單之實付總額為基準，不就個別單元分拆計算。</li>
+            </ul>
+
+            <p style={subHead}>二、試看與七日鑑賞期</p>
+            <ul>
+              <li>本平台於購買前已提供各章節<b>試看單元</b>，供您充分檢視課程內容。</li>
+              <li>依消費者保護法及「通訊交易解除權合理例外情事準則」，線上影音課程屬數位內容；於本平台已提供前述試看機會之情形下，<b>不適用網路購物七日無條件解除權</b>之規定。</li>
+              <li>為保障學員權益，本平台仍主動提供下列退費機制。</li>
+            </ul>
+
+            <p style={subHead}>三、退費級距</p>
+            <p style={{ margin: "0 0 6px" }}><b>（一）全額退費（退還 100%）</b>——符合下列任一情形：</p>
+            <ul>
+              <li>自購買日起 <b>7 日內，且尚未觀看任何正式付費單元</b>（試看單元不計入）。</li>
+              <li>已觀看課程時數<b>未超過總時數 10%</b>。</li>
+              <li>課程未達開課條件、或本平台無法提供課程。</li>
+            </ul>
+            <p style={{ margin: "10px 0 8px" }}><b>（二）比例退費</b>——超過前款範圍者，依「<b>已觀看時數 ÷ 課程總時數</b>」計算使用比例退費：</p>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, margin: "0 0 4px" }}>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th style={cellTh}>已使用比例</th>
+                  <th style={cellTh}>退費比例</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style={cellTd}>超過 10%、未超過 30%</td><td style={cellTd}>退還 <b>80%</b></td></tr>
+                <tr><td style={cellTd}>超過 30%、未超過 50%</td><td style={cellTd}>退還 <b>50%</b></td></tr>
+                <tr><td style={cellTd}>超過 50%</td><td style={cellTd}><b>不予退費</b></td></tr>
+              </tbody>
+            </table>
+
+            <p style={subHead}>四、違約金</p>
+            <ul>
+              <li>因可歸責於您之事由終止契約者，本平台得自應退金額中扣除違約金，<b>違約金上限不超過應退金額之 20%</b>。</li>
+            </ul>
+
+            <p style={subHead}>五、退費方式與時程</p>
+            <ul>
+              <li>退費申請請來信 <a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a>，並提供<b>訂單編號</b>。</li>
+              <li>退款於受理後 <b>5 個工作天</b>內，依原付款方式退還。</li>
+              <li>退費完成後，您於本課程之觀看權限同時終止。</li>
+            </ul>
+
+            <p style={subHead}>六、其他</p>
+            <ul>
+              <li>已使用且尚未失效之折扣券、點數，依當次活動規則處理。</li>
+              <li>透過第三方平台（如 App 內購）購買者，退費依該平台規定辦理。</li>
             </ul>
           </Section>
 
