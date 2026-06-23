@@ -765,7 +765,7 @@ export default function HomeClient({ sale }) {
                   </label>
                   {isFanProofOpen() && (
                     <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
-                      <span>上傳憑證 · 粉絲價</span>
+                      <span>上傳憑證</span>
                       <strong>NT$3,499</strong>
                     </label>
                   )}
