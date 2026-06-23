@@ -85,7 +85,7 @@ export default function TermsPage() {
             <p style={subHead}>五、退費方式與時程</p>
             <ul>
               <li>退費申請請來信 <a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a>，並提供<b>訂單編號</b>。</li>
-              <li>退款於受理後 <b>5 個工作天</b>內，依原付款方式退還。</li>
+              <li>退款於受理後 <b>7 個工作天</b>內，依原付款方式退還。</li>
               <li>退費完成後，您於本課程之觀看權限同時終止。</li>
             </ul>
 
