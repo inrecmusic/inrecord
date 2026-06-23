@@ -769,7 +769,7 @@ export default function HomeClient({ sale }) {
                   {isFanProofOpen() && (
                     <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
                       <span>上傳憑證 · 粉絲價</span>
-                      <strong><s style={{ color: "#9a8", fontWeight: 400, marginRight: 6 }}>$3,999</s>NT$3,499</strong>
+                      <strong>NT$3,499</strong>
                     </label>
                   )}
                 </div>
