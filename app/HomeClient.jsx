@@ -771,7 +771,7 @@ export default function HomeClient({ sale }) {
                   )}
                 </div>
                 {isFanProofOpen() && (
-                  <div style={{ fontSize: 12.5, color: "#6a5b48", background: "#faf6ef", border: "1px solid #ecdfc9", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
+                  <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
                     ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT$3,499 購買。
                   </div>
                 )}
