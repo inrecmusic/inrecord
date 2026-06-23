@@ -9,7 +9,7 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock
+  AlertTriangle, CalendarClock, Mail
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
     { id:"integration", label:"系統設定",   icon:Settings },
     { id:"privacy",     label:"隱私權政策", icon:Shield },
     { id:"terms",       label:"服務條款",   icon:FileText },
+    { id:"newsletter",  label:"電子報",     icon:Mail },
   ]},
 ];
 
@@ -2362,6 +2363,113 @@ function DocEditorPage({title,lsKey,defaultMd,showToast}){
 function PrivacyPage({showToast}){return <DocEditorPage title="隱私權政策" lsKey="inrecord_privacy" defaultMd={DEFAULT_PRIVACY_MD} showToast={showToast}/>;}
 function TermsPage({showToast}){return <DocEditorPage title="服務條款" lsKey="inrecord_terms" defaultMd={DEFAULT_TERMS_MD} showToast={showToast}/>;}
 
+// 電子報：編輯標題+Markdown 內文 → 群發給「購課學員 / 註冊官網帳號」。逐封寄(A 方案)，碰每日上限即回報。
+function NewsletterPage({showToast}){
+  const [subject,setSubject]=useState("");
+  const [bodyMd,setBodyMd]=useState("");
+  const [savedSubject,setSavedSubject]=useState("");
+  const [savedBody,setSavedBody]=useState("");
+  const [audience,setAudience]=useState("buyers");
+  const [mode,setMode]=useState("edit");
+  const [lastSent,setLastSent]=useState(null);
+  const [busy,setBusy]=useState("");
+  const [result,setResult]=useState(null);
+  const dirty=subject!==savedSubject||bodyMd!==savedBody;
+
+  const load=useCallback(async()=>{
+    try{
+      const res=await _api("/api/admin/newsletter");
+      const {data}=await res.json();
+      setSubject(data.subject||"");setBodyMd(data.body_md||"");
+      setSavedSubject(data.subject||"");setSavedBody(data.body_md||"");
+      if(data.last_sent_at)setLastSent({at:data.last_sent_at,count:data.last_sent_count});
+    }catch{}
+  },[]);
+  useEffect(()=>{load();},[load]);
+
+  async function persist(){
+    const res=await _api("/api/admin/newsletter",{method:"PATCH",body:JSON.stringify({subject,body_md:bodyMd})});
+    if(res.ok){setSavedSubject(subject);setSavedBody(bodyMd);}
+    return res.ok;
+  }
+  async function save(){
+    setBusy("save");
+    try{ if(await persist())showToast?.("✅ 草稿已儲存"); else showToast?.("❌ 儲存失敗"); }
+    catch(e){showToast?.("❌ 儲存失敗："+e.message);} finally{setBusy("");}
+  }
+  async function sendTest(){
+    if(!subject.trim()||!bodyMd.trim()){showToast?.("請先填標題與內文");return;}
+    setBusy("test");setResult(null);
+    try{
+      await persist();
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true})});
+      const d=await res.json();
+      if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱"));
+      else showToast?.("❌ 測試寄送失敗："+(d.error||"unknown"));
+    }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");}
+  }
+  async function sendAll(){
+    if(!subject.trim()||!bodyMd.trim()){showToast?.("請先填標題與內文");return;}
+    const label=audience==="buyers"?"購課學員":"註冊官網帳號";
+    if(!window.confirm(`確定把這封電子報「正式群發」給【${label}】嗎？\n寄出後無法收回，建議先用「寄測試給我自己」確認版面。`))return;
+    setBusy("all");setResult(null);
+    try{
+      await persist();
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({audience})});
+      const d=await res.json();
+      if(!d.ok){showToast?.("❌ 群發失敗："+(d.error||"unknown"));}
+      else{
+        setResult(d);
+        if(d.total===0)showToast?.("名單為空，沒有寄出");
+        else if(d.limitHit)showToast?.(`⚠️ 已寄 ${d.sent} 封，剩 ${d.total-d.sent} 封未寄（碰到每日上限）`);
+        else showToast?.(`✅ 群發完成：成功 ${d.sent}/${d.total}${d.failed?`，失敗 ${d.failed}`:""}`);
+        await load();
+      }
+    }catch(e){showToast?.("❌ 群發失敗："+e.message);} finally{setBusy("");}
+  }
+
+  return(
+    <div>
+      <div className={styles.pageHeader} style={{flexWrap:"wrap",gap:12}}>
+        <div><h1>電子報</h1><p>編輯內容 → 群發給學員（支援 Markdown）</p></div>
+        <div className={styles.pageActions} style={{flexWrap:"wrap",gap:8}}>
+          <div className={styles.filterGroup}>
+            <button className={`${styles.filterBtn} ${mode==="edit"?styles.filterActive:""}`} onClick={()=>setMode("edit")}>編輯</button>
+            <button className={`${styles.filterBtn} ${mode==="preview"?styles.filterActive:""}`} onClick={()=>setMode("preview")}>預覽</button>
+          </div>
+          {dirty&&<span style={{fontSize:12,fontWeight:800,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"4px 10px",alignSelf:"center"}}>未儲存</span>}
+          <button className={styles.btnSmall} disabled={!!busy} onClick={save}>{busy==="save"?"儲存中…":"儲存草稿"}</button>
+        </div>
+      </div>
+
+      <div className={styles.panel} style={{marginBottom:16}}>
+        <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>標題</label>
+        <input className={styles.searchInput} style={{width:"100%",marginBottom:16}} value={subject} onChange={e=>setSubject(e.target.value)} placeholder="例：六月課程最新消息 🎹"/>
+        <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>內文（Markdown：# 標題 / **粗體** / - 清單 / --- 分隔線）</label>
+        {mode==="edit"
+          ?<textarea value={bodyMd} onChange={e=>setBodyMd(e.target.value)} style={{width:"100%",minHeight:360,fontFamily:"'Courier New',Consolas,monospace",fontSize:13,lineHeight:1.75,boxSizing:"border-box",resize:"vertical",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}/>
+          :<div style={{maxWidth:760,padding:"4px 0"}}>{renderMd(bodyMd)}</div>}
+      </div>
+
+      <div className={styles.panel}>
+        <h3 style={{margin:"0 0 12px"}}>群發</h3>
+        <div style={{display:"flex",gap:18,flexWrap:"wrap",marginBottom:14}}>
+          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="buyers"} onChange={()=>setAudience("buyers")}/> 🎓 購課學員</label>
+          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="registered"} onChange={()=>setAudience("registered")}/> 👤 註冊官網帳號</label>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button className={styles.btnSmall} disabled={!!busy} onClick={sendTest}>{busy==="test"?"寄送中…":"寄測試給我自己"}</button>
+          <button className={styles.btnPrimary} disabled={!!busy} onClick={sendAll}>{busy==="all"?"群發中…":"正式群發"}</button>
+        </div>
+        {lastSent&&<p className={styles.dim} style={{fontSize:12,marginTop:12}}>上次寄送：{fmt(lastSent.at)}（{lastSent.count} 封）</p>}
+        {result&&<div style={{marginTop:12,fontSize:13,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+          本次：對象 {result.total} 人 · 成功 {result.sent} · 失敗 {result.failed}{result.limitHit?` · ⚠️ 碰每日上限，剩 ${result.total-result.sent} 未寄`:""}
+        </div>}
+      </div>
+    </div>
+  );
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function statusLabel(s){return{requested:"已留 Email",preview_mode:"預覽模式",email_sent:"已寄試看信",demo_opened:"已開 Demo",purchased:"已購買"}[s]||s||"—";}
 function fmt(v){if(!v)return "—";try{return new Date(v).toLocaleString("zh-TW");}catch{return v;}}
@@ -2604,6 +2712,7 @@ export default function AdminPage(){
           {page==="integration" &&<IntegrationPage showToast={showToast}/>}
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
           {page==="terms"       &&<TermsPage showToast={showToast}/>}
+          {page==="newsletter"  &&<NewsletterPage showToast={showToast}/>}
         </div>
       </div>
 

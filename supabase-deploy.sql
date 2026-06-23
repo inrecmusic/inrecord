@@ -158,3 +158,22 @@ ALTER TABLE sale_settings DROP COLUMN IF EXISTS early_bird_ends_at;
 -- 遷移：指定價通路（Sub-2）
 ALTER TABLE coupons        ADD COLUMN IF NOT EXISTS plan TEXT;
 ALTER TABLE coupon_batches ADD COLUMN IF NOT EXISTS plan TEXT;
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- ⑤ 電子報：newsletter 單列草稿（後台編輯 → 群發給學員）
+-- ────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS newsletter (
+  id              TEXT PRIMARY KEY DEFAULT 'default',
+  subject         TEXT NOT NULL DEFAULT '',
+  body_md         TEXT NOT NULL DEFAULT '',
+  last_sent_at    TIMESTAMPTZ,
+  last_sent_count INTEGER NOT NULL DEFAULT 0,
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT newsletter_singleton CHECK (id = 'default')
+);
+INSERT INTO newsletter (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
+ALTER TABLE newsletter ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_newsletter" ON newsletter;
+CREATE POLICY "service_role_newsletter" ON newsletter
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
