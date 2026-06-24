@@ -372,6 +372,7 @@ export default function HomeClient({ sale }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [fanChoice, setFanChoice] = useState("direct");   // 粉絲卡選項
   const [fanProofMode, setFanProofMode] = useState(false); // 傳給 BuyModal
+  const [fanAutoCoupon, setFanAutoCoupon] = useState(null); // 直接購買 $3,999 自動套用的粉絲固定價券
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
@@ -451,6 +452,7 @@ export default function HomeClient({ sale }) {
     if (!user?.email) { window.location.href = "/classroom/login"; return; }
     setSelectedPlan(plan);
     setFanProofMode(!!opts.fanProof);
+    setFanAutoCoupon(opts.autoCoupon || null);
     setBuyOpen(true);
   }
 
@@ -754,7 +756,8 @@ export default function HomeClient({ sale }) {
                 </button>
               </motion.div>
 
-              {/* 粉絲限定方案（卡內兩選項） */}
+              {/* 粉絲限定方案（限定窗口至 8/6；卡內兩選項皆固定價、不受公開波段影響；到期整張收起） */}
+              {isFanProofOpen() && (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
                 <div className={styles.planRibbon}>★ 粉絲限定</div>
                 <h3 className={styles.planName}>粉絲限定方案</h3>
@@ -763,29 +766,25 @@ export default function HomeClient({ sale }) {
                     <span>直接購買</span>
                     <strong>NT$3,999</strong>
                   </label>
-                  {isFanProofOpen() && (
-                    <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
-                      <span>上傳憑證</span>
-                      <strong>NT$3,499</strong>
-                    </label>
-                  )}
+                  <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
+                    <span>上傳憑證</span>
+                    <strong>NT$3,499</strong>
+                  </label>
                 </div>
-                {isFanProofOpen() && (
-                  <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
-                    ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT$3,499 購買。
-                  </div>
-                )}
+                <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
+                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT$3,499 購買。
+                </div>
                 <ul className={styles.planFeatures}>
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
-                  onClick={() => startBuy(PLANS[1], { fanProof: fanChoice === "proof" })}
-                  disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>
+                  onClick={() => fanChoice === "proof" ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
                   <ShoppingCart size={17} />
-                  {!sale.onSale ? buyLabel : fanChoice === "proof" ? `上傳憑證並${buyShort}　NT$3,499` : `${buyLabel}　NT$3,999`}
+                  {fanChoice === "proof" ? `上傳憑證並${buyShort}　NT$3,499` : `${buyShort}　NT$3,999`}
                 </button>
-                {isFanProofOpen() && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 7/31 截止</span>}
+                <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 8/6 截止</span>
               </motion.div>
+              )}
             </motion.div>
             <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・購買後立即開通・永久有效</p>
           </div>
@@ -871,7 +870,7 @@ export default function HomeClient({ sale }) {
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} />
     </>
   );
 }

@@ -41,7 +41,7 @@ export async function POST(req) {
 
     // 1) 方案合法性 + 價格/品名一律由後端決定
     const catalog = PLAN_CATALOG[plan];
-    if (!catalog) return NextResponse.json({ error: "invalid_plan" }, { status: 400 });
+    if (!catalog || catalog.sellable === false) return NextResponse.json({ error: "invalid_plan" }, { status: 400 });
     if (!email || typeof email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }

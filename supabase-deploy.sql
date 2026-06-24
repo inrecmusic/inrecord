@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS sale_settings (
   id                 TEXT PRIMARY KEY DEFAULT 'default',
   open_at            TIMESTAMPTZ,
   list_price         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  list_anchor        JSONB NOT NULL DEFAULT '{}'::jsonb,
   waves              JSONB NOT NULL DEFAULT '[]'::jsonb,
   lock_override      TEXT,
   launch_notified_at TIMESTAMPTZ,
@@ -137,6 +138,8 @@ CREATE TABLE IF NOT EXISTS sale_settings (
 );
 
 INSERT INTO sale_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
+-- 劃線原價（劃線錨點，與「波段後常態售價 list_price」分離；既有環境補欄位，idempotent）
+ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS list_anchor JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE sale_settings ENABLE ROW LEVEL SECURITY;
 

@@ -40,6 +40,16 @@ export async function PATCH(req) {
     patch.list_price = lp;
   }
 
+  if ("list_anchor" in body) {
+    const la = body.list_anchor || {};
+    for (const k of Object.keys(la)) {
+      if (la[k] != null && (!Number.isInteger(la[k]) || la[k] < 0)) {
+        return NextResponse.json({ error: `invalid_list_anchor_${k}` }, { status: 400 });
+      }
+    }
+    patch.list_anchor = la;
+  }
+
   if ("waves" in body) {
     const waves = Array.isArray(body.waves) ? body.waves : null;
     if (!waves) return NextResponse.json({ error: "invalid_waves" }, { status: 400 });
@@ -58,6 +68,7 @@ export async function PATCH(req) {
         }
       }
       for (const plan of Object.keys(PLAN_CATALOG)) {
+        if (PLAN_CATALOG[plan].sellable === false) continue;   // 已下架方案不要求波段價
         if (!Number.isInteger(prices[plan]) || prices[plan] < 0) {
           return NextResponse.json({ error: `invalid_wave_${i}_missing_${plan}` }, { status: 400 });
         }

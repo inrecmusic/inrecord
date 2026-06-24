@@ -6,12 +6,12 @@ async function adminFetch(path, opts = {}) {
   return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
 }
 
+// course 單賣已下架，只剩課程包（bundle）需設定價格
 const PLANS = [
-  { key: "course", label: "鋼琴自學全課程" },
   { key: "bundle", label: "學琴全攻略（課程包）" },
 ];
 
-const EMPTY_SETTINGS = { open_at: null, lock_override: null, launch_notified_at: null, list_price: {}, waves: [] };
+const EMPTY_SETTINGS = { open_at: null, lock_override: null, launch_notified_at: null, list_price: {}, list_anchor: {}, waves: [] };
 
 // timestamptz <-> <input type="datetime-local">（以瀏覽器本地時區即台灣時間呈現）
 function toLocalInput(iso) {
@@ -49,7 +49,7 @@ export default function SaleSettingsPage({ showToast }) {
         method: "PATCH",
         body: JSON.stringify({
           open_at: s.open_at, lock_override: s.lock_override,
-          list_price: s.list_price || {}, waves: s.waves || [],
+          list_price: s.list_price || {}, list_anchor: s.list_anchor || {}, waves: s.waves || [],
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -79,7 +79,18 @@ export default function SaleSettingsPage({ showToast }) {
       </label>
 
       <div style={{ ...field, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10 }}>
-        <strong>正式牌價（NT$，刪除線錨點＋波段後常態價）</strong><br />
+        <strong>劃線原價（NT$，刪除線錨點）</strong><br />
+        {PLANS.map((p) => (
+          <span key={p.key} style={{ marginRight: 16, display: "inline-block" }}>
+            {p.label}：<input type="number" min="0" style={input}
+              value={s.list_anchor?.[p.key] ?? ""}
+              onChange={(e) => setS((prev) => ({ ...prev, list_anchor: { ...prev.list_anchor, [p.key]: e.target.value === "" ? null : Number(e.target.value) } }))} />
+          </span>
+        ))}
+      </div>
+
+      <div style={{ ...field, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10 }}>
+        <strong>正式售價（NT$，波段結束後常態售價）</strong><br />
         {PLANS.map((p) => (
           <span key={p.key} style={{ marginRight: 16, display: "inline-block" }}>
             {p.label}：<input type="number" min="0" style={input}

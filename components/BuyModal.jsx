@@ -32,7 +32,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -55,11 +55,25 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   // 以「直接購買」重新開啟 Modal 時，清除前次粉絲憑證流程殘留的狀態，
   // 避免 FAN 券/憑證 URL 帶進非粉絲購買流程；不影響使用者自行輸入的一般優惠碼。
   useEffect(() => {
-    if (open && !fanProof) {
+    if (open && !fanProof && !autoCoupon) {
       setProofUrl(null);
       if (couponApplied?.code?.startsWith("FAN")) { setCouponApplied(null); setCouponInput(""); }
     }
-  }, [open, fanProof]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, fanProof, autoCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 「直接購買 $3,999」：開窗時自動套用粉絲固定價券（type=price，繞過 not_on_sale 限制）
+  useEffect(() => {
+    if (!open || !autoCoupon || !plan?.plan) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: autoCoupon, plan: plan.plan }) });
+        const d = await r.json();
+        if (!cancelled && d.valid) { setCouponApplied(d); setCouponInput(autoCoupon); }
+      } catch { /* 靜默：seed 前或網路錯誤時不阻斷 */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open, autoCoupon, plan?.plan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open || !plan) return null;
 
@@ -105,7 +119,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     finally { setFanUploading(false); }
   }
   function fanErrText(e) {
-    return e === "closed" ? "粉絲憑證申請已截止（7/31）" :
+    return e === "closed" ? "粉絲憑證申請已截止（8/6）" :
            e === "too_large" ? "圖片需小於 5MB" :
            (e === "bad_type" || e === "bad_magic") ? "僅接受 JPG / PNG 圖片" :
            e === "unauthorized" ? "請先登入" : "上傳失敗，請重試";
