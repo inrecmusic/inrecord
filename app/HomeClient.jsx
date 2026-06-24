@@ -758,7 +758,7 @@ export default function HomeClient({ sale }) {
                 </div>
                 {fanProofOpen && (
                 <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
-                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT${sale.fanPlan.proofPrice.toLocaleString()} 購買。
+                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可享 NT${sale.fanPlan.proofPrice.toLocaleString()} 優惠價購買。
                 </div>
                 )}
                 <ul className={styles.planFeatures}>
