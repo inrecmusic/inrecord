@@ -11,7 +11,7 @@ const PLANS = [
   { key: "bundle", label: "學琴全攻略（課程包）" },
 ];
 
-const EMPTY_SETTINGS = { open_at: null, lock_override: null, launch_notified_at: null, list_price: {}, list_anchor: {}, waves: [] };
+const EMPTY_SETTINGS = { open_at: null, lock_override: null, launch_notified_at: null, list_price: {}, list_anchor: {}, waves: [], fan_plan: {} };
 
 // timestamptz <-> <input type="datetime-local">（以瀏覽器本地時區即台灣時間呈現）
 function toLocalInput(iso) {
@@ -37,6 +37,13 @@ export default function SaleSettingsPage({ showToast }) {
 
   if (loading || !s) return <div style={{ padding: 24 }}>載入中…</div>;
 
+  const fp = s.fan_plan || {};
+  const fanEnabled = typeof fp.enabled === "boolean" ? fp.enabled : true;
+  const fanDeadline = fp.deadline || "2026-08-06T23:59:59+08:00";
+  const fanProofPrice = Number.isInteger(fp.proof_price) ? fp.proof_price : 3499;
+  const fanDirectPrice = Number.isInteger(fp.direct_price) ? fp.direct_price : 3999;
+  const setFan = (key, val) => setS((prev) => ({ ...prev, fan_plan: { enabled: fanEnabled, deadline: fanDeadline, proof_price: fanProofPrice, direct_price: fanDirectPrice, [key]: val } }));
+
   const setWave = (i, key, val) =>
     setS((prev) => ({ ...prev, waves: prev.waves.map((w, j) => (j === i ? { ...w, [key]: val } : w)) }));
   const setWavePrice = (i, plan, val) =>
@@ -50,6 +57,7 @@ export default function SaleSettingsPage({ showToast }) {
         body: JSON.stringify({
           open_at: s.open_at, lock_override: s.lock_override,
           list_price: s.list_price || {}, list_anchor: s.list_anchor || {}, waves: s.waves || [],
+          fan_plan: { enabled: fanEnabled, deadline: fanDeadline, proof_price: fanProofPrice, direct_price: fanDirectPrice },
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -126,6 +134,27 @@ export default function SaleSettingsPage({ showToast }) {
         ))}
         <button onClick={() => setS((prev) => ({ ...prev, waves: [...(prev.waves || []), { starts_at: null, ends_at: null, prices: {} }] }))}
           style={{ marginTop: 10, border: "1px solid #cbd5e1", background: "#f8fafc", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>＋ 新增波段</button>
+      </div>
+
+      <div style={{ ...field, padding: 12, border: "1px solid #e2e8f0", borderRadius: 10 }}>
+        <strong>粉絲限定方案</strong><br />
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "8px 0" }}>
+          <input type="checkbox" checked={fanEnabled} onChange={(e) => setFan("enabled", e.target.checked)} />
+          啟用粉絲限定方案（取消勾選＝整張卡收起、上傳入口關閉、直購券停用）
+        </label><br />
+        <label style={{ marginRight: 16 }}>憑證申請截止
+          <br /><input type="datetime-local" style={input} value={toLocalInput(fanDeadline)}
+            onChange={(e) => setFan("deadline", fromLocalInput(e.target.value))} />
+        </label><br />
+        <span style={{ marginRight: 16, display: "inline-block", marginTop: 8 }}>粉絲價 NT$
+          <input type="number" min="0" style={input} value={fanProofPrice}
+            onChange={(e) => setFan("proof_price", e.target.value === "" ? 0 : Number(e.target.value))} />
+        </span>
+        <span style={{ display: "inline-block", marginTop: 8 }}>直購價 NT$
+          <input type="number" min="0" style={input} value={fanDirectPrice}
+            onChange={(e) => setFan("direct_price", e.target.value === "" ? 0 : Number(e.target.value))} />
+        </span>
+        <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>粉絲價 ≤ 直購價；改直購價會同步更新 FAN3999 券。截止後只關上傳入口，直購仍可。</p>
       </div>
 
       <label style={field}>手動覆寫
