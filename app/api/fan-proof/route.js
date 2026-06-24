@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { validateProofImage } from "@/lib/proof-image";
 import { isFanProofOpen, buildFanCoupon } from "@/lib/fan-proof";
+import { getSaleSettings, getFanPlan } from "@/lib/sale";
 import { generateCode } from "@/lib/serial-codes";
 import { createDistributedLimiter } from "@/lib/rate-limit";
 
@@ -9,8 +10,12 @@ import { createDistributedLimiter } from "@/lib/rate-limit";
 const limiter = createDistributedLimiter({ limit: 5, windowMs: 60_000, prefix: "rl:fan-proof" });
 
 export async function POST(req) {
-  // 1) 截止 gate（伺服器端）
-  if (!isFanProofOpen()) {
+  // 1) 讀後台粉絲設定：先檢查 enabled，再檢查截止
+  const fanPlan = getFanPlan(await getSaleSettings());
+  if (!fanPlan.enabled) {
+    return Response.json({ ok: false, error: "disabled" }, { status: 403 });
+  }
+  if (!isFanProofOpen(new Date(), fanPlan.deadlineMs)) {
     return Response.json({ ok: false, error: "closed" }, { status: 403 });
   }
 
@@ -73,7 +78,7 @@ export async function POST(req) {
   let couponCode = null;
   for (let i = 0; i < 2 && !couponCode; i++) {
     const code = generateCode("FAN", 8);
-    const { error } = await supabase.from("coupons").insert(buildFanCoupon({ code }));
+    const { error } = await supabase.from("coupons").insert(buildFanCoupon({ code, price: fanPlan.proofPrice }));
     if (!error) { couponCode = code; break; }
     if (error.code !== "23505") { console.error("[fan-proof] coupon insert error:", error.message); break; }
     // 23505 = 序號碰撞 → 重試
