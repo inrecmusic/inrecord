@@ -208,32 +208,35 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
           <p className={styles.sub}>零基礎流行鋼琴入門課</p>
 
           <div className={styles.planCard}>
-            <div>
+            <div className={styles.planCardTop}>
               <strong>{plan.label}</strong>
-              <span className={styles.desc}>{plan.desc}</span>
+              <div className={styles.price}>
+                {couponApplied
+                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
+                  : earlyBird
+                    ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
+                    : <>NT${Number(basePrice).toLocaleString()}</>}
+              </div>
             </div>
-            <div className={styles.price}>
-              {couponApplied
-                ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
-                : earlyBird
-                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
-                  : <>NT${Number(basePrice).toLocaleString()}</>}
-              {earlyBird && !couponApplied && onSale && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
-            </div>
+            <span className={styles.desc}>{plan.desc}</span>
+            {earlyBird && !couponApplied && onSale && <span className={styles.earlyTag}>早鳥優惠</span>}
           </div>
 
           {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Number(couponApplied.discount).toLocaleString()}</p>}
 
           {fanProof && plan.plan === "bundle" && (
-            <div className={styles.couponRow} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-              <label style={{ fontWeight: 700, fontSize: 14 }}>🎫 粉絲憑證（演奏會票／專輯／樂譜）— 折 $500</label>
+            <div className={styles.fanProof}>
+              <p className={styles.fanProofTitle}>🎫 粉絲憑證折抵 $500<span>演奏會門票 · 專輯 · 樂譜，任一即可</span></p>
               {proofUrl
-                ? <span style={{ color: "#15803d", fontSize: 13 }}>✅ 憑證已上傳，已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? 3499).toLocaleString()}</span>
-                : <input type="file" accept="image/jpeg,image/png" disabled={fanUploading}
-                    onChange={e => handleFanProof(e.target.files?.[0])} />}
-              {fanUploading && <span style={{ fontSize: 12, color: "#6a5b48" }}>上傳中…</span>}
-              {fanError && <span style={{ fontSize: 12, color: "#dc2626" }}>{fanError}</span>}
-              <span style={{ fontSize: 11, color: "#6a5b48" }}>先購買、後台再人工審核（不擋付款、立即開通）。</span>
+                ? <div className={styles.fanProofDone}>✅ 憑證已上傳，已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? 3499).toLocaleString()}</div>
+                : <label className={styles.uploadArea}>
+                    <input type="file" accept="image/jpeg,image/png" hidden disabled={fanUploading} onChange={e => handleFanProof(e.target.files?.[0])} />
+                    <svg className={styles.uploadIcon} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                    <span className={styles.uploadText}>{fanUploading ? "上傳中…" : "點擊上傳憑證圖片"}</span>
+                    <span className={styles.uploadHint}>JPG / PNG · 5MB 內</span>
+                  </label>}
+              {fanError && <span className={styles.fanProofErr}>{fanError}</span>}
+              <p className={styles.fanProofNote}>先購買、後台再人工審核（不擋付款、立即開通）。</p>
             </div>
           )}
 
