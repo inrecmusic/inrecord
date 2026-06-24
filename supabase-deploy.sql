@@ -140,6 +140,8 @@ CREATE TABLE IF NOT EXISTS sale_settings (
 INSERT INTO sale_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
 -- 劃線原價（劃線錨點，與「波段後常態售價 list_price」分離；既有環境補欄位，idempotent）
 ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS list_anchor JSONB NOT NULL DEFAULT '{}'::jsonb;
+-- 粉絲限定方案後台設定（enabled/deadline/proof_price/direct_price），缺值由 getFanPlan fallback
+ALTER TABLE sale_settings ADD COLUMN IF NOT EXISTS fan_plan JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE sale_settings ENABLE ROW LEVEL SECURITY;
 
