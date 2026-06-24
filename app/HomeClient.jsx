@@ -742,7 +742,7 @@ export default function HomeClient({ sale }) {
               <h2>選擇最適合你的方案</h2>
               <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
-            <motion.div className={styles.plansRow} style={{ justifyContent: "center" }} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
+            <motion.div className={styles.plansRow} style={{ gridTemplateColumns: "minmax(0, 360px)" }} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
               {/* 粉絲限定方案：enabled 控整卡；截止後只關憑證入口、直購仍可 */}
               {sale.fanPlan.enabled && (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
