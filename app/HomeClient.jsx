@@ -461,6 +461,9 @@ export default function HomeClient({ sale }) {
   }
 
 
+  const fanProofOpen = isFanProofOpen(Date.now(), sale.fanPlan.deadlineMs);
+  const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
+
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = !sale.classroomOpen;
 
@@ -756,33 +759,37 @@ export default function HomeClient({ sale }) {
                 </button>
               </motion.div>
 
-              {/* 粉絲限定方案（限定窗口至 8/6；卡內兩選項皆固定價、不受公開波段影響；到期整張收起） */}
-              {isFanProofOpen() && (
+              {/* 粉絲限定方案：enabled 控整卡；截止後只關憑證入口、直購仍可 */}
+              {sale.fanPlan.enabled && (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
                 <div className={styles.planRibbon}>★ 粉絲限定</div>
                 <h3 className={styles.planName}>粉絲限定方案</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }} role="radiogroup" aria-label="粉絲限定購買方式">
-                  <label style={fanRowStyle(fanChoice === "direct")} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
+                  <label style={fanRowStyle(fanChoice === "direct" || !fanProofOpen)} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct" || !fanProofOpen} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
                     <span>直接購買</span>
-                    <strong>NT$3,999</strong>
+                    <strong>NT${sale.fanPlan.directPrice.toLocaleString()}</strong>
                   </label>
+                  {fanProofOpen && (
                   <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
                     <span>上傳憑證</span>
-                    <strong>NT$3,499</strong>
+                    <strong>NT${sale.fanPlan.proofPrice.toLocaleString()}</strong>
                   </label>
+                  )}
                 </div>
+                {fanProofOpen && (
                 <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
-                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT$3,499 購買。
+                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可用 NT${sale.fanPlan.proofPrice.toLocaleString()} 購買。
                 </div>
+                )}
                 <ul className={styles.planFeatures}>
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
-                  onClick={() => fanChoice === "proof" ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
+                  onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
                   <ShoppingCart size={17} />
-                  {fanChoice === "proof" ? `上傳憑證並${buyShort}　NT$3,499` : `${buyShort}　NT$3,999`}
+                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
-                <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 8/6 截止</span>
+                {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
               </motion.div>
               )}
             </motion.div>
