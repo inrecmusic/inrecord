@@ -460,6 +460,11 @@ export default function HomeClient({ sale }) {
     startBuy(selectedPlan || PLANS[1]);
   }
 
+  // 只賣粉絲方案：購買 CTA 一律捲動到方案區（粉絲限定方案卡）
+  function scrollToPricing() {
+    document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+  }
+
 
   const fanProofOpen = isFanProofOpen(Date.now(), sale.fanPlan.deadlineMs);
   const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
@@ -500,7 +505,7 @@ export default function HomeClient({ sale }) {
                 ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
                 : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
             : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default", wordBreak: "keep-all", lineBreak: "strict" } : { wordBreak: "keep-all", lineBreak: "strict" }}>{buyLabel}</button>
+          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>立即購買</button>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -583,7 +588,7 @@ export default function HomeClient({ sale }) {
                   {offer.isEarlyBird && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
                 </div>
                 <div className={styles.offerBtns}>
-                  <button className={styles.btnRed} onClick={openBuy} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>{buyLabel}</button>
+                  <button className={styles.btnRed} onClick={scrollToPricing}>立即購買</button>
                   <a href="/demo" className={styles.btnOutline}>
                     <Play size={16} />課程 Demo 體驗
                   </a>
@@ -737,28 +742,7 @@ export default function HomeClient({ sale }) {
               <h2>選擇最適合你的方案</h2>
               <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
-            <motion.div className={styles.plansRow} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
-              {/* 學琴全攻略（bundle） */}
-              <motion.div className={styles.planCard} variants={fadeUp}>
-                <div className={styles.planHeaderRow}>
-                  <div className={styles.planPill}><span className={styles.planPillDot} />最超值全配</div>
-                </div>
-                <h3 className={styles.planName}>學琴全攻略</h3>
-                <div className={styles.planPriceBlock}><div className={styles.planPriceRow}>
-                  <span className={styles.planCurrency}>NT$</span>
-                  <span className={styles.planPrice}>{sale.plans[PLANS[1].plan].price.toLocaleString()}</span>
-                  <span className={styles.planUnit}>／永久</span>
-                </div></div>
-                <p className={styles.planDesc}>課程 + 互動遊戲，永久使用、一次擁有全部。</p>
-                <ul className={styles.planFeatures}>
-                  {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
-                </ul>
-                <button className={styles.planBtn} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale}
-                  style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>
-                  <ShoppingCart size={17} />{sale.onSale ? `${buyLabel}　NT$${sale.plans[PLANS[1].plan].price.toLocaleString()}` : buyLabel}
-                </button>
-              </motion.div>
-
+            <motion.div className={styles.plansRow} style={{ justifyContent: "center" }} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
               {/* 粉絲限定方案：enabled 控整卡；截止後只關憑證入口、直購仍可 */}
               {sale.fanPlan.enabled && (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
@@ -843,11 +827,11 @@ export default function HomeClient({ sale }) {
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>
         <div className={styles.stickyBuyInfo}>
-          <span className={styles.stickyBuyPrice}>NT${offer.price.toLocaleString()}</span>
-          <span className={styles.stickyBuyLabel}>學琴全攻略</span>
+          <span className={styles.stickyBuyPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
+          <span className={styles.stickyBuyLabel}>粉絲限定方案</span>
         </div>
-        <button className={styles.stickyBuyBtn} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale} style={!sale.onSale ? { opacity: .55, cursor: "default" } : undefined}>
-          <ShoppingCart size={17} />{!sale.onSale ? "即將開賣" : "立即購買"}
+        <button className={styles.stickyBuyBtn} onClick={scrollToPricing}>
+          <ShoppingCart size={17} />立即購買
         </button>
       </div>
 
