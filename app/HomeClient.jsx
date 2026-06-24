@@ -578,13 +578,10 @@ export default function HomeClient({ sale }) {
               <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
-                <span className={styles.offerPill}>
-                  {offer.isEarlyBird ? "早鳥優惠" : "課程方案"}
-                  {offer.isEarlyBird && sale.nextIncreaseAt && <Countdown to={sale.nextIncreaseAt} prefix=" · 漲價倒數 " />}
-                </span>
+                <span className={styles.offerPill}>粉絲限定方案</span>
                 <div className={styles.offerPriceRow}>
-                  <span className={styles.offerPrice}>NT${offer.price.toLocaleString()}</span>
-                  {offer.isEarlyBird && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
+                  <span className={styles.offerPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
+                  <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>
                 </div>
                 <div className={styles.offerBtns}>
                   <button className={styles.btnRed} onClick={scrollToPricing}>立即購買</button>
