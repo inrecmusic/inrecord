@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { PLAN_CATALOG } from "@/lib/plans";
+import { validateFanPlan } from "@/lib/sale";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -84,8 +85,31 @@ export async function PATCH(req) {
     patch.waves = waves;
   }
 
+  // 粉絲方案設定驗證
+  if ("fan_plan" in body) {
+    const v = validateFanPlan(body.fan_plan);
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+    patch.fan_plan = body.fan_plan;
+  }
+
   const { data, error } = await sb.from("sale_settings")
     .upsert(patch, { onConflict: "id" }).select("*").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 同步直購固定價券 FAN3999（value=direct_price，enabled=false 時 disabled）
+  if ("fan_plan" in body) {
+    const fp = body.fan_plan;
+    const { error: cErr } = await sb.from("coupons").upsert({
+      code: "FAN3999",
+      name: "粉絲直購",
+      type: "price",
+      value: fp.direct_price,
+      plan: "bundle",
+      usage_limit: null,
+      status: fp.enabled ? "active" : "disabled",
+    }, { onConflict: "code" });
+    if (cErr) return NextResponse.json({ error: "fan_coupon_sync_failed: " + cErr.message }, { status: 500 });
+  }
+
   return NextResponse.json({ data });
 }
