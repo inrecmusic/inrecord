@@ -44,7 +44,6 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const [couponInput, setCouponInput]       = useState("");
   const [couponApplied, setCouponApplied]   = useState(null); // 驗證通過的優惠券
   const [couponMsg, setCouponMsg]           = useState("");
-  const [couponChecking, setCouponChecking] = useState(false);
   const [proofUrl, setProofUrl]             = useState(null);
   const [fanUploading, setFanUploading]     = useState(false);
   const [fanError, setFanError]             = useState("");
@@ -81,24 +80,6 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const basePrice = pricing?.price ?? plan.price;          // 當下實收基準價（早鳥或原價），優惠券疊加於此
   const listPrice = pricing?.originalPrice ?? plan.price;  // 原價（早鳥時顯示刪除線）
   const earlyBird = !!pricing?.isEarlyBird;
-
-  async function applyCouponCode() {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    setCouponChecking(true); setCouponMsg("");
-    try {
-      const r = await fetch("/api/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, plan: plan.plan }),
-      });
-      const d = await r.json();
-      if (d.valid) setCouponApplied(d);
-      else setCouponMsg(COUPON_ERRORS[d.error] || "優惠碼無效");
-    } catch { setCouponMsg("驗證失敗，請稍後再試"); }
-    finally { setCouponChecking(false); }
-  }
-  function removeCoupon() { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); setProofUrl(null); }
 
   async function handleFanProof(file) {
     if (!file) return;
@@ -232,33 +213,16 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
               <span className={styles.desc}>{plan.desc}</span>
             </div>
             <div className={styles.price}>
-              {!onSale && !couponApplied
-                ? <span style={{ fontSize: 14, color: "#2563eb", fontWeight: 700, wordBreak: "keep-all", lineBreak: "strict" }}>輸入序號查看價格</span>
-                : couponApplied
-                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
-                  : earlyBird
-                    ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
-                    : <>NT${Number(basePrice).toLocaleString()}</>}
+              {couponApplied
+                ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
+                : earlyBird
+                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
+                  : <>NT${Number(basePrice).toLocaleString()}</>}
               {earlyBird && !couponApplied && onSale && <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#D4192C", wordBreak: "keep-all", lineBreak: "strict", marginTop: 2 }}>早鳥優惠</span>}
             </div>
           </div>
 
-          <div className={styles.couponRow}>
-            <input
-              className={styles.couponInput}
-              type="text"
-              placeholder={onSale ? "輸入優惠碼（選填）" : "輸入序號兌換"}
-              value={couponInput}
-              disabled={!!couponApplied}
-              onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(""); }}
-              onKeyDown={e => { if (e.key === "Enter" && !couponApplied) { e.preventDefault(); applyCouponCode(); } }}
-            />
-            {couponApplied
-              ? <button type="button" className={styles.couponBtn} onClick={removeCoupon}>移除</button>
-              : <button type="button" className={styles.couponBtn} onClick={applyCouponCode} disabled={couponChecking || !couponInput.trim()}>{couponChecking ? "驗證中…" : "套用"}</button>}
-          </div>
           {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Number(couponApplied.discount).toLocaleString()}</p>}
-          {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
 
           {fanProof && plan.plan === "bundle" && (
             <div className={styles.couponRow} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
@@ -353,7 +317,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
         <div className={styles.sheetFooter}>
           <button className={styles.proceed} onClick={handleCheckout}
             disabled={loading || verifying || (!onSale && couponApplied?.type !== "price")}>
-            {loading ? "處理中…" : verifying ? "驗證中…" : (!onSale && couponApplied?.type !== "price") ? "請先輸入有效序號" : "前往付款 →"}
+            {loading ? "處理中…" : verifying ? "驗證中…" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : "前往付款 →"}
           </button>
           {error && (
             <>

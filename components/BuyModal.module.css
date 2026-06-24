@@ -6,6 +6,7 @@
 .box {
   width: min(520px,100%); background: #fff; border-radius: 22px;
   padding: 32px; position: relative; box-shadow: 0 32px 100px rgba(0,0,0,.28);
+  max-height: 90vh; overflow-y: auto; overscroll-behavior: contain;
 }
 .close {
   position: absolute; top: 14px; right: 16px; width: 36px; height: 36px;
