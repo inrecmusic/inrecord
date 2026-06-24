@@ -498,7 +498,6 @@ export default function HomeClient({ sale }) {
             <a href="#curriculum">課程大綱</a>
             <a href="#instructor">講師介紹</a>
             <a href="#pricing">課程方案</a>
-            <a href="/demo">課程試看</a>
           </nav>
           {user
             ? (presaleMode
