@@ -89,7 +89,12 @@ export async function PATCH(req) {
   if ("fan_plan" in body) {
     const v = validateFanPlan(body.fan_plan);
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
-    patch.fan_plan = body.fan_plan;
+    patch.fan_plan = {
+      enabled: body.fan_plan.enabled,
+      deadline: body.fan_plan.deadline,
+      proof_price: body.fan_plan.proof_price,
+      direct_price: body.fan_plan.direct_price,
+    };
   }
 
   const { data, error } = await sb.from("sale_settings")
@@ -98,7 +103,7 @@ export async function PATCH(req) {
 
   // 同步直購固定價券 FAN3999（value=direct_price，enabled=false 時 disabled）
   if ("fan_plan" in body) {
-    const fp = body.fan_plan;
+    const fp = patch.fan_plan;
     const { error: cErr } = await sb.from("coupons").upsert({
       code: "FAN3999",
       name: "粉絲直購",

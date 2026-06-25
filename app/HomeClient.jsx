@@ -15,7 +15,6 @@ import {
 import Logo from "@/components/Logo";
 import BuyModal from "@/components/BuyModal";
 import { isFanProofOpen } from "@/lib/fan-proof";
-import Countdown from "@/components/Countdown";
 import PointCarousel from "@/components/PointCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
@@ -456,10 +455,6 @@ export default function HomeClient({ sale }) {
     setBuyOpen(true);
   }
 
-  function openBuy() {
-    startBuy(selectedPlan || PLANS[1]);
-  }
-
   // 只賣粉絲方案：購買 CTA 一律捲動到方案區（粉絲限定方案卡）
   function scrollToPricing() {
     document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
@@ -472,8 +467,6 @@ export default function HomeClient({ sale }) {
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = !sale.classroomOpen;
 
-  // 購買鈕三態文案：開賣前 → 即將開賣；波段 → 立即預購；牌價（教室已開）→ 立即購買
-  const buyLabel = !sale.onSale ? "即將開賣" : (sale.classroomOpen ? "立即購買課程" : "立即預購課程");
   // 短版購買鈕文案（粉絲卡用）
   const buyShort = sale.classroomOpen ? "立即購買" : "立即預購";
   // Hero 優惠卡綁定主推方案（bundle）的波段定價
@@ -858,7 +851,7 @@ export default function HomeClient({ sale }) {
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} fanProofPrice={sale.fanPlan.proofPrice} />
     </>
   );
 }

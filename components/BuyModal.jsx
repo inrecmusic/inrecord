@@ -32,7 +32,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, fanProofPrice = 3499 }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -228,7 +228,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
             <div className={styles.fanProof}>
               <p className={styles.fanProofTitle}>🎫 粉絲憑證折抵 $500<span>演奏會門票 · 專輯 · 樂譜，任一即可</span></p>
               {proofUrl
-                ? <div className={styles.fanProofDone}>✅ 憑證已上傳，已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? 3499).toLocaleString()}</div>
+                ? <div className={styles.fanProofDone}>✅ 憑證已上傳，已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? fanProofPrice).toLocaleString()}</div>
                 : <label className={styles.uploadArea}>
                     <input type="file" accept="image/jpeg,image/png" hidden disabled={fanUploading} onChange={e => handleFanProof(e.target.files?.[0])} />
                     <svg className={styles.uploadIcon} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
