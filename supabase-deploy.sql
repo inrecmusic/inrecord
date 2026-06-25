@@ -36,6 +36,7 @@ ALTER TABLE orders
 -- 粉絲限定憑證折價：訂單帶憑證與審核狀態（idempotent）
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS proof_url TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS fan_review TEXT;   -- NULL=非粉絲單；'pending'|'approved'|'rejected'
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone TEXT;        -- 買家手機（WooCommerce / concert webhook 進名單帶入）
 
 
 -- ────────────────────────────────────────────────────────────────────────
