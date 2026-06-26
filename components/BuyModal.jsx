@@ -212,7 +212,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
               <strong>{plan.label}</strong>
               <div className={styles.price}>
                 {couponApplied
-                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(basePrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
+                  ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
                   : earlyBird
                     ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
                     : <>NT${Number(basePrice).toLocaleString()}</>}
@@ -222,7 +222,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
             {earlyBird && !couponApplied && onSale && <span className={styles.earlyTag}>早鳥優惠</span>}
           </div>
 
-          {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Number(couponApplied.discount).toLocaleString()}</p>}
+          {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Math.max(0, Number(listPrice) - Number(couponApplied.finalPrice)).toLocaleString()}</p>}
 
           {fanProof && plan.plan === "bundle" && (
             <div className={styles.fanProof}>
