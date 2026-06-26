@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { TRIAL_SECONDS, formatTime, buyUrl } from "@/lib/demo";
+import Logo from "@/components/Logo";
 import styles from "./demo.module.css";
 
 // CTA：有 URL → 新分頁連結；無 → 顯示「即將開放」停用
@@ -25,7 +26,7 @@ export default function DemoPage() {
   return (
     <div className={styles.page}>
       <header className={styles.bar}>
-        <div className={styles.logo}>InRec<span>●</span>rd</div>
+        <Logo size={22} />
         <div className={styles.barRight}>
           <span className={`${styles.timer} ${ended ? styles.timerEnded : ""}`}>
             ▸ {formatTime(secondsLeft)}<span className={styles.cursor}>▌</span>
