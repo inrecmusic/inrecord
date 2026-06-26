@@ -2,21 +2,19 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
 import styles from "./InstructorBioCarousel.module.css";
+
+const SWIPE_THRESHOLD = 50; // px dragged before a slide change commits
 
 /**
  * Manual (no autoplay) carousel for the instructor bio paragraphs — one
- * paragraph per slide, advanced by a single forward button (loops back to the
- * first) or arrow keys. Autoplay is omitted on purpose: the slides are reading
- * content and flipping mid-sentence would fight the reader.
+ * paragraph per slide. Switched by horizontal swipe / drag (finger on mobile,
+ * mouse on desktop), dot tabs, or arrow keys. No side button, so the text gets
+ * the full column width. Autoplay is omitted on purpose (reading content).
  *
- * Each slide is rendered in normal flow (auto height across breakpoints) and
- * keyed by index, so changing slide just re-mounts a fresh <motion.div> that
- * fades/slides in. We deliberately avoid `AnimatePresence mode="wait"`: it has
- * to wait for the outgoing slide's exit to fire onExitComplete before mounting
- * the next one, which here left the next paragraph unmounted (stuck on slide 1).
- * `slides` is an array of nodes.
+ * Each slide is keyed by index and re-mounts on change (fades/slides in) — no
+ * AnimatePresence/exit bookkeeping (its mode="wait"+drag combo previously left
+ * the next slide unmounted). `slides` is an array of nodes.
  */
 export default function InstructorBioCarousel({ slides }) {
   // [activeIndex, direction] — direction sets the enter x offset sign.
@@ -51,20 +49,32 @@ export default function InstructorBioCarousel({ slides }) {
           initial={{ opacity: 0, x: dir >= 0 ? 28 : -28 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.18}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -SWIPE_THRESHOLD) next();
+            else if (info.offset.x > SWIPE_THRESHOLD) prev();
+          }}
         >
           {slides[index]}
         </motion.div>
       </div>
 
       {count > 1 && (
-        <button
-          type="button"
-          className={styles.next}
-          onClick={next}
-          aria-label={`下一段（${index + 1}／${count}）`}
-        >
-          <ChevronRight size={20} strokeWidth={2.4} />
-        </button>
+        <div className={styles.dots} role="tablist" aria-label="段落導覽">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === index}
+              aria-label={`第 ${i + 1} 段`}
+              className={`${styles.dot} ${i === index ? styles.dotActive : ""}`}
+              onClick={() => go(i, i > index ? 1 : -1)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

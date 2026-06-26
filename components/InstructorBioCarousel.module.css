@@ -1,7 +1,4 @@
 .carousel {
-  display: flex;
-  align-items: center;
-  gap: 18px;
   max-width: 700px;
   margin-bottom: 14px;   /* freed-up space lets the creds list below sit higher */
   outline: none;
@@ -10,10 +7,8 @@
 .viewport {
   position: relative;
   overflow: hidden;
-  flex: 1;
-  min-width: 0;
   /* small floor so switching between the 4- and 5-line slides barely shifts the
-     creds below; shorter than the content on narrow widths, where it grows. */
+     dots below; shorter than the content on narrow widths, where it grows. */
   min-height: 108px;
 }
 
@@ -21,29 +16,43 @@
   color: #374151;
   font-size: 15px;
   line-height: 1.6;
-  /* normal CJK wrapping (lines fill fully → fewer lines); the long English
-     brand/school names are kept intact by their own white-space:nowrap spans.
-     Deliberately NOT word-break:keep-all — that broke at phrase boundaries and
-     left ragged half-lines, making the long 3rd slide much taller than needed. */
+  cursor: grab;
+  touch-action: pan-y;   /* horizontal swipe → slide; vertical → page scroll */
+  /* desktop: normal CJK wrapping (lines fill fully → fewer lines / shorter);
+     long English brand names stay intact via their own white-space:nowrap spans.
+     On mobile the column is narrow, so normal wrapping splits phrases mid-word
+     (樂｜壇、鋼琴｜家…) — there we switch to keep-all (see media query below) to
+     match the site-wide 中文斷行 convention. */
   text-wrap: pretty;
 }
 
-/* single forward button to the right of the text (loops back to the first) */
-.next {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #0f172a;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background .18s, color .18s, border-color .18s, transform .18s;
+/* 手機：窄欄改 keep-all 避免中文詞組從中間斷（與全域 h1-h6/p/li 規則一致）；
+   字級 15→14（與列點一致），讓較長的無標點子句也塞得進一行、不被硬斷。 */
+@media (max-width: 980px) {
+  .slide { word-break: keep-all; line-break: strict; overflow-wrap: break-word; font-size: 14px; }
 }
-.next:hover { background: var(--brand, #2563eb); color: #fff; border-color: var(--brand, #2563eb); }
-.next:active { transform: scale(.94); }
+
+.slide:active { cursor: grabbing; }
+
+/* dot tabs under the text — slide indicator + click-to-jump (swipe is primary) */
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #cbd5e1;
+  cursor: pointer;
+  transition: background .2s, width .25s ease;
+}
+.dot:hover { background: #94a3b8; }
+.dotActive { width: 24px; background: var(--brand, #2563eb); }
 
 @media (prefers-reduced-motion: reduce) {
   .slide { transition: none !important; }

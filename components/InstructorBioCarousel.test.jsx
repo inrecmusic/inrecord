@@ -23,22 +23,33 @@ describe("InstructorBioCarousel", () => {
     expect(screen.getByText("第一段內容")).toBeTruthy();
   });
 
-  it("點『下一段』單向前進，最後一段後循環回第一段", () => {
+  it("點圓點頁籤切換到對應段落（含循環）", () => {
     render(<InstructorBioCarousel slides={SLIDES} />);
-    const btn = screen.getByRole("button", { name: /下一段/ });
 
-    fireEvent.click(btn);
+    fireEvent.click(screen.getByRole("tab", { name: "第 2 段" }));
     expect(screen.getByText("第二段內容")).toBeTruthy();
 
-    fireEvent.click(btn);
+    fireEvent.click(screen.getByRole("tab", { name: "第 3 段" }));
     expect(screen.getByText("第三段內容")).toBeTruthy();
 
-    fireEvent.click(btn); // 第三段後循環
+    fireEvent.click(screen.getByRole("tab", { name: "第 1 段" }));
     expect(screen.getByText("第一段內容")).toBeTruthy();
   });
 
-  it("單張投影片時不顯示前進按鈕", () => {
+  it("鍵盤右鍵前進、最後一段後循環回第一段", () => {
+    render(<InstructorBioCarousel slides={SLIDES} />);
+    const region = screen.getByRole("region", { name: "講師介紹" });
+
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(screen.getByText("第二段內容")).toBeTruthy();
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(screen.getByText("第三段內容")).toBeTruthy();
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(screen.getByText("第一段內容")).toBeTruthy();
+  });
+
+  it("單張投影片時不顯示頁籤圓點", () => {
     render(<InstructorBioCarousel slides={["只有一段"]} />);
-    expect(screen.queryByRole("button", { name: /下一段/ })).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 });

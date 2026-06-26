@@ -493,12 +493,14 @@ export default function HomeClient({ sale }) {
             <a href="#instructor">講師介紹</a>
             <a href="#pricing">課程方案</a>
           </nav>
-          {user
-            ? (presaleMode
-                ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
-                : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
-            : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-          <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>立即購買</button>
+          <div className={styles.navActions}>
+            {user
+              ? (presaleMode
+                  ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
+                  : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
+              : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
+            <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>立即購買</button>
+          </div>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -719,7 +721,7 @@ export default function HomeClient({ sale }) {
                 ].map(([Icon, text]) => (
                   <li key={text}>
                     <span className={styles.credIcon}><Icon size={15} strokeWidth={2} /></span>
-                    {text}
+                    <span className={styles.credText}>{text}</span>
                   </li>
                 ))}
               </ul>
