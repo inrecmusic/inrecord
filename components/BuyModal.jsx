@@ -52,12 +52,18 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   // 切換方案時清除已套用的優惠券（折扣與方案綁定）
   useEffect(() => { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); setCouponCheckFailed(false); }, [plan?.plan]);
 
-  // 以「直接購買」重新開啟 Modal 時，清除前次粉絲憑證流程殘留的狀態，
-  // 避免 FAN 券/憑證 URL 帶進非粉絲購買流程；不影響使用者自行輸入的一般優惠碼。
+  // 開窗時清除前次流程殘留，避免帶錯券/錯價：
+  //   一般購買 → 清憑證 URL + 任何 FAN 券；
+  //   憑證流程 → 清前次「直接購買」殘留的 FAN3999 直購券($3,999)，憑證價($3,499)改由上傳後套用。
+  // 不影響使用者自行輸入的一般優惠碼，也不清除憑證流程已上傳取得的 FAN-xxxxx 券。
   useEffect(() => {
-    if (open && !fanProof && !autoCoupon) {
+    if (!open) return;
+    if (!fanProof && !autoCoupon) {
       setProofUrl(null);
       if (couponApplied?.code?.startsWith("FAN")) { setCouponApplied(null); setCouponInput(""); }
+      setCouponCheckFailed(false);
+    } else if (fanProof && !autoCoupon && couponApplied?.code === "FAN3999") {
+      setCouponApplied(null); setCouponInput("");
     }
   }, [open, fanProof, autoCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -86,6 +92,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const earlyBird = !!pricing?.isEarlyBird;
   // 直購券（FAN3999）驗證中：先用預期粉絲價顯示、暫擋結帳，避免閃底價（$5,800）。
   const couponPending = !!autoCoupon && !couponApplied && !couponCheckFailed;
+  // 憑證流程尚未上傳：先顯示預期憑證價（$3,499），引導上傳；上傳後改顯示實際套券價。
+  const fanProofPending = fanProof && !couponApplied && !proofUrl;
 
   async function handleFanProof(file) {
     if (!file) return;
@@ -221,9 +229,11 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                   ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
                   : couponPending
                     ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(fanDirectPrice).toLocaleString()}</>
-                    : earlyBird
-                      ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
-                      : <>NT${Number(basePrice).toLocaleString()}</>}
+                    : fanProofPending
+                      ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(fanProofPrice).toLocaleString()}</>
+                      : earlyBird
+                        ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(basePrice).toLocaleString()}</>
+                        : <>NT${Number(basePrice).toLocaleString()}</>}
               </div>
             </div>
             <span className={styles.desc}>{plan.desc}</span>
@@ -327,8 +337,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
 
         <div className={styles.sheetFooter}>
           <button className={styles.proceed} onClick={handleCheckout}
-            disabled={loading || verifying || couponPending || (!onSale && couponApplied?.type !== "price")}>
-            {loading ? "處理中…" : verifying ? "驗證中…" : couponPending ? "確認優惠中…" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : "前往付款 →"}
+            disabled={loading || verifying || couponPending || fanProofPending || (!onSale && couponApplied?.type !== "price")}>
+            {loading ? "處理中…" : verifying ? "驗證中…" : couponPending ? "確認優惠中…" : fanProofPending ? "請先上傳憑證" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : "前往付款 →"}
           </button>
           {error && (
             <>
