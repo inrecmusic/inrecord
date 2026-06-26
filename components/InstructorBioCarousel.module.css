@@ -1,0 +1,50 @@
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 700px;
+  margin-bottom: 14px;   /* freed-up space lets the creds list below sit higher */
+  outline: none;
+}
+
+.viewport {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  /* small floor so switching between the 4- and 5-line slides barely shifts the
+     creds below; shorter than the content on narrow widths, where it grows. */
+  min-height: 108px;
+}
+
+.slide {
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.6;
+  /* normal CJK wrapping (lines fill fully → fewer lines); the long English
+     brand/school names are kept intact by their own white-space:nowrap spans.
+     Deliberately NOT word-break:keep-all — that broke at phrase boundaries and
+     left ragged half-lines, making the long 3rd slide much taller than needed. */
+  text-wrap: pretty;
+}
+
+/* single forward button to the right of the text (loops back to the first) */
+.next {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .18s, color .18s, border-color .18s, transform .18s;
+}
+.next:hover { background: var(--brand, #2563eb); color: #fff; border-color: var(--brand, #2563eb); }
+.next:active { transform: scale(.94); }
+
+@media (prefers-reduced-motion: reduce) {
+  .slide { transition: none !important; }
+}

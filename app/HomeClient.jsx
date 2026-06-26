@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import {
-  Music2, Bot, Music, GraduationCap,
-  Users, TrendingUp, Play, Award, Star,
+  Bot, Music, GraduationCap,
+  TrendingUp, Play, Award, Star,
   Camera, PlayCircle, MessageCircle,
   Menu, X, ChevronDown,
   ShoppingCart, Heart, Mic2,
@@ -16,6 +16,7 @@ import Logo from "@/components/Logo";
 import BuyModal from "@/components/BuyModal";
 import { isFanProofOpen } from "@/lib/fan-proof";
 import PointCarousel from "@/components/PointCarousel";
+import InstructorBioCarousel from "@/components/InstructorBioCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
@@ -702,16 +703,19 @@ export default function HomeClient({ sale }) {
             <div className={styles.instructorCopy}>
               <small>講師介紹</small>
               <h2>Rick Chang<br/><span>張育瑞老師</span></h2>
-              <p className={styles.instructorRole}>音樂製作人・鋼琴演奏者・流行鋼琴老師</p>
-              <p>美國波士頓 <span style={{ whiteSpace: "nowrap" }}>Berklee College of Music</span> 音樂碩士，簽約碩樂國際娛樂（<span style={{ whiteSpace: "nowrap" }}>Universal Music Publishing</span> 台灣授權公司），首張個人專輯《Fire!》登上 iTunes 流行榜冠軍。</p>
-              <p>榮獲 <span style={{ whiteSpace: "nowrap" }}>Global Music Awards</span> 銅獎，2024 巴黎奧運主題歌曲累計超過 200 萬次觀看，並與布達佩斯交響樂團合作錄製管弦樂作品。</p>
+              <p className={styles.instructorRole}>跨界鋼琴家・音樂製作人・流行鋼琴老師</p>
+              <InstructorBioCarousel slides={[
+                <>以獨樹一格的「瑞式」古典搖滾風格深受樂迷喜愛，是樂壇少見能將古典優雅與流行爆發力完美結合的跨界鋼琴家。畢業於美國伯克利音樂學院（Berklee College of Music），取得演奏與音樂製作碩士學位；現為碩樂國際娛樂（Showing Music Entertainment）簽約鋼琴家、環球音樂（Universal Music Publishing Group）專屬詞曲創作者。</>,
+                <>首張跨界鋼琴專輯《Fire!》登上博客來「品味」類排行榜第一，並榮獲美國全球音樂獎（Global Music Awards）「新銳藝術家」與「器樂演奏家」銅牌。作品在社群亦極具渲染力——2024 年為台灣奧運創作的歌曲 48 小時內突破 200 萬觀看，與布達佩斯配樂交響樂團合作的鋼琴協奏曲《黑暗世界》發布一個月即破十萬點閱。</>,
+                <>2024 年，受 YAMAHA 山葉鋼琴與采盟免稅集團之邀，於桃園國際機場策劃快閃演奏會，並獲德國頂級 <span style={{ whiteSpace: "nowrap" }}>C.Bechstein</span> 貝希斯坦鋼琴邀請舉辦個人演奏會；2025 年，擔綱嘉義大學藝術節揭幕演出；2026 年，更受統一 <span style={{ whiteSpace: "nowrap" }}>7-ELEVEn</span> 獅之邀，於台南亞太國際棒球場連續擔綱兩場賽後演出嘉賓，持續在不同場域拓展鋼琴的新可能。</>,
+              ]} />
               <ul className={styles.instructorCreds}>
                 {[
-                  [GraduationCap, "Berklee College of Music 音樂碩士"],
-                  [Award,         "iTunes 流行榜冠軍《Fire!》・Global Music Awards 銅獎"],
-                  [Mic2,          "2024 奧運主題曲 200 萬+ 觀看・布達佩斯交響樂團合作"],
-                  [Music2,        "Yamaha・桃園機場・Bechstein・誠品・衛武營 演奏會"],
-                  [Users,         "線上課程累積超過 500 位學員"],
+                  [GraduationCap, "美國伯克利音樂學院（Berklee）演奏與音樂製作碩士"],
+                  [Mic2,          "碩樂國際娛樂簽約鋼琴家・環球音樂專屬詞曲創作者"],
+                  [Award,         "跨界專輯《Fire!》博客來「品味」榜冠軍・全球音樂獎雙銅牌"],
+                  [Video,         "2024 奧運創作曲 48 小時破 200 萬觀看・《黑暗世界》協奏曲月破十萬"],
+                  [BookOpen,      "受邀師大附中、嘉義大學等多校音樂系講座與大師班"],
                 ].map(([Icon, text]) => (
                   <li key={text}>
                     <span className={styles.credIcon}><Icon size={15} strokeWidth={2} /></span>
@@ -783,7 +787,6 @@ export default function HomeClient({ sale }) {
                 ["什麼時候可以上課？",           "第一批課程預計在 9/2 20:00 上架、最後一批課程預計在 9/30 20:00 上架完畢。"],
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
-                ["學完後可以彈哪些歌？",         "課程實戰練習包含《Do-Re-Mi》、《Happy Birthday》、《稻香》、《告白氣球》、《刻在我心底的名字》、《Always With Me》等 20+ 首。"],
                 ["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。直接購買 NT$${sale.fanPlan.directPrice.toLocaleString()}；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`],
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
