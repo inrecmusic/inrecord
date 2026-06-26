@@ -73,7 +73,7 @@
 .hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .heroLead { text-wrap: pretty; font-family: var(--font-noto-sans), "Noto Sans TC", sans-serif; font-size: 20px; color: rgba(255,255,255,.66); max-width: 540px; margin: 0 0 34px; font-weight: 400; line-height: 1.8; }
 /* 課程正式名稱：系列徽章（金色 mono）＋ serif 副標 */
-.heroSeries { display: inline-flex; align-items: center; gap: 16px; font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: clamp(28px, 5vw, 46px); font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: #ecbf5c; margin-bottom: 16px; line-height: 1.1; }
+.heroSeries { display: inline-flex; align-items: center; gap: 16px; white-space: nowrap; font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: clamp(17px, 3vw, 28px); font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: #ecbf5c; margin-bottom: 16px; line-height: 1.1; }
 .heroSeries::before { content: ""; width: 44px; height: 2px; flex-shrink: 0; background: linear-gradient(90deg, #ecbf5c, rgba(236,191,92,.05)); }
 .heroSub { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 500; font-size: clamp(21px, 2.5vw, 31px); line-height: 1.36; color: rgba(255,255,255,.82); margin: -8px 0 30px; text-shadow: 0 2px 18px rgba(0,0,0,.45); }
 .heroCtas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 0; }

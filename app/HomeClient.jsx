@@ -569,7 +569,7 @@ export default function HomeClient({ sale }) {
               <motion.span variants={fadeUp} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
               <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
-              <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、有效、看得見進步。</motion.p>
+              <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、能追蹤成效，看見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
                 <span className={styles.offerPill}>粉絲限定方案</span>
                 <div className={styles.offerPriceRow}>
@@ -582,7 +582,7 @@ export default function HomeClient({ sale }) {
                     <Play size={16} />課程 Demo 體驗
                   </a>
                 </div>
-                <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天不滿意，全額退費保證</span>
+                <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天內不滿意，全額退費保證（視課程觀看比例而定）</span>
               </motion.div>
             </motion.div>
           </div>
