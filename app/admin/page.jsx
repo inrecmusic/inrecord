@@ -879,7 +879,7 @@ function OrdersPage({leads,showToast}){
     invoiceNo:o.invoice_no||"",
     invoiceError:o.invoice_error||"",
     emailError:o.email_error||"",
-    needInvoice:(o.status==="paid" && !o.invoice_no), // 已付款但未開票（待補開）
+    needInvoice:(o.status==="paid" && !o.invoice_no && !LEAD_SOURCES.includes(o.source)), // 已付款但未開票（待補開）；外部來源由各站自行開票，不列告警
     proofUrl:o.proof_url||null,
     fanReview:o.fan_review||null,
   })),[rows]);
