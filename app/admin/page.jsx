@@ -610,27 +610,69 @@ function MediaPage(){
 }
 
 // ── Students Page ──────────────────────────────────────────────────────────
-function StudentsPage({leads,loading,onRefresh,onMark,onExport}){
+// 學員管理：實際學員（有 enrollment 課程存取的人，含 concert/WordPress 現場購買者）∪ 體驗名單。
+// 自帶資料來源 /api/admin/students（合併 enrollments + 已付款 orders + course_preview_leads），
+// 不再只讀 course_preview_leads —— 開通課程後現場購買者即可在此出現。
+function StudentsPage({showToast}){
+  const [students,setStudents]=useState([]);
+  const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState("");
   const [detailStudent,setDetailStudent]=useState(null);
-  const now=new Date();
-  const thisMonth=leads.filter(l=>{const d=new Date(l.created_at||l.requestedAt||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  const purchased=leads.filter(l=>l.purchased||l.status==="purchased");
+  const [busy,setBusy]=useState(false);
+  const dlRef=useRef(null);
 
-  const display=useMemo(()=>leads.map(l=>({...l,name:l.name||(l.email?.split("@")[0])||"—",purchasedCount:(l.purchased||l.status==="purchased")?1:0})),[leads]);
-  const filtered=display.filter(l=>!search||l.email?.toLowerCase().includes(search.toLowerCase())||l.name?.toLowerCase().includes(search.toLowerCase()));
+  const load=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const res=await _api("/api/admin/students");
+      const d=await res.json();
+      if(!res.ok||d.ok===false)throw new Error(d.error||"fetch_failed");
+      setStudents(d.data||[]);
+    }catch{setStudents([]);}
+    finally{setLoading(false);}
+  },[]);
+  useEffect(()=>{load();},[load]);
+
+  // 標記狀態只對「體驗名單」列（isLead）有效——真正學員無 course_preview_leads 列可 PATCH。
+  async function mark(row,status){
+    if(busy||!row?.isLead)return;
+    setBusy(true);
+    try{
+      const res=await _api("/api/admin/leads",{method:"PATCH",body:JSON.stringify({id:row.id,status})});
+      if(res.ok){showToast?.("✅ 已更新狀態");await load();}
+      else{const d=await res.json().catch(()=>({}));showToast?.("❌ 更新失敗："+(d.error||"unknown"));}
+    }catch(e){showToast?.("❌ 更新失敗："+e.message);}
+    finally{setBusy(false);}
+  }
+
+  function exportCsv(){
+    if(!dlRef.current)return;
+    const head=["Email","電話","方案","來源","狀態","已購課","建立時間"];
+    const rows=[head,...display.map(s=>[s.email,s.phone||"",s.plan_label||"",s.source||"",statusLabel(s.status),s.purchased?"是":"否",s.created_at||""])];
+    const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    dlRef.current.href=url;dlRef.current.download="inrecord_students.csv";dlRef.current.click();
+    setTimeout(()=>URL.revokeObjectURL(url),100);showToast?.("✅ 已匯出 CSV");
+  }
+
+  const now=new Date();
+  const thisMonth=students.filter(s=>{const d=new Date(s.created_at||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const purchased=students.filter(s=>s.purchased);
+
+  const display=useMemo(()=>students.map(s=>({...s,name:(s.email?.split("@")[0])||"—",purchasedCount:s.purchased?1:0})),[students]);
+  const filtered=display.filter(s=>!search||s.email?.toLowerCase().includes(search.toLowerCase())||s.name?.toLowerCase().includes(search.toLowerCase()));
 
   return(
     <div>
       <div className={styles.pageHeader}>
-        <div><h1>學員管理</h1><p>共 {leads.length} 位學員</p></div>
+        <div><h1>學員管理</h1><p>共 {students.length} 位學員</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={onRefresh}><RefreshCw size={13}/> 重新整理</button>
-          <button className={styles.btnSmall} onClick={onExport}><Download size={13}/> 匯出 CSV</button>
+          <button className={styles.btnSmall} onClick={load}><RefreshCw size={13}/> 重新整理</button>
+          <button className={styles.btnSmall} onClick={exportCsv}><Download size={13}/> 匯出 CSV</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
-        {[["總學員",leads.length,"位"],["本月新增",thisMonth.length,"位"],["已購課",purchased.length,"位"],["未購課",leads.length-purchased.length,"位"]].map(([l,v,s])=>(
+        {[["總學員",students.length,"位"],["本月新增",thisMonth.length,"位"],["已購課",purchased.length,"位"],["未購課",students.length-purchased.length,"位"]].map(([l,v,s])=>(
           <div key={l} className={styles.statCard}><div className={styles.statHead}><span className={styles.statLabel}>{l}</span></div><strong className={styles.statValue}>{v}</strong><div className={styles.statSub}>{s}</div></div>
         ))}
       </div>
@@ -642,23 +684,25 @@ function StudentsPage({leads,loading,onRefresh,onMark,onExport}){
         {loading?<p style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</p>:(
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-              <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>註冊日期</th><th>操作</th></tr></thead>
+              <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead>
               <tbody>
                 {!filtered.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>
-                :filtered.map(l=>(
-                  <tr key={l.id||l.email}>
-                    <td><div className={styles.studentAvatar}>{l.name[0]?.toUpperCase()}</div></td>
-                    <td><strong>{l.name}</strong></td>
-                    <td className={styles.dim}>{l.email}</td>
-                    <td className={styles.dim}>—</td>
-                    <td><span className={styles.courseBadge}>{l.purchasedCount}</span></td>
-                    <td><span className={`${styles.pill} ${styles[l.status]||styles.requested}`}>{statusLabel(l.status)}</span></td>
-                    <td className={styles.dim}>{fmt(l.created_at||l.requestedAt)}</td>
+                :filtered.map(s=>(
+                  <tr key={s.id}>
+                    <td><div className={styles.studentAvatar}>{s.name[0]?.toUpperCase()}</div></td>
+                    <td><strong>{s.name}</strong></td>
+                    <td className={styles.dim}>{s.email}</td>
+                    <td className={styles.dim}>{s.phone||"—"}</td>
+                    <td><span className={styles.courseBadge}>{s.purchasedCount}</span></td>
+                    <td><span className={`${styles.pill} ${styles[s.status]||styles.requested}`}>{statusLabel(s.status)}</span></td>
+                    <td className={styles.dim}>{fmt(s.created_at)}</td>
                     <td>
                       <div className={styles.rowActions}>
-                        <button className={styles.btnSmall} onClick={()=>setDetailStudent(l)}><Eye size={12}/> 詳情</button>
-                        <button className={styles.btnSmall} onClick={()=>onMark(l,"demo_opened")}>Demo ✓</button>
-                        <button className={`${styles.btnSmall} ${styles.green}`} onClick={()=>onMark(l,"purchased")}><CheckCircle2 size={12}/> 購買 ✓</button>
+                        <button className={styles.btnSmall} onClick={()=>setDetailStudent(s)}><Eye size={12}/> 詳情</button>
+                        {s.isLead&&!s.purchased&&<>
+                          <button className={styles.btnSmall} disabled={busy} onClick={()=>mark(s,"demo_opened")}>Demo ✓</button>
+                          <button className={`${styles.btnSmall} ${styles.green}`} disabled={busy} onClick={()=>mark(s,"purchased")}><CheckCircle2 size={12}/> 購買 ✓</button>
+                        </>}
                       </div>
                     </td>
                   </tr>
@@ -668,6 +712,7 @@ function StudentsPage({leads,loading,onRefresh,onMark,onExport}){
           </div>
         )}
       </div>
+      <a ref={dlRef} style={{display:"none"}} aria-hidden/>
       {detailStudent&&(
         <div className={styles.modalOverlay} onClick={()=>setDetailStudent(null)}>
           <div className={styles.modalCard} style={{width:"min(480px,100%)"}} onClick={e=>e.stopPropagation()}>
@@ -685,9 +730,10 @@ function StudentsPage({leads,loading,onRefresh,onMark,onExport}){
             <div style={{display:"grid",gap:10,marginBottom:20}}>
               {[
                 ["狀態",<span key="s" className={`${styles.pill} ${styles[detailStudent.status]||styles.requested}`}>{statusLabel(detailStudent.status)}</span>],
-                ["電話","—"],
-                ["已購課程",detailStudent.purchasedCount?"零基礎流行鋼琴入門課":"—"],
-                ["註冊日期",fmt(detailStudent.created_at||detailStudent.requestedAt)],
+                ["電話",detailStudent.phone||"—"],
+                ["已購課程",detailStudent.purchased?(detailStudent.plan_label||"從零開始學鋼琴"):"—"],
+                ["來源",detailStudent.source||"—"],
+                ["建立時間",fmt(detailStudent.created_at)],
               ].map(([label,val])=>(
                 <div key={label} style={{display:"grid",gridTemplateColumns:"100px 1fr",gap:8,fontSize:14,borderBottom:"1px solid #f8fafc",paddingBottom:10}}>
                   <span style={{color:"#64748b",fontWeight:700}}>{label}</span>
@@ -697,8 +743,10 @@ function StudentsPage({leads,loading,onRefresh,onMark,onExport}){
             </div>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
               <button className={styles.btnSmall} onClick={()=>setDetailStudent(null)}>關閉</button>
-              <button className={styles.btnSmall} onClick={()=>{onMark(detailStudent,"demo_opened");setDetailStudent(null);}}>標記 Demo ✓</button>
-              <button className={`${styles.btnSmall} ${styles.green}`} onClick={()=>{onMark(detailStudent,"purchased");setDetailStudent(null);}}>標記已購買 ✓</button>
+              {detailStudent.isLead&&!detailStudent.purchased&&<>
+                <button className={styles.btnSmall} disabled={busy} onClick={()=>{mark(detailStudent,"demo_opened");setDetailStudent(null);}}>標記 Demo ✓</button>
+                <button className={`${styles.btnSmall} ${styles.green}`} disabled={busy} onClick={()=>{mark(detailStudent,"purchased");setDetailStudent(null);}}>標記已購買 ✓</button>
+              </>}
             </div>
           </div>
         </div>
@@ -870,7 +918,7 @@ function OrdersPage({leads,showToast}){
     realId:o.id,
     student:o.buyer_name||o.email?.split("@")[0]||"學員",
     email:o.email,
-    course:o.plan_label||"零基礎流行鋼琴入門課",
+    course:o.plan_label||"從零開始學鋼琴",
     amount:Number(o.amount)||0,
     method:o.pay_type||"—",
     status:o.status||"pending",
@@ -1908,7 +1956,7 @@ function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonu
   const monthRev=paidOrders.filter(o=>{const d=new Date(o.created_at||o.updated_at||0);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).reduce((s,o)=>s+(Number(o.amount)||0),0);
 
   const RANKING=[
-    {rank:1,title:"零基礎流行鋼琴入門課",orders:purchased,revenue:totalRev,color:"#f59e0b"},
+    {rank:1,title:"從零開始學鋼琴",orders:purchased,revenue:totalRev,color:"#f59e0b"},
   ];
   const FUNNEL=[{stage:"瀏覽課程頁",count:0},{stage:"查看銷售頁",count:0},{stage:"點擊購買",count:0},{stage:"完成付款",count:purchased}];
 
@@ -2567,7 +2615,6 @@ export default function AdminPage(){
   const [trendFilter,setTrendFilter]=useState("month");
   const [donutFilter,setDonutFilter]=useState("month");
   const [unreadUnitComments,setUnreadUnitComments]=useState(0);
-  const downloadRef=useRef(null);
 
   // Auto-verify stored token on mount
   useEffect(()=>{
@@ -2613,23 +2660,6 @@ export default function AdminPage(){
   },[]);
 
   useEffect(()=>{if(authed)fetchOrders();},[authed,page,fetchOrders]);
-
-  async function markLead(lead,status){
-    try{const res=await fetch("/api/admin/leads",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},body:JSON.stringify({id:lead.id,status})});if(res.ok){fetchLeads();showToast("✅ 已更新狀態");return;}}catch{}
-    const raw=JSON.parse(localStorage.getItem("inrecord_course_preview_leads")||"[]");
-    const upd=raw.map(l=>l.email===lead.email?{...l,status,updatedAt:new Date().toISOString()}:l);
-    localStorage.setItem("inrecord_course_preview_leads",JSON.stringify(upd));setLeads(upd);showToast("✅ 已更新（localStorage 模式）");
-  }
-
-  function exportCsv(){
-    if(!downloadRef.current)return;
-    const cols=["email","course","source","status","email_sent","demo_opened","purchased","created_at","updated_at"];
-    const rows=[cols,...leads.map(l=>cols.map(c=>l[c]??""))];
-    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-    downloadRef.current.href=url;downloadRef.current.download="inrecord_leads.csv";downloadRef.current.click();
-    setTimeout(()=>URL.revokeObjectURL(url),100);showToast("✅ 已匯出 CSV");
-  }
 
   const purchasedCount=leads.filter(l=>l.purchased||l.status==="purchased").length;
   const failedInvoiceCount=orders.filter(o=>o.status==="paid"&&!o.invoice_no).length; // 已付款待補開發票
@@ -2701,7 +2731,7 @@ export default function AdminPage(){
           )}
           {page==="messages"    &&<MessagesPage showToast={showToast}/>}
           {page==="media"       &&<MediaPage/>}
-          {page==="students"    &&<StudentsPage leads={leads} loading={loading} onRefresh={fetchLeads} onMark={markLead} onExport={exportCsv}/>}
+          {page==="students"    &&<StudentsPage showToast={showToast}/>}
           {page==="orders"      &&<OrdersPage leads={leads} showToast={showToast}/>}
           {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
@@ -2715,7 +2745,6 @@ export default function AdminPage(){
       </div>
 
       {toast&&<div className={styles.toast}>{toast}</div>}
-      <a ref={downloadRef} style={{display:"none"}} aria-hidden="true"/>
     </div>
   );
 }

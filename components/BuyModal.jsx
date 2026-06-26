@@ -219,7 +219,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
 
         <div className={styles.sheetBody}>
           <h2>確認購買方案</h2>
-          <p className={styles.sub}>零基礎流行鋼琴入門課</p>
+          <p className={styles.sub}>從零開始學鋼琴</p>
 
           <div className={styles.planCard}>
             <div className={styles.planCardTop}>

@@ -46,7 +46,7 @@ function SuccessContent() {
         <div style={{fontSize:64,marginBottom:16}}>🎹</div>
         <Logo size={28} />
         <h1 style={{fontSize:32,letterSpacing:"-.04em",margin:"16px 0 10px"}}>購買成功！</h1>
-        <p style={{color:"#64748b",marginBottom:28}}>恭喜你加入《零基礎流行鋼琴入門課》！<br/>我們已寄出開課確認 Email，請到信箱查收。</p>
+        <p style={{color:"#64748b",marginBottom:28}}>恭喜你加入《從零開始學鋼琴》！<br/>我們已寄出開課確認 Email，請到信箱查收。</p>
         {tradeNo && <p style={{fontSize:12,color:"#94a3b8",marginBottom:24}}>訂單編號：{tradeNo}</p>}
         <a href="/" style={primaryBtn}>回到首頁</a>
       </div>

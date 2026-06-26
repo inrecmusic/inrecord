@@ -137,7 +137,7 @@ export async function POST(req) {
       MerTradeNo: tradeNo,
       TradeAmt:   String(price),
       Timestamp:  String(Math.floor(Date.now() / 1000)),
-      ProdDesc:   (label || "零基礎流行鋼琴入門課").slice(0, 100),
+      ProdDesc:   (label || "從零開始學鋼琴").slice(0, 100),
       ReturnURL:  `${siteUrl}/api/payuni/return`,
       NotifyURL:  `${siteUrl}/api/payuni/notify`,
     };

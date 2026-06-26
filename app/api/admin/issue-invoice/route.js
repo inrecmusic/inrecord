@@ -29,7 +29,7 @@ export async function POST(req) {
     buyerEmail: order.email,
     buyerTaxId: order.buyer_tax_id || null,
     amount: order.amount,
-    productName: order.plan_label || "零基礎流行鋼琴入門課",
+    productName: order.plan_label || "從零開始學鋼琴",
     carrierType: order.carrier_type || "",
     carrierId: order.carrier_id || "",
     trackApiCode: process.env.AMEGO_TRACK_API_CODE || "",
