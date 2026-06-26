@@ -26,10 +26,10 @@
   text-wrap: pretty;
 }
 
-/* 手機：窄欄改 keep-all 避免中文詞組從中間斷（與全域 h1-h6/p/li 規則一致）；
-   字級 15→14（與列點一致），讓較長的無標點子句也塞得進一行、不被硬斷。 */
+/* 手機：長段落用「正常換行＋禁則(line-break:strict)」填滿每行最整齊——keep-all 在窄欄
+   會造成很多短行/孤立的英文 token（如 7-ELEVEn 單獨一行），反而醜。字級 15→14 與列點一致。 */
 @media (max-width: 980px) {
-  .slide { word-break: keep-all; line-break: strict; overflow-wrap: break-word; font-size: 14px; }
+  .slide { word-break: normal; line-break: strict; overflow-wrap: break-word; font-size: 14px; }
 }
 
 .slide:active { cursor: grabbing; }

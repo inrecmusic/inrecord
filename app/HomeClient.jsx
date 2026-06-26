@@ -856,7 +856,7 @@ export default function HomeClient({ sale }) {
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} fanProofPrice={sale.fanPlan.proofPrice} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} fanProofPrice={sale.fanPlan.proofPrice} fanDirectPrice={sale.fanPlan.directPrice} />
     </>
   );
 }

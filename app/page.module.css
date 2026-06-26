@@ -67,7 +67,7 @@
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
 .offerBtns .btnRed { flex: 1; justify-content: center; padding: 12px 18px; font-size: 17px; font-weight: 600; background: #2c68e7; }
 .offerBtns .btnOutline { font-size: 17px; background: #fff; border: 1.5px solid #2563eb; color: #2563eb; justify-content: center; }
-.offerGuard { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: rgba(255,255,255,.62); font-size: 15px; word-break: keep-all; line-break: strict; overflow-wrap: break-word; }
+.offerGuard { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: rgba(255,255,255,.62); font-size: 15px; line-break: strict; overflow-wrap: break-word; }
 .offerGuard svg { width: 18px; height: 18px; padding: 2px; border-radius: 5px; background: #2c68e7; color: #fff; flex-shrink: 0; }
 .eyebrow { color: rgba(255,255,255,.6); font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
 .hero h1 { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 600; text-wrap: balance; font-size: clamp(36px,4.5vw,62px); line-height: 1.12; letter-spacing: .01em; margin: 0 0 12px; color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
@@ -328,6 +328,11 @@
   .hero { padding: 48px 0 72px; }
   .hero h1 { font-size: clamp(30px, 7vw, 44px); margin-bottom: 16px; }
   .heroLead { font-size: 16px; line-height: 1.6; margin-bottom: 22px; }
+  .heroSeries { font-size: 14px; gap: 10px; }       /* 窄機：CROSSOVERICK 系列標縮小 */
+  .heroSeries::before { width: 28px; }
+  .offerPriceRow { gap: 10px; }
+  .offerPrice { font-size: 36px; }                  /* 窄機：價格縮小，避免右側劃線價 $10,800 溢出卡片 */
+  .offerWas { font-size: 18px; }
   .offerBtns { flex-direction: column; }            /* 窄機：兩顆 CTA 直向堆疊全寬，避免擠壓換行 */
   .offerBtns .btnRed { flex: none; }                /* 取消 flex:1（直向會撐高） */
   .videoThumb { height: 180px; }
