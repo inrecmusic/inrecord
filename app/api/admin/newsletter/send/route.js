@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { renderNewsletterHtml } from "@/lib/newsletter";
-import { gatherAudienceEmails, sendNewsletterBatch } from "@/lib/newsletter-send";
+import {
+  gatherAudienceEmails, sendNewsletterBatch,
+  contentHash, filterUnsent, countSentToday, recordSent,
+} from "@/lib/newsletter-send";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
 
 export const runtime = "nodejs";
@@ -43,20 +46,31 @@ export async function POST(req) {
     return NextResponse.json({ error: "bad_audience" }, { status: 400 });
   }
 
-  let emails;
+  // 內容指紋：用來在 newsletter_sends 去重（同一封內容重跑/重按不重寄）。
+  const hash = contentHash(subject, body_md);
+  let emails, pending, sentToday;
   try {
     emails = await gatherAudienceEmails(supabase, audience);
+    pending = await filterUnsent(supabase, hash, emails); // 跳過這封已寄過的對象
+    sentToday = await countSentToday(supabase);            // 今日實際已寄（跨呼叫累計）
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
-  if (!emails.length) {
-    return NextResponse.json({ ok: true, audience, total: 0, sent: 0, failed: 0, limitHit: false });
+  const alreadySent = emails.length - pending.length;
+  const remaining = Math.max(0, DAILY_LIMIT - sentToday); // 真正的每日剩餘額度
+
+  if (!pending.length || remaining === 0) {
+    return NextResponse.json({
+      ok: true, audience, total: emails.length, alreadySent,
+      sent: 0, failed: 0, limitHit: remaining === 0, errors: [],
+    });
   }
 
   const result = await sendNewsletterBatch({
-    emails,
-    dailyLimit: DAILY_LIMIT,
+    emails: pending,
+    dailyLimit: remaining,
     send: (to) => sendNewsletterEmail({ to, subject, html }),
+    onSent: (to) => recordSent(supabase, hash, to),
   });
 
   await supabase
@@ -64,5 +78,5 @@ export async function POST(req) {
     .update({ last_sent_at: new Date().toISOString(), last_sent_count: result.sent })
     .eq("id", "default");
 
-  return NextResponse.json({ ok: true, audience, ...result });
+  return NextResponse.json({ ok: true, audience, alreadySent, ...result });
 }

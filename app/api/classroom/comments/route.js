@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { COMMENT_LIST_SELECT, toPublicComment } from "@/lib/comments";
 
 function getUserClient(token) {
   return createClient(
@@ -24,10 +25,10 @@ export async function GET(req) {
   const video_id = new URL(req.url).searchParams.get("video_id");
   let q = db
     .from("comments")
-    .select("*, comment_replies(admin_content, created_at)")
+    .select(COMMENT_LIST_SELECT)
     .order("created_at", { ascending: false });
   if (video_id) q = q.eq("video_id", video_id);
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, data });
+  return NextResponse.json({ ok: true, data: (data || []).map(toPublicComment) });
 }

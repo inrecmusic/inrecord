@@ -183,3 +183,54 @@ ALTER TABLE newsletter ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "service_role_newsletter" ON newsletter;
 CREATE POLICY "service_role_newsletter" ON newsletter
   USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- ────────────────────────────────────────────────────────────────────────
+-- ⑥ 電子報寄送記錄：群發去重 + 真正的每日上限（跨多次呼叫累計）
+--    content_hash = 該封電子報 subject+body 的指紋（見 lib/newsletter-send.js contentHash）。
+--    同一封內容對同一 email 只記一次 → timeout 重跑 / 重複點擊不會重寄；
+--    每日上限改以「今日實際已寄筆數」為準（countSentToday）。
+-- ────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS newsletter_sends (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_hash TEXT NOT NULL,
+  email        TEXT NOT NULL,
+  sent_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS newsletter_sends_hash_email_idx ON newsletter_sends (content_hash, email);
+CREATE INDEX IF NOT EXISTS newsletter_sends_sent_at_idx ON newsletter_sends (sent_at);
+ALTER TABLE newsletter_sends ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_newsletter_sends" ON newsletter_sends;
+CREATE POLICY "service_role_newsletter_sends" ON newsletter_sends
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- ────────────────────────────────────────────────────────────────────────
+-- ⑦ 課程評價：每位使用者一筆（先清重複、再建唯一索引）
+--    rating route 為「先查後插」，並發仍可能各插一筆 → 污染首頁平均分。
+--    先刪除每個 user_id 的重複（保留最新一筆），再建 partial unique index；
+--    之後並發第二筆會撞 23505 → route 回 already_rated。idempotent：無重複時 DELETE 不動任何列。
+-- ────────────────────────────────────────────────────────────────────────
+DELETE FROM ratings r
+WHERE r.user_id IS NOT NULL
+  AND r.id NOT IN (
+    SELECT DISTINCT ON (user_id) id FROM ratings
+    WHERE user_id IS NOT NULL
+    ORDER BY user_id, created_at DESC
+  );
+CREATE UNIQUE INDEX IF NOT EXISTS ratings_user_unique ON ratings (user_id) WHERE user_id IS NOT NULL;
+
+-- ────────────────────────────────────────────────────────────────────────
+-- ⑧ 進度原子更新 RPC：取代 route 的 read-modify-write，避免並發互相覆蓋遺失進度。
+--    watched/total 取 GREATEST、completed 取 OR；以 UNIQUE(user_id,video_id) 做 upsert。
+-- ────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION upsert_progress(
+  p_user_id UUID, p_video_id UUID, p_watched INTEGER, p_total INTEGER, p_completed BOOLEAN
+) RETURNS progress AS $$
+  INSERT INTO progress (user_id, video_id, watched_seconds, total_seconds, completed, watched_at)
+  VALUES (p_user_id, p_video_id, GREATEST(p_watched, 0), GREATEST(p_total, 0), p_completed, NOW())
+  ON CONFLICT (user_id, video_id) DO UPDATE SET
+    watched_seconds = GREATEST(progress.watched_seconds, EXCLUDED.watched_seconds),
+    total_seconds   = GREATEST(progress.total_seconds, EXCLUDED.total_seconds),
+    completed       = progress.completed OR EXCLUDED.completed,
+    watched_at      = NOW()
+  RETURNING *;
+$$ LANGUAGE sql SECURITY DEFINER;

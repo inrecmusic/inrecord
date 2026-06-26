@@ -55,22 +55,37 @@ export async function POST(req) {
 
   const { video_id, watched_seconds = 0, total_seconds = 0, completed = false } = await req.json();
   if (!video_id) return NextResponse.json({ error: "video_id_required" }, { status: 400 });
+  const w = Math.floor(Number(watched_seconds) || 0);
+  const t = Math.floor(Number(total_seconds) || 0);
+  const c = !!completed;
 
+  // 原子更新：RPC 內以 GREATEST(watched/total) + (completed OR …) 合併，
+  // 避免並發（多分頁/快速心跳）的 read-modify-write 互相覆蓋而遺失進度。
+  const rpc = await admin.rpc("upsert_progress", {
+    p_user_id: user.id, p_video_id: video_id, p_watched: w, p_total: t, p_completed: c,
+  });
+  if (!rpc.error) {
+    const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+    return NextResponse.json({ ok: true, data: row });
+  }
+
+  // 後備：RPC 尚未部署（supabase-deploy.sql）時，退回非原子 read-modify-write，確保進度仍可記錄。
+  console.error("[progress] rpc upsert_progress 失敗，退回 read-modify-write:", rpc.error.message);
   const { data: existing } = await admin
     .from("progress")
     .select("watched_seconds, completed")
     .eq("user_id", user.id)
     .eq("video_id", video_id)
-    .single();
+    .maybeSingle();
 
   const { data, error } = await admin
     .from("progress")
     .upsert({
       user_id: user.id,
       video_id,
-      watched_seconds: Math.max(watched_seconds, existing?.watched_seconds || 0),
-      total_seconds,
-      completed: existing?.completed || completed,
+      watched_seconds: Math.max(w, existing?.watched_seconds || 0),
+      total_seconds: t,
+      completed: existing?.completed || c,
       watched_at: new Date().toISOString(),
     }, { onConflict: "user_id,video_id" })
     .select()

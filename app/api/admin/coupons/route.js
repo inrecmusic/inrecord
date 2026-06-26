@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { validateDateRange } from "@/lib/date-range";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -33,6 +34,8 @@ export async function POST(req) {
   if (!code) return NextResponse.json({ error: "missing_code" }, { status: 400 });
   if (!Number.isFinite(value) || value <= 0) return NextResponse.json({ error: "invalid_value" }, { status: 400 });
   if (type === "percent" && value > 100) return NextResponse.json({ error: "percent_over_100" }, { status: 400 });
+  const dr = validateDateRange(body.starts_at, body.ends_at);
+  if (!dr.ok) return NextResponse.json({ error: dr.error }, { status: 400 });
 
   const { data, error } = await supabase.from("coupons").insert({
     name,

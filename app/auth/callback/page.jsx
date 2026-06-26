@@ -2,6 +2,7 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { safeNextPath } from "@/lib/safe-redirect";
 
 function Spinner() {
   return (
@@ -27,7 +28,7 @@ function CallbackHandler() {
     const code = searchParams.get("code");
     if (!supabase) { router.replace("/classroom/login"); return; }
 
-    const next = searchParams.get("next") || "/classroom";
+    const next = safeNextPath(searchParams.get("next")); // 限站內相對路徑，擋 open redirect
     if (code) {
       supabase.auth.exchangeCodeForSession(code)
         .then(() => router.replace(next))

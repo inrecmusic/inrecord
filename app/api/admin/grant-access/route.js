@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { grantAccess } from "@/lib/fulfillment-grant";
+import { fetchPendingLeads } from "@/lib/admin-leads";
 
-// 後台手動批次「開通課程存取」給 WordPress 付款名單（建 enrollments，bundle 另加 subscriptions）。
+// 後台手動批次「開通課程存取」給付款名單（WooCommerce + concert-shop），建 enrollments，bundle 另加 subscriptions。
 // Body { ids?: string[] }：給 ids 只開通這些；不給則對「全部未開通」。已開通(access_granted_at 非空)自動跳過。
 export async function POST(req) {
   const payload = await verifyAdminToken(req);
@@ -14,14 +15,11 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
-  let query = supabase
-    .from("orders")
-    .select("id, email, plan")
-    .eq("source", "wordpress")
-    .is("access_granted_at", null);
-  if (Array.isArray(ids) && ids.length) query = query.in("id", ids);
-
-  const { data: orders, error } = await query;
+  const { data: orders, error } = await fetchPendingLeads(supabase, {
+    columns: "id, email, plan",
+    flagColumn: "access_granted_at",
+    ids,
+  });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   let granted = 0, failed = 0;

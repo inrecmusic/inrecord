@@ -18,6 +18,8 @@ import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
 import SaleSettingsPage from "./SaleSettingsPage";
 import { PLAN_CATALOG } from "@/lib/plans";
+import { LEAD_SOURCES } from "@/lib/admin-leads";
+import { inDateRange } from "@/lib/date-range";
 import { summarizeOrders } from "@/lib/reconciliation";
 
 
@@ -713,10 +715,11 @@ function OrderStatusPill({status}){
 }
 
 // ── Orders Page ────────────────────────────────────────────────────────────
-// WordPress(WooCommerce) 現場購買付款名單：手動批次「寄預購信 / 開通課程存取」。
-// 進名單由 /api/webhook/woocommerce 自動寫入(source=wordpress)；此面板只負責手動觸發。
+// 外部站台付款名單：手動批次「寄預購信 / 開通課程存取」。
+// 進名單由 webhook 自動寫入 —— WooCommerce(碩樂)=source:"wordpress"、concert-shop=source:"concert"；
+// 此面板涵蓋兩個來源(LEAD_SOURCES)，只負責手動觸發。
 function WordpressLeadsPanel({rows,reload,showToast}){
-  const wp=useMemo(()=>(rows||[]).filter(o=>o.source==="wordpress"),[rows]);
+  const wp=useMemo(()=>(rows||[]).filter(o=>LEAD_SOURCES.includes(o.source)),[rows]);
   const [sel,setSel]=useState(()=>new Set());
   const [busy,setBusy]=useState("");
 
@@ -872,6 +875,7 @@ function OrdersPage({leads,showToast}){
     method:o.pay_type||"—",
     status:o.status||"pending",
     time:fmt(o.created_at||o.updated_at),
+    createdRaw:o.created_at||o.updated_at, // 原始時間，供日期篩選（顯示用 time 已在地化，不可拿來 new Date）
     invoiceNo:o.invoice_no||"",
     invoiceError:o.invoice_error||"",
     emailError:o.email_error||"",
@@ -884,8 +888,7 @@ function OrdersPage({leads,showToast}){
     if(statusFilter==="fan_pending"){if(o.fanReview!=="pending")return false;}
     else if(statusFilter!=="all"&&o.status!==statusFilter)return false;
     if(search&&!o.student.toLowerCase().includes(search.toLowerCase())&&!o.email?.toLowerCase().includes(search.toLowerCase())&&!o.id.toLowerCase().includes(search.toLowerCase()))return false;
-    if(dateFrom){const od=new Date(o.time.replace(/\//g,"-"));if(od<new Date(dateFrom))return false;}
-    if(dateTo){const od=new Date(o.time.replace(/\//g,"-"));const to=new Date(dateTo);to.setHours(23,59,59);if(od>to)return false;}
+    if(!inDateRange(o.createdRaw,dateFrom,dateTo))return false;
     return true;
   }),[allOrders,statusFilter,search,dateFrom,dateTo]);
 
@@ -895,12 +898,7 @@ function OrdersPage({leads,showToast}){
   const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
 
   // 對帳彙整：以原始 rows 只套日期區間（忽略狀態/搜尋），確保營收與退款都涵蓋
-  const dateRangeRows=useMemo(()=>rows.filter(o=>{
-    const d=new Date(o.created_at||o.updated_at);
-    if(dateFrom&&d<new Date(dateFrom))return false;
-    if(dateTo){const to=new Date(dateTo);to.setHours(23,59,59,999);if(d>to)return false;}
-    return true;
-  }),[rows,dateFrom,dateTo]);
+  const dateRangeRows=useMemo(()=>rows.filter(o=>inDateRange(o.created_at||o.updated_at,dateFrom,dateTo)),[rows,dateFrom,dateTo]);
   const report=useMemo(()=>summarizeOrders(dateRangeRows,PLAN_CATALOG),[dateRangeRows]);
   const needsAttention=allOrders.filter(o=>o.status==="paid"&&(o.needInvoice||o.invoiceError||o.emailError));
   const paid=allOrders.filter(o=>o.status==="paid");

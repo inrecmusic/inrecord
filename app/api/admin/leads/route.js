@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { buildLeadPatch } from "@/lib/preview-leads";
 
 export async function GET(req) {
   const payload = await verifyAdminToken(req);
@@ -33,18 +34,16 @@ export async function PATCH(req) {
   const payload = await verifyAdminToken(req);
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { id, status, ...rest } = await req.json();
-  if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
+  const body = await req.json();
+  if (!body?.id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
-  const patch = { status, updated_at: new Date().toISOString(), ...rest };
-  if (status === "demo_opened") { patch.demo_opened = true; patch.demo_opened_at = patch.demo_opened_at || new Date().toISOString(); }
-  if (status === "purchased")   { patch.purchased = true; patch.purchased_at = patch.purchased_at || new Date().toISOString(); }
+  const patch = buildLeadPatch(body);
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
   try {
-    const { data, error } = await supabase.from("course_preview_leads").update(patch).eq("id", id).select().single();
+    const { data, error } = await supabase.from("course_preview_leads").update(patch).eq("id", body.id).select().single();
     if (error) throw error;
     return NextResponse.json({ ok: true, data });
   } catch (err) {

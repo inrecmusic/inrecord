@@ -59,21 +59,33 @@ export async function POST(req) {
     }
   }
 
-  // 標記訂單已退款
-  await supabase
+  // 退款已成功 → 標記訂單 + 撤銷存取。逐項檢查 error：撤銷失敗不可靜默吞錯，
+  // 否則會變成「已退款但存取權還在」。退款本身已成功，故不回 5xx，而是回報需人工補撤的項目。
+  const revokeFailed = [];
+  const { error: stErr } = await supabase
     .from("orders")
     .update({ status: "refunded", updated_at: new Date().toISOString() })
     .eq("id", order.id);
+  if (stErr) revokeFailed.push(`order_status: ${stErr.message}`);
 
-  // 撤銷存取：取消遊戲存取訂閱 + 移除課程開通
   if (order.plan === "game" || order.plan === "bundle") {
-    await supabase
+    const { error: subErr } = await supabase
       .from("subscriptions")
       .update({ status: "cancelled" })
       .eq("payuni_order_id", order.id);
+    if (subErr) revokeFailed.push(`subscriptions: ${subErr.message}`);
   }
   if (order.plan === "course" || order.plan === "bundle") {
-    await supabase.from("enrollments").delete().eq("order_id", order.id);
+    const { error: enErr } = await supabase.from("enrollments").delete().eq("order_id", order.id);
+    if (enErr) revokeFailed.push(`enrollments: ${enErr.message}`);
+  }
+
+  if (revokeFailed.length) {
+    console.error("[admin refund] 退款成功但撤銷存取失敗", { orderId: order.id, revokeFailed });
+    return NextResponse.json({
+      ok: true, method, refunded: true, revokeFailed,
+      detail: "PAYUNi 退款已成功，但撤銷課程/遊戲存取時發生錯誤，請手動確認並撤銷存取。",
+    });
   }
 
   return NextResponse.json({ ok: true, method });

@@ -6,6 +6,7 @@ import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
+import { hashEqual, interpretPayment } from "@/lib/payuni";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
 function aesDecrypt(encryptStr, key, iv) {
@@ -57,9 +58,9 @@ export async function POST(req) {
       return new Response("FAIL", { status: 500 });
     }
 
-    // 驗證 HashInfo
+    // 驗證 HashInfo（定值時間比對）
     const expected = makeHashInfo(encryptInfo, hashKey, hashIV);
-    if (expected !== hashInfo) {
+    if (!hashEqual(expected, String(hashInfo))) {
       console.error("[payuni notify] hash mismatch");
       return new Response("FAIL", { status: 400 });
     }
@@ -81,23 +82,32 @@ export async function POST(req) {
 
       const supabase = getSupabaseAdmin();
       if (supabase) {
-        // 先讀原狀態：若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
+        // 先讀原訂單（狀態 + 下單金額）。若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
         // 付款仍要認（顧客已付錢），但限量券的預扣已被退回，稍後需補回扣抵 + 告警。
         const { data: prior } = await supabase
-          .from("orders").select("status").eq("mer_trade_no", params.MerTradeNo).maybeSingle();
-        const wasExpired = prior?.status === "expired";
+          .from("orders").select("status, amount").eq("mer_trade_no", params.MerTradeNo).maybeSingle();
+        const pay = interpretPayment(prior, params.TradeAmt);
 
-        const { data: order, error } = await supabase.from("orders").upsert(
+        // 未知訂單：notify 的 MerTradeNo 在 DB 找不到 → 不可憑空 upsert 出 plan/email 為 NULL 的孤兒單。
+        if (!pay.known) {
+          console.error("[payuni notify] 未知訂單，略過不建立", params.MerTradeNo);
+          return new Response("SUCCESS"); // 對 PAYUNi 回 SUCCESS 避免重送轟炸；已記錄供查
+        }
+        if (!pay.amountValid) console.error("[payuni notify] TradeAmt 非數字，發票沿用下單金額", params.TradeAmt);
+        if (pay.amountMismatch) console.error("[payuni notify] ⚠️ 付款金額與下單金額不符", { merTradeNo: params.MerTradeNo, paid: pay.paidAmt, order: pay.orderAmount });
+        const wasExpired = prior.status === "expired";
+
+        // 只更新既有訂單（不 upsert 建新單）；且不寫回呼金額 —— 訂單金額一律以下單金額為準，
+        // 避免把 NaN 或被竄改的回呼金額寫入並據以開發票。
+        const { data: order, error } = await supabase.from("orders").update(
           {
-            mer_trade_no:    params.MerTradeNo,
             payuni_trade_no: params.TradeNo,
-            amount:          Number(params.TradeAmt),
             pay_type:        params.PaymentType || params.PayType || null,
             status:          "paid",
             updated_at:      new Date().toISOString(),
-          },
-          { onConflict: "mer_trade_no" }
-        ).select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
+          }
+        ).eq("mer_trade_no", params.MerTradeNo)
+         .select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
         let invoiceFailed = false, invoiceReason = "";
         let emailFailed = false,   emailReason   = "";
         if (error) {

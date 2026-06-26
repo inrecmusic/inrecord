@@ -10,7 +10,12 @@ export default function Countdown({ to, prefix = "", style }) {
 
   useEffect(() => {
     if (!to) return;
-    const id = setInterval(() => setNow(Date.now()), multiDay ? 60000 : 1000);
+    const target = new Date(to).getTime();
+    if (target <= Date.now()) return; // 已過期：不啟動計時器
+    const id = setInterval(() => {
+      setNow(Date.now());
+      if (target <= Date.now()) clearInterval(id); // 歸零後停止，避免無限空轉
+    }, multiDay ? 60000 : 1000);
     return () => clearInterval(id);
   }, [to, multiDay]);
 

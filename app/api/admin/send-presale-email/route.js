@@ -3,8 +3,9 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { getSaleSettings, isPresale } from "@/lib/sale";
+import { fetchPendingLeads } from "@/lib/admin-leads";
 
-// 後台手動批次寄「預購成功」信給 WordPress 付款名單。
+// 後台手動批次寄「預購成功」信給付款名單（WooCommerce + concert-shop）。
 // Body { ids?: string[] }：給 ids 只寄這些；不給則對「全部未寄」。已寄者(presale_email_sent_at 非空)自動跳過。
 export async function POST(req) {
   const payload = await verifyAdminToken(req);
@@ -15,14 +16,11 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
-  let query = supabase
-    .from("orders")
-    .select("id, email, plan, plan_label, mer_trade_no")
-    .eq("source", "wordpress")
-    .is("presale_email_sent_at", null);
-  if (Array.isArray(ids) && ids.length) query = query.in("id", ids);
-
-  const { data: orders, error } = await query;
+  const { data: orders, error } = await fetchPendingLeads(supabase, {
+    columns: "id, email, plan, plan_label, mer_trade_no",
+    flagColumn: "presale_email_sent_at",
+    ids,
+  });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // presale 文案旗標依目前 sale_settings 決定（與 notify 一致）

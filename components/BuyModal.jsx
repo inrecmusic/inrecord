@@ -325,7 +325,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
           {error && (
             <>
               <div className={styles.errorBox}>{error}</div>
-              <button className={styles.retry} onClick={() => { setError(""); handleCheckout(); }}>重新嘗試</button>
+              <button className={styles.retry} onClick={() => { setError(""); handleCheckout(); }}
+                disabled={loading || verifying}>重新嘗試</button>
             </>
           )}
           <p className={styles.note}>🔒 透過 PAYUNi 統一金流安全付款・支援信用卡、ATM、超商</p>

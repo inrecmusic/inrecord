@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { generateBatchCodes, normalizeManualCodes, MAX_BATCH_QUANTITY } from "@/lib/serial-codes";
+import { validateDateRange } from "@/lib/date-range";
 
 // GET：批次清單 + 每批 total / used 統計
 export async function GET(req) {
@@ -44,6 +45,8 @@ export async function POST(req) {
   if (!name) return NextResponse.json({ error: "missing_name" }, { status: 400 });
   if (!Number.isFinite(value) || value <= 0) return NextResponse.json({ error: "invalid_value" }, { status: 400 });
   if (type === "percent" && value > 100) return NextResponse.json({ error: "percent_over_100" }, { status: 400 });
+  const dr = validateDateRange(starts_at, ends_at);
+  if (!dr.ok) return NextResponse.json({ error: dr.error }, { status: 400 });
 
   // 1) 決定要寫入的序號清單
   let wantCodes;

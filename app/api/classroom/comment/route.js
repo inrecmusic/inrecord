@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { hasCourseAccess } from "@/lib/course-access";
 
 function getUserClient(token) {
   return createClient(
@@ -16,6 +18,10 @@ export async function POST(req) {
   const db = getUserClient(token);
   const { data: { user }, error: authErr } = await db.auth.getUser();
   if (authErr || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // 須已購課才能留言（避免未購課帳號灌留言）
+  if (!(await hasCourseAccess(getSupabaseAdmin(), user.email)))
+    return NextResponse.json({ error: "not_purchased" }, { status: 403 });
 
   const { video_id, chapter_id, content } = await req.json();
   const trimmed = content?.trim();

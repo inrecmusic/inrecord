@@ -20,7 +20,7 @@ export default function PointCarousel({ slides, point = 1 }) {
   // [activeIndex, direction] — direction drives the enter/exit x offset.
   const [[index, dir], setState] = useState([0, 0]);
   const [paused, setPaused] = useState(false);
-  const count = slides.length;
+  const count = slides?.length || 0;
 
   const go = useCallback(
     (next, direction) => {
@@ -36,7 +36,7 @@ export default function PointCarousel({ slides, point = 1 }) {
 
   // Autoplay — paused on hover, drag, or when the tab is hidden.
   useEffect(() => {
-    if (paused) return;
+    if (paused || count <= 1) return;
     const id = setInterval(() => {
       if (typeof document !== "undefined" && document.hidden) return;
       setState(([i]) => [(i + 1) % count, 1]);
@@ -49,6 +49,8 @@ export default function PointCarousel({ slides, point = 1 }) {
     center: { x: 0, opacity: 1 },
     exit: (d) => ({ x: d > 0 ? "-100%" : "100%", opacity: 0 }),
   };
+
+  if (!count) return null; // 空資料防護（所有 hook 之後才 early-return，符合 hooks 規則）
 
   return (
     <div

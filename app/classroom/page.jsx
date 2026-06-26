@@ -97,7 +97,7 @@ function CommentsSection({ token, video, chapters }) {
                 display: "grid", placeItems: "center",
                 fontSize: 13, fontWeight: 600, flexShrink: 0,
               }}>
-                {(c.user_email || "?")[0].toUpperCase()}
+                {(c.user_name || "?")[0].toUpperCase()}
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{c.user_name || "學員"}</div>
@@ -252,8 +252,9 @@ function AssignmentTab({ video, token }) {
       const fd = new FormData();
       fd.append("file", file);
       const uploadRes = await fetch("/api/upload-proof", { method: "POST", body: fd, headers: { Authorization: `Bearer ${token}` } });
-      const { url } = await uploadRes.json();
-      if (!url) throw new Error("上傳失敗，請確認 Supabase Storage 已設定");
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok || !uploadData.url) throw new Error(uploadData.error || "上傳失敗，請確認 Supabase Storage 已設定");
+      const url = uploadData.url;
       const subRes = await fetch("/api/classroom/submission", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -295,7 +296,7 @@ function AssignmentTab({ video, token }) {
         onClick={() => !uploading && inputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
+        onDrop={e => { e.preventDefault(); setDragging(false); if (!uploading) handleFile(e.dataTransfer.files?.[0]); }}
         style={{
           border: `1.5px dashed ${dragging ? "#2563eb" : "rgba(0,0,0,0.13)"}`,
           borderRadius: 12, padding: "36px 20px", textAlign: "center",
@@ -333,16 +334,18 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       setGames(gameCache.current[cacheKey]);
       return;
     }
+    let cancelled = false;
     setListLoading(true);
     fetch(`/api/classroom/games?video_id=${videoId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(({ games }) => {
         const list = games || [];
         if (gameCache) gameCache.current[cacheKey] = list;
-        setGames(list);
+        if (!cancelled) setGames(list);
       })
       .catch(() => {})
-      .finally(() => setListLoading(false));
+      .finally(() => { if (!cancelled) setListLoading(false); });
+    return () => { cancelled = true; };
   }, [hasSubscription, token, videoId]);
 
   useEffect(() => {
@@ -352,16 +355,18 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       setGameContent(gameCache.current[selectedGame.id]);
       return;
     }
+    let cancelled = false; // 避免快速切換遊戲時，較慢回來的舊請求覆蓋新選遊戲的內容
     setGameLoading(true);
     setGameContent(null);
     fetch(`/api/classroom/games?id=${selectedGame.id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(({ game }) => {
         if (game && gameCache) gameCache.current[selectedGame.id] = game;
-        setGameContent(game || null);
+        if (!cancelled) setGameContent(game || null);
       })
-      .catch(() => setGameContent(null))
-      .finally(() => setGameLoading(false));
+      .catch(() => { if (!cancelled) setGameContent(null); })
+      .finally(() => { if (!cancelled) setGameLoading(false); });
+    return () => { cancelled = true; };
   }, [selectedGame, token]);
 
   if (!hasSubscription) {

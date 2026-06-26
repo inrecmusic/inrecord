@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { hasCourseAccess } from "@/lib/course-access";
 
 function getUserClient(token) {
   return createClient(
@@ -16,6 +18,10 @@ export async function POST(req) {
   const db = getUserClient(token);
   const { data: { user }, error: authErr } = await db.auth.getUser();
   if (authErr || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // 須已購課才能評分（評分會進首頁平均分統計，避免未購課者灌分）
+  if (!(await hasCourseAccess(getSupabaseAdmin(), user.email)))
+    return NextResponse.json({ error: "not_purchased" }, { status: 403 });
 
   // Check no existing rating
   const { data: existing } = await db.from("ratings").select("id").eq("user_id", user.id).limit(1);
@@ -39,6 +45,10 @@ export async function POST(req) {
     user_name: user.user_metadata?.full_name || user.email?.split("@")[0],
   }).select().single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // 唯一索引 ratings_user_unique 兜底：先查後插仍可能並發 → 第二筆撞 23505 視為已評分
+    if (error.code === "23505") return NextResponse.json({ error: "already_rated" }, { status: 409 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ ok: true, data });
 }
