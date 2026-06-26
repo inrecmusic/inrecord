@@ -27,9 +27,10 @@
 }
 
 /* 手機：長段落用「正常換行＋禁則(line-break:strict)」填滿每行最整齊——keep-all 在窄欄
-   會造成很多短行/孤立的英文 token（如 7-ELEVEn 單獨一行），反而醜。字級 15→14 與列點一致。 */
+   會造成很多短行/孤立的英文 token（如 7-ELEVEn 單獨一行），反而醜。字級縮到 13px，
+   讓每行多塞點字、行數變少、英文名/數字較不會卡在行尾分家。 */
 @media (max-width: 980px) {
-  .slide { word-break: normal; line-break: strict; overflow-wrap: break-word; font-size: 14px; }
+  .slide { word-break: normal; line-break: strict; overflow-wrap: break-word; font-size: 12px; line-height: 1.65; }
 }
 
 .slide:active { cursor: grabbing; }

@@ -585,7 +585,7 @@ export default function HomeClient({ sale }) {
                     <Play size={16} />課程 Demo 體驗
                   </a>
                 </div>
-                <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天內不滿意，全額退費保證（視課程觀看比例而定）</span>
+                <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天內不滿意，全額退費保證</span>
               </motion.div>
             </motion.div>
           </div>
