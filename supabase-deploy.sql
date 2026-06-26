@@ -222,10 +222,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS ratings_user_unique ON ratings (user_id) WHERE
 -- ⑧ 進度原子更新 RPC：取代 route 的 read-modify-write，避免並發互相覆蓋遺失進度。
 --    watched/total 取 GREATEST、completed 取 OR；以 UNIQUE(user_id,video_id) 做 upsert。
 -- ────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION upsert_progress(
+CREATE OR REPLACE FUNCTION public.upsert_progress(
   p_user_id UUID, p_video_id UUID, p_watched INTEGER, p_total INTEGER, p_completed BOOLEAN
-) RETURNS progress AS $$
-  INSERT INTO progress (user_id, video_id, watched_seconds, total_seconds, completed, watched_at)
+) RETURNS public.progress
+LANGUAGE sql
+AS $$
+  INSERT INTO public.progress (user_id, video_id, watched_seconds, total_seconds, completed, watched_at)
   VALUES (p_user_id, p_video_id, GREATEST(p_watched, 0), GREATEST(p_total, 0), p_completed, NOW())
   ON CONFLICT (user_id, video_id) DO UPDATE SET
     watched_seconds = GREATEST(progress.watched_seconds, EXCLUDED.watched_seconds),
@@ -233,4 +235,4 @@ CREATE OR REPLACE FUNCTION upsert_progress(
     completed       = progress.completed OR EXCLUDED.completed,
     watched_at      = NOW()
   RETURNING *;
-$$ LANGUAGE sql SECURITY DEFINER;
+$$;
