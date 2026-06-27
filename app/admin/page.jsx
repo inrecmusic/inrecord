@@ -769,28 +769,33 @@ function ManualGrantCard({reload,showToast}){
   const [phone,setPhone]=useState("");
   const [name,setName]=useState("");
   const [plan,setPlan]=useState("bundle");
+  const [doGrant,setDoGrant]=useState(true);
   const [sendEmail,setSendEmail]=useState(true);
   const [busy,setBusy]=useState(false);
+
+  const actionLabel=doGrant&&sendEmail?"開通並寄信":doGrant?"開通課程":sendEmail?"寄信":"—";
 
   async function submit(e){
     e.preventDefault();
     if(busy)return;
     const em=email.trim();
     if(!em){showToast?.("❌ 請填寫 Email");return;}
+    if(!doGrant&&!sendEmail){showToast?.("❌ 請至少勾選「開通課程存取」或「寄通知信」其中一項");return;}
     setBusy(true);
     try{
-      const res=await _api("/api/admin/manual-grant",{method:"POST",body:JSON.stringify({email:em,phone:phone.trim(),name:name.trim(),plan,sendEmail})});
+      const res=await _api("/api/admin/manual-grant",{method:"POST",body:JSON.stringify({email:em,phone:phone.trim(),name:name.trim(),plan,grant:doGrant,sendEmail})});
       const d=await res.json().catch(()=>({}));
       if(!res.ok||d.ok===false){
-        showToast?.("❌ 開通失敗："+(d.error||"unknown")+(d.detail?`（${d.detail}）`:""));
+        showToast?.("❌ 失敗："+(d.error||"unknown")+(d.detail?`（${d.detail}）`:""));
       }else{
-        const parts=[d.alreadyGranted?"⚠️ 此 Email 已開通過（未重複建立）":"✅ 已開通課程存取"];
-        if(sendEmail) parts.push(d.emailSent?"通知信已寄出":"通知信寄送失敗"+(d.emailError?`（${d.emailError}）`:""));
+        const parts=[];
+        if(doGrant) parts.push(d.alreadyGranted?"⚠️ 此 Email 已開通過（未重複建立）":"✅ 已開通課程存取");
+        if(sendEmail) parts.push(d.emailSent?"✅ 通知信已寄出":"❌ 通知信寄送失敗"+(d.emailError?`（${d.emailError}）`:""));
         showToast?.(parts.join("；"));
-        setEmail("");setPhone("");setName("");setPlan("bundle");setSendEmail(true);
+        setEmail("");setPhone("");setName("");setPlan("bundle");setDoGrant(true);setSendEmail(true);
         await reload?.();
       }
-    }catch(err){showToast?.("❌ 開通失敗："+err.message);}
+    }catch(err){showToast?.("❌ 失敗："+err.message);}
     finally{setBusy(false);}
   }
 
@@ -798,8 +803,8 @@ function ManualGrantCard({reload,showToast}){
   const col={display:"flex",flexDirection:"column",gap:4,fontSize:13};
   return(
     <div className={styles.panel} style={{marginBottom:16}}>
-      <div className={styles.panelHead}><h3 style={{margin:0}}>✋ 手動開通課程</h3></div>
-      <div className={styles.reconPeriod}>外部站台（concert-shop／現場）已成交、但付款名單沒進來時，直接輸入客人「實際登入用的 Email」即可開通。客人之後用該 Email 登入教室即可上課。</div>
+      <div className={styles.panelHead}><h3 style={{margin:0}}>✋ 手動開通 / 補寄信</h3></div>
+      <div className={styles.reconPeriod}>外部站台（concert-shop／現場）已成交、但付款名單沒進來時，直接輸入客人「實際登入用的 Email」處理。可只勾一項：<b>開通課程存取</b>＝建立課程權限（開課後可上課）；<b>寄通知信</b>＝預購期寄「預購成功」信、開課後寄「開課」信。</div>
       <form onSubmit={submit} style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"flex-end",padding:"4px 0"}}>
         <label style={{...col,flex:"1 1 220px"}}><span>Email <span style={{color:"#dc2626"}}>*</span></span>
           <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" className={styles.searchInput} style={inStyle}/></label>
@@ -813,8 +818,10 @@ function ManualGrantCard({reload,showToast}){
             <option value="course">只課程</option>
           </select></label>
         <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap"}}>
-          <input type="checkbox" checked={sendEmail} onChange={e=>setSendEmail(e.target.checked)}/> 寄開課通知信</label>
-        <button type="submit" className={styles.btnSmall} disabled={busy}>{busy?"開通中…":"開通"}</button>
+          <input type="checkbox" checked={doGrant} onChange={e=>setDoGrant(e.target.checked)}/> 開通課程存取</label>
+        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap"}}>
+          <input type="checkbox" checked={sendEmail} onChange={e=>setSendEmail(e.target.checked)}/> 寄通知信（預購信）</label>
+        <button type="submit" className={styles.btnSmall} disabled={busy||(!doGrant&&!sendEmail)}>{busy?"處理中…":actionLabel}</button>
       </form>
     </div>
   );

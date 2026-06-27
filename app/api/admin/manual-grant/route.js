@@ -18,42 +18,47 @@ export async function POST(req) {
   const body = await req.json().catch(() => ({}));
   const norm = normalizeManualGrantInput(body);
   if (!norm.ok) return NextResponse.json({ error: norm.error }, { status: 400 });
-  const { email, plan, phone, name, sendEmail } = norm.value;
+  const { email, plan, phone, name, grant, sendEmail } = norm.value;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
-  // 防重：已有 piano-101 enrollment 就不重複建單（grantAccess 本身冪等，但避免重複稽核訂單）
-  const { data: existing } = await supabase
-    .from("enrollments")
-    .select("id")
-    .eq("email", email)
-    .eq("course_id", COURSE_ID)
-    .maybeSingle();
-  const alreadyGranted = !!existing;
-
   let orderId = null;
+  let alreadyGranted = false;
+  // 信件用的方案名稱／參考號：開通時用訂單值；只寄信時用通用名 + 預購參考號
   let planLabel = plan === "bundle" ? "課程包" : "課程";
-  let merTradeNo = "MANUAL";
+  let merTradeNo = "PRE-" + Date.now();
 
-  if (!alreadyGranted) {
-    const orderPayload = buildManualOrder({ email, plan, phone, name, now: new Date() });
-    planLabel = orderPayload.plan_label;
-    merTradeNo = orderPayload.mer_trade_no;
-
-    const { data: order, error: insErr } = await supabase
-      .from("orders")
-      .insert(orderPayload)
+  // 開通課程存取（建立 enrollment / bundle 加 subscriptions）
+  if (grant) {
+    // 防重：已有 piano-101 enrollment 就不重複建單（grantAccess 本身冪等，但避免重複稽核訂單）
+    const { data: existing } = await supabase
+      .from("enrollments")
       .select("id")
-      .single();
-    if (insErr) {
-      return NextResponse.json({ error: "order_insert_failed", detail: insErr.message }, { status: 500 });
-    }
-    orderId = order.id;
+      .eq("email", email)
+      .eq("course_id", COURSE_ID)
+      .maybeSingle();
+    alreadyGranted = !!existing;
 
-    const res = await grantAccess(supabase, { id: orderId, email, plan });
-    if (!res.ok) {
-      return NextResponse.json({ error: "grant_failed", detail: res.errors.join("; ") }, { status: 500 });
+    if (!alreadyGranted) {
+      const orderPayload = buildManualOrder({ email, plan, phone, name, now: new Date() });
+      planLabel = orderPayload.plan_label;
+      merTradeNo = orderPayload.mer_trade_no;
+
+      const { data: order, error: insErr } = await supabase
+        .from("orders")
+        .insert(orderPayload)
+        .select("id")
+        .single();
+      if (insErr) {
+        return NextResponse.json({ error: "order_insert_failed", detail: insErr.message }, { status: 500 });
+      }
+      orderId = order.id;
+
+      const res = await grantAccess(supabase, { id: orderId, email, plan });
+      if (!res.ok) {
+        return NextResponse.json({ error: "grant_failed", detail: res.errors.join("; ") }, { status: 500 });
+      }
     }
   }
 
@@ -75,10 +80,22 @@ export async function POST(req) {
     } catch (e) {
       emailError = e.message || "send_failed";
     }
-    if (!emailSent && orderId) {
-      await supabase.from("orders").update({ email_error: emailError }).eq("id", orderId);
+    // 有建訂單時，把寄信結果落到訂單上（成功記 presale_email_sent_at、失敗記 email_error）
+    if (orderId) {
+      await supabase.from("orders").update(
+        emailSent
+          ? { presale_email_sent_at: new Date().toISOString(), email_error: null }
+          : { email_error: emailError }
+      ).eq("id", orderId);
     }
   }
 
-  return NextResponse.json({ ok: true, granted: !alreadyGranted, alreadyGranted, emailSent, emailError });
+  return NextResponse.json({
+    ok: true,
+    granted: grant && !alreadyGranted,
+    alreadyGranted,
+    emailSent,
+    emailError,
+    mode: grant ? "grant" : "email_only",
+  });
 }
