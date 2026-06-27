@@ -763,6 +763,63 @@ function OrderStatusPill({status}){
 }
 
 // ── Orders Page ────────────────────────────────────────────────────────────
+// 手動開通課程：外部站台(concert-shop/現場)已成交但名單沒進來時，直接輸入 Email 開通。
+function ManualGrantCard({reload,showToast}){
+  const [email,setEmail]=useState("");
+  const [phone,setPhone]=useState("");
+  const [name,setName]=useState("");
+  const [plan,setPlan]=useState("bundle");
+  const [sendEmail,setSendEmail]=useState(true);
+  const [busy,setBusy]=useState(false);
+
+  async function submit(e){
+    e.preventDefault();
+    if(busy)return;
+    const em=email.trim();
+    if(!em){showToast?.("❌ 請填寫 Email");return;}
+    setBusy(true);
+    try{
+      const res=await _api("/api/admin/manual-grant",{method:"POST",body:JSON.stringify({email:em,phone:phone.trim(),name:name.trim(),plan,sendEmail})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok||d.ok===false){
+        showToast?.("❌ 開通失敗："+(d.error||"unknown")+(d.detail?`（${d.detail}）`:""));
+      }else{
+        const parts=[d.alreadyGranted?"⚠️ 此 Email 已開通過（未重複建立）":"✅ 已開通課程存取"];
+        if(sendEmail) parts.push(d.emailSent?"通知信已寄出":"通知信寄送失敗"+(d.emailError?`（${d.emailError}）`:""));
+        showToast?.(parts.join("；"));
+        setEmail("");setPhone("");setName("");setPlan("bundle");setSendEmail(true);
+        await reload?.();
+      }
+    }catch(err){showToast?.("❌ 開通失敗："+err.message);}
+    finally{setBusy(false);}
+  }
+
+  const inStyle={width:"100%"};
+  const col={display:"flex",flexDirection:"column",gap:4,fontSize:13};
+  return(
+    <div className={styles.panel} style={{marginBottom:16}}>
+      <div className={styles.panelHead}><h3 style={{margin:0}}>✋ 手動開通課程</h3></div>
+      <div className={styles.reconPeriod}>外部站台（concert-shop／現場）已成交、但付款名單沒進來時，直接輸入客人「實際登入用的 Email」即可開通。客人之後用該 Email 登入教室即可上課。</div>
+      <form onSubmit={submit} style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"flex-end",padding:"4px 0"}}>
+        <label style={{...col,flex:"1 1 220px"}}><span>Email <span style={{color:"#dc2626"}}>*</span></span>
+          <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="customer@example.com" className={styles.searchInput} style={inStyle}/></label>
+        <label style={{...col,flex:"1 1 140px"}}><span>電話</span>
+          <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="09xxxxxxxx" className={styles.searchInput} style={inStyle}/></label>
+        <label style={{...col,flex:"1 1 140px"}}><span>姓名</span>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="（選填）" className={styles.searchInput} style={inStyle}/></label>
+        <label style={{...col}}><span>方案</span>
+          <select value={plan} onChange={e=>setPlan(e.target.value)} className={styles.searchInput}>
+            <option value="bundle">課程包（課程＋AI遊戲）</option>
+            <option value="course">只課程</option>
+          </select></label>
+        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap"}}>
+          <input type="checkbox" checked={sendEmail} onChange={e=>setSendEmail(e.target.checked)}/> 寄開課通知信</label>
+        <button type="submit" className={styles.btnSmall} disabled={busy}>{busy?"開通中…":"開通"}</button>
+      </form>
+    </div>
+  );
+}
+
 // 外部站台付款名單：手動批次「寄預購信 / 開通課程存取」。
 // 進名單由 webhook 自動寫入 —— WooCommerce(碩樂)=source:"wordpress"、concert-shop=source:"concert"；
 // 此面板涵蓋兩個來源(LEAD_SOURCES)，只負責手動觸發。
@@ -1035,6 +1092,7 @@ function OrdersPage({leads,showToast}){
           </div>
         </div>
       )}
+      <ManualGrantCard reload={loadOrders} showToast={showToast}/>
       <WordpressLeadsPanel rows={rows} reload={loadOrders} showToast={showToast}/>
       <div className={styles.panel} style={{marginBottom:16}}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
