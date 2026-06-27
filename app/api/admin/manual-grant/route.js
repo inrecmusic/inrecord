@@ -62,6 +62,20 @@ export async function POST(req) {
     }
   }
 
+  // 只寄信、沒有建開通訂單時（grant=false，或 grant 但已開通）：建一筆 status='notified'
+  // 的 manual 紀錄單，好讓「這次寄信」可事後查證（成功/失敗都會落在這筆上）。
+  if (sendEmail && !orderId) {
+    const recPayload = buildManualOrder({ email, plan, phone, name, now: new Date(), granted: false });
+    planLabel = recPayload.plan_label;
+    merTradeNo = recPayload.mer_trade_no;
+    const { data: rec, error: recErr } = await supabase
+      .from("orders")
+      .insert(recPayload)
+      .select("id")
+      .single();
+    if (!recErr && rec) orderId = rec.id;
+  }
+
   // 寄開課/預購通知信（presale 比照 notify：依 sale_settings 計算）
   let emailSent = false;
   let emailError = null;
@@ -89,6 +103,13 @@ export async function POST(req) {
       ).eq("id", orderId);
     }
   }
+
+  // 寫進 log，寄信成敗永遠可在 Vercel runtime logs 查到
+  console.log("[manual-grant]", JSON.stringify({
+    email, plan, grant, sendEmail,
+    granted: grant && !alreadyGranted, alreadyGranted,
+    orderId, emailSent, emailError,
+  }));
 
   return NextResponse.json({
     ok: true,
