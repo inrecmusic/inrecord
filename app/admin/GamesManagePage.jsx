@@ -158,8 +158,8 @@ export default function GamesManagePage({ showToast }) {
     <div>
       <div className={styles.pageHeader}>
         <div>
-          <h1>AI 遊戲管理</h1>
-          <p>管理各單元的 AI 互動遊戲</p>
+          <h1>互動遊戲管理</h1>
+          <p>管理各單元的互動遊戲</p>
         </div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={fetchAll}><RefreshCw size={13} /> 重新整理</button>
@@ -173,7 +173,7 @@ export default function GamesManagePage({ showToast }) {
         ) : !games.length ? (
           <div className={styles.empty} style={{ padding: "56px 0", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🎮</div>
-            <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 15, color: "#1e293b" }}>還沒有任何 AI 遊戲</p>
+            <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 15, color: "#1e293b" }}>還沒有任何互動遊戲</p>
             <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>點擊右上角「+ 新增遊戲」開始建立</p>
           </div>
         ) : (

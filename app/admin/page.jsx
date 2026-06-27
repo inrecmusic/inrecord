@@ -1741,7 +1741,7 @@ function SubscriptionsPage({ showToast }) {
   const bundleCount = subs.filter(s => s.plan_type === "bundle" && isLive(s)).length;
   const gameCount   = subs.filter(s => s.plan_type === "game"   && isLive(s)).length;
 
-  const planLabel = { bundle: "學琴全攻略", game: "AI 練功房", monthly: "月繳", yearly: "年繳", gift: "贈送" };
+  const planLabel = { bundle: "學琴全攻略", game: "互動遊戲", monthly: "月繳", yearly: "年繳", gift: "贈送" };
 
   async function extendOne(id) {
     setActing(id + "_extend");
@@ -1789,7 +1789,7 @@ function SubscriptionsPage({ showToast }) {
   return (
     <div>
       <div className={styles.pageHeader}>
-        <div><h1>遊戲存取</h1><p>管理已購買 AI 遊戲的學員存取</p></div>
+        <div><h1>遊戲存取</h1><p>管理已購買互動遊戲的學員存取</p></div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={fetchSubs}><RefreshCw size={13}/> 重新整理</button>
           <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}><Plus size={14}/> 手動新增</button>
@@ -1800,7 +1800,7 @@ function SubscriptionsPage({ showToast }) {
         <StatCard label="有效存取人數" value={activeCount} sub="目前有效" icon={Users} color="#16a34a"/>
         <StatCard label="本月新增"     value={thisMonth}   sub="新增存取數" icon={TrendingUp} color="#2563eb"/>
         <StatCard label="課程包永久"   value={bundleCount} sub="課程＋遊戲" icon={GraduationCap} color="#f59e0b"/>
-        <StatCard label="遊戲單買永久" value={gameCount}   sub="AI 遊戲" icon={CreditCard} color="#7c3aed"/>
+        <StatCard label="遊戲單買永久" value={gameCount}   sub="互動遊戲" icon={CreditCard} color="#7c3aed"/>
       </div>
 
       <div className={styles.panel}>
@@ -1838,7 +1838,7 @@ function SubscriptionsPage({ showToast }) {
               {loading ? (
                 <tr><td colSpan={7} className={styles.empty}>載入中…</td></tr>
               ) : !filtered.length ? (
-                <tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎮</span><span className={styles.emptyTitle}>還沒有任何訂閱</span><span className={styles.emptySub}>學員訂閱 AI 互動遊戲後將在這裡顯示</span></td></tr>
+                <tr><td colSpan={7} className={styles.empty}><span className={styles.emptyIcon}>🎮</span><span className={styles.emptyTitle}>還沒有任何訂閱</span><span className={styles.emptySub}>學員訂閱互動遊戲後將在這裡顯示</span></td></tr>
               ) : filtered.map(s => {
                 const expDate  = new Date(s.expires_at);
                 const isActive = s.status === "active" && expDate > now;
@@ -1923,7 +1923,7 @@ function SubscriptionsPage({ showToast }) {
                   <select className={styles.selectInput} style={{ width: "100%" }} value={addForm.plan_type}
                     onChange={e => setAddForm(p => ({ ...p, plan_type: e.target.value }))}>
                     <option value="bundle">學琴全攻略（課程＋遊戲）</option>
-                    <option value="game">AI 練功房</option>
+                    <option value="game">互動遊戲</option>
                   </select>
                 </div>
                 <div className={styles.formGroup} style={{ flex: 1 }}>
@@ -2526,7 +2526,7 @@ const COURSE_TABS = [
   { id:"assignments",  label:"作業設定",       icon:ClipboardList },
   { id:"unitcomments", label:"單元評論",       icon:MessageSquare },
   { id:"ratings",      label:"課程評價",       icon:Star },
-  { id:"games",        label:"AI 遊戲",        icon:Gamepad2 },
+  { id:"games",        label:"互動遊戲",        icon:Gamepad2 },
 ];
 
 function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnreadChange }) {
