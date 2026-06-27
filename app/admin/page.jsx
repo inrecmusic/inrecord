@@ -868,7 +868,7 @@ function WordpressLeadsPanel({rows,reload,showToast}){
   return(
     <div className={styles.panel} style={{marginBottom:16}}>
       <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
-        <h3 style={{margin:0}}>WordPress 付款名單（現場購買）<span className={styles.dim} style={{fontWeight:400,fontSize:13}}>　{wp.length} 筆</span></h3>
+        <h3 style={{margin:0}}>外部購買名單（現場／演奏會）<span className={styles.dim} style={{fontWeight:400,fontSize:13}}>　{wp.length} 筆</span></h3>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <button className={styles.btnSmall} disabled={!!busy} onClick={()=>run("email")}>{busy==="email"?"寄送中…":`寄送預購信${sel.size?`（${sel.size}）`:"（全部未寄）"}`}</button>
           <button className={styles.btnSmall} disabled={!!busy} onClick={()=>run("grant")}>{busy==="grant"?"開通中…":`開通課程存取${sel.size?`（${sel.size}）`:"（全部未開通）"}`}</button>
