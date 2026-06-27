@@ -21,6 +21,7 @@ import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
 import { inDateRange } from "@/lib/date-range";
 import { summarizeOrders } from "@/lib/reconciliation";
+import { buildSalesTrend, buildPayDistribution } from "@/lib/dashboard";
 
 
 
@@ -48,13 +49,7 @@ const NAV_GROUPS = [
 ];
 
 // ── Chart helpers ──────────────────────────────────────────────────────────
-function genChartData(filter) {
-  const now = new Date();
-  if (filter === "day") return Array.from({length:24},(_,i)=>{ const h=(now.getHours()-23+i+24)%24; return {label:`${String(h).padStart(2,"0")}:00`,orders:0,revenue:0}; });
-  if (filter === "week") { const days=["日","一","二","三","四","五","六"]; return Array.from({length:7},(_,i)=>{ const d=new Date(now); d.setDate(d.getDate()-6+i); return {label:`週${days[d.getDay()]}`,orders:0,revenue:0}; }); }
-  if (filter === "year") return Array.from({length:12},(_,i)=>{ const d=new Date(now.getFullYear(),now.getMonth()-11+i,1); return {label:`${d.getMonth()+1}月`,orders:0,revenue:0}; });
-  return Array.from({length:30},(_,i)=>{ const d=new Date(now); d.setDate(d.getDate()-29+i); return {label:`${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`,orders:0,revenue:0}; });
-}
+// 銷售趨勢分桶改用 lib/dashboard.js 的 buildSalesTrend（真實訂單，可測）。
 function smoothPath(pts) {
   if (!pts.length) return "";
   let d=`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
@@ -65,8 +60,8 @@ const CHART_FILTERS = [{key:"day",label:"最近 24 小時"},{key:"week",label:"�
 function FilterBtns({filter,onFilter}){return(<div className={styles.filterGroup}>{CHART_FILTERS.map(f=>(<button key={f.key} className={`${styles.filterBtn} ${filter===f.key?styles.filterActive:""}`} onClick={()=>onFilter(f.key)}>{f.label}</button>))}</div>);}
 
 // ── Charts ─────────────────────────────────────────────────────────────────
-function SalesTrendChart({filter,onFilter}){
-  const data=useMemo(()=>genChartData(filter),[filter]);
+function SalesTrendChart({orders=[],filter,onFilter}){
+  const data=useMemo(()=>buildSalesTrend(orders,filter,new Date()),[orders,filter]);
   const W=800,H=220,pL=54,pR=44,pT=16,pB=34,cW=W-pL-pR,cH=H-pT-pB;
   const maxRev=Math.max(...data.map(d=>d.revenue),1),maxOrd=Math.max(...data.map(d=>d.orders),1);
   const revCeil=Math.ceil(maxRev/10000)*10000,ordCeil=Math.ceil(maxOrd/3)*3;
@@ -96,14 +91,40 @@ function SalesTrendChart({filter,onFilter}){
   );
 }
 
-function DonutChart({filter,onFilter}){
+const DONUT_COLORS=["#2563eb","#7c3aed","#f59e0b","#16a34a","#dc2626","#0891b2"];
+function DonutChart({orders=[],filter,onFilter}){
+  const dist=useMemo(()=>buildPayDistribution(orders,filter,new Date()),[orders,filter]);
+  const total=dist.reduce((s,d)=>s+d.count,0);
+  const R=58,C=2*Math.PI*R; let acc=0;
   return(
     <div className={styles.chartCard} style={{width:360,flexShrink:0}}>
       <div className={styles.chartHead}><div className={styles.chartTitle}><CreditCard size={15}/><span>付款方式分布</span></div><FilterBtns filter={filter} onFilter={onFilter}/></div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:170,color:"#94a3b8",fontSize:13,flexDirection:"column",gap:8}}>
-        <CreditCard size={28} color="#e2e8f0"/>
-        <span>尚無付款數據</span>
-      </div>
+      {total===0?(
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:170,color:"#94a3b8",fontSize:13,flexDirection:"column",gap:8}}>
+          <CreditCard size={28} color="#e2e8f0"/><span>尚無付款數據</span>
+        </div>
+      ):(
+        <div style={{display:"flex",alignItems:"center",gap:18,padding:"10px 6px"}}>
+          <svg width="140" height="140" viewBox="0 0 140 140" style={{flexShrink:0}}>
+            <g transform="rotate(-90 70 70)">
+              {dist.map((d,i)=>{const frac=d.count/total;const seg=frac*C;const off=-acc*C;acc+=frac;
+                return <circle key={i} cx="70" cy="70" r={R} fill="none" stroke={DONUT_COLORS[i%DONUT_COLORS.length]} strokeWidth="18" strokeDasharray={`${seg.toFixed(2)} ${(C-seg).toFixed(2)}`} strokeDashoffset={off.toFixed(2)}/>;})}
+            </g>
+            <text x="70" y="65" textAnchor="middle" fontSize="12" fill="#94a3b8">總筆數</text>
+            <text x="70" y="87" textAnchor="middle" fontSize="22" fontWeight="800" fill="#0f172a">{total}</text>
+          </svg>
+          <div style={{flex:1,display:"grid",gap:9,minWidth:0}}>
+            {dist.map((d,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                <span style={{width:10,height:10,borderRadius:3,background:DONUT_COLORS[i%DONUT_COLORS.length],flexShrink:0}}/>
+                <span style={{flex:1,color:"#374151",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.label}</span>
+                <span style={{fontWeight:800,color:"#0f172a"}}>{d.count}</span>
+                <span style={{color:"#94a3b8",width:36,textAlign:"right"}}>{Math.round(d.count/total*100)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -145,6 +166,10 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
     {stage:"點擊購買",  count:0, color:"#f59e0b"},
     {stage:"完成付款",  count:paidOrders.length,  color:"#16a34a"},
   ];
+  // 上層漏斗需接行為分析(目前無)，故為 0；防呆避免除以 0 出現 NaN/Infinity，
+  // 無基準時百分比顯示「—」、長條改以最大值為基準（避免完成付款長條空白）。
+  const funnelBase=FUNNEL[0].count;
+  const funnelDenom=funnelBase>0?funnelBase:Math.max(...FUNNEL.map(f=>f.count),1);
 
   return(
     <div className={styles.dashContent}>
@@ -158,8 +183,8 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
       </div>
       <div className={styles.chartsRow}>
-        <SalesTrendChart filter={trendFilter} onFilter={setTrendFilter}/>
-        <DonutChart filter={donutFilter} onFilter={setDonutFilter}/>
+        <SalesTrendChart orders={orders} filter={trendFilter} onFilter={setTrendFilter}/>
+        <DonutChart orders={orders} filter={donutFilter} onFilter={setDonutFilter}/>
       </div>
       <div className={styles.chartsRow} style={{alignItems:"stretch"}}>
         {/* 轉換漏斗 */}
@@ -167,15 +192,18 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
           <div className={styles.panelHead}><h2>轉換漏斗</h2><span className={styles.dim}>整體轉換率 {FUNNEL[0].count?Math.round(FUNNEL[3].count/FUNNEL[0].count*100)+"%":"—"}</span></div>
           <div style={{display:"grid",gap:10}}>
             {FUNNEL.map((f,i)=>{
-              const pct=Math.round(f.count/FUNNEL[0].count*100);
+              const barPct=Math.round(f.count/funnelDenom*100);
+              const rate=funnelBase>0?Math.round(f.count/funnelBase*100)+"%":"—";
+              const prev=FUNNEL[i-1]?.count||0;
+              const conv=prev>0?Math.round(f.count/prev*100)+"%":"—";
               return(
                 <div key={f.stage}>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:4}}>
                     <span style={{fontWeight:700,color:"#374151"}}>{f.stage}</span>
-                    <span style={{color:"#64748b"}}>{f.count.toLocaleString()} 人 · {pct}%{i>0&&<span style={{color:"#94a3b8",fontSize:12}}> (轉 {Math.round(f.count/FUNNEL[i-1].count*100)}%)</span>}</span>
+                    <span style={{color:"#64748b"}}>{f.count.toLocaleString()} 人 · {rate}{i>0&&<span style={{color:"#94a3b8",fontSize:12}}> (轉 {conv})</span>}</span>
                   </div>
                   <div style={{height:8,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${pct}%`,background:f.color,borderRadius:999,transition:".4s"}}/>
+                    <div style={{height:"100%",width:`${barPct}%`,background:f.color,borderRadius:999,transition:".4s"}}/>
                   </div>
                 </div>
               );
@@ -2025,6 +2053,8 @@ function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonu
     {rank:1,title:"從零開始學鋼琴",orders:purchased,revenue:totalRev,color:"#f59e0b"},
   ];
   const FUNNEL=[{stage:"瀏覽課程頁",count:0},{stage:"查看銷售頁",count:0},{stage:"點擊購買",count:0},{stage:"完成付款",count:purchased}];
+  const funnelBase=FUNNEL[0].count;
+  const funnelDenom=funnelBase>0?funnelBase:Math.max(...FUNNEL.map(f=>f.count),1);
 
   return(
     <div>
@@ -2036,8 +2066,8 @@ function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonu
         <StatCard label="平均客單價" value={`NT$ ${avgOrder.toLocaleString()}`} sub="已付款訂單" icon={BarChart2} color="#f59e0b"/>
       </div>
       <div className={styles.chartsRow}>
-        <SalesTrendChart filter={trendFilter} onFilter={setTrendFilter}/>
-        <DonutChart filter={donutFilter} onFilter={setDonutFilter}/>
+        <SalesTrendChart orders={orders} filter={trendFilter} onFilter={setTrendFilter}/>
+        <DonutChart orders={orders} filter={donutFilter} onFilter={setDonutFilter}/>
       </div>
       <div className={styles.chartsRow} style={{alignItems:"stretch"}}>
         {/* Top courses */}
@@ -2070,16 +2100,17 @@ function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonu
           <div className={styles.panelHead}><h2>轉換漏斗</h2><span className={styles.dim}>整體轉換率 {FUNNEL[0].count?Math.round(FUNNEL[3].count/FUNNEL[0].count*100)+"%":"—"}</span></div>
           <div style={{display:"grid",gap:12}}>
             {FUNNEL.map((f,i)=>{
-              const pct=Math.round(f.count/FUNNEL[0].count*100);
+              const barPct=Math.round(f.count/funnelDenom*100);
+              const rate=funnelBase>0?Math.round(f.count/funnelBase*100)+"%":"—";
               const colors=["#2563eb","#7c3aed","#f59e0b","#16a34a"];
               return(
                 <div key={f.stage}>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:5}}>
                     <span style={{fontWeight:700}}>{f.stage}</span>
-                    <span style={{color:"#64748b"}}>{f.count.toLocaleString()} 人 · {pct}%</span>
+                    <span style={{color:"#64748b"}}>{f.count.toLocaleString()} 人 · {rate}</span>
                   </div>
                   <div style={{height:10,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${pct}%`,background:colors[i],borderRadius:999}}/>
+                    <div style={{height:"100%",width:`${barPct}%`,background:colors[i],borderRadius:999}}/>
                   </div>
                 </div>
               );
