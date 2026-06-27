@@ -732,6 +732,7 @@ function StudentsPage({showToast}){
                 ["狀態",<span key="s" className={`${styles.pill} ${styles[detailStudent.status]||styles.requested}`}>{statusLabel(detailStudent.status)}</span>],
                 ["電話",detailStudent.phone||"—"],
                 ["已購課程",detailStudent.purchased?(detailStudent.plan_label||"從零開始學鋼琴"):"—"],
+                ["開通狀態",detailStudent.purchased?(detailStudent.enrolled?"已開通":"未開通（待開課）"):"—"],
                 ["來源",detailStudent.source||"—"],
                 ["建立時間",fmt(detailStudent.created_at)],
               ].map(([label,val])=>(
