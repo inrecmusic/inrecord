@@ -46,8 +46,59 @@
   .screen.active{display:block}
   @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
+  /* ---------- sticky top bar：品牌 + 2 分鐘倒數 + 導流 CTA ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:11px 24px;background:rgba(243,242,247,.85);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .tb-brand{display:flex;align-items:baseline;gap:10px;text-decoration:none;min-width:0}
+  .tb-logo{font-family:var(--serif);font-weight:700;font-size:18px;color:var(--ink);white-space:nowrap}
+  .tb-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+  .tb-right{display:flex;align-items:center;gap:13px;flex-shrink:0}
+  .tb-timer{
+    font-family:var(--mono);font-weight:700;font-size:15px;color:var(--ink-2);
+    letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .tb-timer.ending{color:var(--no)}
+  .tb-cta{
+    font-family:var(--sans);font-weight:700;font-size:14px;color:#fff;background:var(--indigo);
+    border-radius:11px;padding:10px 17px;text-decoration:none;white-space:nowrap;
+    transition:transform .18s ease,box-shadow .18s ease;
+  }
+  .tb-cta:hover{transform:translateY(-1px);box-shadow:0 9px 22px -8px rgba(79,70,229,.6)}
+  .tb-cta .cta-short{display:none}
+
+  /* ---------- 試玩結束遮罩（鎖住畫面）+ CTA 彈窗 ---------- */
+  .trial-mask{
+    position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;
+    background:rgba(26,26,34,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    animation:fadeUp .3s ease both;
+  }
+  .trial-mask[hidden]{display:none}
+  .trial-card{
+    background:var(--card);border:1px solid var(--line);border-radius:24px;
+    padding:40px 34px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow);
+  }
+  .tc-tag{font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--indigo);margin-bottom:14px}
+  .tc-title{font-family:var(--serif);font-weight:700;font-size:30px;margin-bottom:12px}
+  .tc-body{color:var(--ink-2);font-size:15.5px;line-height:1.7;margin-bottom:28px}
+  .tc-cta{
+    display:block;width:100%;font-family:var(--sans);font-weight:700;font-size:16px;color:#fff;
+    background:var(--indigo);border-radius:14px;padding:16px;text-decoration:none;
+    transition:transform .18s ease,box-shadow .18s ease;
+  }
+  .tc-cta:hover{transform:translateY(-2px);box-shadow:0 14px 30px -10px rgba(79,70,229,.6)}
+  .tc-replay{
+    margin-top:16px;background:none;border:none;cursor:pointer;font-family:var(--sans);
+    font-size:14px;color:var(--ink-3);text-decoration:underline;text-underline-offset:3px;
+  }
+  .tc-replay:hover{color:var(--ink)}
+
   /* ---------- hero / home ---------- */
-  .home-top{padding:64px 0 12px}
+  .home-top{padding:44px 0 12px}
   .eyebrow{
     font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.22em;
     text-transform:uppercase;color:var(--indigo);margin-bottom:22px;
@@ -109,7 +160,8 @@
   @media(max-width:760px){.modes{grid-template-columns:1fr}}
 
   /* ---------- game screen ---------- */
-  .game{padding:36px 0 90px}
+  /* 只設上下邊距：保留 .wrap 的左右 24px（否則手機版標題/說明會貼齊邊緣） */
+  .game{padding-top:36px;padding-bottom:90px}
   .back{
     display:inline-flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;
     font-family:var(--sans);font-size:14px;color:var(--ink-2);padding:8px 0;margin-bottom:22px;
@@ -265,10 +317,27 @@
   footer .mono{font-family:var(--mono);letter-spacing:.06em}
 
   @media(max-width:760px){
-    .cards{grid-template-columns:1fr}
-    .home-top{padding:44px 0 8px}
-    .stage{padding:26px 20px}
-    .kb{height:200px}
+    .home-top{padding:36px 0 8px}
+    .stage{padding:24px 18px}
+    .kb{height:196px}
+    .game{padding-top:26px;padding-bottom:68px}
+    .game-head{margin-bottom:22px}
+    .game-head p{font-size:14.5px}
+    .tabs{margin-bottom:24px}
+    .choose{padding:36px 0 64px}
+    .display{gap:18px;padding:18px 20px}
+  }
+  @media(max-width:560px){
+    .wrap{padding:0 18px}
+    .topbar{padding:10px 16px;gap:8px}
+    .tb-tag{display:none}
+    .tb-logo{font-size:16px}
+    .tb-timer{font-size:14px}
+    .tb-cta{padding:9px 14px;font-size:13px}
+    .tb-cta .cta-full{display:none}
+    .tb-cta .cta-short{display:inline}
+    .trial-card{padding:34px 26px}
+    .tc-title{font-size:26px}
   }
   @media(prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important}
@@ -277,6 +346,20 @@
 </style>
 </head>
 <body>
+
+<!-- ============ TOP BAR：品牌 + 2 分鐘倒數 + 導流 CTA ============ -->
+<header class="topbar">
+  <a class="tb-brand" href="https://concert.inrecordmusic.com/" target="_blank" rel="noopener">
+    <span class="tb-logo">InRecord</span>
+    <span class="tb-tag">互動體驗</span>
+  </a>
+  <div class="tb-right">
+    <span class="tb-timer" id="tb-timer">▸ 2:00</span>
+    <a class="tb-cta" href="https://concert.inrecordmusic.com/" target="_blank" rel="noopener">
+      <span class="cta-full">立即預購課程</span><span class="cta-short">立即預購</span>
+    </a>
+  </div>
+</header>
 
 <!-- ============ HOME ============ -->
 <section id="screen-home" class="screen active">
@@ -491,6 +574,17 @@
     </div>
   </div>
 </section>
+
+<!-- ============ 試玩結束：鎖住畫面 + 導流 CTA 彈窗 ============ -->
+<div class="trial-mask" id="trial-mask" hidden>
+  <div class="trial-card">
+    <div class="tc-tag">▸ trial_ended</div>
+    <div class="tc-title">試玩結束！</div>
+    <p class="tc-body">預購完整版，解鎖<br>全部主題 ＋ 10 章節完整課程</p>
+    <a class="tc-cta" href="https://concert.inrecordmusic.com/" target="_blank" rel="noopener">立即預購課程 →</a>
+    <button class="tc-replay" id="tc-replay">↻ 重新試玩</button>
+  </div>
+</div>
 
 <footer><span class="mono">INRECORD · 音樂刻</span> — 互動體驗 Demo</footer>
 
@@ -824,6 +918,41 @@ document.querySelectorAll('[data-reset]').forEach(btn=>{
     if(p==='chord') nextChord();
   });
 });
+
+/* =================== TRIAL COUNTDOWN（2 分鐘導流） ===================
+   載入即開始倒數；歸零時鎖住畫面並彈出預購 CTA；「重新試玩」重置回首頁。 */
+const TRIAL_SECONDS=120;
+let trialLeft=TRIAL_SECONDS, trialTimer=null, trialOver=false;
+function fmtTrial(s){ const m=Math.floor(s/60), ss=s%60; return m+':'+String(ss).padStart(2,'0'); }
+function paintTrial(){
+  const el=document.getElementById('tb-timer'); if(!el) return;
+  el.textContent='▸ '+fmtTrial(trialLeft);
+  el.classList.toggle('ending', trialLeft<=20 && !trialOver);
+}
+function endTrial(){
+  trialOver=true;
+  if(trialTimer){ clearInterval(trialTimer); trialTimer=null; }
+  const el=document.getElementById('tb-timer');
+  if(el){ el.textContent='▸ 試玩結束'; el.classList.remove('ending'); }
+  const mask=document.getElementById('trial-mask'); if(mask) mask.hidden=false;
+}
+function tickTrial(){
+  if(trialOver) return;
+  trialLeft=Math.max(0,trialLeft-1);
+  paintTrial();
+  if(trialLeft<=0) endTrial();
+}
+function startTrial(){
+  if(trialTimer) clearInterval(trialTimer);
+  trialTimer=setInterval(tickTrial,1000);
+}
+function restartTrial(){
+  trialOver=false; trialLeft=TRIAL_SECONDS;
+  const mask=document.getElementById('trial-mask'); if(mask) mask.hidden=true;
+  paintTrial(); startTrial(); show('home');
+}
+document.getElementById('tc-replay').addEventListener('click',restartTrial);
+paintTrial(); startTrial();
 </script>
 </body>
 </html>
