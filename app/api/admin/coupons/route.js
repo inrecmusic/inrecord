@@ -61,15 +61,39 @@ export async function PATCH(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
-  const { id, ...fields } = await req.json();
+  const { id, ...fields } = await req.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
-  // 僅允許更新白名單欄位
+  // 白名單 + 值域驗證（比照 POST，避免 PATCH 把券改成 percent>100 / 負值 / 非法 type）
   const allowed = {};
-  for (const k of ["name", "type", "value", "usage_limit", "starts_at", "ends_at", "status", "plan"]) {
-    if (k in fields) allowed[k] = fields[k];
+  if ("name" in fields) { const n = String(fields.name || "").trim(); if (!n) return NextResponse.json({ error: "missing_name" }, { status: 400 }); allowed.name = n; }
+  if ("type" in fields) { if (!["percent", "fixed", "price"].includes(fields.type)) return NextResponse.json({ error: "invalid_type" }, { status: 400 }); allowed.type = fields.type; }
+  if ("plan" in fields) allowed.plan = ["course", "bundle"].includes(fields.plan) ? fields.plan : null;
+  if ("status" in fields) { if (!["active", "disabled"].includes(fields.status)) return NextResponse.json({ error: "invalid_status" }, { status: 400 }); allowed.status = fields.status; }
+  if ("usage_limit" in fields) {
+    if (fields.usage_limit == null || fields.usage_limit === "") allowed.usage_limit = null;
+    else { const u = Math.round(Number(fields.usage_limit)); if (!Number.isFinite(u) || u < 0) return NextResponse.json({ error: "invalid_usage_limit" }, { status: 400 }); allowed.usage_limit = u; }
+  }
+  if ("value" in fields) { const v = Number(fields.value); if (!Number.isFinite(v) || v <= 0) return NextResponse.json({ error: "invalid_value" }, { status: 400 }); allowed.value = Math.round(v); }
+  if (("starts_at" in fields) || ("ends_at" in fields)) {
+    const dr = validateDateRange(fields.starts_at ?? null, fields.ends_at ?? null);
+    if (!dr.ok) return NextResponse.json({ error: dr.error }, { status: 400 });
+    if ("starts_at" in fields) allowed.starts_at = fields.starts_at || null;
+    if ("ends_at" in fields) allowed.ends_at = fields.ends_at || null;
   }
 
+  // percent ≤ 100：依「最終 type/value」判定（patch 優先，缺則查現有），擋住改值或改型後超界
+  if (allowed.type === "percent" || (allowed.value != null && !("type" in allowed))) {
+    let effType = allowed.type, effValue = allowed.value;
+    if (effType === undefined || effValue === undefined) {
+      const { data: cur } = await supabase.from("coupons").select("type, value").eq("id", id).single();
+      if (effType === undefined) effType = cur?.type;
+      if (effValue === undefined) effValue = cur?.value;
+    }
+    if (effType === "percent" && Number(effValue) > 100) return NextResponse.json({ error: "percent_over_100" }, { status: 400 });
+  }
+
+  if (Object.keys(allowed).length === 0) return NextResponse.json({ ok: true });
   const { error } = await supabase.from("coupons").update(allowed).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

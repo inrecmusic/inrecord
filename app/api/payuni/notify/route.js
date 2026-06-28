@@ -107,12 +107,16 @@ export async function POST(req) {
             updated_at:      new Date().toISOString(),
           }
         ).eq("mer_trade_no", params.MerTradeNo)
+         .neq("status", "refunded")  // 已退款訂單不可被遲到/重送的 notify 翻回 paid 並重新開通
          .select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
+        // 更新未命中（訂單不存在，或已退款被守衛擋下）→ 不開通、不履約、不開票，直接回 SUCCESS
+        if (!order) {
+          console.error("[payuni notify] 略過：訂單不存在或已退款，不重新開通", params.MerTradeNo, error?.message || "");
+          return new Response("SUCCESS");
+        }
         let invoiceFailed = false, invoiceReason = "";
         let emailFailed = false,   emailReason   = "";
-        if (error) {
-          console.error("[payuni notify] supabase error", error.message);
-        } else if (order?.email) {
+        if (order?.email) {
           // 課程／遊戲存取開通（共用 lib/fulfillment-grant，與後台手動開通同一來源）。
           // ⚠️ 冪等：enrollments(onConflict email,course_id) + subscriptions(onConflict payuni_order_id,
           //   ignoreDuplicates) 確保 Payuni 並發／重送 notify 不會重複開通。

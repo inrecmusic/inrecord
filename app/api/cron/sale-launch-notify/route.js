@@ -4,6 +4,8 @@ import { runLaunchNotify } from "@/lib/launch-notify";
 import { sendLaunchEmail } from "@/lib/brevo-email";
 import { isClassroomOpen } from "@/lib/sale";
 
+export const maxDuration = 300; // 逐封寄開課信、給足執行時間（避免逾時中斷、靠 per-email 記錄續寄）
+
 export async function GET(req) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization") || "";

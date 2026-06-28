@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 
-export async function GET() {
+// 公開社會證明端點：限流避免被高頻打點（60 次/分·IP）
+const limiter = createDistributedLimiter({ limit: 60, windowMs: 60_000, prefix: "rl:stats" });
+
+export async function GET(req) {
+  const rl = await limiter(clientIp(req));
+  if (!rl.allowed) {
+    return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(rl.retryAfter) } });
+  }
+
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ ok: false, error: "db not configured" }, { status: 500 });
 

@@ -26,16 +26,23 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
-  const { email, plan_type, expires_at } = await req.json();
+  const { email, plan_type, expires_at } = await req.json().catch(() => ({}));
   if (!email || !plan_type || !expires_at) {
     return NextResponse.json({ error: "missing_params" }, { status: 400 });
   }
+  if (!["bundle", "game"].includes(plan_type)) {
+    return NextResponse.json({ error: "invalid_plan_type" }, { status: 400 });
+  }
+  const exp = new Date(expires_at);
+  if (isNaN(exp.getTime())) {
+    return NextResponse.json({ error: "invalid_expires_at" }, { status: 400 }); // 防壞日期丟 RangeError → 500
+  }
 
   const { data, error } = await supabase.from("subscriptions").insert({
-    email,
+    email: String(email).trim().toLowerCase(),
     plan_type,
     status:     "active",
-    expires_at: new Date(expires_at).toISOString(),
+    expires_at: exp.toISOString(),
     source:     "manual",
   }).select().single();
 
