@@ -397,6 +397,58 @@ function ProofImage({ url }) {
   if (!signed) return <span style={{ color: "#94a3b8", fontSize: 13 }}>載入憑證…</span>;
   return <a href={signed} target="_blank" rel="noreferrer"><img src={signed} alt="憑證" style={{ maxWidth: "100%", maxHeight: 280, borderRadius: 8, border: "1px solid #ddd" }} /></a>;
 }
+
+// 單封自訂信（追單/客服）：對單一消費者寄一封自己編輯的信。內文支援受限 Markdown。
+function ComposeEmailModal({ open, initialTo = "", onClose, showToast }) {
+  const [to, setTo] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (open) { setTo(initialTo || ""); setSubject(""); setBody(""); setBusy(false); } }, [open, initialTo]);
+  if (!open) return null;
+
+  async function send() {
+    if (busy) return;
+    const em = to.trim();
+    if (!em) { showToast?.("❌ 請填寫收件 Email"); return; }
+    if (!subject.trim() || !body.trim()) { showToast?.("❌ 請填寫主旨與內文"); return; }
+    setBusy(true);
+    try {
+      const res = await _api("/api/admin/send-custom-email", { method: "POST", body: JSON.stringify({ to: em, subject: subject.trim(), bodyMd: body }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || d.ok === false) showToast?.("❌ 寄送失敗：" + (d.error || "unknown"));
+      else { showToast?.("✅ 已寄出給 " + em); onClose?.(); }
+    } catch (e) { showToast?.("❌ 寄送失敗：" + e.message); }
+    finally { setBusy(false); }
+  }
+
+  const lbl = { fontSize: 13, fontWeight: 700, color: "#374151", display: "block" };
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalCard} style={{ width: "min(580px,100%)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>✉️ 寄信給客人</h3>
+          <button className={styles.iconBtn} onClick={onClose}><X size={18} /></button>
+        </div>
+        <div style={{ display: "grid", gap: 12 }}>
+          <label style={lbl}>收件 Email
+            <input className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} type="email" value={to} onChange={e => setTo(e.target.value)} placeholder="customer@example.com" />
+          </label>
+          <label style={lbl}>主旨
+            <input className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} value={subject} onChange={e => setSubject(e.target.value)} placeholder="例如：您的課程訂單尚未完成付款" />
+          </label>
+          <label style={lbl}>內文<span style={{ fontWeight: 400, color: "#94a3b8" }}>（Markdown：# 標題、**粗體**、- 清單、--- 分隔線）</span>
+            <textarea value={body} onChange={e => setBody(e.target.value)} rows={10} style={{ width: "100%", marginTop: 4, padding: 10, borderRadius: 8, border: "1px solid #e2e8f0", fontFamily: "inherit", fontSize: 14, lineHeight: 1.7, resize: "vertical" }} placeholder={"嗨，\n\n感謝您的支持！我們注意到您的訂單尚未完成付款。\n\n以下是您的付款連結：…\n\n如有任何問題，直接回覆此信即可。"} />
+          </label>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button className={styles.btnSmall} onClick={onClose} disabled={busy}>取消</button>
+            <button className={`${styles.btnSmall} ${styles.green}`} onClick={send} disabled={busy}>{busy ? "寄送中…" : "寄送"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 const MSG_PER_PAGE = 20;
 
 function MessagesPage({ showToast }){
@@ -948,6 +1000,8 @@ function OrdersPage({leads,showToast}){
   const [dateTo,setDateTo]=useState("");
   const [detailOrder,setDetailOrder]=useState(null);
   const [rows,setRows]=useState([]);
+  const [composeOpen,setComposeOpen]=useState(false);
+  const [composeTo,setComposeTo]=useState("");
   const [issuing,setIssuing]=useState(null);
   const [resending,setResending]=useState(null);
   const [refunding,setRefunding]=useState(false);
@@ -1100,6 +1154,7 @@ function OrdersPage({leads,showToast}){
       <div className={styles.pageHeader}>
         <div><h1>訂單管理</h1><p>共 {allOrders.length} 筆訂單</p></div>
         <div className={styles.pageActions}>
+          <button className={styles.btnSmall} onClick={()=>{setComposeTo("");setComposeOpen(true);}}>✉️ 寄送單封信</button>
           <a href="https://www.payuni.com.tw" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><ExternalLink size={13}/> Payuni 後台</a>
           <button className={styles.btnSmall} onClick={exportOrders}><Download size={13}/> 匯出 CSV</button>
         </div>
@@ -1291,11 +1346,13 @@ function OrdersPage({leads,showToast}){
             )}
             <div className={styles.modalActions}>
               <button className={styles.btnSmall} onClick={()=>setDetailOrder(null)}>關閉</button>
+              <button className={styles.btnSmall} onClick={()=>{setComposeTo(detailOrder.email||"");setComposeOpen(true);}}>✉️ 寄信給客人</button>
               {detailOrder.status==="paid"&&detailOrder.realId&&<button className={`${styles.btnSmall} ${styles.btnDanger}`} disabled={refunding} onClick={()=>refundOrder(detailOrder.realId)}>{refunding?"退款中…":"申請退款"}</button>}
             </div>
           </div>
         </div>
       )}
+      <ComposeEmailModal open={composeOpen} initialTo={composeTo} onClose={()=>setComposeOpen(false)} showToast={showToast}/>
       <a ref={downloadRef} style={{display:"none"}} aria-hidden="true"/>
     </div>
   );
