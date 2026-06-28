@@ -313,7 +313,7 @@ const fadeUp = {
 };
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } };
 
-function useCountUp(target, duration = 1800) {
+function useCountUp(target, duration = 1800, decimals = 0) {
   const [value, setValue] = useState(0);
   const [inView, setInView] = useState(false);
   const ref = useRef(null);
@@ -334,12 +334,14 @@ function useCountUp(target, duration = 1800) {
     const t0 = Date.now();
     const tick = () => {
       const p = Math.min((Date.now() - t0) / duration, 1);
-      setValue(Math.round((1 - Math.pow(1 - p, 3)) * target));
+      const raw = (1 - Math.pow(1 - p, 3)) * target;
+      const f = 10 ** decimals;
+      setValue(decimals > 0 ? Math.round(raw * f) / f : Math.round(raw));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, target, duration]);
+  }, [inView, target, duration, decimals]);
   return [value, ref];
 }
 
@@ -356,12 +358,13 @@ function RevealSection({ className = "", ...props }) {
   );
 }
 
-function StatItem({ value, suffix, en, label }) {
-  const [count, ref] = useCountUp(value ?? 0);
+function StatItem({ value, suffix, en, label, decimals = 0 }) {
+  const [count, ref] = useCountUp(value ?? 0, 1800, decimals);
+  const shown = decimals > 0 ? Number(count).toFixed(decimals) : count.toLocaleString();
   return (
     <span className={styles.stat} ref={ref} title={label}>
       <span className={styles.statKey}>{en}</span>
-      <strong>{value != null ? `${count.toLocaleString()}${suffix}` : "—"}</strong>
+      <strong>{value != null ? `${shown}${suffix}` : "—"}</strong>
     </span>
   );
 }
@@ -556,7 +559,7 @@ export default function HomeClient({ sale }) {
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
                   <StatItem value={stats ? stats.purchases : null}                              suffix="+" en="members"  label="學員加入學習" />
-                  <StatItem value={stats && stats.rating != null ? Number(stats.rating) : null} suffix=""  en="rating"   label="學員平均評分" />
+                  <StatItem value={stats && stats.rating != null ? Number(stats.rating) : null} suffix=""  en="rating"   label="學員平均評分" decimals={1} />
                 </div>
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
@@ -738,8 +741,9 @@ export default function HomeClient({ sale }) {
               <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
             <motion.div className={styles.plansRow} style={{ gridTemplateColumns: "minmax(0, 360px)" }} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
-              {/* 粉絲限定方案：enabled 控整卡；截止後只關憑證入口、直購仍可 */}
-              {sale.fanPlan.enabled && (
+              {/* 粉絲限定方案：enabled 控整卡；截止後只關憑證入口、直購仍可。
+                  停用時 fallback 顯示標準課程包卡，避免方案區整個變空、CTA 捲到空白。 */}
+              {sale.fanPlan.enabled ? (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
                 <div className={styles.planRibbon}>★ 粉絲限定</div>
                 <h3 className={styles.planName}>粉絲限定方案</h3>
@@ -769,6 +773,22 @@ export default function HomeClient({ sale }) {
                   {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
+              </motion.div>
+              ) : (
+              <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
+                <div className={styles.planRibbon}>★ 最超值全配</div>
+                <h3 className={styles.planName}>{PLANS[1].label}</h3>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "4px 0 14px" }}>
+                  <strong style={{ fontSize: 32, lineHeight: 1 }}>NT${offer.price.toLocaleString()}</strong>
+                  {offer.originalPrice > offer.price && <span style={{ textDecoration: "line-through", color: "#94a3b8", fontSize: 16 }}>NT${offer.originalPrice.toLocaleString()}</span>}
+                </div>
+                <ul className={styles.planFeatures}>
+                  {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
+                </ul>
+                <button className={`${styles.planBtn} ${styles.planBtnFeatured}`} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale}>
+                  <ShoppingCart size={17} />
+                  {sale.onSale ? `${buyShort}　NT$${offer.price.toLocaleString()}` : "即將開賣"}
+                </button>
               </motion.div>
               )}
             </motion.div>

@@ -179,7 +179,7 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
         <StatCard label="本月訂單" value={paidM.length} sub="本月已完成訂單數" icon={ShoppingCart} color="#2563eb"/>
         <StatCard label="總營收"   value={fmtTWD(totalRev)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
         <StatCard label="總學員數" value={leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
-        <StatCard label="平均完課率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
+        <StatCard label="Demo 開啟率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
       </div>
       <div className={styles.chartsRow}>
@@ -580,7 +580,7 @@ function MediaPage(){
   return(
     <div>
       <div className={styles.pageHeader}>
-        <div><h1>媒體中心</h1><p>管理課程影片、圖片與教材</p></div>
+        <div><h1>媒體中心</h1><p>檢視課程影片單元與串接狀態</p></div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={fetchVideos}><RefreshCw size={13}/> 重新整理</button>
         </div>
@@ -625,13 +625,6 @@ function MediaPage(){
           ))}
         </div>
         )}
-      </div>
-      <div className={styles.panel} style={{marginTop:16}}>
-        <div className={styles.panelHead}><h2 style={{display:"flex",alignItems:"center",gap:7}}><Img size={16} color="#7c3aed"/>最近圖片</h2></div>
-        <div className={styles.placeholderCard} style={{padding:"40px 24px"}}>
-          <Img size={36} color="#cbd5e1"/>
-          <p style={{margin:"12px 0 0",fontSize:14,color:"#94a3b8"}}>尚未上傳任何圖片</p>
-        </div>
       </div>
     </div>
   );

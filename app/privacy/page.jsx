@@ -47,17 +47,16 @@ export default function PrivacyPage() {
               <li><b>Payuni 統一金流</b>：金流支付處理，受 Payuni 隱私權政策保護。</li>
               <li><b>Brevo</b>：交易與課程通知郵件寄送。</li>
               <li><b>Supabase</b>：PostgreSQL 資料庫儲存，採用業界標準加密。</li>
-              <li><b>Google Analytics / Meta Pixel</b>：網站流量與廣告成效分析（可透過瀏覽器設定退出）。</li>
             </ul>
+            本平台目前未使用第三方廣告追蹤或行為分析像素（如 Google Analytics、Meta Pixel）。
             本平台不會將您的個人資料出售、出租或以任何形式交換給第三方商業機構。
           </Section>
 
           <Section title="5. Cookie 與追蹤技術">
             本平台使用 Cookie 及類似技術以：
             <ul>
-              <li>維持您的課程存取狀態。</li>
-              <li>分析網站使用情況以改善服務。</li>
-              <li>提供個人化學習體驗。</li>
+              <li>維持您的登入狀態與課程存取權限。</li>
+              <li>記住您的偏好設定，提供順暢的學習體驗。</li>
             </ul>
             您可透過瀏覽器設定拒絕或刪除 Cookie，但部分功能可能因此受限。
           </Section>
