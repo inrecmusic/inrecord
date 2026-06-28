@@ -10,6 +10,24 @@ function fmtDur(sec) {
 
 const F = `var(--type-body)`;
 
+// Bunny Stream 影片進度追蹤需要 player.js（Bunny CDN 提供）。注入一次、快取 Promise；
+// 載入失敗就放棄（不擋影片播放）。用 window.playerjs.Player(iframe) 監聽 timeupdate。
+let _playerJsPromise = null;
+function loadPlayerJs() {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.playerjs) return Promise.resolve();
+  if (_playerJsPromise) return _playerJsPromise;
+  _playerJsPromise = new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = "https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js";
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => resolve();
+    document.head.appendChild(s);
+  });
+  return _playerJsPromise;
+}
+
 /* ── CommentsSection ─────────────────────────────────────────────────────────── */
 function CommentsSection({ token, video, chapters }) {
   const [filter, setFilter]   = useState("unit");
@@ -657,6 +675,52 @@ export default function ClassroomPage() {
       .catch(() => {});
   }, [currentVideo?.id, token]);
 
+  /* Bunny player time-based progress tracking (player.js, 每 10 秒) — 比照 Vimeo。
+     正式課程影片走 Bunny，原本只有 Vimeo 有進度回報 → 側欄進度/已完成永遠 0。 */
+  useEffect(() => {
+    if (!currentVideo?.bunny_video_id || !token || !embedSrc) return;
+    const videoId = currentVideo.id;
+    let interval, cancelled = false, lastSeconds = 0, lastDuration = 0;
+
+    async function postProgress() {
+      if (!lastDuration) return;
+      try {
+        const r = await fetch("/api/classroom/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            video_id: videoId,
+            watched_seconds: Math.floor(lastSeconds),
+            total_seconds: Math.floor(lastDuration),
+            completed: lastSeconds / lastDuration >= 0.8,
+          }),
+        });
+        const { data } = await r.json();
+        if (data && !cancelled) setProgress(prev => {
+          const i = prev.findIndex(p => p.video_id === videoId);
+          return i >= 0 ? prev.map((p, j) => j === i ? data : p) : [...prev, data];
+        });
+      } catch {}
+    }
+
+    async function setup() {
+      await loadPlayerJs();
+      if (cancelled || !window.playerjs) return;
+      const iframe = document.getElementById("bunny-player");
+      if (!iframe) return;
+      const player = new window.playerjs.Player(iframe);
+      player.on("ready", () => {
+        if (cancelled) return;
+        player.on("timeupdate", (d) => { lastSeconds = d?.seconds || 0; lastDuration = d?.duration || 0; });
+        player.on("ended", () => { if (lastDuration) { lastSeconds = lastDuration; postProgress(); } });
+        interval = setInterval(postProgress, 10000);
+      });
+    }
+
+    setup();
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [currentVideo?.id, token, embedSrc]);
+
   function handleSelect(v) {
     setCurrentVideo(v);
     if (isTablet) setDrawerOpen(false);
@@ -823,6 +887,7 @@ export default function ClassroomPage() {
               <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "#000" }}>
                 {embedSrc ? (
                   <iframe
+                    id="bunny-player"
                     src={embedSrc}
                     style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
                     allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
