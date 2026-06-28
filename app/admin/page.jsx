@@ -379,6 +379,24 @@ const _pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrec
 function _api(path, opts = {}) {
   return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${_pw()}`, ...(opts.headers || {}) } });
 }
+
+// 憑證圖（proof-uploads 為私有 bucket）：向 /api/admin/proof-signed 取短期簽名 URL 顯示
+function ProofImage({ url }) {
+  const [signed, setSigned] = useState(null);
+  const [err, setErr] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setSigned(null); setErr(false);
+    _api("/api/admin/proof-signed", { method: "POST", body: JSON.stringify({ url }) })
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => { if (!cancelled) (d.signedUrl ? setSigned(d.signedUrl) : setErr(true)); })
+      .catch(() => { if (!cancelled) setErr(true); });
+    return () => { cancelled = true; };
+  }, [url]);
+  if (err) return <span style={{ color: "#dc2626", fontSize: 13 }}>憑證載入失敗</span>;
+  if (!signed) return <span style={{ color: "#94a3b8", fontSize: 13 }}>載入憑證…</span>;
+  return <a href={signed} target="_blank" rel="noreferrer"><img src={signed} alt="憑證" style={{ maxWidth: "100%", maxHeight: 280, borderRadius: 8, border: "1px solid #ddd" }} /></a>;
+}
 const MSG_PER_PAGE = 20;
 
 function MessagesPage({ showToast }){
@@ -1260,7 +1278,7 @@ function OrdersPage({leads,showToast}){
               <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #eee"}}>
                 <div style={{fontWeight:700,marginBottom:6}}>粉絲憑證審核：{detailOrder.fanReview==="pending"?"待審核":detailOrder.fanReview==="approved"?"✅ 通過":"❌ 不符"}</div>
                 {detailOrder.proofUrl
-                  ?<a href={detailOrder.proofUrl} target="_blank" rel="noreferrer"><img src={detailOrder.proofUrl} alt="憑證" style={{maxWidth:"100%",maxHeight:280,borderRadius:8,border:"1px solid #ddd"}}/></a>
+                  ?<ProofImage url={detailOrder.proofUrl}/>
                   :<span style={{color:"#999"}}>（無憑證圖）</span>}
                 {detailOrder.fanReview==="pending"&&(
                   <div style={{display:"flex",gap:8,marginTop:10}}>
