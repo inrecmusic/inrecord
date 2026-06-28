@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { validateProofImage } from "@/lib/proof-image";
@@ -63,7 +64,7 @@ export async function POST(req) {
     return Response.json({ ok: false, error: "db_not_configured" }, { status: 503 });
   }
 
-  const filename = `proofs/${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${v.ext}`;
+  const filename = `proofs/${randomUUID()}.${v.ext}`; // CSPRNG 不可枚舉檔名（公開 bucket 下降低被猜中風險）
   const { error: upErr } = await supabase.storage
     .from("proof-uploads")
     .upload(filename, buf, { contentType: file.type, upsert: false });

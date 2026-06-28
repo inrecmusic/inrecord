@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { validateProofImage } from "@/lib/proof-image";
@@ -28,7 +29,7 @@ export async function POST(req) {
     const v = validateProofImage(buf, file.type);
     if (!v.ok) return NextResponse.json({ url: null, error: v.error }, { status: 400 });
     const ext = v.ext;
-    const filename = `proofs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const filename = `proofs/${randomUUID()}.${ext}`; // CSPRNG 不可枚舉檔名（公開 bucket 下降低被猜中風險）
 
     const supabase = getSupabaseAdmin();
     if (!supabase) return NextResponse.json({ url: null });
