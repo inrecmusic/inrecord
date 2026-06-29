@@ -2236,6 +2236,7 @@ function IntegrationPage({showToast}){
           </div>
           {aDirty&&<span style={{fontSize:12,fontWeight:800,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"4px 10px",alignSelf:"flex-start"}}>有未儲存的變更</span>}
         </div>
+        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:12,padding:"12px 14px",fontSize:13,color:"#92400e",marginBottom:16,lineHeight:1.7}}>⚠️ <strong>尚未實際套用</strong>：此區 ID 目前僅儲存在本機，<strong>網站並未注入任何分析腳本</strong>（GA／PostHog／Pixel 皆未啟用）。要真的開始追蹤需另接腳本注入後才會生效。</div>
 
         {/* Google Analytics 4 */}
         <div style={{marginBottom:24,paddingBottom:24,borderBottom:"1px solid #f1f5f9"}}>
@@ -2537,13 +2538,21 @@ function renderMd(text){
 }
 
 // ── Privacy / Terms ────────────────────────────────────────────────────────
-function DocEditorPage({title,lsKey,defaultMd,showToast}){
+function DocEditorPage({title,contentKey,defaultMd,showToast}){
   const [md,setMd]=useState(defaultMd);
   const [saved,setSaved]=useState(defaultMd);
   const [mode,setMode]=useState("preview");
+  const [busy,setBusy]=useState(false);
   const dirty=md!==saved;
-  useEffect(()=>{try{const v=localStorage.getItem(lsKey);if(v){setMd(v);setSaved(v);}}catch{}},[lsKey]);
-  function save(){localStorage.setItem(lsKey,md);setSaved(md);showToast(`✅ ${title}已儲存`);}
+  // 從 DB 載入（有編輯過才覆蓋預設）；存檔寫 DB → 正式 /privacy /terms 即時反映（ISR 5 分鐘）。
+  useEffect(()=>{let cancelled=false;_api("/api/admin/site-content").then(r=>r.json()).then(d=>{const v=d?.data?.[contentKey];if(!cancelled&&typeof v==="string"&&v.trim()){setMd(v);setSaved(v);}}).catch(()=>{});return()=>{cancelled=true;};},[contentKey]);
+  async function save(){
+    if(busy)return;setBusy(true);
+    try{const r=await _api("/api/admin/site-content",{method:"PATCH",body:JSON.stringify({key:contentKey,body_md:md})});const d=await r.json().catch(()=>({}));
+      if(!r.ok||d.ok===false)showToast?.("❌ 儲存失敗："+(d.error||"unknown"));
+      else{setSaved(md);showToast?.(`✅ ${title}已儲存，前台將於數分鐘內更新`);}
+    }catch(e){showToast?.("❌ 儲存失敗："+e.message);}finally{setBusy(false);}
+  }
   return(
     <div>
       <div className={styles.pageHeader} style={{flexWrap:"wrap",gap:12}}>
@@ -2555,7 +2564,7 @@ function DocEditorPage({title,lsKey,defaultMd,showToast}){
           </div>
           {dirty&&<span style={{fontSize:12,fontWeight:800,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"4px 10px",alignSelf:"center"}}>有未儲存的變更</span>}
           {dirty&&<button className={styles.btnSmall} onClick={()=>setMd(saved)}>復原</button>}
-          <button className={styles.btnPrimary} onClick={save}>儲存</button>
+          <button className={styles.btnPrimary} onClick={save} disabled={busy}>{busy?"儲存中…":"儲存"}</button>
         </div>
       </div>
       <div className={styles.panel}>
@@ -2572,8 +2581,8 @@ function DocEditorPage({title,lsKey,defaultMd,showToast}){
     </div>
   );
 }
-function PrivacyPage({showToast}){return <DocEditorPage title="隱私權政策" lsKey="inrecord_privacy" defaultMd={DEFAULT_PRIVACY_MD} showToast={showToast}/>;}
-function TermsPage({showToast}){return <DocEditorPage title="服務條款" lsKey="inrecord_terms" defaultMd={DEFAULT_TERMS_MD} showToast={showToast}/>;}
+function PrivacyPage({showToast}){return <DocEditorPage title="隱私權政策" contentKey="privacy" defaultMd={DEFAULT_PRIVACY_MD} showToast={showToast}/>;}
+function TermsPage({showToast}){return <DocEditorPage title="服務條款" contentKey="terms" defaultMd={DEFAULT_TERMS_MD} showToast={showToast}/>;}
 
 // 電子報：編輯標題+Markdown 內文 → 群發給「購課學員 / 註冊官網帳號」。逐封寄(A 方案)，碰每日上限即回報。
 function NewsletterPage({showToast}){

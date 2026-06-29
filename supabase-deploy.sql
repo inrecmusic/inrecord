@@ -241,6 +241,20 @@ CREATE POLICY "service_role_admin_audit_log" ON admin_audit_log
   USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- ────────────────────────────────────────────────────────────────────────
+-- ⑥d 站內可編輯內容（隱私權政策/服務條款）：後台編輯存 DB、前台讀 DB（無則用程式內 fallback）。
+--    解決舊版「編輯器只存 localStorage、改了不影響正式頁」的假性功能。key: 'privacy' | 'terms'。
+-- ────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS site_content (
+  key        TEXT PRIMARY KEY,
+  body_md    TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_site_content" ON site_content;
+CREATE POLICY "service_role_site_content" ON site_content
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- ────────────────────────────────────────────────────────────────────────
 -- ⑦ 課程評價：每位使用者一筆（先清重複、再建唯一索引）
 --    rating route 為「先查後插」，並發仍可能各插一筆 → 污染首頁平均分。
 --    先刪除每個 user_id 的重複（保留最新一筆），再建 partial unique index；
