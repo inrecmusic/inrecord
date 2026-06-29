@@ -468,6 +468,81 @@ function ComposeEmailModal({ open, initialTo = "", onClose, showToast }) {
     </div>
   );
 }
+// 批次追單：對一批未付款/失敗訂單的消費者一次寄出同一封追單信。
+function BulkFollowupModal({ open, recipients = [], onClose, showToast }) {
+  const FOLLOWUP = EMAIL_TEMPLATES.find(t => t.id === "followup");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  useEffect(() => {
+    if (open) { setSubject(FOLLOWUP?.subject || ""); setBody(FOLLOWUP?.body || ""); setBusy(false); setResult(null); }
+  }, [open]);
+  function applyTemplate(id) { const t = EMAIL_TEMPLATES.find(x => x.id === id); if (t && t.id) { setSubject(t.subject); setBody(t.body); } }
+  if (!open) return null;
+
+  async function send() {
+    if (busy) return;
+    if (!recipients.length) { showToast?.("❌ 沒有可追單的收件人"); return; }
+    if (!subject.trim() || !body.trim()) { showToast?.("❌ 請填寫主旨與內文"); return; }
+    if (!window.confirm(`確定要對 ${recipients.length} 位未付款顧客寄出追單信嗎？`)) return;
+    setBusy(true); setResult(null);
+    try {
+      const res = await _api("/api/admin/bulk-followup", { method: "POST", body: JSON.stringify({ emails: recipients, subject: subject.trim(), bodyMd: body }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || d.ok === false) { showToast?.("❌ 批次寄送失敗：" + (d.error || "unknown")); setBusy(false); return; }
+      setResult(d);
+      showToast?.(`✅ 已寄出 ${d.sent}/${d.total}${d.failed?.length ? `，失敗 ${d.failed.length}` : ""}`);
+    } catch (e) { showToast?.("❌ 批次寄送失敗：" + e.message); }
+    finally { setBusy(false); }
+  }
+
+  const lbl = { fontSize: 13, fontWeight: 700, color: "#374151", display: "block" };
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalCard} style={{ width: "min(580px,100%)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>📨 批次追單</h3>
+          <button className={styles.iconBtn} onClick={onClose}><X size={18} /></button>
+        </div>
+        {result ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ fontSize: 14, color: "#374151" }}>已寄出 <b style={{ color: "#16a34a" }}>{result.sent}</b> / {result.total} 封{result.failed?.length ? <>，失敗 <b style={{ color: "#dc2626" }}>{result.failed.length}</b></> : null}。</div>
+            {result.failed?.length ? (
+              <div style={{ maxHeight: 160, overflow: "auto", fontSize: 12, color: "#dc2626", background: "#fef2f2", borderRadius: 8, padding: 10 }}>
+                {result.failed.map((f, i) => <div key={i}>{f.to}：{f.error}</div>)}
+              </div>
+            ) : null}
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button className={styles.btnSmall} onClick={onClose}>關閉</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ fontSize: 13, color: "#475569", background: "#f8fafc", borderRadius: 8, padding: "8px 12px" }}>
+              將寄給目前篩選出的 <b>{recipients.length}</b> 位未付款／付款失敗顧客（已自動去重）。
+            </div>
+            <label style={lbl}>常用範本
+              <select className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} defaultValue="" onChange={e => { applyTemplate(e.target.value); e.target.value = ""; }}>
+                {EMAIL_TEMPLATES.map(t => <option key={t.id || "_"} value={t.id}>{t.name}</option>)}
+              </select>
+            </label>
+            <label style={lbl}>主旨
+              <input className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} value={subject} onChange={e => setSubject(e.target.value)} placeholder="例如：您的課程訂單尚未完成付款" />
+            </label>
+            <label style={lbl}>內文<span style={{ fontWeight: 400, color: "#94a3b8" }}>（Markdown：# 標題、**粗體**、- 清單、--- 分隔線）</span>
+              <textarea value={body} onChange={e => setBody(e.target.value)} rows={10} style={{ width: "100%", marginTop: 4, padding: 10, borderRadius: 8, border: "1px solid #e2e8f0", fontFamily: "inherit", fontSize: 14, lineHeight: 1.7, resize: "vertical" }} />
+            </label>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className={styles.btnSmall} onClick={onClose} disabled={busy}>取消</button>
+              <button className={`${styles.btnSmall} ${styles.green}`} onClick={send} disabled={busy || !recipients.length}>{busy ? "寄送中…" : `寄給 ${recipients.length} 位`}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 const MSG_PER_PAGE = 20;
 
 function MessagesPage({ showToast }){
@@ -1021,6 +1096,7 @@ function OrdersPage({leads,showToast}){
   const [rows,setRows]=useState([]);
   const [composeOpen,setComposeOpen]=useState(false);
   const [composeTo,setComposeTo]=useState("");
+  const [bulkOpen,setBulkOpen]=useState(false);
   const [issuing,setIssuing]=useState(null);
   const [resending,setResending]=useState(null);
   const [refunding,setRefunding]=useState(false);
@@ -1122,6 +1198,11 @@ function OrdersPage({leads,showToast}){
   const totalPages=Math.max(1,Math.ceil(filtered.length/PER));
   const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
 
+  // 批次追單對象：目前篩選結果中「未付款／付款失敗」的去重信箱
+  const followupTargets=useMemo(()=>Array.from(new Set(
+    filtered.filter(o=>o.status==="pending"||o.status==="failed").map(o=>(o.email||"").trim().toLowerCase()).filter(Boolean)
+  )),[filtered]);
+
   // 對帳彙整：以原始 rows 只套日期區間（忽略狀態/搜尋），確保營收與退款都涵蓋
   const dateRangeRows=useMemo(()=>rows.filter(o=>inDateRange(o.created_at||o.updated_at,dateFrom,dateTo)),[rows,dateFrom,dateTo]);
   const report=useMemo(()=>summarizeOrders(dateRangeRows,PLAN_CATALOG),[dateRangeRows]);
@@ -1174,6 +1255,7 @@ function OrdersPage({leads,showToast}){
         <div><h1>訂單管理</h1><p>共 {allOrders.length} 筆訂單</p></div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={()=>{setComposeTo("");setComposeOpen(true);}}>✉️ 寄送單封信</button>
+          <button className={styles.btnSmall} disabled={!followupTargets.length} title={followupTargets.length?`對 ${followupTargets.length} 位未付款顧客批次追單`:"目前篩選無未付款訂單"} onClick={()=>setBulkOpen(true)}>📨 批次追單{followupTargets.length?`（${followupTargets.length}）`:""}</button>
           <a href="https://www.payuni.com.tw" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><ExternalLink size={13}/> Payuni 後台</a>
           <button className={styles.btnSmall} onClick={exportOrders}><Download size={13}/> 匯出 CSV</button>
         </div>
@@ -1372,6 +1454,7 @@ function OrdersPage({leads,showToast}){
         </div>
       )}
       <ComposeEmailModal open={composeOpen} initialTo={composeTo} onClose={()=>setComposeOpen(false)} showToast={showToast}/>
+      <BulkFollowupModal open={bulkOpen} recipients={followupTargets} onClose={()=>setBulkOpen(false)} showToast={showToast}/>
       <a ref={downloadRef} style={{display:"none"}} aria-hidden="true"/>
     </div>
   );
@@ -2870,7 +2953,7 @@ function CustomerLookupPage({showToast}){
 }
 
 // ── Audit / Email Log Page ─────────────────────────────────────────────────
-const EMAIL_KIND_LABEL={purchase:"購買確認",presale:"預購信",launch:"開課通知",newsletter:"電子報",custom:"自訂信"};
+const EMAIL_KIND_LABEL={purchase:"購買確認",presale:"預購信",launch:"開課通知",newsletter:"電子報",custom:"自訂信",followup:"批次追單"};
 function AuditLogPage(){
   const [tab,setTab]=useState("audit");
   const [rows,setRows]=useState([]);
