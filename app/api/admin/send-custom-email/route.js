@@ -24,7 +24,7 @@ export async function POST(req) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
   const html = renderAdminEmailHtml({ subject: subj, bodyMd: body, siteUrl });
 
-  const r = await sendNewsletterEmail({ to: email, subject: subj, html });
+  const r = await sendNewsletterEmail({ to: email, subject: subj, html, kind: "custom" });
   if (!r?.success) {
     console.error("[send-custom-email] 失敗", email, r?.error || "");
     return NextResponse.json({ error: r?.error || "send_failed", skipped: !!r?.skipped }, { status: 500 });

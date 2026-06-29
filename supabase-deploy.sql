@@ -255,6 +255,25 @@ CREATE POLICY "service_role_site_content" ON site_content
   USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- ────────────────────────────────────────────────────────────────────────
+-- ⑥e 寄信統一紀錄（email_log）：所有對外寄信(購買/開課/電子報/自訂信)落 to/subject/kind/status。
+--    見 lib/email-log.js（recordEmail，盡力而為）。與 audit 互補：誰寄、寄給誰、成功沒。
+-- ────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_log (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  to_email   TEXT,
+  subject    TEXT,
+  kind       TEXT,
+  status     TEXT NOT NULL DEFAULT 'sent',
+  error      TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS email_log_created_idx ON email_log (created_at DESC);
+ALTER TABLE email_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_email_log" ON email_log;
+CREATE POLICY "service_role_email_log" ON email_log
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- ────────────────────────────────────────────────────────────────────────
 -- ⑦ 課程評價：每位使用者一筆（先清重複、再建唯一索引）
 --    rating route 為「先查後插」，並發仍可能各插一筆 → 污染首頁平均分。
 --    先刪除每個 user_id 的重複（保留最新一筆），再建 partial unique index；
