@@ -1920,6 +1920,7 @@ function SubscriptionsPage({ showToast }) {
   }
 
   async function cancelOne(id) {
+    if (!window.confirm("確定要取消這筆遊戲存取嗎？\n學員將立即失去遊戲權限，且無法復原。")) return;
     setActing(id + "_cancel");
     try {
       const r = await _api("/api/admin/subscriptions", {
