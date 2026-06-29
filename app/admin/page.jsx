@@ -2958,10 +2958,16 @@ function AuditLogPage(){
   const [tab,setTab]=useState("audit");
   const [rows,setRows]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [loadErr,setLoadErr]=useState("");
   const load=useCallback(async()=>{
-    setLoading(true);
-    try{const r=await _api(tab==="audit"?"/api/admin/audit":"/api/admin/email-log");const d=await r.json();setRows(d.data||[]);}
-    catch{setRows([]);}
+    setLoading(true);setLoadErr("");
+    try{
+      const r=await _api(tab==="audit"?"/api/admin/audit":"/api/admin/email-log");
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||`載入失敗（HTTP ${r.status}）`);
+      setRows(d.data||[]);
+    }
+    catch(e){setRows([]);setLoadErr(e.message||"載入失敗");}
     finally{setLoading(false);}
   },[tab]);
   useEffect(()=>{load();},[load]);
@@ -2982,6 +2988,7 @@ function AuditLogPage(){
             <thead><tr><th>時間</th><th>操作者</th><th>動作</th><th>對象</th><th>細節</th></tr></thead>
             <tbody>
               {loading?<tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
+              :loadErr?<tr><td colSpan={5} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
               :!rows.length?<tr><td colSpan={5} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>尚無操作紀錄</span><span className={styles.emptySub}>敏感操作後會在此留痕</span></td></tr>
               :rows.map(r=>(
                 <tr key={r.id}>
@@ -2999,6 +3006,7 @@ function AuditLogPage(){
             <thead><tr><th>時間</th><th>收件人</th><th>主旨</th><th>類型</th><th>狀態</th></tr></thead>
             <tbody>
               {loading?<tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
+              :loadErr?<tr><td colSpan={5} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
               :!rows.length?<tr><td colSpan={5} className={styles.empty}><span className={styles.emptyIcon}>✉️</span><span className={styles.emptyTitle}>尚無寄信紀錄</span><span className={styles.emptySub}>每封對外信件會在此留痕</span></td></tr>
               :rows.map(r=>(
                 <tr key={r.id}>
