@@ -41,6 +41,7 @@ const NAV_GROUPS = [
   ]},
   { title:"設定", items:[
     { id:"sale",        label:"銷售設定",   icon:CalendarClock },
+    { id:"audit",       label:"操作紀錄",   icon:ClipboardList },
     { id:"integration", label:"系統設定",   icon:Settings },
     { id:"privacy",     label:"隱私權政策", icon:Shield },
     { id:"terms",       label:"服務條款",   icon:FileText },
@@ -2759,6 +2760,47 @@ function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnr
   );
 }
 
+// ── Audit Log Page ───────────────────────────────────────────────────────
+function AuditLogPage(){
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const load=useCallback(async()=>{
+    setLoading(true);
+    try{const r=await _api("/api/admin/audit");const d=await r.json();setRows(d.data||[]);}
+    catch{setRows([]);}
+    finally{setLoading(false);}
+  },[]);
+  useEffect(()=>{load();},[load]);
+  return(
+    <div>
+      <div className={styles.pageHeader}>
+        <div><h1>操作紀錄</h1><p>後台敏感操作稽核（退款／開通／優惠券／銷售設定／寄信）</p></div>
+        <div className={styles.pageActions}><button className={styles.btnSmall} onClick={load}><RefreshCw size={13}/> 重新整理</button></div>
+      </div>
+      <div className={styles.panel}>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>時間</th><th>操作者</th><th>動作</th><th>對象</th><th>細節</th></tr></thead>
+            <tbody>
+              {loading?<tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
+              :!rows.length?<tr><td colSpan={5} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>尚無操作紀錄</span><span className={styles.emptySub}>敏感操作後會在此留痕</span></td></tr>
+              :rows.map(r=>(
+                <tr key={r.id}>
+                  <td className={styles.dim} style={{whiteSpace:"nowrap",fontSize:12}}>{fmt(r.created_at)}</td>
+                  <td style={{fontSize:13}}>{r.actor_email||"—"}</td>
+                  <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{r.action}</code></td>
+                  <td className={styles.dim} style={{fontSize:12}}>{r.target_type||""}{r.target_id?`：${r.target_id}`:""}</td>
+                  <td className={styles.dim} style={{fontSize:11,maxWidth:300,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={r.meta?JSON.stringify(r.meta):""}>{r.meta?JSON.stringify(r.meta):""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main AdminPage ─────────────────────────────────────────────────────────
 const TOKEN_KEY = "inrecord_admin_token";
 const getToken = () => (typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null);
@@ -2902,6 +2944,7 @@ export default function AdminPage(){
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
           {page==="sale"        &&<SaleSettingsPage showToast={showToast}/>}
+          {page==="audit"       &&<AuditLogPage/>}
           {page==="integration" &&<IntegrationPage showToast={showToast}/>}
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
           {page==="terms"       &&<TermsPage showToast={showToast}/>}

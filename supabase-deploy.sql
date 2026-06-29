@@ -221,6 +221,26 @@ CREATE POLICY "service_role_launch_notify_sends" ON launch_notify_sends
   USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- ────────────────────────────────────────────────────────────────────────
+-- ⑥c 後台操作稽核紀錄（audit log）：對金錢/存取權/個資敏感操作落 who/what/when/target/meta/ip。
+--    見 lib/audit.js。僅 service_role 可讀寫。
+-- ────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_email TEXT,
+  action      TEXT NOT NULL,
+  target_type TEXT,
+  target_id   TEXT,
+  meta        JSONB,
+  ip          TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS admin_audit_log_created_idx ON admin_audit_log (created_at DESC);
+ALTER TABLE admin_audit_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_admin_audit_log" ON admin_audit_log;
+CREATE POLICY "service_role_admin_audit_log" ON admin_audit_log
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- ────────────────────────────────────────────────────────────────────────
 -- ⑦ 課程評價：每位使用者一筆（先清重複、再建唯一索引）
 --    rating route 為「先查後插」，並發仍可能各插一筆 → 污染首頁平均分。
 --    先刪除每個 user_id 的重複（保留最新一筆），再建 partial unique index；

@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { fetchPendingLeads } from "@/lib/admin-leads";
+import { logAudit } from "@/lib/audit";
 
 // 後台手動批次「開通課程存取」給付款名單（WooCommerce + concert-shop），建 enrollments，bundle 另加 subscriptions。
 // Body { ids?: string[] }：給 ids 只開通這些；不給則對「全部未開通」。已開通(access_granted_at 非空)自動跳過。
@@ -34,6 +35,8 @@ export async function POST(req) {
       failed++; errors.push(`${order.id}: ${res.errors.join("; ")}`);
     }
   }
+
+  if (granted > 0) await logAudit(supabase, { actor: payload.email, action: "course.grant.batch", targetType: "leads", targetId: ids ? ids.join(",") : "all_pending", meta: { granted, failed }, req });
 
   return NextResponse.json({ ok: true, granted, failed, errors });
 }

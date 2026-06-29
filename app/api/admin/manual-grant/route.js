@@ -5,6 +5,7 @@ import { grantAccess } from "@/lib/fulfillment-grant";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { normalizeManualGrantInput, buildManualOrder } from "@/lib/manual-grant";
+import { logAudit } from "@/lib/audit";
 
 const COURSE_ID = "piano-101"; // 單一課程架構
 
@@ -103,6 +104,8 @@ export async function POST(req) {
       ).eq("id", orderId);
     }
   }
+
+  await logAudit(supabase, { actor: payload.email, action: "course.manual_grant", targetType: "email", targetId: email, meta: { plan, grant, sendEmail, granted: grant && !alreadyGranted, alreadyGranted, emailSent }, req });
 
   // 寫進 log，寄信成敗永遠可在 Vercel runtime logs 查到
   console.log("[manual-grant]", JSON.stringify({

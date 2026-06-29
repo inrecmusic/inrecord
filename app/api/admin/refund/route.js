@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { payuniTrade } from "@/lib/payuni";
+import { logAudit } from "@/lib/audit";
 
 // 後台申請退款：呼叫 PAYUNi trade/close（CloseType=2 退款），成功後標記訂單並撤銷存取
 export async function POST(req) {
@@ -79,6 +80,8 @@ export async function POST(req) {
     const { error: enErr } = await supabase.from("enrollments").delete().eq("order_id", order.id);
     if (enErr) revokeFailed.push(`enrollments: ${enErr.message}`);
   }
+
+  await logAudit(supabase, { actor: payload.email, action: "order.refund", targetType: "order", targetId: order.id, meta: { email: order.email, plan: order.plan, method, revokeFailed: revokeFailed.length ? revokeFailed : undefined }, req });
 
   if (revokeFailed.length) {
     console.error("[admin refund] 退款成功但撤銷存取失敗", { orderId: order.id, revokeFailed });

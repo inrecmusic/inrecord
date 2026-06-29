@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { validateFanPlan, fanPlanCoupon } from "@/lib/sale";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -14,7 +15,8 @@ export async function GET(req) {
 }
 
 export async function PATCH(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const sb = getSupabaseAdmin();
   if (!sb) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
@@ -109,5 +111,7 @@ export async function PATCH(req) {
     .upsert(patch, { onConflict: "id" }).select("*").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const { id, updated_at, ...changed } = patch; // 記錄實際變更的欄位
+  await logAudit(sb, { actor: payload.email, action: "sale_settings.update", targetType: "sale_settings", targetId: "default", meta: changed, req });
   return NextResponse.json({ data });
 }
