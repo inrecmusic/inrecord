@@ -399,6 +399,17 @@ function ProofImage({ url }) {
   return <a href={signed} target="_blank" rel="noreferrer"><img src={signed} alt="憑證" style={{ maxWidth: "100%", maxHeight: 280, borderRadius: 8, border: "1px solid #ddd" }} /></a>;
 }
 
+// 寄信常用範本（追單/歡迎/退款）—— 選了會填入主旨與內文，可再自由編輯。
+const EMAIL_TEMPLATES = [
+  { id: "", name: "— 套用範本 —", subject: "", body: "" },
+  { id: "followup", name: "追單（未完成付款）", subject: "您的課程訂單尚未完成付款 🎹",
+    body: "嗨，\n\n感謝您選擇 InRecord！我們注意到您的課程訂單尚未完成付款。\n\n名額有限，完成付款即可保留您的優惠價與課程權益：\n\n- **付款連結**：（請貼上付款連結）\n- 若已完成付款請忽略本信。\n\n如有任何問題，直接回覆此信即可，我們很樂意協助 🙌" },
+  { id: "welcome", name: "歡迎 / 開通通知", subject: "歡迎加入 InRecord！課程已為您開通 🎹",
+    body: "嗨，\n\n歡迎加入 InRecord，您的課程已開通！\n\n- **登入方式**：請用本次購買的 Email 登入教室\n- 課程連結：https://inrecordmusic.com/classroom\n\n祝學習愉快，有任何問題隨時回覆此信 🙌" },
+  { id: "refund", name: "退款通知", subject: "您的 InRecord 退款已處理",
+    body: "嗨，\n\n您的退款申請已處理完成，款項將依原付款方式退還（信用卡約 3–7 個工作天、ATM/超商依銀行作業時間）。\n\n退款後，本課程之觀看權限已同步終止。\n\n如有任何問題，直接回覆此信即可。" },
+];
+
 // 單封自訂信（追單/客服）：對單一消費者寄一封自己編輯的信。內文支援受限 Markdown。
 function ComposeEmailModal({ open, initialTo = "", onClose, showToast }) {
   const [to, setTo] = useState("");
@@ -406,6 +417,7 @@ function ComposeEmailModal({ open, initialTo = "", onClose, showToast }) {
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (open) { setTo(initialTo || ""); setSubject(""); setBody(""); setBusy(false); } }, [open, initialTo]);
+  function applyTemplate(id) { const t = EMAIL_TEMPLATES.find(x => x.id === id); if (t && t.id) { setSubject(t.subject); setBody(t.body); } }
   if (!open) return null;
 
   async function send() {
@@ -432,6 +444,11 @@ function ComposeEmailModal({ open, initialTo = "", onClose, showToast }) {
           <button className={styles.iconBtn} onClick={onClose}><X size={18} /></button>
         </div>
         <div style={{ display: "grid", gap: 12 }}>
+          <label style={lbl}>常用範本
+            <select className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} defaultValue="" onChange={e => { applyTemplate(e.target.value); e.target.value = ""; }}>
+              {EMAIL_TEMPLATES.map(t => <option key={t.id || "_"} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
           <label style={lbl}>收件 Email
             <input className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} type="email" value={to} onChange={e => setTo(e.target.value)} placeholder="customer@example.com" />
           </label>
@@ -1372,6 +1389,7 @@ function CouponsPage({ showToast }){
   // ── 序號庫 ──
   const [batches,setBatches]=useState([]);
   const [batchLoading,setBatchLoading]=useState(false);
+  const [batchLoadErr,setBatchLoadErr]=useState("");
   const [showBatchCreate,setShowBatchCreate]=useState(false);
   const [batchSaving,setBatchSaving]=useState(false);
   const [batchErr,setBatchErr]=useState("");
@@ -1386,9 +1404,13 @@ function CouponsPage({ showToast }){
   const [codeLimit,setCodeLimit]=useState(60);
 
   const fetchBatches=useCallback(async()=>{
-    setBatchLoading(true);
-    try{const r=await _api("/api/admin/coupon-batches");const{data}=await r.json();setBatches(data||[]);}
-    catch{setBatches([]);}
+    setBatchLoading(true);setBatchLoadErr("");
+    try{
+      const r=await _api("/api/admin/coupon-batches");
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||`載入失敗（HTTP ${r.status}）`);
+      setBatches(d.data||[]);
+    }catch(e){setBatches([]);setBatchLoadErr(e.message||"載入失敗");}
     finally{setBatchLoading(false);}
   },[]);
   useEffect(()=>{fetchBatches();},[fetchBatches]);
@@ -1637,6 +1659,7 @@ function CouponsPage({ showToast }){
             <thead><tr><th>批次名稱</th><th>折扣</th><th>狀態</th><th>已用 / 總數</th><th>前綴</th><th>有效期間</th><th>備註</th><th>操作</th></tr></thead>
             <tbody>
               {batchLoading?<tr><td colSpan={8} className={styles.empty}>載入中…</td></tr>
+              :batchLoadErr?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>⚠️</span><span className={styles.emptyTitle}>批次清單載入失敗</span><span className={styles.emptySub} style={{color:"#dc2626"}}>{batchLoadErr}</span><button className={styles.btnSmall} style={{marginTop:10}} onClick={fetchBatches}>重試</button></td></tr>
               :!batches.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>🎫</span><span className={styles.emptyTitle}>還沒有任何序號批次</span><span className={styles.emptySub}>新增批次來產生現場活動序號</span></td></tr>
               :shownBatches.map(b=>(
                 <Fragment key={b.id}>
