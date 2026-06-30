@@ -32,7 +32,7 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, fanProofPrice = 3499, fanDirectPrice = 3999 }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, serialEntry = false, fanProofPrice = 3499, fanDirectPrice = 3999 }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -48,6 +48,9 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const [proofUrl, setProofUrl]             = useState(null);
   const [fanUploading, setFanUploading]     = useState(false);
   const [fanError, setFanError]             = useState("");
+  const [serialInput, setSerialInput]       = useState("");   // 粉絲序號輸入（$3,999 直購改序號）
+  const [serialChecking, setSerialChecking] = useState(false);
+  const [serialErr, setSerialErr]           = useState("");
 
   // 切換方案時清除已套用的優惠券（折扣與方案綁定）
   useEffect(() => { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); setCouponCheckFailed(false); }, [plan?.plan]);
@@ -58,14 +61,20 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   // 不影響使用者自行輸入的一般優惠碼，也不清除憑證流程已上傳取得的 FAN-xxxxx 券。
   useEffect(() => {
     if (!open) return;
-    if (!fanProof && !autoCoupon) {
+    if (serialEntry) {
+      // 序號購買：每次開窗都要求重新輸入序號（清前次套券與輸入殘留）
+      setProofUrl(null);
+      setCouponApplied(null); setCouponInput("");
+      setSerialInput(""); setSerialErr(""); setSerialChecking(false);
+      setCouponCheckFailed(false);
+    } else if (!fanProof && !autoCoupon) {
       setProofUrl(null);
       if (couponApplied?.code?.startsWith("FAN")) { setCouponApplied(null); setCouponInput(""); }
       setCouponCheckFailed(false);
     } else if (fanProof && !autoCoupon && couponApplied?.code === "FAN3999") {
       setCouponApplied(null); setCouponInput("");
     }
-  }, [open, fanProof, autoCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, fanProof, autoCoupon, serialEntry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 「直接購買 $3,999」：開窗時自動套用粉絲固定價券（type=price，繞過 not_on_sale 限制）
   useEffect(() => {
@@ -84,6 +93,22 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     return () => { cancelled = true; };
   }, [open, autoCoupon, plan?.plan]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 序號購買：驗證使用者輸入的序號（須為有效 price 券），通過即套用、解鎖結帳。
+  async function applySerial() {
+    const code = serialInput.trim();
+    if (!code) { setSerialErr("請輸入序號"); return; }
+    if (serialChecking) return;
+    setSerialChecking(true); setSerialErr("");
+    try {
+      const r = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, plan: plan.plan }) });
+      const d = await r.json();
+      if (d.valid && d.type === "price") { setCouponApplied(d); setCouponInput(code); setSerialErr(""); }
+      else if (d.valid) setSerialErr("此序號非粉絲序號，無法用於本方案");
+      else setSerialErr(COUPON_ERRORS[d.error] || "序號無效，請確認後重新輸入");
+    } catch { setSerialErr("驗證失敗，請重試"); }
+    finally { setSerialChecking(false); }
+  }
+
   if (!open || !plan) return null;
 
   // 早鳥/原價：由首頁 sale 設定傳入（pricing）；未傳入時退回方案靜態價。
@@ -94,6 +119,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const couponPending = !!autoCoupon && !couponApplied && !couponCheckFailed;
   // 憑證流程尚未上傳：先顯示預期憑證價（$3,499），引導上傳；上傳後改顯示實際套券價。
   const fanProofPending = fanProof && !couponApplied && !proofUrl;
+  // 序號購買尚未輸入有效序號：先顯示預期粉絲價（$3,999），引導輸入序號；套券後改顯示實際價。
+  const serialPending = serialEntry && !couponApplied;
 
   async function handleFanProof(file) {
     if (!file) return;
@@ -227,7 +254,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
               <div className={styles.price}>
                 {couponApplied
                   ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(couponApplied.finalPrice).toLocaleString()}</>
-                  : couponPending
+                  : (couponPending || serialPending)
                     ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(fanDirectPrice).toLocaleString()}</>
                     : fanProofPending
                       ? <><span style={{ textDecoration: "line-through", opacity: .5, fontSize: ".62em", marginRight: 6, fontWeight: 600 }}>NT${Number(listPrice).toLocaleString()}</span>NT${Number(fanProofPrice).toLocaleString()}</>
@@ -255,6 +282,30 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                   </label>}
               {fanError && <span className={styles.fanProofErr}>{fanError}</span>}
               <p className={styles.fanProofNote}>先購買、後台再人工審核（不擋付款、立即開通）。</p>
+            </div>
+          )}
+
+          {serialEntry && plan.plan === "bundle" && (
+            <div className={styles.fanProof}>
+              <p className={styles.fanProofTitle}>🎟️ 輸入粉絲序號<span>輸入序號即可用粉絲價購買</span></p>
+              {couponApplied
+                ? <div className={styles.fanProofDone}>✅ 序號已套用，粉絲價 NT${Number(couponApplied.finalPrice).toLocaleString()}</div>
+                : <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      className={styles.invoiceInput}
+                      style={{ flex: 1, margin: 0, textTransform: "uppercase" }}
+                      type="text"
+                      placeholder="輸入粉絲序號"
+                      value={serialInput}
+                      onChange={e => { setSerialInput(e.target.value.toUpperCase()); setSerialErr(""); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); applySerial(); } }}
+                    />
+                    <button type="button" className={styles.retry} style={{ margin: 0, whiteSpace: "nowrap" }} disabled={serialChecking} onClick={applySerial}>
+                      {serialChecking ? "驗證中…" : "套用"}
+                    </button>
+                  </div>}
+              {serialErr && <span className={styles.fanProofErr}>{serialErr}</span>}
+              <p className={styles.fanProofNote}>沒有序號嗎？可改選「上傳憑證」享優惠價，或洽客服取得序號。</p>
             </div>
           )}
 
@@ -337,8 +388,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
 
         <div className={styles.sheetFooter}>
           <button className={styles.proceed} onClick={handleCheckout}
-            disabled={loading || verifying || couponPending || fanProofPending || (!onSale && couponApplied?.type !== "price")}>
-            {loading ? "處理中…" : verifying ? "驗證中…" : couponPending ? "確認優惠中…" : fanProofPending ? "請先上傳憑證" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : "前往付款 →"}
+            disabled={loading || verifying || couponPending || fanProofPending || serialPending || (!onSale && couponApplied?.type !== "price")}>
+            {loading ? "處理中…" : verifying ? "驗證中…" : couponPending ? "確認優惠中…" : fanProofPending ? "請先上傳憑證" : serialPending ? "請先輸入序號" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : "前往付款 →"}
           </button>
           {error && (
             <>

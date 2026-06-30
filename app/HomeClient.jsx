@@ -376,6 +376,7 @@ export default function HomeClient({ sale }) {
   const [fanChoice, setFanChoice] = useState("direct");   // 粉絲卡選項
   const [fanProofMode, setFanProofMode] = useState(false); // 傳給 BuyModal
   const [fanAutoCoupon, setFanAutoCoupon] = useState(null); // 直接購買 $3,999 自動套用的粉絲固定價券
+  const [fanSerialEntry, setFanSerialEntry] = useState(false); // 粉絲方案改為輸入序號購買（$3,999）
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
   const [stats, setStats] = useState(null);
@@ -456,6 +457,7 @@ export default function HomeClient({ sale }) {
     setSelectedPlan(plan);
     setFanProofMode(!!opts.fanProof);
     setFanAutoCoupon(opts.autoCoupon || null);
+    setFanSerialEntry(!!opts.serialEntry);
     setBuyOpen(true);
   }
 
@@ -749,7 +751,7 @@ export default function HomeClient({ sale }) {
                 <h3 className={styles.planName}>粉絲限定方案</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }} role="radiogroup" aria-label="粉絲限定購買方式">
                   <label style={fanRowStyle(fanChoice === "direct" || !fanProofOpen)} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct" || !fanProofOpen} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
-                    <span>直接購買</span>
+                    <span>序號購買</span>
                     <strong>NT${sale.fanPlan.directPrice.toLocaleString()}</strong>
                   </label>
                   {fanProofOpen && (
@@ -768,9 +770,9 @@ export default function HomeClient({ sale }) {
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
-                  onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
+                  onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { serialEntry: true })}>
                   <ShoppingCart size={17} />
-                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
+                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `輸入序號${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
               </motion.div>
@@ -809,7 +811,7 @@ export default function HomeClient({ sale }) {
                 ["什麼時候可以上課？",           "第一批課程預計在 9/2 20:00 上架、最後一批課程預計在 9/30 20:00 上架完畢。"],
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
-                ["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。直接購買 NT$${sale.fanPlan.directPrice.toLocaleString()}；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`],
+                ["序號購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。輸入粉絲序號可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`],
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -876,7 +878,7 @@ export default function HomeClient({ sale }) {
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} fanProofPrice={sale.fanPlan.proofPrice} fanDirectPrice={sale.fanPlan.directPrice} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} serialEntry={fanSerialEntry} fanProofPrice={sale.fanPlan.proofPrice} fanDirectPrice={sale.fanPlan.directPrice} />
     </>
   );
 }
