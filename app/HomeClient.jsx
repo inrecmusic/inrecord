@@ -504,7 +504,7 @@ export default function HomeClient({ sale }) {
                   ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
                   : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
               : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-            <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>立即購買</button>
+            <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>{buyShort}</button>
           </div>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -585,7 +585,7 @@ export default function HomeClient({ sale }) {
                   <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>
                 </div>
                 <div className={styles.offerBtns}>
-                  <button className={styles.btnRed} onClick={scrollToPricing}>立即購買</button>
+                  <button className={styles.btnRed} onClick={scrollToPricing}>{buyShort}</button>
                   <a href="/demo" className={styles.btnOutline}>
                     <Play size={16} />課程 Demo 體驗
                   </a>
@@ -772,7 +772,7 @@ export default function HomeClient({ sale }) {
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
                   onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { serialEntry: true })}>
                   <ShoppingCart size={17} />
-                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `輸入序號${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
+                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
               </motion.div>
@@ -835,7 +835,7 @@ export default function HomeClient({ sale }) {
               <h2>現在開始，彈出你的第一首流行歌曲</h2>
               <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
               <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
-                立即購買課程
+                {buyShort}課程
               </button>
             </div>
           </div>
@@ -848,7 +848,7 @@ export default function HomeClient({ sale }) {
           <span className={styles.stickyBuyLabel}>粉絲限定方案</span>
         </div>
         <button className={styles.stickyBuyBtn} onClick={scrollToPricing}>
-          <ShoppingCart size={17} />立即購買
+          <ShoppingCart size={17} />{buyShort}
         </button>
       </div>
 
