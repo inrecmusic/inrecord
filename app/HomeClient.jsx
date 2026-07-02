@@ -469,6 +469,10 @@ export default function HomeClient({ sale }) {
 
   const fanProofOpen = isFanProofOpen(Date.now(), sale.fanPlan.deadlineMs);
   const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
+  // 課程上架時間（第一批）：固定台灣時區顯示，供 hero CTA 提示；未設 open_at 則不顯示
+  const launchLabel = sale.openAt
+    ? new Date(sale.openAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    : null;
 
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = !sale.classroomOpen;
@@ -584,6 +588,9 @@ export default function HomeClient({ sale }) {
                   <span className={styles.offerPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
                   <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>
                 </div>
+                {launchLabel && !sale.classroomOpen && (
+                  <div className={styles.offerLaunch}>📅 課程 {launchLabel} 起陸續上架</div>
+                )}
                 <div className={styles.offerBtns}>
                   <button className={styles.btnRed} onClick={scrollToPricing}>{buyShort}</button>
                   <a href="/demo" className={styles.btnOutline}>

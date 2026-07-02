@@ -16,6 +16,7 @@ export default async function Page() {
     nextIncreaseAt: phase.nextIncreaseAt,
     plans: phase.plans,
     fanPlan: phase.fanPlan,
+    openAt: settings?.open_at || null,
   };
 
   // 開課通知 lazy trigger（免費方案無 sub-daily cron）：開課後首位訪客觸發，CAS 去重。
