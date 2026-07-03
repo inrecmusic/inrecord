@@ -12,7 +12,8 @@
 .btnRed.navBtn { background: #2c68e7; }
 .navTransparent .btnLogin { background: transparent; border-color: rgba(255,255,255,.5); color: #fff; }
 .navTransparent .btnLogin:hover { border-color: #fff; background: rgba(255,255,255,.12); color: #fff; }
-.navInner { height: 72px; display: flex; align-items: center; gap: 24px; }
+/* nav 橫貫全寬：覆蓋 .container 的 1120px 置中，讓 Logo 貼左上角、右側按鈕貼右上角 */
+.navInner { height: 72px; display: flex; align-items: center; gap: 24px; width: 100%; max-width: none; padding: 0 clamp(20px, 4vw, 64px); }
 .navLinks { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; margin-left: 40px; }
 .navActions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
 .navLinks a { color: #374151; transition: color .2s; text-decoration: none; }
@@ -56,7 +57,7 @@
   background-size: cover; background-position: center;
   background-blend-mode: screen, normal, normal;
 }
-.heroGrid { position: relative; z-index: 1; display: block; padding: 0 0 0 max(clamp(32px, 13vw, 260px), calc((100% - 1440px) / 2)); }
+.heroGrid { position: relative; z-index: 1; display: block; padding: 0 0 0 clamp(20px, 4vw, 64px); }
 .heroIntro { max-width: 640px; padding: 104px 0 40px; }
 /* Hero 限時優惠卡 */
 .offerCard { margin-top: 22px; width: min(480px, 100%); border-radius: 22px; padding: 20px 28px;
