@@ -583,7 +583,7 @@ export default function HomeClient({ sale }) {
               <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、能追蹤成效，看見進步。</motion.p>
               <motion.div variants={fadeUp} className={styles.offerCard}>
-                <span className={styles.offerPill}>粉絲限定方案</span>
+                <span className={styles.offerPill}>粉絲限定方案·超早鳥預購</span>
                 <div className={styles.offerPriceRow}>
                   <span className={styles.offerPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
                   <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>
@@ -758,7 +758,7 @@ export default function HomeClient({ sale }) {
                 <h3 className={styles.planName}>粉絲限定方案</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }} role="radiogroup" aria-label="粉絲限定購買方式">
                   <label style={fanRowStyle(fanChoice === "direct" || !fanProofOpen)} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct" || !fanProofOpen} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
-                    <span>序號購買</span>
+                    <span>直接購買</span>
                     <strong>NT${sale.fanPlan.directPrice.toLocaleString()}</strong>
                   </label>
                   {fanProofOpen && (
@@ -777,7 +777,7 @@ export default function HomeClient({ sale }) {
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
-                  onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { serialEntry: true })}>
+                  onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
                   <ShoppingCart size={17} />
                   {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
