@@ -42,17 +42,19 @@
 /* HERO */
 .hero { position: relative; overflow: hidden; color: #fff; background: #05070b; padding: 0 0 44px; margin-top: -72px; }
 .heroPhoto {
-  /* 右緣錨到視窗邊（right:0）+ 寬度約 62%（cover 不變形）。
-     左緣以多段漸層平順融入 hero 黑底（#05070b，與 .hero 背景同色）→ 無接縫；
-     藍色光暈移到人物身上（60%）、避開左側接縫，避免亮帶。 */
+  /* 右緣錨到視窗邊（right:0）；左緣以「長程多段漸層」平順渲染溶入 hero 黑底
+     （#05070b，與 .hero 背景同色）→ 無接縫、有從右往左淡出的過渡感；
+     藍色光暈落在人物身上（64%）、避開左側接縫，避免亮帶。 */
   position: absolute; top: 0; bottom: 0;
-  right: 0; width: min(62%, 1200px); z-index: 0;
+  right: 0; width: min(68%, 1360px); z-index: 0;
   background:
-    radial-gradient(46% 58% at 60% 46%, rgba(59,110,246,.20), transparent 60%),
+    radial-gradient(48% 60% at 64% 46%, rgba(59,110,246,.18), transparent 62%),
     linear-gradient(90deg,
-      #05070b 0%, #05070b 15%,
-      rgba(5,7,11,.94) 28%, rgba(5,7,11,.66) 42%,
-      rgba(5,7,11,.30) 57%, rgba(5,7,11,.08) 72%, transparent 85%),
+      #05070b 0%, #05070b 9%,
+      rgba(5,7,11,.98) 18%, rgba(5,7,11,.88) 27%,
+      rgba(5,7,11,.72) 37%, rgba(5,7,11,.52) 47%,
+      rgba(5,7,11,.34) 57%, rgba(5,7,11,.18) 68%,
+      rgba(5,7,11,.07) 80%, transparent 92%),
     var(--hero-photo, url("/hero-pianist.jpg"));
   background-size: cover; background-position: center;
   background-blend-mode: screen, normal, normal;
@@ -92,23 +94,7 @@
    讓內容比視窗高時自動改靠上、不被裁切到 nav 底下。 */
 @media (min-width: 981px) {
   .hero { min-height: 100dvh; display: flex; flex-direction: column; justify-content: safe center; padding-top: 144px; }
-
-  /* 置中主視覺：人物圖鋪滿全幅作背景（加深遮罩確保白字可讀），標題與方案卡水平置中 */
-  .heroPhoto {
-    right: auto; left: 0; width: 100%;
-    background:
-      linear-gradient(180deg, rgba(5,7,11,.72) 0%, rgba(5,7,11,.42) 34%, rgba(5,7,11,.5) 62%, rgba(5,7,11,.86) 100%),
-      radial-gradient(72% 76% at 50% 44%, rgba(5,7,11,.26), rgba(5,7,11,.68)),
-      var(--hero-photo, url("/hero-pianist.jpg"));
-    background-size: cover; background-position: center; background-blend-mode: normal;
-  }
-  .heroPhotoZone { display: none; }   /* 置中後右側 hover 區會擋住方案卡點擊，關閉 */
-  .heroGrid { padding: 0 clamp(24px, 5vw, 72px); display: flex; justify-content: center; }
-  .heroIntro { max-width: 760px; margin: 0 auto; padding-top: 0; padding-bottom: 0; text-align: center; }
-  .heroSeries { justify-content: center; }
-  .heroSeries::after { content: ""; width: 44px; height: 2px; flex-shrink: 0; background: linear-gradient(270deg, #ecbf5c, rgba(236,191,92,.05)); }
-  .heroLead { margin-left: auto; margin-right: auto; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
-  .offerCard { margin-left: auto; margin-right: auto; text-align: left; }
+  .heroIntro { padding-top: 0; padding-bottom: 0; }
 }
 
 .heroCtas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 0; }
