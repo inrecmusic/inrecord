@@ -295,9 +295,46 @@
 
 /* CTA */
 .ctaSection { padding: var(--space-section) 0; background: var(--bg); }
-.cta { background: var(--ink); color: white; border-radius: var(--radius-lg); padding: 64px 54px; text-align: center; position: relative; overflow: hidden; }
-.cta::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 70% 50%, rgba(59,130,246,.18), transparent 60%); pointer-events: none; }
+.cta {
+  color: white; border-radius: var(--radius-lg); padding: 72px 54px; text-align: center; position: relative; overflow: hidden;
+  background:
+    radial-gradient(62% 82% at 80% 26%, rgba(59,130,246,.22), transparent 60%),
+    radial-gradient(52% 74% at 12% 96%, rgba(88,134,238,.16), transparent 62%),
+    var(--ink);
+  border: 1px solid rgba(120,160,255,.16);
+  box-shadow: 0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+}
+/* 藍圖網格底紋：中上區清晰、向四周淡出，科技底層 */
+.cta::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(rgba(130,165,255,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(130,165,255,.06) 1px, transparent 1px);
+  background-size: 46px 46px, 46px 46px;
+  -webkit-mask: radial-gradient(120% 90% at 50% 8%, #000 45%, transparent 100%);
+          mask: radial-gradient(120% 90% at 50% 8%, #000 45%, transparent 100%);
+}
+/* 頂部掃描線 */
+.cta::after {
+  content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(140,175,255,.75), transparent);
+}
+.cta > * { position: relative; z-index: 1; }
+/* mono 小標 + 閃爍紅點（呼應 InRecord 錄音鍵） */
+.ctaEyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--font-jetbrains), monospace; font-size: 12.5px; font-weight: 700;
+  letter-spacing: .24em; text-transform: uppercase; color: #a9c6ff;
+  margin: 0 0 20px; padding: 7px 15px 7px 13px; border-radius: 999px;
+  background: rgba(88,134,238,.1); border: 1px solid rgba(130,165,255,.24);
+}
+.ctaEyebrow::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ff2028;
+  box-shadow: 0 0 10px rgba(255,32,40,.9); animation: pulseDot 1.8s ease-in-out infinite;
+}
+@keyframes pulseDot { 0%, 100% { opacity: .55; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
 .cta h2 { font-family: var(--type-heading); font-weight: 600; text-wrap: balance; font-size: clamp(32px,5vw,54px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.01em; }
+.cta h2 span { background: linear-gradient(100deg, #bcd6ff, #7ba7f5 55%, #4f86ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .cta p { text-wrap: pretty; max-width: 640px; margin: 0 auto 32px; color: rgba(255,255,255,.78); font-size: 18px; }
 
 /* FOOTER */
