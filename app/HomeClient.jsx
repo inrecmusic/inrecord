@@ -839,6 +839,7 @@ export default function HomeClient({ sale }) {
         <RevealSection className={styles.ctaSection}>
           <div className={styles.container}>
             <div className={styles.cta}>
+              <span className={styles.ctaScan} aria-hidden="true" />
               <span className={styles.ctaEyebrow}>START NOW</span>
               <h2>現在開始，<span>彈出你的第一首流行歌曲</span></h2>
               <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
