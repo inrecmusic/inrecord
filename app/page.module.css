@@ -59,7 +59,7 @@
   background-size: cover; background-position: center;
   background-blend-mode: screen, normal, normal;
 }
-.heroGrid { position: relative; z-index: 1; display: block; padding: 0 0 0 clamp(20px, 4vw, 64px); }
+.heroGrid { position: relative; z-index: 1; display: block; padding: 0 0 0 clamp(24px, 8vw, 140px); }
 .heroIntro { max-width: 640px; padding: 104px 0 40px; }
 /* Hero 限時優惠卡 */
 .offerCard { margin-top: 22px; width: min(480px, 100%); border-radius: 22px; padding: 20px 28px;
