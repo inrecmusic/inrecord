@@ -88,6 +88,18 @@ p, li, dd, dt, blockquote, figcaption {
   text-wrap: pretty;
 }
 
+/* 窄螢幕改用標準中文逐字斷行：手機一行約 20 字、比多數中文子句短，
+   keep-all 撐不住 → anywhere 被迫從詞中間亂切（「坐姿」→坐/姿）且
+   標點斷行讓右緣參差，比拆詞更醜。逐字斷行（書報標準排法）行行填滿、
+   右緣整齊；禁則仍由 line-break: strict 保證（行首不會出現 、。」）。
+   桌機行長足夠讓 keep-all 發揮，維持不變。 */
+@media (max-width: 768px) {
+  h1, h2, h3, h4, h5, h6,
+  p, li, dd, dt, blockquote, figcaption {
+    word-break: normal;
+  }
+}
+
 /* Global heading scale — v3 content layer: sans (黑體), weight builds hierarchy */
 h1, h2 {
   font-family: var(--type-heading);
