@@ -229,7 +229,7 @@ const POINT5_SLIDES = [
       sub: "20+ 首流行曲目 · 入門到進階",
       tracks: [
         { wave: true, title: "流行抒情曲", status: "正在練習" },
-        { n: "02", title: "經典流行金曲", time: "4:01" },
+        { n: "02", title: "經典流行曲", time: "4:01" },
       ],
     },
     caption: <>一首接一首解鎖，<b>學完就能彈出喜歡的歌</b> ── 真歌實戰，不只是練習曲</>,
