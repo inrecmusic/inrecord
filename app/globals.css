@@ -47,6 +47,13 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+html {
+  /* 關閉 iOS Safari 文字自動放大（text autosizing）：一旦有元素排版寬度
+     超過視窗，iOS 會把該區塊字級放大 1.5~2 倍，造成「部分段落字體變大」。
+     全站字級皆已明確指定，不需要這個行為。 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
   margin: 0;
   font-family: var(--type-body);
@@ -64,12 +71,20 @@ img { max-width: 100%; }
    「有趣」across two lines (word-break: keep-all). line-break: strict applies
    禁則處理 so a line never starts with 、，。」etc. text-wrap: pretty avoids
    single-character orphans on the last line. overflow-wrap is the safety net
-   so an over-long unbroken run can still wrap instead of overflowing. */
+   so an over-long unbroken run can still wrap instead of overflowing.
+
+   ⚠️ 安全網必須用 anywhere 而非 break-word：break-word 的緊急斷行「不計入
+   min-content」，keep-all 的長句會把 grid/flex 軌道的 min-content 撐爆
+   （faqItem、instructorCreds 都是 grid），容器超出視窗 → 文字被
+   overflow 裁切 ＋ 觸發 iOS 字級自動放大（手機版 FAQ 字體變大 bug）。
+   anywhere 會計入 min-content，容器不再被撐爆，超長句也能緊急換行。
+   （introGrid／講師區 grid 改 block、credText min-width:0 都是同一根因
+   的局部補丁，此處是全域解。） */
 h1, h2, h3, h4, h5, h6,
 p, li, dd, dt, blockquote, figcaption {
   word-break: keep-all;
   line-break: strict;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 
