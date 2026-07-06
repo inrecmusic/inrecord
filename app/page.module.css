@@ -494,6 +494,9 @@
   .faqSummary { font-size: 15px; padding: 18px 16px; }
   .faqContent p { padding: 0 16px 18px; }
   .cta { padding: 40px 22px; border-radius: var(--radius-lg); }
+  /* 18px 時 34 字的句子差 1 字塞不下兩行，尾行只剩「力。」孤行；
+     縮到 16px 一行可容 17 字排成兩行，balance 讓置中段落行行均衡。 */
+  .cta p { font-size: 16px; text-wrap: balance; }
 }
 @media (max-width: 400px) {
   .container { width: calc(100% - 32px); }
