@@ -1,8 +1,10 @@
-// WooCommerce 訂單 webhook：付款成功 → 寫入 InRecord「付款名單」(orders, source=wordpress)。
-// 不寄信、不開通；寄信/開通改由後台手動觸發。判斷邏輯在 lib/woocommerce-webhook（可測）。
+// WooCommerce 訂單 webhook：付款成功 → 寫入 InRecord「付款名單」(orders, source=wordpress)
+// → 自動寄預購成功信（2026-07-07 起；寄失敗回滾旗標，後台「寄預購信」可重寄）。
+// 開通仍由後台手動。判斷邏輯在 lib/woocommerce-webhook（可測）。
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { parseCourseProductMap } from "@/lib/woocommerce";
 import { handleWoocommerceWebhook } from "@/lib/woocommerce-webhook";
+import { makePresaleEmailSender } from "@/lib/presale-email-sender";
 
 export const runtime = "nodejs"; // 需 node crypto 與原始 body 驗 HMAC
 
@@ -14,6 +16,7 @@ export async function POST(req) {
     secret: process.env.WOOCOMMERCE_WEBHOOK_SECRET,
     productMap: parseCourseProductMap(process.env.WOOCOMMERCE_COURSE_PRODUCT_IDS),
     supabase: getSupabaseAdmin(),
+    sendEmail: makePresaleEmailSender(),
   });
   return new Response(body, { status });
 }
