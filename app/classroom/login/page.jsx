@@ -29,6 +29,8 @@ export default function ClassroomLoginPage() {
   // 登入模式：password（密碼）| otp（Email 驗證碼）
   const [mode, setMode] = useState("password");
   const [otpSent, setOtpSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   // 偵測 App 內建瀏覽器：Google OAuth 會被擋，預設改走 Email 驗證碼
   useEffect(() => {
@@ -51,6 +53,25 @@ export default function ClassroomLoginPage() {
       setError(err.message === "Invalid login credentials" ? "Email 或密碼錯誤" : err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // 忘記密碼：寄重設信，導回 /auth/callback 建立復原 session 後轉重設密碼頁。
+  // 無論帳號是否存在都回相同訊息，避免帳號枚舉。
+  async function handleForgot() {
+    setError("");
+    if (!supabase) { setError("系統設定錯誤，請聯繫管理員"); return; }
+    if (!email) { setError("請先輸入電子信箱"); return; }
+    setResetLoading(true);
+    try {
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/auth/callback?next=/classroom/reset-password",
+      });
+      setResetSent(true);
+    } catch {
+      setResetSent(true); // 不透露錯誤/是否存在
+    } finally {
+      setResetLoading(false);
     }
   }
 
@@ -169,6 +190,13 @@ export default function ClassroomLoginPage() {
               />
             </div>
             {error && <p className={styles.error}>{error}</p>}
+            {resetSent ? (
+              <p className={styles.helpText}>若此信箱有帳號，重設密碼信已寄出，請查收。</p>
+            ) : (
+              <button type="button" className={styles.linkBtn} onClick={handleForgot} disabled={resetLoading}>
+                {resetLoading ? "寄送中…" : "忘記密碼？"}
+              </button>
+            )}
             <button type="submit" className={styles.submit} disabled={loading || googleLoading}>
               {loading ? "登入中…" : "登入"}
             </button>
