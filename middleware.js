@@ -29,10 +29,14 @@ export async function middleware(request) {
   const settings = await readSaleSettingsCached();
   const presaleMode = !isClassroomOpen(settings, new Date());
   if (presaleMode) {
-    const isClassroomLogin =
-      pathname === "/classroom/login" || pathname.startsWith("/classroom/login/");
+    // 這些 /classroom 子路徑為登入／帳號工具頁（非課程內容），預售鎖站期間仍需可達：
+    // reset-password 由忘記密碼 email 連結進入（與鎖站無關）；account 為登入即可用的帳號設定。
+    const CLASSROOM_LOCK_EXEMPT = ["/classroom/login", "/classroom/reset-password", "/classroom/account"];
+    const isExemptClassroom = CLASSROOM_LOCK_EXEMPT.some(
+      (p) => pathname === p || pathname.startsWith(p + "/")
+    );
     const isLockedClassroom =
-      pathname.startsWith("/classroom") && !isClassroomLogin;
+      pathname.startsWith("/classroom") && !isExemptClassroom;
 
     if (isLockedClassroom) {
       // 管理員後門：帶 ?preview=<密鑰> 或已有對應 cookie 者放行。
