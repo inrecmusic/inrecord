@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./admin.module.css";
 import { Plus, GripVertical, Edit2, Trash2, X, Check, ChevronDown, ChevronRight, Video } from "lucide-react";
+import MaterialsManager from "./MaterialsManager";
 
 
 const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
@@ -38,6 +39,9 @@ export default function ChaptersUnitsPage({ showToast }) {
   const [videoModal, setVideoModal] = useState(null); // null | "create:{chapId}" | video object
   const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
   const [videoFormErr, setVideoFormErr] = useState("");
+
+  // materials modal
+  const [matModal, setMatModal] = useState(null); // null | { videoId: string|null, title: string }
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -165,9 +169,14 @@ export default function ChaptersUnitsPage({ showToast }) {
     <div>
       <div className={styles.pageHeader}>
         <div><h1>章節與單元管理</h1><p>管理課程章節架構與影片單元</p></div>
-        <button className={styles.btnPrimary} onClick={() => { setAddingChap(true); setNewChapTitle(""); }}>
-          <Plus size={14} /> 新增章節
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className={styles.btnSmall} onClick={() => setMatModal({ videoId: null, title: "全課程通用" })}>
+            📎 通用講義
+          </button>
+          <button className={styles.btnPrimary} onClick={() => { setAddingChap(true); setNewChapTitle(""); }}>
+            <Plus size={14} /> 新增章節
+          </button>
+        </div>
       </div>
 
       <div className={styles.panel}>
@@ -258,6 +267,7 @@ export default function ChaptersUnitsPage({ showToast }) {
                             {v.published ? "已發布" : "草稿"}
                           </span>
                           <div className={styles.rowActions} style={{ flexShrink: 0 }}>
+                            <button className={styles.btnSmall} onClick={() => setMatModal({ videoId: v.id, title: v.title })}>📎 講義</button>
                             <button className={styles.btnSmall} onClick={() => openVideoEdit(v)}><Edit2 size={12} /></button>
                             <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => setDeleteVideoId(v.id)}><Trash2 size={12} /></button>
                           </div>
@@ -402,6 +412,15 @@ export default function ChaptersUnitsPage({ showToast }) {
             </div>
           </div>
         </div>
+      )}
+
+      {matModal && (
+        <MaterialsManager
+          videoId={matModal.videoId}
+          title={matModal.title}
+          showToast={showToast}
+          onClose={() => setMatModal(null)}
+        />
       )}
     </div>
   );
