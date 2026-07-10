@@ -20,11 +20,17 @@ export default function ResetPasswordPage() {
   // 登入中的使用者本來就有 session）。無 session → 顯示失效導引。
   useEffect(() => {
     if (!supabase) { setChecking(false); return; }
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(!!session);
-      setChecking(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => { setHasSession(!!session); })
+      .catch(() => { /* 視為無 session */ })
+      .finally(() => setChecking(false));
   }, []);
+
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => router.replace("/classroom"), 1500);
+    return () => clearTimeout(t);
+  }, [done, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -37,9 +43,8 @@ export default function ResetPasswordPage() {
       const { error: err } = await supabase.auth.updateUser({ password: pw });
       if (err) throw err;
       setDone(true);
-      setTimeout(() => router.replace("/classroom"), 1500);
     } catch (err) {
-      setError(err.message || "設定失敗，請重試");
+      setError("密碼更新失敗，請重新申請重設連結後再試一次。");
     } finally {
       setSaving(false);
     }
@@ -61,7 +66,11 @@ export default function ResetPasswordPage() {
         <div style={{ marginBottom: 18 }}><Logo size={24} /></div>
         <h2 style={{ margin: "0 0 6px", fontSize: 22, color: "#0f172a" }}>設定新密碼</h2>
 
-        {!hasSession ? (
+        {!supabase ? (
+          <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.7, margin: "8px 0 20px" }}>
+            系統設定錯誤，請聯繫管理員
+          </p>
+        ) : !hasSession ? (
           <>
             <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.7, margin: "8px 0 20px" }}>
               連結已失效或過期，請重新申請重設密碼。
