@@ -174,12 +174,14 @@ function CommentsSection({ token, video, chapters }) {
 function MaterialsSection({ token, video }) {
   const [items, setItems] = useState([]);
   useEffect(() => {
-    if (!token) return;
+    if (!token) { setItems([]); return; }
+    let cancelled = false;
     const qs = video?.id ? `?video_id=${video.id}` : "";
     fetch(`/api/classroom/materials${qs}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : { materials: [] }))
-      .then(d => setItems(d.materials || []))
-      .catch(() => setItems([]));
+      .then(d => { if (!cancelled) setItems(d.materials || []); })
+      .catch(() => { if (!cancelled) setItems([]); });
+    return () => { cancelled = true; };
   }, [token, video?.id]);
 
   if (!items.length) return null;
