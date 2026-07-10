@@ -8,6 +8,7 @@ const F = "'PingFang TC','Noto Sans TC',system-ui,-apple-system,sans-serif";
 
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
+  const [noConfig, setNoConfig] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -16,12 +17,18 @@ export default function AccountPage() {
 
   useEffect(() => {
     async function init() {
-      if (!supabase) { setLoading(false); return; }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = "/classroom/login"; return; }
-      setEmail(user.email || "");
-      setName(user.user_metadata?.full_name || "");
-      setLoading(false);
+      if (!supabase) { setNoConfig(true); setLoading(false); return; }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { window.location.href = "/classroom/login"; return; }
+        setEmail(user.email || "");
+        setName(user.user_metadata?.full_name || "");
+      } catch {
+        window.location.href = "/classroom/login";
+        return;
+      } finally {
+        setLoading(false);
+      }
     }
     init();
   }, []);
@@ -54,6 +61,14 @@ export default function AccountPage() {
 
   if (loading) return (<div style={wrap}><p style={{ color: "#64748b" }}>載入中…</p></div>);
 
+  if (noConfig) return (
+    <div style={wrap}>
+      <div style={card}>
+        <p style={{ color: "#dc2626", fontSize: 14 }}>系統設定錯誤，請聯繫管理員</p>
+      </div>
+    </div>
+  );
+
   return (
     <div style={wrap}>
       <div style={card}>
@@ -62,8 +77,8 @@ export default function AccountPage() {
 
         <form onSubmit={handleSave}>
           <div style={{ marginBottom: 16 }}>
-            <label style={label}>Email（登入帳號，無法修改）</label>
-            <input style={roInput} value={email} readOnly />
+            <label style={label} htmlFor="account-email">Email（登入帳號，無法修改）</label>
+            <input id="account-email" style={roInput} value={email} readOnly />
           </div>
           <div style={{ marginBottom: 8 }}>
             <label style={label} htmlFor="name">顯示名稱</label>
