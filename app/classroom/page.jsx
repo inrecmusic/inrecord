@@ -852,6 +852,15 @@ export default function ClassroomPage() {
             </a>
           )}
 
+          <a href="/classroom/account" style={{
+            background: "none", border: "1px solid rgba(0,0,0,0.13)",
+            color: "#334155", borderRadius: 980, padding: "5px 16px",
+            cursor: "pointer", fontSize: 12, fontWeight: 500, fontFamily: F,
+            textDecoration: "none",
+          }}>
+            帳號
+          </a>
+
           <button onClick={handleLogout} style={{
             background: "none", border: "1px solid rgba(0,0,0,0.13)",
             color: "#334155", borderRadius: 980, padding: "5px 16px",
