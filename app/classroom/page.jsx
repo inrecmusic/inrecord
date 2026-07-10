@@ -170,6 +170,46 @@ function CommentsSection({ token, video, chapters }) {
   );
 }
 
+/* ── MaterialsSection ─────────────────────────────────────────────────────────── */
+function MaterialsSection({ token, video }) {
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    if (!token) return;
+    const qs = video?.id ? `?video_id=${video.id}` : "";
+    fetch(`/api/classroom/materials${qs}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : { materials: [] }))
+      .then(d => setItems(d.materials || []))
+      .catch(() => setItems([]));
+  }, [token, video?.id]);
+
+  if (!items.length) return null;
+
+  return (
+    <div style={{ padding: "12px 20px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>📎 講義下載</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {items.map(m => (
+          <a
+            key={m.id}
+            href={m.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              fontSize: 13, color: "#1d4ed8", textDecoration: "none",
+              background: "#eff6ff", border: "1px solid #bfdbfe",
+              borderRadius: 8, padding: "7px 12px", fontFamily: F,
+            }}
+          >
+            <span style={{ color: "#dc2626", fontWeight: 700 }}>PDF</span>
+            {m.title}{m.video_id ? "" : "（通用）"}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── RatingTab ───────────────────────────────────────────────────────────────── */
 function RatingTab({ token }) {
   const [hover, setHover]       = useState(0);
@@ -988,6 +1028,9 @@ export default function ClassroomPage() {
               ) : null
             )}
           </div>
+
+          {/* Materials */}
+          <MaterialsSection token={token} video={currentVideo} />
 
           {/* Comments Section */}
           <CommentsSection token={token} video={currentVideo} chapters={chapters} />
