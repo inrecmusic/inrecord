@@ -37,10 +37,15 @@ export default function MaterialsManager({ videoId, title, onClose, showToast })
       fd.append("title", name.trim());
       if (videoId) fd.append("video_id", videoId);
       const r = await fetch("/api/admin/materials", { method: "POST", headers: { Authorization: `Bearer ${pw()}` }, body: fd });
-      const d = await r.json();
+      let d = {};
+      try { d = await r.json(); } catch {}
       if (!r.ok) {
-        const msg = { too_large: "檔案超過 20MB", bad_type: "僅接受 PDF", bad_magic: "檔案不是有效的 PDF" }[d.error] || d.error || "上傳失敗";
-        showToast("❌ " + msg);
+        if (r.status === 413) {
+          showToast("❌ 檔案過大（伺服器上限約 4.5MB），請壓縮後再上傳");
+        } else {
+          const msg = { too_large: "檔案超過 4MB", bad_type: "僅接受 PDF", bad_magic: "檔案不是有效的 PDF" }[d.error] || d.error || "上傳失敗";
+          showToast("❌ " + msg);
+        }
       } else {
         showToast("✅ 講義已上傳");
         setFile(null); setName("");
