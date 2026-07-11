@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { pickBanner } from "@/lib/announcements-view";
+import { formatSeconds, sortNotes } from "@/lib/notes-format";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
@@ -642,6 +643,99 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
   );
 }
 
+/* ── NotesTab ────────────────────────────────────────────────────────────────── */
+function NotesTab({ token, video, playerCtrl }) {
+  const [notes, setNotes] = useState([]);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!token || !video?.id) { setNotes([]); return; }
+    let cancelled = false;
+    fetch(`/api/classroom/notes?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : { notes: [] }))
+      .then(d => { if (!cancelled) setNotes(sortNotes(d.notes || [])); })
+      .catch(() => { if (!cancelled) setNotes([]); });
+    return () => { cancelled = true; };
+  }, [token, video?.id]);
+
+  async function add() {
+    if (!body.trim() || !video?.id) return;
+    setBusy(true);
+    let seconds = 0;
+    try {
+      const s = playerCtrl?.current?.getSeconds ? await playerCtrl.current.getSeconds() : 0;
+      seconds = Math.max(0, Math.floor(Number(s) || 0));
+    } catch { seconds = 0; }
+    try {
+      const r = await fetch("/api/classroom/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ video_id: video.id, seconds, body: body.trim() }),
+      });
+      if (r.ok) {
+        setBody("");
+        const d = await fetch(`/api/classroom/notes?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } }).then(x => x.json());
+        setNotes(sortNotes(d.notes || []));
+      }
+    } catch {}
+    setBusy(false);
+  }
+
+  async function remove(id) {
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/classroom/notes?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) setNotes(prev => prev.filter(n => n.id !== id));
+    } catch {}
+    setBusy(false);
+  }
+
+  function seek(sec) {
+    if (playerCtrl?.current?.seek) { try { playerCtrl.current.seek(sec); } catch {} }
+  }
+
+  if (!video) return (
+    <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, padding: "28px 0", fontFamily: F }}>請先選擇課程單元</div>
+  );
+
+  return (
+    <div style={{ fontFamily: F }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <textarea
+          value={body} onChange={e => setBody(e.target.value)}
+          placeholder="在目前播放位置記筆記…"
+          rows={2}
+          style={{ flex: 1, padding: "9px 12px", fontSize: 14, border: "1px solid #d5dce6", borderRadius: 10, outline: "none", fontFamily: F, resize: "vertical" }}
+        />
+        <button onClick={add} disabled={busy || !body.trim()} style={{
+          alignSelf: "stretch", padding: "0 16px", fontSize: 13, fontWeight: 600,
+          color: "#fff", background: busy || !body.trim() ? "#94a3b8" : "#2563eb",
+          border: "none", borderRadius: 10, cursor: busy || !body.trim() ? "default" : "pointer", fontFamily: F, flexShrink: 0,
+        }}>＋ 在此刻加筆記</button>
+      </div>
+
+      {notes.length === 0 ? (
+        <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此單元尚無筆記</p>
+      ) : (
+        <div style={{ display: "grid", gap: 8 }}>
+          {notes.map(n => (
+            <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 12px", border: "1px solid #eef2f7", borderRadius: 10 }}>
+              <button onClick={() => seek(n.seconds)} title="跳到此時間點" style={{
+                flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1d4ed8",
+                background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7, padding: "3px 8px",
+                cursor: "pointer", fontFamily: F,
+              }}>{formatSeconds(n.seconds)}</button>
+              <span style={{ flex: 1, fontSize: 14, color: "#0f172a", lineHeight: 1.6, whiteSpace: "pre-wrap", minWidth: 0 }}>{n.body}</span>
+              <button onClick={() => remove(n.id)} disabled={busy} aria-label="刪除筆記" style={{ flexShrink: 0, background: "none", border: "none", color: "#dc2626", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main ────────────────────────────────────────────────────────────────────── */
 export default function ClassroomPage() {
   const [user, setUser]                   = useState(null);
@@ -659,6 +753,7 @@ export default function ClassroomPage() {
   const [tab, setTab]                     = useState("rating");
 
   const gameCacheRef                      = useRef({});
+  const playerCtrlRef = useRef(null); // { getSeconds: ()=>Promise<number>, seek: (sec)=>void }
   const [isTablet, setIsTablet]           = useState(false);
   const [isPhone, setIsPhone]             = useState(false);
   const [drawerOpen, setDrawerOpen]       = useState(false);
@@ -758,6 +853,11 @@ export default function ClassroomPage() {
       await player.ready();
       if (cancelled) return;
 
+      playerCtrlRef.current = {
+        getSeconds: () => player.getCurrentTime(),
+        seek: (sec) => player.setCurrentTime(sec),
+      };
+
       interval = setInterval(async () => {
         try {
           const [currentTime, duration] = await Promise.all([
@@ -785,7 +885,7 @@ export default function ClassroomPage() {
     }
 
     setup();
-    return () => { cancelled = true; clearInterval(interval); player?.destroy(); };
+    return () => { cancelled = true; playerCtrlRef.current = null; clearInterval(interval); player?.destroy(); };
   }, [currentVideo?.id, token]);
 
   // Bunny 影片：切換時向後端索取帶 token 的簽名 embed URL（Vimeo 不走此路徑）
@@ -837,6 +937,10 @@ export default function ClassroomPage() {
       const player = new window.playerjs.Player(iframe);
       player.on("ready", () => {
         if (cancelled) return;
+        playerCtrlRef.current = {
+          getSeconds: () => Promise.resolve(lastSeconds),
+          seek: (sec) => player.setCurrentTime(sec),
+        };
         player.on("timeupdate", (d) => { lastSeconds = d?.seconds || 0; lastDuration = d?.duration || 0; });
         player.on("ended", () => { if (lastDuration) { lastSeconds = lastDuration; postProgress(); } });
         interval = setInterval(postProgress, 10000);
@@ -844,7 +948,7 @@ export default function ClassroomPage() {
     }
 
     setup();
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => { cancelled = true; playerCtrlRef.current = null; clearInterval(interval); };
   }, [currentVideo?.id, token, embedSrc]);
 
   function handleSelect(v) {
@@ -1134,6 +1238,7 @@ export default function ClassroomPage() {
               { id: "rating",     label: "課程評價" },
               { id: "assignment", label: "作業繳交" },
               { id: "games",      label: "🎮 互動遊戲" },
+              { id: "notes",      label: "📝 筆記" },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
@@ -1154,6 +1259,7 @@ export default function ClassroomPage() {
             {tab === "rating"     && <RatingTab token={token} />}
             {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} />}
+            {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
           </div>
         </div>
 
