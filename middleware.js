@@ -31,7 +31,7 @@ export async function middleware(request) {
   if (presaleMode) {
     // 這些 /classroom 子路徑為登入／帳號工具頁（非課程內容），預售鎖站期間仍需可達：
     // reset-password 由忘記密碼 email 連結進入（與鎖站無關）；account 為登入即可用的帳號設定。
-    const CLASSROOM_LOCK_EXEMPT = ["/classroom/login", "/classroom/reset-password", "/classroom/account"];
+    const CLASSROOM_LOCK_EXEMPT = ["/classroom/login", "/classroom/reset-password", "/classroom/account", "/classroom/certificate"];
     const isExemptClassroom = CLASSROOM_LOCK_EXEMPT.some(
       (p) => pathname === p || pathname.startsWith(p + "/")
     );

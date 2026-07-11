@@ -141,7 +141,8 @@ export default function AccountPage() {
           )}
         </div>
         <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
-          <a href="/classroom/reset-password" style={{ color: "#2563eb", fontSize: 14, textDecoration: "none" }}>修改密碼 →</a>
+          <a href="/classroom/reset-password" style={{ color: "#2563eb", fontSize: 14, textDecoration: "none", display: "block" }}>修改密碼 →</a>
+          <a href="/classroom/certificate" style={{ color: "#2563eb", fontSize: 14, textDecoration: "none", display: "block", marginTop: 12 }}>完課證書 →</a>
         </div>
         <div style={{ marginTop: 14 }}>
           <a href="/classroom" style={{ color: "#94a3b8", fontSize: 13, textDecoration: "none" }}>← 返回教室</a>
