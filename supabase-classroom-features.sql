@@ -119,3 +119,20 @@ CREATE POLICY "service_role_quiz_attempts" ON quiz_attempts
 DROP TRIGGER IF EXISTS quizzes_updated_at ON quizzes;
 CREATE TRIGGER quizzes_updated_at BEFORE UPDATE ON quizzes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ───────────────────────────────────────────
+-- ③ 完課證書
+-- ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS certificates (
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email     TEXT,
+  cert_code TEXT NOT NULL UNIQUE,
+  issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS certificates_user_uniq ON certificates (user_id);
+
+ALTER TABLE certificates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_certificates" ON certificates;
+CREATE POLICY "service_role_certificates" ON certificates
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
