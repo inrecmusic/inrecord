@@ -736,6 +736,116 @@ function NotesTab({ token, video, playerCtrl }) {
   );
 }
 
+/* ── QuizTab ─────────────────────────────────────────────────────────────────── */
+function QuizTab({ token, video }) {
+  const [quizzes, setQuizzes] = useState([]);
+  const [active, setActive] = useState(null); // { quiz, questions }
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const chapterId = video?.chapter_id;
+
+  useEffect(() => {
+    setActive(null); setResult(null); setAnswers({});
+    if (!token || !chapterId) { setQuizzes([]); return; }
+    let cancelled = false;
+    fetch(`/api/classroom/quizzes?chapter_id=${chapterId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : { quizzes: [] }))
+      .then(d => { if (!cancelled) setQuizzes(d.quizzes || []); })
+      .catch(() => { if (!cancelled) setQuizzes([]); });
+    return () => { cancelled = true; };
+  }, [token, chapterId]);
+
+  async function openQuiz(id) {
+    setBusy(true); setResult(null); setAnswers({});
+    try {
+      const r = await fetch(`/api/classroom/quiz?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) setActive(await r.json());
+    } catch {}
+    setBusy(false);
+  }
+
+  async function submit() {
+    if (!active) return;
+    const ans = active.questions.map((q, i) => (answers[i] ?? -1));
+    setBusy(true);
+    try {
+      const r = await fetch("/api/classroom/quiz-attempt", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ quiz_id: active.quiz.id, answers: ans }),
+      });
+      if (r.ok) {
+        setResult(await r.json());
+        const lr = await fetch(`/api/classroom/quizzes?chapter_id=${chapterId}`, { headers: { Authorization: `Bearer ${token}` } }).then(x => x.json());
+        setQuizzes(lr.quizzes || []);
+      }
+    } catch {}
+    setBusy(false);
+  }
+
+  if (!video) return <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, padding: "28px 0", fontFamily: F }}>請先選擇課程單元</div>;
+
+  // 作答視圖
+  if (active) {
+    return (
+      <div style={{ fontFamily: F }}>
+        <button onClick={() => { setActive(null); setResult(null); }} style={{ background: "none", border: "none", color: "#2563eb", fontSize: 13, cursor: "pointer", marginBottom: 12, fontFamily: F }}>← 返回測驗列表</button>
+        <h3 style={{ margin: "0 0 14px", fontSize: 16, color: "#0f172a" }}>{active.quiz.title}</h3>
+        {active.questions.map((q, i) => {
+          const correctIdx = result?.correct?.[i];
+          return (
+            <div key={q.id} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 6 }}>{i + 1}. {q.question}</div>
+              {(q.options || []).map((o, j) => {
+                const chosen = answers[i] === j;
+                const showCorrect = result && j === correctIdx;
+                const showWrong = result && chosen && j !== correctIdx;
+                return (
+                  <label key={j} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, marginBottom: 4, cursor: result ? "default" : "pointer",
+                    background: showCorrect ? "#dcfce7" : showWrong ? "#fee2e2" : chosen ? "#eff6ff" : "#f8fafc", fontSize: 14, color: "#0f172a" }}>
+                    <input type="radio" name={`q-${q.id}`} disabled={!!result} checked={chosen} onChange={() => setAnswers(a => ({ ...a, [i]: j }))} />
+                    {o}{showCorrect ? "　✔ 正解" : ""}
+                  </label>
+                );
+              })}
+            </div>
+          );
+        })}
+        {result ? (
+          <div style={{ padding: "12px 14px", borderRadius: 10, background: result.passed ? "#dcfce7" : "#fef9c3", marginTop: 8 }}>
+            <strong style={{ color: result.passed ? "#166534" : "#854d0e", fontSize: 15 }}>
+              {result.passed ? "🎉 通過！" : "再接再厲"} 得分 {result.score} 分
+            </strong>
+            <button onClick={() => { setResult(null); setAnswers({}); }} style={{ display: "block", marginTop: 10, background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: F }}>重新作答</button>
+          </div>
+        ) : (
+          <button onClick={submit} disabled={busy} style={{ width: "100%", padding: 12, background: busy ? "#94a3b8" : "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }}>{busy ? "計分中…" : "送出答案"}</button>
+        )}
+      </div>
+    );
+  }
+
+  // 列表視圖
+  return (
+    <div style={{ fontFamily: F }}>
+      {quizzes.length === 0 ? (
+        <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此章節尚無測驗</p>
+      ) : (
+        <div style={{ display: "grid", gap: 10 }}>
+          {quizzes.map(q => (
+            <button key={q.id} onClick={() => openQuiz(q.id)} disabled={busy} style={{ textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontFamily: F }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{q.title}</span>
+              <span style={{ fontSize: 12, flexShrink: 0, color: q.passed ? "#16a34a" : "#94a3b8", fontWeight: 600 }}>
+                {q.passed ? "✔ 已通過" : q.best_score != null ? `最佳 ${q.best_score} 分` : `及格 ${q.pass_score} 分`}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main ────────────────────────────────────────────────────────────────────── */
 export default function ClassroomPage() {
   const [user, setUser]                   = useState(null);
@@ -1239,6 +1349,7 @@ export default function ClassroomPage() {
               { id: "assignment", label: "作業繳交" },
               { id: "games",      label: "🎮 互動遊戲" },
               { id: "notes",      label: "📝 筆記" },
+              { id: "quiz",       label: "📋 測驗" },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
@@ -1260,6 +1371,7 @@ export default function ClassroomPage() {
             {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
+            {tab === "quiz"       && <QuizTab token={token} video={currentVideo} />}
           </div>
         </div>
 
