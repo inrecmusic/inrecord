@@ -19,6 +19,7 @@ export default function CertificatePage() {
       try {
         const r = await fetch("/api/classroom/certificate", { headers: { Authorization: `Bearer ${token}` } });
         if (r.status === 403) { if (!cancelled) setState({ loading: false, forbidden: true }); return; }
+        if (!r.ok) { if (!cancelled) setState({ loading: false, error: "fetch" }); return; }
         const d = await r.json();
         if (!cancelled) setState({ loading: false, ...d });
       } catch {
@@ -33,6 +34,15 @@ export default function CertificatePage() {
   if (state.loading) return (<div style={wrap}><p style={{ color: "#64748b" }}>載入中…</p></div>);
 
   if (state.error === "config") return (<div style={wrap}><p style={{ color: "#dc2626", fontSize: 14 }}>系統設定錯誤，請聯繫管理員</p></div>);
+
+  if (state.error === "fetch") return (
+    <div style={wrap}>
+      <div style={{ maxWidth: 420, background: "#fff", borderRadius: 18, padding: "30px 28px", textAlign: "center", boxShadow: "0 10px 40px rgba(0,0,0,.08)" }}>
+        <p style={{ color: "#475569", fontSize: 14, lineHeight: 1.7 }}>暫時無法載入證書資料，請稍後再試。</p>
+        <a href="/classroom" style={{ display: "inline-block", marginTop: 16, color: "#2563eb", fontSize: 14, textDecoration: "none" }}>← 返回教室</a>
+      </div>
+    </div>
+  );
 
   if (state.forbidden) return (
     <div style={wrap}>
