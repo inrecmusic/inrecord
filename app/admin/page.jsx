@@ -9,13 +9,14 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock, Mail, Search, Megaphone
+  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
 import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
+import QuizzesPage from "./QuizzesPage";
 import SaleSettingsPage from "./SaleSettingsPage";
 import AnnouncementsPage from "./AnnouncementsPage";
 import { PLAN_CATALOG } from "@/lib/plans";
@@ -2812,6 +2813,7 @@ const COURSE_TABS = [
   { id:"unitcomments", label:"單元評論",       icon:MessageSquare },
   { id:"ratings",      label:"課程評價",       icon:Star },
   { id:"games",        label:"互動遊戲",        icon:Gamepad2 },
+  { id:"quizzes",      label:"測驗管理",       icon:ListChecks },
 ];
 
 function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnreadChange }) {
@@ -2875,6 +2877,7 @@ function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnr
       {tab==="unitcomments" && <UnitCommentsPage   showToast={showToast} courseId={course.id} onUnreadChange={onUnreadChange}/>}
       {tab==="ratings"      && <CourseRatingsPage  showToast={showToast} courseId={course.id}/>}
       {tab==="games"        && <GamesManagePage    showToast={showToast} courseId={course.id}/>}
+      {tab==="quizzes"      && <QuizzesPage        showToast={showToast} courseId={course.id}/>}
     </div>
   );
 }
