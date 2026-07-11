@@ -218,6 +218,6 @@ NEXT_PUBLIC_WORDPRESS_BUY_URL   # /demo 體驗頁 CTA → WordPress 預購頁；
 
 ## 部署需執行的 SQL
 
-新環境依序執行 `supabase-schema.sql` → `supabase-schema-classroom.sql` / `supabase-schema-music.sql` → **`supabase-deploy.sql`**（彙整發票欄位 / coupons 表 / courses 表 / **`sale_settings` 表**，idempotent 可重複執行）→ **`supabase-hardening.sql`（必跑，最後一步）**。
+新環境依序執行 `supabase-schema.sql` → `supabase-schema-classroom.sql` / `supabase-schema-music.sql` → **`supabase-deploy.sql`**（彙整發票欄位 / coupons 表 / courses 表 / **`sale_settings` 表**，idempotent 可重複執行）→ **`supabase-classroom-features.sql`**（教室七大功能：`materials` 表＋`course-materials` 私有 bucket、`announcements` 表…；自帶 RLS service_role policy，分段 idempotent）→ **`supabase-hardening.sql`（必跑，最後一步）**。
 
 > ⚠️ `supabase-hardening.sql` 是安全收尾：subscriptions 冪等唯一索引 + 關閉 anon 對 `games`/`videos`/`ratings`/`comment_replies`/`rating_replies` 的公開讀。**漏跑這步，光憑公開 anon key 就能直接讀付費 `games.html_content`、`videos.bunny_video_id` 與評論者 `user_email`（PII）。** 全檔冪等可重複執行；跑完用檔內 2b 的 `pg_policies` 查詢確認已無任何 `{public}`／anon 讀取 policy。
