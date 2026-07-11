@@ -32,6 +32,7 @@ export async function POST(req) {
 
   const { score, passed, correct } = gradeQuiz(questions || [], answers, quiz.pass_score);
 
-  await supabase.from("quiz_attempts").insert({ user_id: user.id, quiz_id: quizId, score, passed, answers });
+  const { error: insErr } = await supabase.from("quiz_attempts").insert({ user_id: user.id, quiz_id: quizId, score, passed, answers });
+  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
   return NextResponse.json({ score, passed, correct });
 }
