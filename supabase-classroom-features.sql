@@ -48,3 +48,21 @@ CREATE POLICY "service_role_announcements" ON announcements
 DROP TRIGGER IF EXISTS announcements_updated_at ON announcements;
 CREATE TRIGGER announcements_updated_at BEFORE UPDATE ON announcements
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ───────────────────────────────────────────
+-- ④ 筆記／書籤（私人，帶時間戳）
+-- ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notes (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  video_id   UUID REFERENCES videos(id) ON DELETE CASCADE,
+  seconds    INTEGER NOT NULL DEFAULT 0,
+  body       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS notes_user_video_idx ON notes (user_id, video_id, seconds);
+
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_notes" ON notes;
+CREATE POLICY "service_role_notes" ON notes
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
