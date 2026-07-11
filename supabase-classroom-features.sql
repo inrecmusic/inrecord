@@ -66,3 +66,56 @@ ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "service_role_notes" ON notes;
 CREATE POLICY "service_role_notes" ON notes
   USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- ───────────────────────────────────────────
+-- ⑥ 測驗／評量（單選、伺服器計分、可重考）
+-- ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS quizzes (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chapter_id UUID REFERENCES chapters(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL,
+  pass_score INTEGER NOT NULL DEFAULT 80,
+  published  BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS quizzes_chapter_idx ON quizzes (chapter_id, published, sort_order);
+
+CREATE TABLE IF NOT EXISTS quiz_questions (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quiz_id       UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  question      TEXT NOT NULL,
+  options       JSONB NOT NULL,
+  correct_index INTEGER NOT NULL,
+  sort_order    INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS quiz_questions_quiz_idx ON quiz_questions (quiz_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  quiz_id    UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  score      INTEGER NOT NULL,
+  passed     BOOLEAN NOT NULL,
+  answers    JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS quiz_attempts_user_quiz_idx ON quiz_attempts (user_id, quiz_id, created_at DESC);
+
+ALTER TABLE quizzes        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_attempts  ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service_role_quizzes" ON quizzes;
+CREATE POLICY "service_role_quizzes" ON quizzes
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "service_role_quiz_questions" ON quiz_questions;
+CREATE POLICY "service_role_quiz_questions" ON quiz_questions
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "service_role_quiz_attempts" ON quiz_attempts;
+CREATE POLICY "service_role_quiz_attempts" ON quiz_attempts
+  USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+DROP TRIGGER IF EXISTS quizzes_updated_at ON quizzes;
+CREATE TRIGGER quizzes_updated_at BEFORE UPDATE ON quizzes
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
