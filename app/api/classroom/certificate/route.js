@@ -41,6 +41,10 @@ export async function GET(req) {
     supabase.from("quiz_attempts").select("quiz_id").eq("user_id", user.id).eq("passed", true),
   ]);
 
+  for (const r of [pv, cv, pq, pa]) {
+    if (r.error) return NextResponse.json({ error: r.error.message }, { status: 500 });
+  }
+
   const status = certificateStatus({
     publishedVideoIds: (pv.data || []).map((r) => r.id),
     completedVideoIds: (cv.data || []).map((r) => r.video_id),
@@ -63,18 +67,19 @@ export async function GET(req) {
   if (insErr && insErr.code !== "23505") {
     return NextResponse.json({ error: insErr.message }, { status: 500 });
   }
-  const { data: cert } = await supabase
+  const { data: cert, error: certErr } = await supabase
     .from("certificates")
     .select("cert_code, issued_at")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (certErr || !cert) return NextResponse.json({ error: "cert_issue_failed" }, { status: 500 });
 
   const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "學員";
   return NextResponse.json({
     eligible: true,
     name,
     courseTitle: COURSE_TITLE,
-    issuedAt: cert?.issued_at || null,
-    certCode: cert?.cert_code || null,
+    issuedAt: cert.issued_at,
+    certCode: cert.cert_code,
   });
 }
