@@ -24,8 +24,12 @@ function QuestionEditor({ quizId, showToast, onChange }) {
   function addOpt() { setForm(f => ({ ...f, options: [...f.options, ""] })); }
   function removeOpt(i) {
     setForm(f => {
+      if (f.options.length <= 2) return f; // 至少保留兩個選項
       const options = f.options.filter((_, j) => j !== i);
-      const correct_index = f.correct_index >= options.length ? 0 : f.correct_index;
+      let correct_index = f.correct_index;
+      if (i === correct_index) correct_index = 0;      // 刪到正解本身 → 重設為第一個
+      else if (i < correct_index) correct_index -= 1;  // 刪在正解之前 → 下移一格，仍指同一選項
+      if (correct_index >= options.length) correct_index = 0; // 安全網
       return { ...f, options, correct_index };
     });
   }
@@ -110,7 +114,7 @@ export default function QuizzesPage({ showToast, courseId }) {
     if (!form.title.trim()) { showToast("請輸入測驗標題"); return; }
     setBusy(true);
     try {
-      const r = await api("/api/admin/quizzes", { method: "POST", body: JSON.stringify({ chapter_id: form.chapter_id || null, title: form.title.trim(), pass_score: Number(form.pass_score) || 80 }) });
+      const r = await api("/api/admin/quizzes", { method: "POST", body: JSON.stringify({ chapter_id: form.chapter_id || null, title: form.title.trim(), pass_score: form.pass_score === "" || form.pass_score == null || Number.isNaN(Number(form.pass_score)) ? 80 : Number(form.pass_score) }) });
       if (r.ok) { showToast("✅ 測驗已建立"); setForm({ chapter_id: "", title: "", pass_score: 80 }); load(); }
       else showToast("❌ 建立失敗");
     } catch { showToast("❌ 建立失敗"); }
