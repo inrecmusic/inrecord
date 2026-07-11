@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { validateDisplayName } from "@/lib/account";
+import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
 import Logo from "@/components/Logo";
 
 const F = "'PingFang TC','Noto Sans TC',system-ui,-apple-system,sans-serif";
@@ -14,6 +15,7 @@ export default function AccountPage() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [orders, setOrders] = useState(null); // null=載入中, []=空
 
   useEffect(() => {
     async function init() {
@@ -31,6 +33,22 @@ export default function AccountPage() {
       }
     }
     init();
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) { setOrders([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { if (!cancelled) setOrders([]); return; }
+      try {
+        const r = await fetch("/api/classroom/my-orders", { headers: { Authorization: `Bearer ${token}` } });
+        const d = r.ok ? await r.json() : { orders: [] };
+        if (!cancelled) setOrders(d.orders || []);
+      } catch { if (!cancelled) setOrders([]); }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   async function handleSave(e) {
@@ -94,6 +112,34 @@ export default function AccountPage() {
           <button type="submit" style={btn} disabled={saving}>{saving ? "儲存中…" : "儲存"}</button>
         </form>
 
+        <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
+          <h3 style={{ margin: "0 0 12px", fontSize: 15, color: "#0f172a" }}>我的訂單</h3>
+          {orders === null ? (
+            <p style={{ color: "#94a3b8", fontSize: 13 }}>載入中…</p>
+          ) : orders.length === 0 ? (
+            <p style={{ color: "#94a3b8", fontSize: 13 }}>目前沒有訂單</p>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {sortOrdersDesc(orders).map(o => {
+                const st = o.status;
+                const stColor = st === "paid" ? "#16a34a" : st === "refunded" ? "#dc2626" : st === "pending" ? "#b45309" : "#64748b";
+                return (
+                  <div key={o.mer_trade_no} style={{ border: "1px solid #eef2f7", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{o.plan_label || o.plan || "課程"}</span>
+                      <span style={{ fontSize: 14, color: "#0f172a", flexShrink: 0 }}>NT${(o.amount || 0).toLocaleString()}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: stColor }}>{statusLabel(o.status)}</span>
+                      <span style={{ fontSize: 12, color: "#94a3b8" }}>{o.created_at ? new Date(o.created_at).toLocaleDateString("zh-TW") : ""}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{invoiceText(o.invoice_no)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
           <a href="/classroom/reset-password" style={{ color: "#2563eb", fontSize: 14, textDecoration: "none" }}>修改密碼 →</a>
         </div>
