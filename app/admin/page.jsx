@@ -9,7 +9,7 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock, Mail, Search
+  AlertTriangle, CalendarClock, Mail, Search, Megaphone
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
@@ -17,6 +17,7 @@ import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
 import SaleSettingsPage from "./SaleSettingsPage";
+import AnnouncementsPage from "./AnnouncementsPage";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
 import { inDateRange } from "@/lib/date-range";
@@ -47,6 +48,7 @@ const NAV_GROUPS = [
     { id:"privacy",     label:"隱私權政策", icon:Shield },
     { id:"terms",       label:"服務條款",   icon:FileText },
     { id:"newsletter",  label:"電子報",     icon:Mail },
+    { id:"announcements", label:"公告",    icon:Megaphone },
   ]},
 ];
 
@@ -3175,6 +3177,7 @@ export default function AdminPage(){
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
           {page==="terms"       &&<TermsPage showToast={showToast}/>}
           {page==="newsletter"  &&<NewsletterPage showToast={showToast}/>}
+          {page==="announcements" &&<AnnouncementsPage showToast={showToast}/>}
         </div>
       </div>
 
