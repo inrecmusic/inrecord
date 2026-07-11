@@ -28,7 +28,7 @@ export async function GET(req) {
   if (!quiz || !quiz.published) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const { data: questions } = await supabase.from("quiz_questions")
-    .select("id, question, options, correct_index, sort_order").eq("quiz_id", id).order("sort_order", { ascending: true });
+    .select("id, question, options, sort_order").eq("quiz_id", id).order("sort_order", { ascending: true });
 
   return NextResponse.json({
     quiz: { id: quiz.id, title: quiz.title, pass_score: quiz.pass_score },
