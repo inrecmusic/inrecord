@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
-import { isClassroomOpen } from "@/lib/sale";
+import { isClassroomOpen, isClassroomLockExempt } from "@/lib/sale";
 
 let _saleCache = { value: null, at: 0 };
 async function readSaleSettingsCached() {
@@ -29,14 +29,9 @@ export async function middleware(request) {
   const settings = await readSaleSettingsCached();
   const presaleMode = !isClassroomOpen(settings, new Date());
   if (presaleMode) {
-    // 這些 /classroom 子路徑為登入／帳號工具頁（非課程內容），預售鎖站期間仍需可達：
-    // reset-password 由忘記密碼 email 連結進入（與鎖站無關）；account 為登入即可用的帳號設定。
-    const CLASSROOM_LOCK_EXEMPT = ["/classroom/login", "/classroom/reset-password", "/classroom/account", "/classroom/certificate"];
-    const isExemptClassroom = CLASSROOM_LOCK_EXEMPT.some(
-      (p) => pathname === p || pathname.startsWith(p + "/")
-    );
+    // 鎖站豁免規則集中於 lib/sale 的 isClassroomLockExempt（工具頁段白名單＋不可加課程內容頁的警語）。
     const isLockedClassroom =
-      pathname.startsWith("/classroom") && !isExemptClassroom;
+      pathname.startsWith("/classroom") && !isClassroomLockExempt(pathname);
 
     if (isLockedClassroom) {
       // 管理員後門：帶 ?preview=<密鑰> 或已有對應 cookie 者放行。

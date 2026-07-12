@@ -40,7 +40,7 @@ export default function SaleSettingsPage({ showToast }) {
   const fp = s.fan_plan || {};
   const fanEnabled = typeof fp.enabled === "boolean" ? fp.enabled : true;
   const fanDeadline = fp.deadline || "2026-08-06T23:59:59+08:00";
-  const fanProofPrice = Number.isInteger(fp.proof_price) ? fp.proof_price : 3499;
+  const fanProofPrice = Number.isInteger(fp.proof_price) ? fp.proof_price : 3699;
   const fanDirectPrice = Number.isInteger(fp.direct_price) ? fp.direct_price : 3999;
   const setFan = (key, val) => setS((prev) => ({ ...prev, fan_plan: { enabled: fanEnabled, deadline: fanDeadline, proof_price: fanProofPrice, direct_price: fanDirectPrice, [key]: val } }));
 

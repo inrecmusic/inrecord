@@ -1,26 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseAdmin } from "@/lib/supabase";
-import { hasCourseAccess } from "@/lib/course-access";
+import { requireClassroomAuth } from "@/lib/classroom-auth";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function getUserClient(token) {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    { global: { headers: { Authorization: `Bearer ${token}` } } });
-}
-async function gate(req) {
-  const token = (req.headers.get("authorization") || "").replace("Bearer ", "");
-  if (!token) return { res: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  const { data: { user }, error } = await getUserClient(token).auth.getUser();
-  if (error || !user) return { res: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return { res: NextResponse.json({ error: "db_not_configured" }, { status: 503 }) };
-  if (!(await hasCourseAccess(supabase, user.email))) return { res: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  return { user, supabase };
-}
 
 export async function GET(req) {
-  const g = await gate(req);
+  const g = await requireClassroomAuth(req);
   if (g.res) return g.res;
   const raw = new URL(req.url).searchParams.get("chapter_id");
   const chapterId = raw && UUID_RE.test(raw) ? raw : null;

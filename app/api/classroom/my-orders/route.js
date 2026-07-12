@@ -1,23 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseAdmin } from "@/lib/supabase";
-
-function getUserClient(token) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-}
+import { requireClassroomAuth } from "@/lib/classroom-auth";
 
 export async function GET(req) {
-  const token = (req.headers.get("authorization") || "").replace("Bearer ", "");
-  if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { data: { user }, error: authErr } = await getUserClient(token).auth.getUser();
-  if (authErr || !user || !user.email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
+  // 只驗登入、不驗購課（未購課者也能查自己的訂單狀態）
+  const g = await requireClassroomAuth(req, { requireCourse: false });
+  if (g.res) return g.res;
+  const { user, supabase } = g;
 
   // 只回本人（以驗證後的 user.email 為準）的訂單，淨化欄位
   const { data, error } = await supabase
