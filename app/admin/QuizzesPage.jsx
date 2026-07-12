@@ -40,7 +40,9 @@ function QuestionEditor({ quizId, showToast, onChange }) {
     if (form.options.length < 2 || form.options.some(o => !o.trim())) { showToast("至少兩個選項且不可空白"); return; }
     setBusy(true);
     try {
-      const r = await api("/api/admin/quiz-questions", { method: "POST", body: JSON.stringify({ quiz_id: quizId, question: form.question.trim(), options: form.options.map(o => o.trim()), correct_index: form.correct_index, sort_order: questions.length }) });
+      // sort_order 用「現有最大值 +1」而非 questions.length：後者在刪過非最後一題後會與現有題目撞號
+      const nextOrder = questions.length ? Math.max(...questions.map(q => Number(q.sort_order) || 0)) + 1 : 0;
+      const r = await api("/api/admin/quiz-questions", { method: "POST", body: JSON.stringify({ quiz_id: quizId, question: form.question.trim(), options: form.options.map(o => o.trim()), correct_index: form.correct_index, sort_order: nextOrder }) });
       if (r.ok) { showToast("✅ 題目已新增"); setForm({ question: "", options: ["", ""], correct_index: 0 }); load(); onChange?.(); }
       else { const d = await r.json(); showToast("❌ " + (d.error || "新增失敗")); }
     } catch { showToast("❌ 新增失敗"); }
@@ -52,7 +54,8 @@ function QuestionEditor({ quizId, showToast, onChange }) {
     setBusy(true);
     try {
       const r = await api(`/api/admin/quiz-questions?id=${id}`, { method: "DELETE" });
-      if (r.ok) { showToast("✅ 已刪除"); load(); onChange?.(); } else showToast("❌ 刪除失敗");
+      if (r.ok) { showToast("✅ 已刪除"); load(); onChange?.(); }
+      else { const d = await r.json().catch(() => ({})); showToast(d.error === "last_question_published" ? "❌ 已發布測驗需保留至少一題，請先取消發布再刪除" : "❌ 刪除失敗"); }
     } catch { showToast("❌ 刪除失敗"); }
     setBusy(false);
   }
@@ -125,7 +128,8 @@ export default function QuizzesPage({ showToast, courseId }) {
     setBusy(true);
     try {
       const r = await api("/api/admin/quizzes", { method: "PATCH", body: JSON.stringify({ id: q.id, published: !q.published }) });
-      if (r.ok) load(); else showToast("❌ 更新失敗");
+      if (r.ok) load();
+      else { const d = await r.json().catch(() => ({})); showToast(d.error === "no_questions" ? "❌ 發布前請先新增至少一題" : "❌ 更新失敗"); }
     } catch { showToast("❌ 更新失敗"); }
     setBusy(false);
   }

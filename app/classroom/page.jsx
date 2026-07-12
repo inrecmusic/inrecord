@@ -258,6 +258,8 @@ function AnnouncementsBanner({ token }) {
 /* ── MaterialsSection ─────────────────────────────────────────────────────────── */
 function MaterialsSection({ token, video }) {
   const [items, setItems] = useState([]);
+  const [busyId, setBusyId] = useState(null);
+  const [err, setErr] = useState("");
   useEffect(() => {
     if (!token) { setItems([]); return; }
     let cancelled = false;
@@ -269,6 +271,21 @@ function MaterialsSection({ token, video }) {
     return () => { cancelled = true; };
   }, [token, video?.id]);
 
+  async function openMaterial(id) {
+    if (!token || busyId) return;
+    setErr(""); setBusyId(id);
+    // 下載當下才向後端要新鮮簽名 URL（僅 5 分鐘有效）。先在點擊的同步脈絡下開空白分頁，
+    // 避免 await 之後再 window.open 被瀏覽器彈窗攔截。
+    const w = typeof window !== "undefined" ? window.open("", "_blank", "noopener,noreferrer") : null;
+    try {
+      const r = await fetch(`/api/classroom/materials?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.url) { if (w) w.location.href = d.url; else window.location.href = d.url; }
+      else { if (w) w.close(); setErr("講義暫時無法下載，請稍後再試"); }
+    } catch { if (w) w.close(); setErr("講義暫時無法下載，請稍後再試"); }
+    setBusyId(null);
+  }
+
   if (!items.length) return null;
 
   return (
@@ -276,23 +293,26 @@ function MaterialsSection({ token, video }) {
       <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>📎 講義下載</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {items.map(m => (
-          <a
+          <button
             key={m.id}
-            href={m.url || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
+            type="button"
+            onClick={() => openMaterial(m.id)}
+            disabled={busyId === m.id}
             style={{
               display: "inline-flex", alignItems: "center", gap: 7,
-              fontSize: 13, color: "#1d4ed8", textDecoration: "none",
+              fontSize: 13, color: "#1d4ed8",
               background: "#eff6ff", border: "1px solid #bfdbfe",
               borderRadius: 8, padding: "7px 12px", fontFamily: F,
+              cursor: busyId === m.id ? "default" : "pointer",
+              opacity: busyId === m.id ? 0.6 : 1,
             }}
           >
             <span style={{ color: "#dc2626", fontWeight: 700 }}>PDF</span>
             {m.title}{m.video_id ? "" : "（通用）"}
-          </a>
+          </button>
         ))}
       </div>
+      {err && <div style={{ fontSize: 12, color: "#b45309", marginTop: 8 }}>{err}</div>}
     </div>
   );
 }
@@ -648,8 +668,10 @@ function NotesTab({ token, video, playerCtrl }) {
   const [notes, setNotes] = useState([]);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const vidRef = useRef(video?.id); // 目前顯示的影片；add() 完成時據此判斷是否仍為同一支
 
   useEffect(() => {
+    vidRef.current = video?.id;
     if (!token || !video?.id) { setNotes([]); return; }
     let cancelled = false;
     fetch(`/api/classroom/notes?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -660,7 +682,9 @@ function NotesTab({ token, video, playerCtrl }) {
   }, [token, video?.id]);
 
   async function add() {
-    if (!body.trim() || !video?.id) return;
+    const text = body.trim();
+    if (!text || !video?.id) return;
+    const vid = video.id;
     setBusy(true);
     let seconds = 0;
     try {
@@ -671,12 +695,16 @@ function NotesTab({ token, video, playerCtrl }) {
       const r = await fetch("/api/classroom/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ video_id: video.id, seconds, body: body.trim() }),
+        body: JSON.stringify({ video_id: vid, seconds, body: text }),
       });
       if (r.ok) {
+        const d = await r.json().catch(() => ({}));
         setBody("");
-        const d = await fetch(`/api/classroom/notes?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } }).then(x => x.json());
-        setNotes(sortNotes(d.notes || []));
+        // 直接把新筆記併入本地 state（免再抓整份清單），省一次往返；並比對 vidRef 確保
+        // 期間未切換影片，否則跳過本地插入（該筆已存 DB，回到此影片時 effect 會重新載入）。
+        if (d.id && vidRef.current === vid) {
+          setNotes(prev => sortNotes([...prev, { id: d.id, video_id: vid, seconds, body: text }]));
+        }
       }
     } catch {}
     setBusy(false);
@@ -775,9 +803,13 @@ function QuizTab({ token, video }) {
         body: JSON.stringify({ quiz_id: active.quiz.id, answers: ans }),
       });
       if (r.ok) {
-        setResult(await r.json());
-        const lr = await fetch(`/api/classroom/quizzes?chapter_id=${chapterId}`, { headers: { Authorization: `Bearer ${token}` } }).then(x => x.json());
-        setQuizzes(lr.quizzes || []);
+        const rr = await r.json();
+        setResult(rr);
+        // 用計分回應在本地更新該筆徽章（最佳分/是否通過），不重新抓整份清單：省一次往返，
+        // 且函式式更新＋比對 quiz id → 切換章節時 prev 已是新章節、找不到此 id 即不動，無競態。
+        setQuizzes(prev => prev.map(qz => qz.id === active.quiz.id
+          ? { ...qz, best_score: Math.max(Number(qz.best_score) || 0, Number(rr.score) || 0), passed: qz.passed || !!rr.passed }
+          : qz));
       }
     } catch {}
     setBusy(false);

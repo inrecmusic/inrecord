@@ -73,6 +73,15 @@ export async function DELETE(req) {
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "no_id" }, { status: 400 });
+  // 不可刪光已發布測驗的最後一題：0 題的已發布測驗永遠無法通過，會卡死全體學員的完課證書。
+  const { data: row } = await supabase.from("quiz_questions").select("quiz_id").eq("id", id).maybeSingle();
+  if (row?.quiz_id) {
+    const { data: quiz } = await supabase.from("quizzes").select("published").eq("id", row.quiz_id).maybeSingle();
+    if (quiz?.published) {
+      const { count } = await supabase.from("quiz_questions").select("id", { count: "exact", head: true }).eq("quiz_id", row.quiz_id);
+      if ((count || 0) <= 1) return NextResponse.json({ error: "last_question_published" }, { status: 409 });
+    }
+  }
   const { error } = await supabase.from("quiz_questions").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await logAudit(supabase, { actor: payload.email, action: "quiz_question.delete", targetType: "quiz_question", targetId: id, meta: {}, req });

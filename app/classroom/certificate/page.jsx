@@ -12,11 +12,13 @@ export default function CertificatePage() {
     if (!supabase) { setState({ loading: false, error: "config" }); return; }
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = "/classroom/login"; return; }
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
       try {
+        // getUser/getSession 也要在 try 內：session 損毀或 token 換發時網路抖動會 reject，
+        // 否則 async IIFE 未捕捉例外→state 永遠停在 loading→畫面卡在「載入中…」無法恢復
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { window.location.href = "/classroom/login"; return; }
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
         const r = await fetch("/api/classroom/certificate", { headers: { Authorization: `Bearer ${token}` } });
         if (r.status === 403) { if (!cancelled) setState({ loading: false, forbidden: true }); return; }
         if (!r.ok) { if (!cancelled) setState({ loading: false, error: "fetch" }); return; }

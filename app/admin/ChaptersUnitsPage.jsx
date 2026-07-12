@@ -91,7 +91,10 @@ export default function ChaptersUnitsPage({ showToast }) {
     setSaving(true);
     try {
       const r = await api(`/api/admin/chapters?id=${id}`, { method: "DELETE" });
-      if (!r.ok) throw new Error((await r.json()).error);
+      if (!r.ok) {
+        const code = (await r.json().catch(() => ({}))).error;
+        throw new Error(code === "chapter_has_quizzes" ? "此章節下有測驗，請先到「測驗管理」改綁其他章節或刪除測驗" : (code || "刪除失敗"));
+      }
       showToast("✅ 章節已刪除"); fetchAll();
     } catch (e) { showToast("❌ " + e.message); }
     finally { setSaving(false); setDeleteChapId(null); }

@@ -27,8 +27,10 @@ export async function GET(req) {
     .select("id, title, pass_score, published").eq("id", id).maybeSingle();
   if (!quiz || !quiz.published) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const { data: questions } = await supabase.from("quiz_questions")
-    .select("id, question, options, sort_order").eq("quiz_id", id).order("sort_order", { ascending: true });
+  const { data: questions, error: qErr } = await supabase.from("quiz_questions")
+    .select("id, question, options, sort_order").eq("quiz_id", id)
+    .order("sort_order", { ascending: true }).order("id", { ascending: true });
+  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
 
   return NextResponse.json({
     quiz: { id: quiz.id, title: quiz.title, pass_score: quiz.pass_score },

@@ -31,7 +31,13 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
-  const formData = await req.formData();
+  let formData;
+  try {
+    formData = await req.formData();
+  } catch {
+    // body 非合法 multipart（空/壞邊界/超過 Vercel 上限）→ 明確 400，不讓例外冒成泛用 500
+    return NextResponse.json({ error: "bad_form_data" }, { status: 400 });
+  }
   const file = formData.get("file");
   const title = (formData.get("title") || "").toString().trim();
   const videoId = (formData.get("video_id") || "").toString().trim() || null;
@@ -77,9 +83,14 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "no_id" }, { status: 400 });
 
   const { data: row } = await supabase.from("materials").select("storage_path").eq("id", id).maybeSingle();
-  if (row?.storage_path) await supabase.storage.from(BUCKET).remove([row.storage_path]);
+  // 先刪 DB row（權威）再刪 storage blob：順序相反時若 storage 已刪但 DB 刪失敗，會留下
+  // 一筆指向已消失檔案的死列（學員清單點不開）。寧可 blob 短暫殘留也不要死列。
   const { error } = await supabase.from("materials").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (row?.storage_path) {
+    const { error: rmErr } = await supabase.storage.from(BUCKET).remove([row.storage_path]);
+    if (rmErr) console.error("[materials] storage 移除失敗（DB 已刪，檔案暫成孤兒）", row.storage_path, rmErr.message);
+  }
 
   await logAudit(supabase, {
     actor: payload.email, action: "material.delete", targetType: "material", targetId: id, meta: {}, req,

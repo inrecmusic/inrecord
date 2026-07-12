@@ -28,7 +28,8 @@ export async function POST(req) {
   const title = (b.title || "").toString().trim();
   if (!title) return NextResponse.json({ error: "no_title" }, { status: 400 });
   const pass_score = Number.isFinite(b.pass_score) ? Math.min(100, Math.max(0, Math.round(b.pass_score))) : 80;
-  const row = { chapter_id, title, pass_score, published: b.published === true };
+  // 新建測驗此刻還沒有任何題目，一律以未發布建立；加完題目後再用 PATCH 發布（發布時會驗題數）。
+  const row = { chapter_id, title, pass_score, published: false };
   const { data, error } = await supabase.from("quizzes").insert(row).select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await logAudit(supabase, { actor: payload.email, action: "quiz.create", targetType: "quiz", targetId: data?.id, meta: { title, chapter_id }, req });
@@ -49,6 +50,13 @@ export async function PATCH(req) {
   if (typeof b.published === "boolean") allowed.published = b.published;
   if (Number.isFinite(b.sort_order)) allowed.sort_order = Math.round(b.sort_order);
   if (Object.keys(allowed).length === 0) return NextResponse.json({ error: "no_fields" }, { status: 400 });
+  // 發布前確認至少有一題：0 題的已發布測驗永遠 passed=false，會讓全體學員完課證書卡在「尚未完成」。
+  if (allowed.published === true) {
+    const { count, error: cErr } = await supabase.from("quiz_questions")
+      .select("id", { count: "exact", head: true }).eq("quiz_id", id);
+    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+    if (!count) return NextResponse.json({ error: "no_questions" }, { status: 409 });
+  }
   const { error } = await supabase.from("quizzes").update(allowed).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await logAudit(supabase, { actor: payload.email, action: "quiz.update", targetType: "quiz", targetId: id, meta: allowed, req });

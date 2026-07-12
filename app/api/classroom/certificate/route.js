@@ -34,6 +34,20 @@ export async function GET(req) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "學員";
+
+  // 已發證 → 一律直接回傳，證書一經取得永久可讀；不再重算資格，避免管理員日後新增
+  // 影片/測驗使 eligible 翻 false 而讓既有證書變成看不到（且省去重訪必觸發的 23505）。
+  const { data: existing, error: exErr } = await supabase
+    .from("certificates").select("cert_code, issued_at").eq("user_id", user.id).maybeSingle();
+  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
+  if (existing) {
+    return NextResponse.json({
+      eligible: true, name, courseTitle: COURSE_TITLE,
+      issuedAt: existing.issued_at, certCode: existing.cert_code,
+    });
+  }
+
   const [pv, cv, pq, pa] = await Promise.all([
     supabase.from("videos").select("id").eq("published", true),
     supabase.from("progress").select("video_id").eq("user_id", user.id).eq("completed", true),
@@ -74,7 +88,6 @@ export async function GET(req) {
     .maybeSingle();
   if (certErr || !cert) return NextResponse.json({ error: "cert_issue_failed" }, { status: 500 });
 
-  const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "學員";
   return NextResponse.json({
     eligible: true,
     name,
