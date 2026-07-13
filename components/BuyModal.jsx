@@ -267,8 +267,6 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
             {earlyBird && !couponApplied && onSale && <span className={styles.earlyTag}>早鳥優惠</span>}
           </div>
 
-          {couponApplied && <p className={styles.couponOk}>✅ 已套用「{couponApplied.name}」，折抵 NT${Math.max(0, Number(listPrice) - Number(couponApplied.finalPrice)).toLocaleString()}</p>}
-
           {fanProof && plan.plan === "bundle" && (
             <div className={styles.fanProof}>
               <p className={styles.fanProofTitle}>🎫 上傳粉絲憑證<span>演奏會門票 · 專輯 · 樂譜，任一即可</span></p>
