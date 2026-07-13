@@ -271,7 +271,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
 
           {fanProof && plan.plan === "bundle" && (
             <div className={styles.fanProof}>
-              <p className={styles.fanProofTitle}>🎫 粉絲憑證折抵 $500<span>演奏會門票 · 專輯 · 樂譜，任一即可</span></p>
+              <p className={styles.fanProofTitle}>🎫 上傳粉絲憑證<span>演奏會門票 · 專輯 · 樂譜，任一即可</span></p>
               {proofUrl
                 ? <div className={styles.fanProofDone}>✅ 憑證已上傳，已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? fanProofPrice).toLocaleString()}</div>
                 : <label className={styles.uploadArea}>
