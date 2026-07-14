@@ -32,7 +32,28 @@ function checkoutErrorMessage(code) {
   return "付款服務暫時無法使用，請稍後再試或與我們聯繫。";
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, serialEntry = false, fanProofPrice = 3499, fanDirectPrice = 3999 }) {
+// 手機相片常 >4.5MB（超過 Vercel serverless body 上限），上傳前在瀏覽器等比縮圖＋轉 JPEG 壓到安全大小。
+// 任何失敗都回原檔（不擋上傳）。憑證圖只需清晰可辨，長邊降到 1600px 綽綽有餘。
+async function compressProofImage(file, maxDim = 1600, quality = 0.85) {
+  try {
+    if (!file || !file.type?.startsWith("image/") || typeof createImageBitmap !== "function") return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (!blob || blob.size >= file.size) return file; // 壓不小就用原檔
+    return new File([blob], "proof.jpg", { type: "image/jpeg" });
+  } catch { return file; }
+}
+
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, serialEntry = false, fanProofPrice = 3699, fanDirectPrice = 3999 }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
@@ -126,9 +147,12 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     if (!file) return;
     setFanError(""); setFanUploading(true);
     try {
+      const uploadFile = await compressProofImage(file);
+      // Vercel serverless body 約 4.5MB；壓縮後仍過大就給清楚訊息（而非泛用「上傳失敗」）
+      if (uploadFile.size > 4.3 * 1024 * 1024) { setFanError("圖片過大，請換一張或先壓縮再上傳"); return; }
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const fd = new FormData(); fd.append("file", file);
+      const fd = new FormData(); fd.append("file", uploadFile);
       const res = await fetch("/api/fan-proof", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
       const d = await res.json();
       if (!d.ok) { setFanError(fanErrText(d.error)); return; }

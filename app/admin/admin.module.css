@@ -289,6 +289,7 @@
 .modalCard {
   background:#fff; border-radius:18px; padding:28px;
   width:min(400px,100%); box-shadow:0 20px 60px rgba(0,0,0,.18);
+  max-height:calc(100vh - 48px); overflow-y:auto; overscroll-behavior:contain;
 }
 .modalActions { display:flex; gap:10px; justify-content:flex-end; }
 
