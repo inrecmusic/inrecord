@@ -381,8 +381,13 @@ function CoursesPage({leads, onManage, showToast}){
 
 // ── Messages Page ──────────────────────────────────────────────────────────
 const _pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
+// 後台任一 API 回 401（token 過期/失效）時觸發：由 AdminPage 註冊，清 token＋跳回登入頁並提示，
+// 取代散落各動作處籠統的「更新失敗」。
+let _onUnauthorized = null;
+
 function _api(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${_pw()}`, ...(opts.headers || {}) } });
+  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${_pw()}`, ...(opts.headers || {}) } })
+    .then((res) => { if (res.status === 401) _onUnauthorized?.(); return res; });
 }
 
 // 憑證圖（proof-uploads 為私有 bucket）：向 /api/admin/proof-signed 取短期簽名 URL 顯示
@@ -3061,6 +3066,12 @@ export default function AdminPage(){
       .then(r=>{if(r.ok){setAuthed(true);}else{sessionStorage.removeItem(TOKEN_KEY);}})
       .catch(()=>{sessionStorage.removeItem(TOKEN_KEY);})
       .finally(()=>setAuthChecked(true));
+  },[]);
+
+  // 任一透過 _api 的後台動作回 401（token 過期/失效）→ 清 token、跳回登入頁並提示。
+  useEffect(()=>{
+    _onUnauthorized=()=>{ sessionStorage.removeItem(TOKEN_KEY); setAuthed(false); setLoginErr("登入已過期，請重新登入"); };
+    return ()=>{ _onUnauthorized=null; };
   },[]);
 
   async function doLogin(){
