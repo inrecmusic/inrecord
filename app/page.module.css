@@ -7,9 +7,9 @@
 .navTransparent .navLinks a { color: rgba(255,255,255,.9); }
 .navTransparent .navLinks a:hover { color: #fff; }
 .navTransparent .hamburger { color: #fff; }
-/* nav buttons → pills (two-class specificity beats .btnRed/.btnLogin) */
-.btnLogin.navBtn, .btnRed.navBtn { border-radius: 999px; padding-left: 20px; padding-right: 20px; font-size: 17px; }
-.btnRed.navBtn { background: #2c68e7; }
+/* nav buttons → pills (two-class specificity beats .btnPrimary/.btnLogin) */
+.btnLogin.navBtn, .btnPrimary.navBtn { border-radius: 999px; padding-left: 20px; padding-right: 20px; font-size: 17px; }
+.btnPrimary.navBtn { background: var(--brand); }
 .navTransparent .btnLogin { background: transparent; border-color: rgba(255,255,255,.5); color: #fff; }
 .navTransparent .btnLogin:hover { border-color: #fff; background: rgba(255,255,255,.12); color: #fff; }
 /* nav 橫貫全寬：覆蓋 .container 的 1120px 置中，讓 Logo 貼左上角、右側按鈕貼右上角 */
@@ -30,9 +30,9 @@
   0%, 100% { box-shadow: 0 6px 24px rgba(37,99,235,.35); }
   50% { box-shadow: 0 6px 36px rgba(37,99,235,.65), 0 0 0 10px rgba(37,99,235,.08); }
 }
-.btnRed { display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 0; border-radius: var(--radius-sm); padding: 13px 22px; font-weight: 600; font-size: 15px; background: var(--brand); color: #fff; cursor: pointer; transition: transform .2s, box-shadow .2s, background .2s; }
-.btnRed:hover:not(:disabled) { transform: translateY(-1px); background: var(--brand-dark); box-shadow: var(--shadow-md); }
-.btnRed:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btnPrimary { display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 0; border-radius: var(--radius-sm); padding: 13px 22px; font-weight: 600; font-size: 15px; background: var(--brand); color: #fff; cursor: pointer; transition: transform .2s, box-shadow .2s, background .2s; }
+.btnPrimary:hover:not(:disabled) { transform: translateY(-1px); background: var(--brand-dark); box-shadow: var(--shadow-md); }
+.btnPrimary:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
 .btnPulse { animation: pulseShadow 2.2s ease-in-out infinite; }
 .btnOutline { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid rgba(255,255,255,.55); border-radius: var(--radius-sm); padding: 12px 22px; font-weight: 600; font-size: 15px; background: transparent; color: white; cursor: pointer; transition: .2s; text-decoration: none; }
 .btnOutline:hover { background: rgba(255,255,255,.12); border-color: white; }
@@ -76,10 +76,10 @@
   color: var(--gold-hi); font-size: 14.5px; font-weight: 600; letter-spacing: .01em;
   word-break: keep-all; line-break: strict; }
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
-.offerBtns .btnRed { flex: 1; justify-content: center; padding: 12px 18px; font-size: 17px; font-weight: 600; background: #2c68e7; }
+.offerBtns .btnPrimary { flex: 1; justify-content: center; padding: 12px 18px; font-size: 17px; font-weight: 600; background: var(--brand); }
 .offerBtns .btnOutline { font-size: 17px; background: #fff; border: 1.5px solid #2563eb; color: #2563eb; justify-content: center; }
 .offerGuard { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: rgba(255,255,255,.62); font-size: 15px; line-break: strict; overflow-wrap: break-word; }
-.offerGuard svg { width: 18px; height: 18px; padding: 2px; border-radius: 5px; background: #2c68e7; color: #fff; flex-shrink: 0; }
+.offerGuard svg { width: 18px; height: 18px; padding: 2px; border-radius: 5px; background: var(--brand); color: #fff; flex-shrink: 0; }
 .eyebrow { color: rgba(255,255,255,.6); font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
 .hero h1 { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 600; text-wrap: balance; font-size: clamp(36px,4.5vw,62px); line-height: 1.12; letter-spacing: .01em; margin: 0 0 12px; color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
 .hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -215,7 +215,7 @@
 .planCardDark .planDesc { color: var(--muted); }
 .planSpotsRowDark { border-top-color: #e2e8f0; }
 
-.buySecurity { text-align: center; color: #aaa; font-size: 12px; margin: 4px 0 0; }
+.buySecurity { text-align: center; color: var(--ink-3); font-size: 12px; margin: 4px 0 0; }
 
 /* POINTS — kept on the page's white background for site-wide consistency; the
    warm cream method-book card (see .viewport in PointCarousel) is the only color,
@@ -344,8 +344,8 @@
 .socialBtn { width: 40px; height: 40px; border-radius: var(--radius-sm); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.7); display: grid; place-items: center; transition: background .18s, color .18s; cursor: pointer; }
 .socialBtn:hover { background: rgba(255,255,255,.16); color: white; }
 .footerLinks { display: flex; gap: 20px; font-size: 13px; }
-.footerLinks a { color: rgba(255,255,255,.45); transition: color .2s; }
-.footerLinks a:hover { color: rgba(255,255,255,.8); }
+.footerLinks a { color: rgba(255,255,255,.62); transition: color .2s; }
+.footerLinks a:hover { color: rgba(255,255,255,.95); }
 .footerCopy { margin: 0; font-size: 13px; font-weight: 500; }
 
 
@@ -370,7 +370,7 @@
 @media (max-width: 768px) {
   .navLinks { display: none; }
   .hamburger { display: flex; }
-  .btnRed.navBtn { display: none; }
+  .btnPrimary.navBtn { display: none; }
 }
 @media (max-width: 640px) {
   .hero { padding: 48px 0 72px; }
@@ -382,7 +382,7 @@
   .offerPrice { font-size: 36px; }                  /* 窄機：價格縮小，避免右側劃線價 $10,800 溢出卡片 */
   .offerWas { font-size: 18px; }
   .offerBtns { flex-direction: column; }            /* 窄機：兩顆 CTA 直向堆疊全寬，避免擠壓換行 */
-  .offerBtns .btnRed { flex: none; }                /* 取消 flex:1（直向會撐高） */
+  .offerBtns .btnPrimary { flex: none; }                /* 取消 flex:1（直向會撐高） */
   .videoThumb { height: 180px; }
 }
 
@@ -518,7 +518,7 @@
   .pointCard:hover,
   .module:hover,
   .featureCard:hover { transform: none; box-shadow: none; }
-  .btnRed:hover:not(:disabled) { transform: none; }
+  .btnPrimary:hover:not(:disabled) { transform: none; }
   .planBtn:hover { transform: none; background: #fff; }
   .planBtnFeatured:hover { background: var(--brand); }
 }

@@ -508,7 +508,7 @@ export default function HomeClient({ sale }) {
                   ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
                   : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
               : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-            <button className={`${styles.btnRed} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>{buyShort}</button>
+            <button className={`${styles.btnPrimary} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>{buyShort}</button>
           </div>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -592,7 +592,7 @@ export default function HomeClient({ sale }) {
                   <div className={styles.offerLaunch}>📅 課程 {launchLabel} 起陸續上架</div>
                 )}
                 <div className={styles.offerBtns}>
-                  <button className={styles.btnRed} onClick={scrollToPricing}>{buyShort}</button>
+                  <button className={styles.btnPrimary} onClick={scrollToPricing}>{buyShort}</button>
                   <a href="/demo" className={styles.btnOutline}>
                     <Play size={16} />課程 Demo 體驗
                   </a>
@@ -842,7 +842,7 @@ export default function HomeClient({ sale }) {
               <span className={styles.ctaEyebrow}>START NOW</span>
               <h2>現在開始，<span>彈出你的<wbr />第一首流行歌曲</span></h2>
               <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
-              <button className={`${styles.btnRed} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
+              <button className={`${styles.btnPrimary} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
                 {buyShort}課程
               </button>
             </div>
