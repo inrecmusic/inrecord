@@ -4,7 +4,12 @@
   --brand-dark: #1d4ed8;
   --brand-soft: #eff6ff;
   --brand-light: #93c5fd;   /* 深底上的淡品牌藍點綴（取代金色） */
-  --gold: #f7d68a;          /* 保留 token，hero 已改用 brand-light */
+  --gold: #f7d68a;          /* 教室互動遊戲既有 token（5 個遊戲元件依賴，勿改值）*/
+  /* Premium gold scale — 首頁「粉絲限定 premium」層專用（Hero 系列徽章／offer，皆疊在深底上）。
+     與上方遊戲用 --gold 用途不同、勿混用。 */
+  --gold-hi:   #f5d488;     /* 亮金：offer 漸層高光、offer 上架說明 */
+  --gold-mid:  #ecbf5c;     /* 主金：Hero 系列徽章 */
+  --gold-deep: #d9a13a;     /* 濃金：offer 漸層收尾 */
   --ink: #0f172a;
   --ink-2: #334155;
   --ink-3: #64748b;
@@ -169,4 +174,17 @@ a, button, summary, [role="button"] { -webkit-tap-highlight-color: transparent; 
 .music-cursor, .music-cursor * { cursor: none !important; }
 @media (hover: none) {
   .music-cursor, .music-cursor * { cursor: auto !important; }
+}
+
+/* ── 減少動態（prefers-reduced-motion）全站保底 ─────────────────────────────
+   關閉無限脈動/閃爍（.btnPulse 光暈、CTA 錄音紅點、終端機游標）與位移過場、
+   平滑捲動，避免前庭敏感使用者不適。個別遊戲元件另有各自更細的 reduced-motion
+   規則，此處為全站保底、不覆蓋它們的意圖。 */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }

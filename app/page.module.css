@@ -66,14 +66,14 @@
   background: rgba(18,28,52,.45);
   border: 1px solid rgba(120,160,255,.22); box-shadow: 0 30px 70px rgba(0,0,0,.5); backdrop-filter: blur(14px); }
 .offerPill { display: inline-flex; align-items: center; gap: 8px;
-  background: linear-gradient(95deg, #f5d488, #ecbf5c 55%, #d9a13a); color: #3a2a08;
+  background: linear-gradient(95deg, var(--gold-hi), var(--gold-mid) 55%, var(--gold-deep)); color: #3a2a08;
   font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: 13px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase; padding: 7px 16px; border-radius: 999px; }
 .offerPriceRow { display: flex; align-items: baseline; gap: 14px; margin: 14px 0 16px; }
 .offerPrice { font-family: var(--font-inter), sans-serif; font-size: 46px; font-weight: 800; letter-spacing: -.01em; color: #fff; line-height: 1; }
 .offerWas { font-family: var(--font-inter), sans-serif; font-size: 22px; font-weight: 500; color: rgba(255,255,255,.45); text-decoration: line-through; }
 .offerLaunch { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 14px;
-  color: #f5d488; font-size: 14.5px; font-weight: 600; letter-spacing: .01em;
+  color: var(--gold-hi); font-size: 14.5px; font-weight: 600; letter-spacing: .01em;
   word-break: keep-all; line-break: strict; }
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
 .offerBtns .btnRed { flex: 1; justify-content: center; padding: 12px 18px; font-size: 17px; font-weight: 600; background: #2c68e7; }
@@ -85,8 +85,8 @@
 .hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .heroLead { text-wrap: pretty; font-family: var(--font-noto-sans), "Noto Sans TC", sans-serif; font-size: 20px; color: rgba(255,255,255,.66); max-width: 540px; margin: 0 0 18px; font-weight: 400; line-height: 1.6; }
 /* 課程正式名稱：系列徽章（金色 mono）＋ serif 副標 */
-.heroSeries { display: inline-flex; align-items: center; gap: 14px; white-space: nowrap; font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: clamp(15px, 2.4vw, 22px); font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: #ecbf5c; margin-bottom: 10px; line-height: 1.1; }
-.heroSeries::before { content: ""; width: 44px; height: 2px; flex-shrink: 0; background: linear-gradient(90deg, #ecbf5c, rgba(236,191,92,.05)); }
+.heroSeries { display: inline-flex; align-items: center; gap: 14px; white-space: nowrap; font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: clamp(15px, 2.4vw, 22px); font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--gold-mid); margin-bottom: 10px; line-height: 1.1; }
+.heroSeries::before { content: ""; width: 44px; height: 2px; flex-shrink: 0; background: linear-gradient(90deg, var(--gold-mid), color-mix(in srgb, var(--gold-mid) 5%, transparent)); }
 .heroSub { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 500; font-size: clamp(21px, 2.5vw, 31px); line-height: 1.36; color: rgba(255,255,255,.82); margin: -4px 0 16px; text-shadow: 0 2px 18px rgba(0,0,0,.45); }
 
 /* 桌機（≥981px，手機/平板的 max-width:980 規則不受影響）：主視覺一律填滿整個視窗、
@@ -157,9 +157,9 @@
 
 /* INTRO — editorial "polished symmetric": gold eyebrow + serif head + numbered index */
 .introHeader { margin-bottom: 42px; }
-.introEyebrow { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: #c9a227; font-weight: 700; }
+.introEyebrow { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--brand); font-weight: 700; }
 .introHead { font-family: var(--type-display); font-weight: 600; font-size: clamp(32px, 4.4vw, 52px); line-height: 1.12; letter-spacing: .01em; color: var(--ink); margin: 8px 0 0; }
-.introRule { width: 60px; height: 2px; background: #c9a227; margin: 18px 0 14px; }
+.introRule { width: 60px; height: 2px; background: var(--brand); margin: 18px 0 14px; }
 .introSubline { color: var(--muted); font-size: clamp(15px, 1.6vw, 17px); line-height: 1.7; margin: 0; max-width: 640px; }
 .introIndex { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 56px; }
 .introIx { padding: 26px 24px; border-left: 1px solid var(--line); }
@@ -185,7 +185,7 @@
 .introCopy p { text-wrap: pretty; max-width: 620px; color: var(--muted); }
 .outcomes { list-style: none; padding: 0; margin: 24px 0 0; counter-reset: o; columns: 2; column-gap: 36px; }
 .outcomes li { counter-increment: o; position: relative; padding: 11px 0 11px 38px; border-top: 1px solid var(--line); font-size: 14px; font-weight: 500; color: #334155; break-inside: avoid; }
-.outcomes li::before { content: counter(o, decimal-leading-zero); position: absolute; left: 0; top: 11px; font-family: var(--type-display); font-size: 15px; font-weight: 600; color: #c9a227; }
+.outcomes li::before { content: counter(o, decimal-leading-zero); position: absolute; left: 0; top: 11px; font-family: var(--type-display); font-size: 15px; font-weight: 600; color: var(--brand); }
 .pianoPhoto { min-height: 390px; border-radius: var(--radius-lg); background: url("/rick-piano.jpg"); background-size: cover; background-position: center top; box-shadow: var(--shadow-lg); }
 
 /* PRICING */
@@ -224,7 +224,7 @@
 .pointBlock { padding: 60px 0; border-bottom: 1px solid var(--line); }
 .pointBlock:last-child { border-bottom: none; padding-bottom: 0; }
 .pointBadge { font-size: 11px; font-weight: 600; letter-spacing: .22em; color: var(--brand); text-align: center; text-transform: uppercase; margin-bottom: 14px; }
-.pointTitle { text-wrap: balance; font-size: clamp(26px, 3.5vw, 40px); text-align: center; line-height: 1.2; margin: 0 0 40px; }
+.pointTitle { font-family: var(--type-display); text-wrap: balance; font-size: clamp(26px, 3.5vw, 40px); text-align: center; line-height: 1.2; letter-spacing: .01em; margin: 0 0 40px; }
 .pointGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .pointCard { background: white; border: 1.5px solid var(--line); border-radius: var(--radius-md); padding: 28px 20px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: box-shadow .2s, transform .2s; }
 .pointCard:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
@@ -236,7 +236,7 @@
 .curriculum { background: #f8fafc; padding: var(--space-section) 0; }
 .sectionHead { text-align: center; margin-bottom: 40px; }
 .sectionHead small { color: var(--brand); font-weight: 600; display: block; margin-bottom: 8px; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
-.sectionHead h2 { font-family: var(--type-heading); font-weight: 600; text-wrap: balance; font-size: clamp(30px,4vw,46px); line-height: 1.15; letter-spacing: -.01em; margin: 0 0 12px; }
+.sectionHead h2 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(30px,4vw,46px); line-height: 1.15; letter-spacing: .01em; margin: 0 0 12px; }
 .sectionHead p { text-wrap: balance; max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 18px; }
 .moduleList { display: grid; gap: 12px; }
 .module { background: white; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; transition: transform .22s, box-shadow .22s; }
@@ -262,7 +262,7 @@
 .instructorGrid { display: grid; grid-template-columns: 420px 1fr; gap: 72px; align-items: center; }
 .instructorPhoto { min-height: 560px; border-radius: var(--radius-lg); background: url("/rick.jpg"); background-size: cover; background-position: center top; box-shadow: var(--shadow-lg); }
 .instructorCopy small { color: var(--brand); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
-.instructorCopy h2 { font-family: var(--type-heading); font-weight: 600; text-wrap: balance; font-size: clamp(34px,4vw,52px); line-height: 1.1; letter-spacing: -.01em; margin: 10px 0 6px; }
+.instructorCopy h2 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(34px,4vw,52px); line-height: 1.1; letter-spacing: .01em; margin: 10px 0 6px; }
 .instructorCopy h2 span { color: var(--brand); }
 .instructorRole { font-size: 15px; color: var(--muted); font-weight: 400; margin: 0 0 18px; letter-spacing: .02em; }
 .instructorCopy > p { text-wrap: pretty; color: #374151; line-height: 1.68; font-size: 15px; max-width: 680px; margin-bottom: 14px; }
@@ -333,7 +333,7 @@
   box-shadow: 0 0 10px rgba(255,32,40,.9); animation: pulseDot 1.8s ease-in-out infinite;
 }
 @keyframes pulseDot { 0%, 100% { opacity: .55; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
-.cta h2 { font-family: var(--type-heading); font-weight: 600; text-wrap: balance; font-size: clamp(32px,5vw,54px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.01em; }
+.cta h2 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(32px,5vw,54px); line-height: 1.1; margin: 0 0 14px; letter-spacing: .01em; }
 .cta h2 span { background: linear-gradient(100deg, #bcd6ff, #7ba7f5 55%, #4f86ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .cta p { text-wrap: pretty; max-width: 640px; margin: 0 auto 32px; color: rgba(255,255,255,.78); font-size: 18px; }
 
