@@ -47,8 +47,10 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://inrecordmusic.com"),
   title: "InRecord｜流行鋼琴零基礎入門課",
   description: "從零基礎開始，透過系統化課程與互動遊戲，學會彈出你喜歡的流行歌曲。",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "InRecord｜流行鋼琴零基礎入門課",
     description: "10 章節 × 流行曲目實戰 × 互動遊戲",

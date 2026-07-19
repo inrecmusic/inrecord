@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import BuyModal from "@/components/BuyModal";
-import { isFanProofOpen } from "@/lib/fan-proof";
 import PointCarousel from "@/components/PointCarousel";
 import InstructorBioCarousel from "@/components/InstructorBioCarousel";
 import styles from "./page.module.css";
@@ -467,7 +466,7 @@ export default function HomeClient({ sale }) {
   }
 
 
-  const fanProofOpen = isFanProofOpen(Date.now(), sale.fanPlan.deadlineMs);
+  const fanProofOpen = sale.fanProofOpen;
   const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
   // 課程上架時間（第一批）：固定台灣時區顯示，供 hero CTA 提示；未設 open_at 則不顯示。
   // ⚠️ 末尾 .replace 把日期與時間之間的分隔空白正規化為一般空格：Node(伺服器) 的 ICU 在 zh-TW
