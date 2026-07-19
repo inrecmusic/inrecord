@@ -78,8 +78,6 @@
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
 .offerBtns .btnPrimary { flex: 1; justify-content: center; padding: 12px 18px; font-size: 17px; font-weight: 600; background: var(--brand); }
 .offerBtns .btnOutline { font-size: 17px; background: #fff; border: 1.5px solid #2563eb; color: #2563eb; justify-content: center; }
-.offerGuard { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: rgba(255,255,255,.62); font-size: 15px; line-break: strict; overflow-wrap: break-word; }
-.offerGuard svg { width: 18px; height: 18px; padding: 2px; border-radius: 5px; background: var(--brand); color: #fff; flex-shrink: 0; }
 .eyebrow { color: rgba(255,255,255,.6); font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
 .hero h1 { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 600; text-wrap: balance; font-size: clamp(36px,4.5vw,62px); line-height: 1.12; letter-spacing: .01em; margin: 0 0 12px; color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
 .hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }

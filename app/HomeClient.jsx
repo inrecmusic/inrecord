@@ -469,9 +469,12 @@ export default function HomeClient({ sale }) {
 
   const fanProofOpen = isFanProofOpen(Date.now(), sale.fanPlan.deadlineMs);
   const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
-  // 課程上架時間（第一批）：固定台灣時區顯示，供 hero CTA 提示；未設 open_at 則不顯示
+  // 課程上架時間（第一批）：固定台灣時區顯示，供 hero CTA 提示；未設 open_at 則不顯示。
+  // ⚠️ 末尾 .replace 把日期與時間之間的分隔空白正規化為一般空格：Node(伺服器) 的 ICU 在 zh-TW
+  //    會插入 U+2009 細空格、瀏覽器 ICU 用一般空格(U+0020) → 不正規化 → SSR 與 client 文字不符
+  //    → React hydration mismatch(#425/#418/#423)。含「時:分」的格式才會中鏢，純 M/D 不受影響。
   const launchLabel = sale.openAt
-    ? new Date(sale.openAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    ? new Date(sale.openAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).replace(/[\u2009\u202f\u00a0]/g, " ")
     : null;
 
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
@@ -597,7 +600,6 @@ export default function HomeClient({ sale }) {
                     <Play size={16} />課程 Demo 體驗
                   </a>
                 </div>
-                <span className={styles.offerGuard}><Check size={13} strokeWidth={3} />7 天內不滿意，全額退費保證</span>
               </motion.div>
             </motion.div>
           </div>
