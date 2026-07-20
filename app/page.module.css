@@ -92,7 +92,7 @@
    讓內容比視窗高時自動改靠上、不被裁切到 nav 底下。 */
 @media (min-width: 981px) {
   .hero { min-height: 100dvh; display: flex; flex-direction: column; justify-content: safe center; padding-top: 144px; }
-  .heroIntro { padding-top: 0; padding-bottom: 0; transform: translateY(-88px); }  /* 左欄整塊上移，與右側照片人物身形平齊 */
+  .heroIntro { padding-top: 0; padding-bottom: 0; transform: translateY(-56px); }  /* 左欄整塊上移，與右側照片人物身形平齊（≤ padding 餘裕，矮視窗不被 nav 切到）*/
 }
 
 .heroCtas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 0; }
