@@ -82,6 +82,11 @@
 .hero h1 { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 600; text-wrap: balance; font-size: clamp(36px,4.5vw,62px); line-height: 1.12; letter-spacing: .01em; margin: 0 0 12px; color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
 .hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .heroLead { text-wrap: pretty; font-family: var(--font-noto-sans), "Noto Sans TC", sans-serif; font-size: 20px; color: rgba(255,255,255,.66); max-width: 540px; margin: 0 0 18px; font-weight: 400; line-height: 1.6; }
+/* Hero 社會證明列：桌機/手機皆常駐（補終端機卡只在 hover 才顯示的缺口）*/
+.heroProof { display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 2px 0 20px; font-size: 15px; }
+.heroProofRating { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--gold-mid); letter-spacing: .01em; }
+.heroProofMembers { color: rgba(255,255,255,.72); }
+.heroProofMembers strong { color: #fff; font-weight: 700; }
 /* 課程正式名稱：系列徽章（金色 mono）＋ serif 副標 */
 .heroSeries { display: inline-flex; align-items: center; gap: 14px; white-space: nowrap; font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: clamp(15px, 2.4vw, 22px); font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--gold-mid); margin-bottom: 10px; line-height: 1.1; }
 .heroSeries::before { content: ""; width: 44px; height: 2px; flex-shrink: 0; background: linear-gradient(90deg, var(--gold-mid), color-mix(in srgb, var(--gold-mid) 5%, transparent)); }

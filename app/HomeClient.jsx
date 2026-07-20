@@ -584,6 +584,18 @@ export default function HomeClient({ sale }) {
               <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、能追蹤成效，看見進步。</motion.p>
+              {stats && (stats.rating != null || stats.purchases > 0) && (
+                <motion.div variants={fadeUp} className={styles.heroProof}>
+                  {stats.rating != null && (
+                    <span className={styles.heroProofRating}>
+                      <Star size={15} fill="currentColor" strokeWidth={0} />{Number(stats.rating).toFixed(1)}
+                    </span>
+                  )}
+                  {stats.purchases > 0 && (
+                    <span className={styles.heroProofMembers}>已有 <strong>{stats.purchases.toLocaleString()}+</strong> 位學員加入</span>
+                  )}
+                </motion.div>
+              )}
               <motion.div variants={fadeUp} className={styles.offerCard}>
                 <span className={styles.offerPill}>粉絲限定方案·超早鳥預購</span>
                 <div className={styles.offerPriceRow}>
