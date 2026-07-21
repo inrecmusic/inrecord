@@ -726,7 +726,7 @@ export default function HomeClient({ sale }) {
         {/* INSTRUCTOR */}
         <RevealSection id="instructor" className={styles.instructorSection}>
           <div className={styles.container + " " + styles.instructorGrid}>
-            <div className={styles.instructorPhoto} />
+            <img className={styles.instructorPhoto} src="/rick.jpg" alt="跨界鋼琴家張育瑞（Rick Chang）演奏形象照" loading="lazy" decoding="async" />
             <div className={styles.instructorCopy}>
               <small>講師介紹</small>
               <h2>Rick Chang<br/><span>張育瑞老師</span></h2>
