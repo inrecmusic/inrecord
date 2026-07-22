@@ -19,6 +19,11 @@ import InstructorBioCarousel from "@/components/InstructorBioCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const POINTS = [
   { n: 1, title: "零基礎也能輕鬆上手" },
@@ -384,6 +389,8 @@ export default function HomeClient({ sale }) {
   const termRef = useRef(null);
   const musicCursorRef = useRef(null);
   const heroRef = useRef(null);
+  const heroPhotoRef = useRef(null);
+  const heroContentRef = useRef(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -450,6 +457,19 @@ export default function HomeClient({ sale }) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
+
+  // Hero 視差入場（桌機）：捲離 hero 時，照片微放大＋下移、內容上移＋淡出（GSAP ScrollTrigger scrub）。
+  // 只在 ≥981px 且未要求減少動態時啟用；matchMedia 條件不符自動不掛/revert，useGSAP 於卸載自動清理。
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+    mm.add("(min-width: 981px) and (prefers-reduced-motion: no-preference)", () => {
+      gsap.timeline({
+        scrollTrigger: { trigger: heroRef.current, start: "top top", end: "bottom top", scrub: true },
+      })
+        .to(heroPhotoRef.current, { yPercent: 6, scale: 1.1, ease: "none" }, 0)
+        .to(heroContentRef.current, { y: -60, opacity: 0.3, ease: "none" }, 0);
+    });
+  }, { scope: heroRef });
 
   function startBuy(plan, opts = {}) {
     if (!user?.email) { window.location.href = "/classroom/login"; return; }
@@ -542,7 +562,7 @@ export default function HomeClient({ sale }) {
       <main id="top">
         {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
-          <div className={styles.heroPhoto} aria-hidden="true" />
+          <div ref={heroPhotoRef} className={styles.heroPhoto} aria-hidden="true" />
           <div
             className={styles.heroPhotoZone}
             aria-hidden="true"
@@ -578,7 +598,7 @@ export default function HomeClient({ sale }) {
               </div>
             </div>
           </div>
-          <div className={styles.heroGrid}>
+          <div ref={heroContentRef} className={styles.heroGrid}>
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
               <motion.span variants={fadeUp} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
               <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>

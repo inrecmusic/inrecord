@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
+    "@gsap/react": "^2.1.2",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.43.4",
     "@upstash/ratelimit": "^2.0.8",
@@ -20,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
+    "gsap": "^3.15.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.16.0",
     "next": "14.2.35",
