@@ -55,9 +55,19 @@ export default async function Page() {
     hasCourseInstance: { "@type": "CourseInstance", courseMode: "Online", courseWorkload: "PT8H" },
   };
 
+  // schema.org Organization（品牌／Google knowledge graph）
+  const orgLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "InRecord",
+    url: "https://inrecordmusic.com",
+    logo: "https://inrecordmusic.com/logo.png",
+    sameAs: ["https://www.instagram.com/inrec.music"],
+  };
+
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(courseLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([courseLd, orgLd]).replace(/</g, "\\u003c") }} />
       <HomeClient sale={sale} />
     </>
   );
