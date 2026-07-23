@@ -75,6 +75,11 @@
 .offerLaunch { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 14px;
   color: var(--gold-hi); font-size: 16px; font-weight: 600; letter-spacing: .01em;
   word-break: keep-all; line-break: strict; }
+/* 早鳥倒數：上架日下方一行金色（跳動時間用 mono）*/
+.offerCountdown { display: inline-flex; align-items: center; gap: 8px; margin: -6px 0 14px;
+  color: var(--gold); font-size: 16px; font-weight: 600; word-break: keep-all; line-break: strict; }
+.offerCountdown strong { font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-weight: 800;
+  letter-spacing: .02em; font-variant-numeric: tabular-nums; color: var(--gold-hi); }
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
 .offerBtns .btnPrimary { flex: 1; justify-content: center; padding: 12px 18px; font-size: 19px; font-weight: 600; background: var(--brand); }
 .offerBtns .btnOutline { font-size: 19px; background: #fff; border: 1.5px solid #2563eb; color: #2563eb; justify-content: center; }

@@ -317,6 +317,17 @@ const fadeUp = {
 };
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } };
 
+// 早鳥倒數格式化（純函式、無 Date.now）：ms → "N 天 HH:MM:SS"
+function fmtCountdown(ms) {
+  let d = Math.max(0, ms);
+  const days = Math.floor(d / 86400000); d -= days * 86400000;
+  const h = Math.floor(d / 3600000); d -= h * 3600000;
+  const m = Math.floor(d / 60000); d -= m * 60000;
+  const s = Math.floor(d / 1000);
+  const p = n => String(n).padStart(2, "0");
+  return `${days} 天 ${p(h)}:${p(m)}:${p(s)}`;
+}
+
 function useCountUp(target, duration = 1800, decimals = 0) {
   const [value, setValue] = useState(0);
   const [inView, setInView] = useState(false);
@@ -386,6 +397,7 @@ export default function HomeClient({ sale }) {
   const [stats, setStats] = useState(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [photoHover, setPhotoHover] = useState(false);
+  const [nowMs, setNowMs] = useState(null); // 早鳥倒數：mounted 後才有值 → SSR/client 初次都不渲染倒數（hydration-safe）
   const termRef = useRef(null);
   const musicCursorRef = useRef(null);
   const heroRef = useRef(null);
@@ -406,6 +418,13 @@ export default function HomeClient({ sale }) {
       .then(r => r.json())
       .then(data => { if (data.ok) setStats(data); })
       .catch(() => {});
+  }, []);
+
+  // 早鳥倒數 ticker：只在 client 執行，每秒更新 nowMs（server 端不跑 → 無 hydration 問題）
+  useEffect(() => {
+    setNowMs(Date.now());
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -487,6 +506,9 @@ export default function HomeClient({ sale }) {
 
 
   const fanProofOpen = sale.fanProofOpen;
+  // 早鳥倒數：mounted 後(nowMs != null)才算；截止(<=0)或無截止時不顯示
+  const fanCountdownMs = (nowMs != null && sale.fanPlan?.deadlineMs) ? sale.fanPlan.deadlineMs - nowMs : 0;
+  const showFanCountdown = fanCountdownMs > 0;
   const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
   // 課程上架時間（第一批）：固定台灣時區顯示，供 hero CTA 提示；未設 open_at 則不顯示。
   // ⚠️ 末尾 .replace 把日期與時間之間的分隔空白正規化為一般空格：Node(伺服器) 的 ICU 在 zh-TW
@@ -624,6 +646,9 @@ export default function HomeClient({ sale }) {
                 </div>
                 {launchLabel && !sale.classroomOpen && (
                   <div className={styles.offerLaunch}>📅 課程 {launchLabel} 起陸續上架</div>
+                )}
+                {showFanCountdown && (
+                  <div className={styles.offerCountdown}>⏳ 粉絲早鳥價剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
                 )}
                 <div className={styles.offerBtns}>
                   <button className={styles.btnPrimary} onClick={scrollToPricing}>{buyShort}</button>
