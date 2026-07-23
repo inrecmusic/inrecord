@@ -55,7 +55,7 @@
       rgba(5,7,11,.72) 37%, rgba(5,7,11,.52) 47%,
       rgba(5,7,11,.34) 57%, rgba(5,7,11,.18) 68%,
       rgba(5,7,11,.07) 80%, transparent 92%),
-    var(--hero-photo, url("/hero-pianist.jpg"));
+    var(--hero-photo, url("/hero-pianist.webp"));
   background-size: cover; background-position: center;
   background-blend-mode: screen, normal, normal;
 }
