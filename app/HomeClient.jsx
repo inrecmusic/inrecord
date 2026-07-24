@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   Bot, Music, GraduationCap,
   TrendingUp, Play, Award, Star,
@@ -751,7 +752,7 @@ export default function HomeClient({ sale }) {
                     <span className={styles.chevron}><ChevronDown size={18} strokeWidth={2} /></span>
                   </summary>
                   <div className={styles.moduleBody}>
-                    <div className={styles.moduleImg} style={{ backgroundImage: `url(https://images.unsplash.com/${m.img}?auto=format&fit=crop&w=500&q=80)` }} />
+                    <Image className={styles.moduleImg} src={`https://images.unsplash.com/${m.img}?auto=format&fit=crop&w=500&q=80`} alt="" width={140} height={96} sizes="(max-width: 980px) 100vw, 140px" />
                     <div>
                       <p>{m.desc}</p>
                       {!m.isAppendix && (
@@ -771,7 +772,7 @@ export default function HomeClient({ sale }) {
         {/* INSTRUCTOR */}
         <RevealSection id="instructor" className={styles.instructorSection}>
           <div className={styles.container + " " + styles.instructorGrid}>
-            <img className={styles.instructorPhoto} src="/rick.jpg" alt="跨界鋼琴家張育瑞（Rick Chang）演奏形象照" loading="lazy" decoding="async" />
+            <Image className={styles.instructorPhoto} src="/rick.jpg" alt="跨界鋼琴家張育瑞（Rick Chang）演奏形象照" width={800} height={1200} sizes="(max-width: 980px) 100vw, 420px" />
             <div className={styles.instructorCopy}>
               <small>講師介紹</small>
               <h2>Rick Chang<br/><span>張育瑞老師</span></h2>
