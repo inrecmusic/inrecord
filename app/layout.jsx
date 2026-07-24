@@ -9,7 +9,7 @@ import "./globals.css";
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["500", "600"],
-  style: ["normal", "italic"],
+  style: ["normal"],
   display: "swap",
   variable: "--font-cormorant",
 });
@@ -17,7 +17,7 @@ const cormorant = Cormorant_Garamond({
 // Layer 1 · Main-visual — Chinese serif (中文 厚重 = 600)
 const notoSerif = Noto_Serif_TC({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["500", "600"],
   display: "swap",
   variable: "--font-noto-serif",
 });
