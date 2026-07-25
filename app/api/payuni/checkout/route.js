@@ -38,6 +38,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { plan, email, proofUrl } = body;
+    const attribution = body.attribution || null;
 
     // 1) 方案合法性 + 價格/品名一律由後端決定
     const catalog = PLAN_CATALOG[plan];
@@ -165,6 +166,7 @@ export async function POST(req) {
         carrier_type: carrierType || null,
         carrier_id:   carrierId || null,
         coupon_code:  couponCode || null,
+        attribution,
         ...(isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
       });
       if (error) {

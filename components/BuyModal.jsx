@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import styles from "./BuyModal.module.css";
 import { MOBILE_BARCODE_RE, TAX_ID_RE, MOBILE_CARRIER_TYPE, isValidTaxId } from "@/lib/invoice-fields";
 import { supabase } from "@/lib/supabase";
+import { readAttributionCookie } from "@/lib/attribution";
 
 const COUPON_ERRORS = {
   coupon_not_found:   "查無此優惠碼",
@@ -239,7 +240,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
       const res = await fetch("/api/payuni/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, couponCode: couponApplied?.code || undefined, proofUrl: proofUrl || undefined, ...invoiceFields }),
+        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, couponCode: couponApplied?.code || undefined, proofUrl: proofUrl || undefined, attribution: readAttributionCookie() || undefined, ...invoiceFields }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "checkout_failed");
