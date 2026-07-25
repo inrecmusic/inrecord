@@ -20,6 +20,7 @@ import QuizzesPage from "./QuizzesPage";
 import SaleSettingsPage from "./SaleSettingsPage";
 import TrackingSettingsPage from "./TrackingSettingsPage";
 import AnnouncementsPage from "./AnnouncementsPage";
+import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
 import { inDateRange } from "@/lib/date-range";
@@ -2305,6 +2306,7 @@ function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonu
           </div>
         </div>
       </div>
+      <SourceAttributionTable orders={paidOrders} />
     </div>
   );
 }
