@@ -118,7 +118,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
 
   // 開窗即為漏斗事件 InitiateCheckout（Meta/GA4）
   useEffect(() => {
-    if (open) trackEvent("InitiateCheckout", { value: basePrice, currency: "TWD", contentIds: [plan?.plan] });
+    if (open && plan) trackEvent("InitiateCheckout", { value: basePrice, currency: "TWD", contentIds: [plan.plan] });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 序號購買：驗證使用者輸入的序號（須為有效 price 券），通過即套用、解鎖結帳。
