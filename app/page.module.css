@@ -168,13 +168,13 @@
 .introEyebrow { font-size: 13.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--brand); font-weight: 700; }
 .introHead { font-family: var(--type-display); font-weight: 600; font-size: clamp(32px, 4.4vw, 52px); line-height: 1.12; letter-spacing: .01em; color: var(--ink); margin: 8px 0 0; }
 .introRule { width: 60px; height: 2px; background: var(--brand); margin: 18px 0 14px; }
-.introSubline { color: var(--muted); font-size: clamp(17px, 1.8vw, 19px); line-height: 1.7; margin: 0; max-width: 640px; }
+.introSubline { color: var(--muted); font-size: clamp(18px, 2vw, 20.5px); line-height: 1.7; margin: 0; max-width: 640px; }
 .introIndex { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 56px; }
 .introIx { padding: 26px 24px; border-left: 1px solid var(--line); }
 .introIx:first-child { border-left: 0; padding-left: 0; }
 .introIxNo { font-family: var(--type-display); font-size: 34px; font-weight: 600; color: var(--brand); line-height: 1; }
 .introIx h3 { font-size: 18px; font-weight: 600; margin: 14px 0 8px; color: var(--ink); }
-.introIx p { text-wrap: pretty; font-size: 15px; line-height: 1.7; color: var(--muted); margin: 0; }
+.introIx p { text-wrap: pretty; font-size: 17px; line-height: 1.7; color: var(--muted); margin: 0; }
 @media (max-width: 900px) and (min-width: 601px) {
   .introIndex { grid-template-columns: 1fr 1fr; }
   .introIx { padding: 24px 22px; }
@@ -190,9 +190,9 @@
 .introGrid { display: grid; grid-template-columns: 1fr 420px; gap: 56px; align-items: center; }
 .introCopy small { color: var(--brand); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 14.5px; }
 .introCopy h2 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(30px,4vw,42px); line-height: 1.22; letter-spacing: .01em; margin: 8px 0 18px; }
-.introCopy p { text-wrap: pretty; max-width: 620px; color: var(--muted); }
+.introCopy p { text-wrap: pretty; max-width: 620px; color: var(--muted); font-size: 18px; }
 .outcomes { list-style: none; padding: 0; margin: 24px 0 0; counter-reset: o; columns: 2; column-gap: 36px; }
-.outcomes li { counter-increment: o; position: relative; padding: 11px 0 11px 38px; border-top: 1px solid var(--line); font-size: 15.5px; font-weight: 500; color: #334155; break-inside: avoid; }
+.outcomes li { counter-increment: o; position: relative; padding: 11px 0 11px 38px; border-top: 1px solid var(--line); font-size: 17px; font-weight: 500; color: #334155; break-inside: avoid; }
 .outcomes li::before { content: counter(o, decimal-leading-zero); position: absolute; left: 0; top: 11px; font-family: var(--type-display); font-size: 17px; font-weight: 600; color: var(--brand); }
 .pianoPhoto { min-height: 390px; border-radius: var(--radius-lg); background: url("/rick-piano.jpg"); background-size: cover; background-position: center top; box-shadow: var(--shadow-lg); }
 
