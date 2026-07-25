@@ -97,7 +97,7 @@ function DefaultPrivacyContent() {
           <li><b>Google</b>：造訪「我的廣告中心」；或安裝 Google Analytics 停用外掛（<a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>tools.google.com/dlpage/gaoptout</a>）。</li>
           <li><b>LINE</b>：LINE 應用程式設定 → 隱私設定 → 提供使用資料。</li>
         </ul>
-        您也可於瀏覽器設定封鎖第三方 Cookie。停用後仍可正常使用本網站，但我們將無法據以衡量廣告成效。
+        您也可於瀏覽器設定封鎖第三方 Cookie。停用後仍可正常使用本平台，但我們將無法據以衡量廣告成效。
       </Section>
 
       <Section title="7. 資料保存期限">
