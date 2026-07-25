@@ -9,7 +9,7 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks
+  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
@@ -18,6 +18,7 @@ import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
 import QuizzesPage from "./QuizzesPage";
 import SaleSettingsPage from "./SaleSettingsPage";
+import TrackingSettingsPage from "./TrackingSettingsPage";
 import AnnouncementsPage from "./AnnouncementsPage";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
@@ -44,6 +45,7 @@ const NAV_GROUPS = [
   ]},
   { title:"設定", items:[
     { id:"sale",        label:"銷售設定",   icon:CalendarClock },
+    { id:"tracking",   label:"追蹤碼",   icon: Activity },
     { id:"audit",       label:"操作紀錄",   icon:ClipboardList },
     { id:"integration", label:"系統設定",   icon:Settings },
     { id:"privacy",     label:"隱私權政策", icon:Shield },
@@ -3186,6 +3188,7 @@ export default function AdminPage(){
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
           {page==="sale"        &&<SaleSettingsPage showToast={showToast}/>}
+          {page==="tracking"    && <TrackingSettingsPage showToast={showToast}/>}
           {page==="audit"       &&<AuditLogPage/>}
           {page==="integration" &&<IntegrationPage showToast={showToast}/>}
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
