@@ -77,7 +77,7 @@ function DefaultPrivacyContent() {
           <li><b>Brevo</b>：交易與課程通知郵件寄送。</li>
           <li><b>Supabase</b>：PostgreSQL 資料庫儲存，採用業界標準加密。</li>
         </ul>
-        本平台目前未使用第三方廣告追蹤或行為分析像素（如 Google Analytics、Meta Pixel）。
+        本平台亦使用第三方廣告與分析追蹤技術，詳見第 6 條「廣告與分析追蹤」。
         本平台不會將您的個人資料出售、出租或以任何形式交換給第三方商業機構。
       </Section>
 
@@ -90,14 +90,24 @@ function DefaultPrivacyContent() {
         您可透過瀏覽器設定拒絕或刪除 Cookie，但部分功能可能因此受限。
       </Section>
 
-      <Section title="6. 資料保存期限">
+      <Section title="6. 廣告與分析追蹤">
+        本平台使用 Meta Pixel、Google（Google Analytics 4、Google Ads）與 LINE Tag 等第三方追蹤技術，透過 Cookie 蒐集匿名的瀏覽與轉換資料，用於衡量廣告成效與再行銷。您可透過以下方式停用：
+        <ul>
+          <li><b>Meta</b>：帳號設定 → 廣告偏好；或安裝 Meta Pixel 相關瀏覽器封鎖工具。</li>
+          <li><b>Google</b>：造訪「我的廣告中心」；或安裝 Google Analytics 停用外掛（<a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>tools.google.com/dlpage/gaoptout</a>）。</li>
+          <li><b>LINE</b>：LINE 應用程式設定 → 隱私設定 → 提供使用資料。</li>
+        </ul>
+        您也可於瀏覽器設定封鎖第三方 Cookie。停用後仍可正常使用本網站，但我們將無法據以衡量廣告成效。
+      </Section>
+
+      <Section title="7. 資料保存期限">
         <ul>
           <li>購買訂單資料：依電商交易法規保存 <b>5 年</b>。</li>
-          <li>您可隨時要求提前刪除個人資料（詳見第 7 條）。</li>
+          <li>您可隨時要求提前刪除個人資料（詳見第 8 條）。</li>
         </ul>
       </Section>
 
-      <Section title="7. 您的權利">
+      <Section title="8. 您的權利">
         依據個人資料保護法，您享有以下權利：
         <ul>
           <li><b>查詢或閱覽</b>您的個人資料。</li>
@@ -109,15 +119,15 @@ function DefaultPrivacyContent() {
         如需行使上述權利，請透過 Email 聯絡我們，我們將於 <b>7 個工作天內</b>回覆處理。
       </Section>
 
-      <Section title="8. 未成年人保護">
+      <Section title="9. 未成年人保護">
         本平台服務適用年齡為 13 歲以上。若您未滿 13 歲，請勿提供個人資料，並請由家長或監護人代為操作。
       </Section>
 
-      <Section title="9. 隱私權政策異動">
+      <Section title="10. 隱私權政策異動">
         本平台保留隨時修改本政策之權利。重大異動時，將透過 Email 或網站公告通知您。繼續使用本服務即表示您同意修訂後的政策。
       </Section>
 
-      <Section title="10. 聯絡我們" last>
+      <Section title="11. 聯絡我們" last>
         如對本隱私權政策有任何疑問，請透過以下方式聯繫：
         <ul>
           <li><b>Email</b>：<a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a></li>
