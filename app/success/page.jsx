@@ -44,7 +44,7 @@ export default async function SuccessPage({ searchParams }) {
           transactionId: tradeNo,
           value: Number(order.amount) || 0,
           contentIds: [order.plan],
-          googleAdsSendTo: platforms?.googleAds ? `${platforms.googleAds.id}/${platforms.googleAds.purchaseLabel}` : null,
+          googleAdsSendTo: platforms?.googleAds?.purchaseLabel ? `${platforms.googleAds.id}/${platforms.googleAds.purchaseLabel}` : null,
           lineTagId: platforms?.line?.id || null,
         };
       }
