@@ -1,5 +1,8 @@
 import Logo from "@/components/Logo";
 import { getSaleSettings, isPresale } from "@/lib/sale";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { getTrackingSettings } from "@/lib/tracking";
+import PurchaseTracking from "@/components/tracking/PurchaseTracking";
 
 // 付款成功頁需即時讀 sale 狀態（預購 / 已開課），故 server component + 動態。
 export const dynamic = "force-dynamic";
@@ -26,6 +29,27 @@ export default async function SuccessPage({ searchParams }) {
   // 讀取失敗時安全 fallback 成預購（= 現況），不讓成功頁壞掉。
   let presale = true;
   try { presale = isPresale(await getSaleSettings()); } catch { presale = true; }
+
+  // 回查訂單以觸發 Purchase 轉換追蹤；best-effort，任何失敗都不影響成功頁本身。
+  let purchase = null;
+  if (tradeNo && !failed) {
+    try {
+      const sb = getSupabaseAdmin();
+      const { data: order } = sb
+        ? await sb.from("orders").select("amount, plan, status").eq("mer_trade_no", tradeNo).maybeSingle()
+        : { data: null };
+      if (order && order.status !== "refunded") {
+        const platforms = await getTrackingSettings();
+        purchase = {
+          transactionId: tradeNo,
+          value: Number(order.amount) || 0,
+          contentIds: [order.plan],
+          googleAdsSendTo: platforms?.googleAds ? `${platforms.googleAds.id}/${platforms.googleAds.purchaseLabel}` : null,
+          lineTagId: platforms?.line?.id || null,
+        };
+      }
+    } catch {}
+  }
 
   if (failed) {
     return (
@@ -57,6 +81,7 @@ export default async function SuccessPage({ searchParams }) {
   return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, background: "linear-gradient(135deg,#f0fdf4,#eff6ff)" }}>
       <div style={card}>
+        {purchase && purchase.value > 0 && <PurchaseTracking {...purchase} />}
         <div style={{ fontSize: 64, marginBottom: 16 }}>🎹</div>
         <Logo size={28} />
         <h1 style={{ fontSize: 32, letterSpacing: "-.04em", margin: "16px 0 10px" }}>{heading}</h1>
