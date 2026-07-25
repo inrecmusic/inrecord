@@ -47,13 +47,13 @@
 複用 `sale_settings` 的「一列設定、後臺即時改」模式。用單一 JSONB `config` 欄承載所有平台，之後加平台免改 schema。
 
 ```sql
+-- 實作採 id text = 'default' 單列（比照 sale_settings 慣例，非 int/check 版）
 create table if not exists tracking_settings (
-  id         int primary key default 1,
+  id         text primary key default 'default',
   config     jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now(),
-  constraint tracking_settings_singleton check (id = 1)
+  updated_at timestamptz not null default now()
 );
-insert into tracking_settings (id, config) values (1, '{}'::jsonb)
+insert into tracking_settings (id, config) values ('default', '{}'::jsonb)
   on conflict (id) do nothing;
 ```
 
@@ -157,7 +157,7 @@ alter table orders add column if not exists attribution jsonb;
 
 - `app/admin/page.jsx` 的 `NAV_GROUPS`「設定」群組新增 `{ id:"tracking", label:"追蹤碼", icon: Activity }`（lucide 既有 icon）。
 - `app/admin/TrackingSettingsPage.jsx`（比照 `SaleSettingsPage.jsx`）：四張平台卡，每張 = 標題 + 「去哪找這個 ID」小提示 + ID 輸入框 + 啟用開關；底部「儲存」。
-- 存檔 API `app/api/admin/tracking-settings/route.js`：`GET` 讀、`POST` 寫，JWT 保護（比照 `app/api/admin/sale-settings/route.js`），寫入 `tracking_settings` 單列。
+- 存檔 API `app/api/admin/tracking-settings/route.js`：`GET` 讀、`PATCH` 寫，JWT 保護（比照 `app/api/admin/sale-settings/route.js`），寫入 `tracking_settings` 單列。
 - 儲存後前台即時生效（layout 每次 render 重讀，無需部署）。
 
 ## F. 隱私 & 安全
