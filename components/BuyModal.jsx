@@ -4,6 +4,7 @@ import styles from "./BuyModal.module.css";
 import { MOBILE_BARCODE_RE, TAX_ID_RE, MOBILE_CARRIER_TYPE, isValidTaxId } from "@/lib/invoice-fields";
 import { supabase } from "@/lib/supabase";
 import { readAttributionCookie } from "@/lib/attribution";
+import { trackEvent } from "@/lib/track-event";
 
 const COUPON_ERRORS = {
   coupon_not_found:   "查無此優惠碼",
@@ -114,6 +115,11 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     })();
     return () => { cancelled = true; };
   }, [open, autoCoupon, plan?.plan]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 開窗即為漏斗事件 InitiateCheckout（Meta/GA4）
+  useEffect(() => {
+    if (open) trackEvent("InitiateCheckout", { value: basePrice, currency: "TWD", contentIds: [plan?.plan] });
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 序號購買：驗證使用者輸入的序號（須為有效 price 券），通過即套用、解鎖結帳。
   async function applySerial() {

@@ -19,6 +19,7 @@ import PointCarousel from "@/components/PointCarousel";
 import InstructorBioCarousel from "@/components/InstructorBioCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/track-event";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -490,6 +491,24 @@ export default function HomeClient({ sale }) {
         .to(heroContentRef.current, { y: -60, opacity: 0.3, ease: "none" }, 0);
     });
   }, { scope: heroRef });
+
+  // 定價區進入視窗打一次漏斗事件 ViewContent（Meta/GA4）
+  useEffect(() => {
+    const el = document.getElementById("pricing");
+    if (!el) return;
+    let fired = false;
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting && !fired) {
+          fired = true;
+          trackEvent("ViewContent", { contentIds: ["bundle"], contentName: "學琴全攻略（課程包）", value: sale?.plans?.bundle?.price, currency: "TWD" });
+          io.disconnect();
+        }
+      }
+    }, { threshold: 0.5 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startBuy(plan, opts = {}) {
     if (!user?.email) { window.location.href = "/classroom/login"; return; }
