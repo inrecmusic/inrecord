@@ -1,5 +1,8 @@
 import { Cormorant_Garamond, Noto_Serif_TC, Inter, Noto_Sans_TC, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import TrackingScripts from "@/components/tracking/TrackingScripts";
+import RouteChangeTracker from "@/components/tracking/RouteChangeTracker";
+import { getTrackingSettings } from "@/lib/tracking";
 
 // v3 Two-tier type system —
 //   Layer 1 · Main-visual serif (Hero only): Cormorant Garamond + Noto Serif TC
@@ -58,13 +61,18 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const platforms = await getTrackingSettings();
   return (
     <html
       lang="zh-Hant"
       className={`${cormorant.variable} ${notoSerif.variable} ${inter.variable} ${notoSans.variable} ${jetbrains.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <TrackingScripts platforms={platforms} />
+        <RouteChangeTracker lineTagId={platforms?.line?.id || null} />
+        {children}
+      </body>
     </html>
   );
 }
