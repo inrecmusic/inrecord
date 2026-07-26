@@ -12,8 +12,8 @@ export async function GET(req) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const minHours = Number(process.env.RECOVERY_AFTER_HOURS || 6);
-  const maxHours = Number(process.env.RECOVERY_MAX_HOURS || 48);
+  const minHours = Number(process.env.RECOVERY_AFTER_HOURS) || 6;   // 非數字 env → 落回預設(避免 NaN → RangeError)
+  const maxHours = Number(process.env.RECOVERY_MAX_HOURS) || 48;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "no_db" }, { status: 500 });
@@ -36,9 +36,10 @@ export async function GET(req) {
 
   let sent = 0;
   let failed = 0;
+  let errors = 0; // DB claim/reset 出錯（有別於「正常搶輸 race」的 !claimed 略過）
   for (const o of candidates) {
     // 原子 claim：只在仍 pending 且未寄過時成功（防重寄＋防與 notify 競態）
-    const { data: claimed } = await supabase
+    const { data: claimed, error: claimErr } = await supabase
       .from("orders")
       .update({ recovery_sent_at: new Date().toISOString() })
       .eq("id", o.id)
@@ -46,18 +47,24 @@ export async function GET(req) {
       .is("recovery_sent_at", null)
       .select("id")
       .maybeSingle();
-    if (!claimed) continue;
+    if (claimErr) { errors++; console.error("[recovery] claim failed", o.id, claimErr.message); continue; }
+    if (!claimed) continue; // 已被別輪或已 paid，正常略過
 
-    const { subject, html } = buildRecoveryEmail({ planLabel: o.plan_label });
-    const r = await sendNewsletterEmail({ to: o.email, subject, html, kind: "recovery" });
-    if (r?.success) {
-      sent++;
-    } else {
-      failed++;
-      // 寄失敗還原旗標，下輪重試
-      await supabase.from("orders").update({ recovery_sent_at: null }).eq("id", o.id);
+    let ok = false;
+    try {
+      const { subject, html } = buildRecoveryEmail({ planLabel: o.plan_label });
+      const r = await sendNewsletterEmail({ to: o.email, subject, html, kind: "recovery" });
+      ok = !!r?.success;
+    } catch (e) {
+      console.error("[recovery] send threw", o.id, e?.message || e);
     }
+    if (ok) { sent++; continue; }
+
+    // 寄失敗/拋錯 → 還原旗標，下輪重試（不讓該筆永久卡在 claimed）
+    failed++;
+    const { error: resetErr } = await supabase.from("orders").update({ recovery_sent_at: null }).eq("id", o.id);
+    if (resetErr) { errors++; console.error("[recovery] reset failed", o.id, resetErr.message); }
   }
 
-  return NextResponse.json({ ok: true, scanned: candidates.length, sent, failed, minHours, maxHours });
+  return NextResponse.json({ ok: true, scanned: candidates.length, sent, failed, errors, minHours, maxHours });
 }
