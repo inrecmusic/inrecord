@@ -6,6 +6,7 @@ import { currentPrice, getSaleSettings, isOnSale } from "@/lib/sale";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 import { isOwnProofUrl } from "@/lib/fan-proof";
+import { clientIp } from "@/lib/rate-limit";
 
 // Payuni 統一金流 AES-256-GCM 加密
 // 輸出格式：hex( base64(密文) + ':::' + base64(GCM tag) )，與官方 SDK 一致
@@ -151,6 +152,8 @@ export async function POST(req) {
     const payuniUrl   = process.env.PAYUNI_API_URL || "https://sandbox-api.payuni.com.tw/api/upp";
 
     // 建立 pending 訂單記錄
+    const capiClient = body.capiClient || {};
+    const capi_data = { ...capiClient, ip: clientIp(req), ua: req.headers.get("user-agent") || undefined };
     const supabase = getSupabaseAdmin();
     if (supabase) {
       const { error } = await supabase.from("orders").insert({
@@ -167,6 +170,7 @@ export async function POST(req) {
         carrier_id:   carrierId || null,
         coupon_code:  couponCode || null,
         attribution,
+        capi_data,
         ...(isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
       });
       if (error) {
