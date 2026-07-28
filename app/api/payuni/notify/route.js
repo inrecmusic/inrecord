@@ -7,6 +7,7 @@ import { grantAccess } from "@/lib/fulfillment-grant";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
 import { hashEqual, interpretPayment } from "@/lib/payuni";
+import { sendPurchase } from "@/lib/meta-capi";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
 function aesDecrypt(encryptStr, key, iv) {
@@ -108,7 +109,7 @@ export async function POST(req) {
           }
         ).eq("mer_trade_no", params.MerTradeNo)
          .neq("status", "refunded")  // 已退款訂單不可被遲到/重送的 notify 翻回 paid 並重新開通
-         .select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at").single();
+         .select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at, attribution, capi_data").single();
         // 更新未命中（訂單不存在，或已退款被守衛擋下）→ 不開通、不履約、不開票，直接回 SUCCESS
         if (!order) {
           console.error("[payuni notify] 略過：訂單不存在或已退款，不重新開通", params.MerTradeNo, error?.message || "");
@@ -141,6 +142,17 @@ export async function POST(req) {
             .maybeSingle();
 
           if (claimed) {
+            // Meta CAPI 伺服器端 Purchase（best-effort、guarded；與瀏覽器 Pixel 靠 event_id=mer_trade_no 去重）。
+            try {
+              const capi = await sendPurchase({
+                merTradeNo: params.MerTradeNo, amount: order.amount, plan: order.plan,
+                email: order.email, capiData: order.capi_data, attribution: order.attribution,
+              });
+              if (capi && capi.ok === false && capi.error) console.error("[capi]", params.MerTradeNo, capi.error);
+            } catch (e) {
+              console.error("[capi] threw", params.MerTradeNo, e?.message || e);
+            }
+
             // 優惠券使用次數累計：
             //   - 限量券：已在 checkout 原子預扣（防 TOCTOU 重複折抵），notify 不再加。
             //   - 無限量券：checkout 未預扣，此處補記已付使用數（純統計）。
