@@ -152,8 +152,11 @@ export async function POST(req) {
     const payuniUrl   = process.env.PAYUNI_API_URL || "https://sandbox-api.payuni.com.tw/api/upp";
 
     // 建立 pending 訂單記錄
-    const capiClient = body.capiClient || {};
-    const capi_data = { ...capiClient, ip: clientIp(req), ua: req.headers.get("user-agent") || undefined };
+    // 只白名單 fbp/fbc（型別+長度限制，避免客戶端塞任意資料進 jsonb / 送 Meta）；ip/ua 由 server 設定壓過
+    const src = (body.capiClient && typeof body.capiClient === "object" && !Array.isArray(body.capiClient)) ? body.capiClient : {};
+    const fbp = typeof src.fbp === "string" && src.fbp.length <= 128 ? src.fbp : undefined;
+    const fbc = typeof src.fbc === "string" && src.fbc.length <= 256 ? src.fbc : undefined;
+    const capi_data = { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}), ip: clientIp(req), ua: (req.headers.get("user-agent") || "").slice(0, 512) || undefined };
     const supabase = getSupabaseAdmin();
     if (supabase) {
       const { error } = await supabase.from("orders").insert({
