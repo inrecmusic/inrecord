@@ -4,6 +4,7 @@
   "crons": [
     { "path": "/api/cron/release-coupons", "schedule": "0 4 * * *" },
     { "path": "/api/cron/sale-launch-notify", "schedule": "5 4 * * *" },
-    { "path": "/api/cron/abandoned-recovery", "schedule": "0 5 * * *" }
+    { "path": "/api/cron/abandoned-recovery", "schedule": "0 5 * * *" },
+    { "path": "/api/cron/sync-ad-insights", "schedule": "20 5 * * *" }
   ]
 }
