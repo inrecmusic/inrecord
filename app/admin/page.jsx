@@ -9,7 +9,7 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity
+  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity, BarChart3
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
@@ -19,6 +19,7 @@ import GamesManagePage from "./GamesManagePage";
 import QuizzesPage from "./QuizzesPage";
 import SaleSettingsPage from "./SaleSettingsPage";
 import TrackingSettingsPage from "./TrackingSettingsPage";
+import AdsPerformancePage from "./AdsPerformancePage";
 import AnnouncementsPage from "./AnnouncementsPage";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
@@ -43,6 +44,7 @@ const NAV_GROUPS = [
     { id:"subscriptions", label:"遊戲存取",   icon:CreditCard },
     { id:"coupons",       label:"優惠券",     icon:Ticket },
     { id:"analytics",     label:"銷售分析",   icon:TrendingUp },
+    { id:"ads",           label:"廣告成效",   icon:BarChart3 },
   ]},
   { title:"設定", items:[
     { id:"sale",        label:"銷售設定",   icon:CalendarClock },
@@ -3189,6 +3191,7 @@ export default function AdminPage(){
           {page==="subscriptions"&&<SubscriptionsPage showToast={showToast}/>}
           {page==="coupons"     &&<CouponsPage showToast={showToast}/>}
           {page==="analytics"   &&<AnalyticsPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter}/>}
+          {page==="ads"         &&<AdsPerformancePage showToast={showToast}/>}
           {page==="sale"        &&<SaleSettingsPage showToast={showToast}/>}
           {page==="tracking"    && <TrackingSettingsPage showToast={showToast}/>}
           {page==="audit"       &&<AuditLogPage/>}
