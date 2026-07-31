@@ -219,11 +219,14 @@ META_ADS_ACCESS_TOKEN   # Meta System User 長效 token（ads_read）
 META_AD_ACCOUNT_ID      # act_ 開頭或純數字廣告帳戶 ID
 META_API_VERSION        # 選填，預設 v25.0
 META_TARGET_ROAS        # 選填，目標 ROAS 門檻，預設 3
+# Meta CAPI 伺服器端轉換（notify webhook 送 Purchase）——未設則 skip、不影響金流；pixel id 讀 tracking_settings
+META_CAPI_ACCESS_TOKEN  # Events Manager/System User 產的 CAPI token（有設 + meta 已啟用才送）
+META_CAPI_TEST_CODE     # 選填，Events Manager「測試事件」驗證期間用，驗完清除
 ```
 
 ## 部署需執行的 SQL
 
-新環境依序執行 `supabase-schema.sql` → `supabase-schema-classroom.sql` / `supabase-schema-music.sql` → **`supabase-deploy.sql`**（彙整發票欄位 / coupons 表 / courses 表 / **`sale_settings` 表**，idempotent 可重複執行）→ **`supabase-classroom-features.sql`**（教室七大功能：`materials` 表＋`course-materials` 私有 bucket、`announcements` 表…；自帶 RLS service_role policy，分段 idempotent）→ **`supabase-tracking.sql`**（廣告追蹤碼中心：`tracking_settings` 表 + `orders.attribution` 欄，自帶 RLS service_role policy，idempotent）→ **`supabase-recovery.sql`**（未成交挽回信：`orders.recovery_sent_at` 欄，idempotent）→ **`supabase-ad-insights.sql`**（廣告成效儀錶板：`ad_insights` 表，自帶 RLS service_role policy，idempotent）→ **`supabase-hardening.sql`（必跑，最後一步）**。
+新環境依序執行 `supabase-schema.sql` → `supabase-schema-classroom.sql` / `supabase-schema-music.sql` → **`supabase-deploy.sql`**（彙整發票欄位 / coupons 表 / courses 表 / **`sale_settings` 表**，idempotent 可重複執行）→ **`supabase-classroom-features.sql`**（教室七大功能：`materials` 表＋`course-materials` 私有 bucket、`announcements` 表…；自帶 RLS service_role policy，分段 idempotent）→ **`supabase-tracking.sql`**（廣告追蹤碼中心：`tracking_settings` 表 + `orders.attribution` 欄，自帶 RLS service_role policy，idempotent）→ **`supabase-recovery.sql`**（未成交挽回信：`orders.recovery_sent_at` 欄，idempotent）→ **`supabase-ad-insights.sql`**（廣告成效儀錶板：`ad_insights` 表，自帶 RLS service_role policy，idempotent）→ **`supabase-capi.sql`**（Meta CAPI：`orders.capi_data` 欄，idempotent；⚠️checkout 每筆都寫此欄，**漏跑會讓所有結帳失敗**）→ **`supabase-hardening.sql`（必跑，最後一步）**。
 
 > **廣告成效（Phase 2）**：Cron `sync-ad-insights`（每日 5:20）撈 Meta insights → `ad_insights`；後臺「廣告成效」分頁以 `utm_campaign` 對接真實訂單算 ROAS。**guarded on token**：未設 `META_ADS_ACCESS_TOKEN`/`META_AD_ACCOUNT_ID` 前 cron no-op、儀錶板顯示空狀態。⚠️ ROAS join 靠**投放時 ad URL 的 `utm_campaign` = Meta 活動名（正規化 trim+小寫）**——用 slug/id 會全對不上、board 讀虧損；且**廣告帳戶幣別須為 TWD**（與 `orders.amount` 一致）。
 
