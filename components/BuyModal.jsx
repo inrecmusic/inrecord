@@ -310,7 +310,6 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                     <span className={styles.uploadHint}>JPG / PNG · 5MB 內</span>
                   </label>}
               {fanError && <span className={styles.fanProofErr}>{fanError}</span>}
-              <p className={styles.fanProofNote}>先購買、後台再人工審核（不擋付款、立即開通）。</p>
             </div>
           )}
 
