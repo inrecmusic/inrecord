@@ -294,8 +294,6 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                         : <>NT${Number(basePrice).toLocaleString()}</>}
               </div>
             </div>
-            <span className={styles.desc}>{plan.desc}</span>
-            {earlyBird && !couponApplied && onSale && <span className={styles.earlyTag}>早鳥優惠</span>}
           </div>
 
           {fanProof && plan.plan === "bundle" && (

@@ -16,13 +16,13 @@
 .sub    { margin: 0 0 16px; color: #888; font-size: 14px; }
 .planCard {
   background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px;
-  padding: 16px; margin-bottom: 18px; display: flex;
+  padding: 20px; margin-bottom: 18px; display: flex;
   flex-direction: column; gap: 8px;
 }
 .planCardTop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .planCard strong { font-size: 18px; word-break: keep-all; line-break: strict; flex-shrink: 0; }
 .desc { font-size: 13px; color: #64748b; line-height: 1.6; word-break: keep-all; line-break: strict; }
-.price { font-size: 26px; font-weight: 950; color: var(--brand); white-space: nowrap; line-height: 1.1; }
+.price { font-size: 28px; font-weight: 950; color: var(--brand); white-space: nowrap; line-height: 1.1; }
 .earlyTag { font-size: 12px; font-weight: 700; color: #D4192C; }
 .proceed {
   width: 100%; border: 0; border-radius: 14px; padding: 16px;
