@@ -770,7 +770,6 @@ export default function HomeClient({ sale }) {
                     <span className={styles.chevron}><ChevronDown size={18} strokeWidth={2} /></span>
                   </summary>
                   <div className={styles.moduleBody}>
-                    <Image className={styles.moduleImg} src={`https://images.unsplash.com/${m.img}?auto=format&fit=crop&w=500&q=80`} alt="" width={140} height={96} sizes="(max-width: 980px) 100vw, 140px" />
                     <div>
                       <p>{m.desc}</p>
                       {!m.isAppendix && (
