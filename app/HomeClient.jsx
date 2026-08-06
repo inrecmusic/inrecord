@@ -226,13 +226,13 @@ const POINT5_SLIDES = [
   {
     title: "曲目實戰",
     tag: "REAL SONGS",
-    sub: ["20+ 首真歌——", "學完就能上手彈。"],
+    sub: ["10 首真歌——", "學完就能上手彈。"],
     visual: {
       type: "musiccard",
       variant: "playlist",
       label: "播放清單 · PLAYLIST",
       title: "可彈曲目",
-      sub: "20+ 首流行曲目 · 入門到進階",
+      sub: "10 首流行曲目 · 入門到進階",
       tracks: [
         { wave: true, title: "流行抒情曲", status: "正在練習" },
         { n: "02", title: "經典流行曲", time: "4:01" },
@@ -280,7 +280,7 @@ const PLANS = [
     pillLabel: "從零學起",
     price: 3800,
     desc: "10 章節完整課程，一次買斷、永久觀看。",
-    features: ["10 章節系統化課程", "10+ 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
+    features: ["10 章節系統化課程", "10 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
     cta: "購買課程",
   },
   {
@@ -288,7 +288,7 @@ const PLANS = [
     label: "學琴全攻略",
     pillLabel: "最超值全配",
     price: 3999,
-    features: ["完整 10 章節課程", "課程時數 8 小時", "全部互動遊戲永久使用", "10+ 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
+    features: ["完整 10 章節課程", "課程時數 8 小時", "全部互動遊戲永久使用", "10 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
     featured: true,
     ribbon: "最推薦",
     cta: "購買課程包",
