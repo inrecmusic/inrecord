@@ -633,7 +633,7 @@ export default function HomeClient({ sale }) {
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
                   <StatItem value={10} suffix=""  en="chapters" label="系統化章節" />
-                  <StatItem value={20} suffix="+" en="songs"    label="流行曲目實戰" />
+                  <StatItem value={10} suffix=""  en="songs"    label="流行曲目實戰" />
                   <span className={styles.termCur} />
                 </div>
               </div>
