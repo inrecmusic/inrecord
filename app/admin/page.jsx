@@ -2540,8 +2540,7 @@ const DEFAULT_PRIVACY_MD =
 如對本隱私權政策有任何疑問，請透過以下方式聯繫：
 
 - **Email**：inrecmusic@gmail.com
-- **Instagram**：@inrec.music
-- 服務時間：週一至週五 10:00–18:00`;
+- **Instagram**：@inrecord.music`;
 
 const DEFAULT_TERMS_MD =
 `# 服務條款
@@ -2629,8 +2628,7 @@ InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程
 如對本服務條款有任何疑問：
 
 - **Email**：inrecmusic@gmail.com
-- **Instagram**：@inrec.music
-- 服務時間：週一至週五 10:00–18:00`;
+- **Instagram**：@inrecord.music`;
 
 // ── Markdown renderer ──────────────────────────────────────────────────────
 function renderMd(text){

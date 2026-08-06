@@ -31,7 +31,7 @@ export default async function PrivacyPage() {
         </div>
 
         <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#94a3b8" }}>
-          © InRecord｜流行鋼琴零基礎入門課 ·{" "}
+          © InRecord｜音樂刻 ·{" "}
           <Link href="/terms" style={{ color: "#64748b" }}>服務條款</Link>
         </p>
       </div>
@@ -43,7 +43,7 @@ function DefaultPrivacyContent() {
   return (
     <>
       <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>隱私權政策</h1>
-      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜流行鋼琴零基礎入門課 ／ 最後更新：2026 年 6 月 21 日</p>
+      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 6 月 21 日</p>
 
       <Section title="1. 適用範圍">
         本隱私權政策適用於 InRecord（以下簡稱「本平台」）所提供之線上鋼琴課程服務，包括課程試看、購買、學習及相關客服互動。使用本平台即表示您同意本政策之內容。
@@ -131,8 +131,7 @@ function DefaultPrivacyContent() {
         如對本隱私權政策有任何疑問，請透過以下方式聯繫：
         <ul>
           <li><b>Email</b>：<a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a></li>
-          <li><b>Instagram</b>：@inrec.music</li>
-          <li>服務時間：週一至週五 10:00–18:00</li>
+          <li><b>Instagram</b>：@inrecord.music</li>
         </ul>
       </Section>
     </>

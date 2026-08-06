@@ -35,7 +35,7 @@ export default async function TermsPage() {
         </div>
 
         <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#94a3b8" }}>
-          © InRecord｜流行鋼琴零基礎入門課 ·{" "}
+          © InRecord｜音樂刻 ·{" "}
           <Link href="/privacy" style={{ color: "#64748b" }}>隱私權政策</Link>
         </p>
       </div>
@@ -47,7 +47,7 @@ function DefaultTermsContent() {
   return (
     <>
       <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>服務條款</h1>
-      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜流行鋼琴零基礎入門課 ／ 最後更新：2026 年 6 月 23 日</p>
+      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 6 月 23 日</p>
 
       <Section title="1. 服務說明">
         InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程的試看、購買與學習服務。使用本平台服務，即表示您同意遵守本服務條款。
@@ -166,8 +166,7 @@ function DefaultTermsContent() {
         如對本服務條款有任何疑問：
         <ul>
           <li><b>Email</b>：<a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a></li>
-          <li><b>Instagram</b>：@inrec.music</li>
-          <li>服務時間：週一至週五 10:00–18:00</li>
+          <li><b>Instagram</b>：@inrecord.music</li>
         </ul>
       </Section>
     </>

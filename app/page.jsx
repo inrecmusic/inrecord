@@ -62,7 +62,7 @@ export default async function Page() {
     name: "InRecord",
     url: "https://inrecordmusic.com",
     logo: "https://inrecordmusic.com/logo.png",
-    sameAs: ["https://www.instagram.com/inrec.music"],
+    sameAs: ["https://www.instagram.com/inrecord.music"],
   };
 
   return (

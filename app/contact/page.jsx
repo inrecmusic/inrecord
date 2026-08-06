@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Mail, Clock } from "lucide-react";
+import { Mail } from "lucide-react";
 
 function InstagramIcon({ size = 18 }) {
   return (
@@ -37,14 +37,9 @@ export default function ContactPage() {
             <ContactItem
               icon={<InstagramIcon size={18} />}
               label="Instagram"
-              value="@inrec.music"
-              href="https://www.instagram.com/inrec.music"
+              value="@inrecord.music"
+              href="https://www.instagram.com/inrecord.music"
               external
-            />
-            <ContactItem
-              icon={<Clock size={18} color="#64748b" />}
-              label="服務時間"
-              value="週一至週五 10:00–18:00"
             />
           </div>
 
@@ -56,7 +51,7 @@ export default function ContactPage() {
         </div>
 
         <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#94a3b8" }}>
-          © InRecord｜流行鋼琴零基礎入門課 ·{" "}
+          © InRecord｜音樂刻 ·{" "}
           <Link href="/privacy" style={{ color: "#64748b" }}>隱私權政策</Link>
           {" · "}
           <Link href="/terms" style={{ color: "#64748b" }}>服務條款</Link>

@@ -943,7 +943,7 @@ export default function HomeClient({ sale }) {
             <div className={styles.footerSocial}>
               {[
                 // url 為 null 者尚未提供連結，先不顯示（待補上 YouTube／Line 後填入）
-                [Camera,        "Instagram", "https://www.instagram.com/inrec.music"],
+                [Camera,        "Instagram", "https://www.instagram.com/inrecord.music"],
                 [PlayCircle,    "YouTube",   null],
                 [MessageCircle, "Line",      null],
               ].filter(([, , url]) => url).map(([Icon, label, url]) => (
@@ -952,7 +952,7 @@ export default function HomeClient({ sale }) {
                 </a>
               ))}
             </div>
-            <p className={styles.footerCopy}>© InRecord｜流行鋼琴零基礎入門課</p>
+            <p className={styles.footerCopy}>© InRecord｜音樂刻</p>
             <div className={styles.footerLinks}>
               <a href="/privacy">隱私權政策</a>
               <a href="/terms">服務條款</a>
