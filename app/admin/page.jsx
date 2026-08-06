@@ -1182,6 +1182,8 @@ function OrdersPage({leads,showToast}){
   const allOrders=useMemo(()=>rows.map(o=>({
     id:o.mer_trade_no||o.id,
     realId:o.id,
+    source:o.source,
+    enrolled:o.enrolled===true,
     student:o.buyer_name||o.email?.split("@")[0]||"學員",
     email:o.email,
     course:o.plan_label||"從零開始學鋼琴",
@@ -1197,6 +1199,32 @@ function OrdersPage({leads,showToast}){
     proofUrl:o.proof_url||null,
     fanReview:o.fan_review||null,
   })),[rows]);
+
+  const [sel,setSel]=useState(()=>new Set());
+  const [granting,setGranting]=useState(false);
+  // 可開通的官網訂單：payuni + 已付款 + 未開通
+  const ungranted=allOrders.filter(o=>o.source==="payuni"&&o.status==="paid"&&!o.enrolled);
+  const ungrantedIds=ungranted.map(o=>o.realId);
+  const toggle=(id)=>setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
+
+  async function grantIds(ids,{all=false}={}){
+    if(granting||!ids.length){if(!ids.length)showToast?.("⚠️ 沒有可開通的訂單");return;}
+    if(!window.confirm(`確定開通這 ${ids.length} 筆課程？`))return;
+    setGranting(true);
+    try{
+      const res=await _api("/api/admin/grant-orders",{method:"POST",body:JSON.stringify(all?{}:{ids})});
+      const d=await res.json();
+      if(!res.ok||d.ok===false)showToast?.("❌ 開通失敗："+(d.error||"unknown"));
+      else{
+        showToast?.(`✅ 開通完成：成功 ${d.granted||0} 筆${d.failed?`，失敗 ${d.failed} 筆`:""}`);
+        setSel(new Set());
+        await loadOrders();
+      }
+    }finally{setGranting(false);}
+  }
+  const grantSelected=()=>grantIds(Array.from(sel));
+  const grantAll=()=>grantIds(ungrantedIds,{all:true});
+  const grantOne=(realId)=>grantIds([realId]);
 
   const filtered=useMemo(()=>allOrders.filter(o=>{
     if(statusFilter==="fan_pending"){if(o.fanReview!=="pending")return false;}
@@ -1373,11 +1401,18 @@ function OrdersPage({leads,showToast}){
           </div>
           <span className={styles.dim}>{filtered.length} / {allOrders.length} 筆</span>
         </div>
+        {ungranted.length>0&&(
+          <div className={styles.reconPeriod} style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <b>待開通 {ungranted.length} 筆</b>（官網付款、尚未開通課程）
+            <button className={styles.btnSmall} disabled={granting||!sel.size} onClick={grantSelected}>{granting?"開通中…":`開通勾選（${sel.size}）`}</button>
+            <button className={styles.btnSmall} disabled={granting} onClick={grantAll}>{granting?"開通中…":`全部開通（${ungranted.length}）`}</button>
+          </div>
+        )}
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>發票號碼</th><th>建立時間</th><th>操作</th></tr></thead>
+            <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>開通</th><th>發票號碼</th><th>建立時間</th><th>操作</th></tr></thead>
             <tbody>
-              {!filtered.length?<tr><td colSpan={9} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
+              {!filtered.length?<tr><td colSpan={10} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
               :pageRows.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>
@@ -1386,6 +1421,16 @@ function OrdersPage({leads,showToast}){
                   <td style={{fontWeight:800}}>NT$ {o.amount.toLocaleString()}</td>
                   <td className={styles.dim}>{o.method}</td>
                   <td><OrderStatusPill status={o.status}/></td>
+                  <td>
+                    {o.source==="payuni"&&o.status==="paid"
+                      ? (o.enrolled
+                          ? <span style={{color:"#16a34a",fontWeight:700}}>已開通</span>
+                          : <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
+                              <input type="checkbox" checked={sel.has(o.realId)} onChange={()=>toggle(o.realId)}/>
+                              <button className={styles.btnSmall} disabled={granting} onClick={()=>grantOne(o.realId)}>{granting?"…":"開通"}</button>
+                            </span>)
+                      : "—"}
+                  </td>
                   <td style={{fontSize:12,whiteSpace:"nowrap"}}>
                     {o.invoiceNo
                       ? <code style={{fontSize:11,background:"#ecfdf5",color:"#047857",padding:"2px 6px",borderRadius:4,fontWeight:700}}>{o.invoiceNo}</code>
