@@ -123,6 +123,11 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
    - `course` / `bundle` → upsert `enrollments`（課程永久）。
    - `game` / `bundle` → insert `subscriptions`（`expires_at=2999-12-31`、`source='purchase'`、`plan_type` 為 `bundle`/`game`），以 `source='purchase' + payuni_order_id` 做冪等。
 
+> **⚠️ 2026-08 起「自動開通」「自動開票」皆改 fail-safe 開關、預設關**（官網 payuni 直購改人工處理，與 concert/WordPress 一致）：
+> - **`autoGrantEnabled()`（`lib/order-fulfillment.js`，`AUTO_GRANT_ACCESS==="on"` 才開、未設＝關）** gate 上面的開通分流——開關關時 notify **不寫 enrollments/subscriptions**，訂單只轉 `paid` ＋ 寄「預購成功」信（`presale` 恆 true）；開通改由後台「訂單管理→付款名單」三顆按鈕（逐筆/勾選/全數）人工處理（`POST /api/admin/grant-orders`，只開 `source=payuni`＋`course/bundle`＋未開通）。開通權威＝`enrollments`；判定純函式 `markEnrolled`/`pickUngrantedPayuni`（`lib/order-enrolled.js`），orders API 以 `selectAll` 分頁 join enrollments 帶 `enrolled`。
+> - **`autoInvoiceEnabled()`（同檔，`AUTO_INVOICE==="on"` 才開）** gate notify 的 Amego 開票——關時付款後不自動開票、發票人工開立（見 `docs/superpowers/specs/2026-08-06-*`）。
+> - 兩開關**各自獨立**；恢復自動＝Vercel 設對應 env＝`on` 後重部署。**CAPI／優惠券累計／寄信不受兩開關影響、照跑。**
+
 ### 遊戲存取驗證
 
 1. classroom 登入後呼叫 `/api/classroom/verify-purchase`（課程）與 `/api/classroom/verify-subscription`（遊戲存取）。
@@ -222,6 +227,9 @@ META_TARGET_ROAS        # 選填，目標 ROAS 門檻，預設 3
 # Meta CAPI 伺服器端轉換（notify webhook 送 Purchase）——未設則 skip、不影響金流；pixel id 讀 tracking_settings
 META_CAPI_ACCESS_TOKEN  # Events Manager/System User 產的 CAPI token（有設 + meta 已啟用才送）
 META_CAPI_TEST_CODE     # 選填，Events Manager「測試事件」驗證期間用，驗完清除
+# 履約 fail-safe 開關（2026-08，皆預設關；未設＝不自動、改人工）——設 on 才恢復自動
+AUTO_GRANT_ACCESS       # =on 才「付款即自動開通課程」；未設＝不開通、後台付款名單手動開通（只 payuni）
+AUTO_INVOICE            # =on 才「付款後自動開 Amego 發票」；未設＝發票人工開立
 ```
 
 ## 部署需執行的 SQL
