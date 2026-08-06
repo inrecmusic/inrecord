@@ -19,36 +19,40 @@ export async function POST(req) {
 
   const supabase = getSupabaseAdmin();
 
-  // 撈候選官網已付款訂單（給 ids 就限縮）
-  let q = supabase.from("orders").select("id, email, plan, plan_label, source, status")
-    .eq("source", "payuni").eq("status", "paid");
-  if (ids && ids.length) q = q.in("id", ids);
-  const { data: orders, error } = await q;
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  try {
+    // 撈候選官網已付款訂單（給 ids 就限縮）
+    let q = supabase.from("orders").select("id, email, plan, plan_label, source, status")
+      .eq("source", "payuni").eq("status", "paid");
+    if (ids && ids.length) q = q.in("id", ids);
+    const { data: orders, error } = await q;
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
-  // 撈已開通 email → 篩出真正未開通者（分頁避免 >1000 列 truncate）
-  const enr = await selectAll(supabase, "enrollments", (q) => q.select("email").eq("course_id", "piano-101"));
-  const pending = pickUngrantedPayuni(orders || [], enr.map((e) => e.email));
+    // 撈已開通 email → 篩出真正未開通者（分頁避免 >1000 列 truncate）
+    const enr = await selectAll(supabase, "enrollments", (q) => q.select("email").eq("course_id", "piano-101"));
+    const pending = pickUngrantedPayuni(orders || [], enr.map((e) => e.email));
 
-  const now = new Date().toISOString();
-  let granted = 0, failed = 0;
-  const errors = [];
-  for (const o of pending) {
-    const g = await grantAccess(supabase, o);
-    if (g.ok) {
-      granted++;
-      await supabase.from("orders").update({ access_granted_at: now }).eq("id", o.id);
-    } else {
-      failed++;
-      errors.push(`${o.email}: ${g.errors.join("; ")}`);
+    const now = new Date().toISOString();
+    let granted = 0, failed = 0;
+    const errors = [];
+    for (const o of pending) {
+      const g = await grantAccess(supabase, o);
+      if (g.ok) {
+        granted++;
+        await supabase.from("orders").update({ access_granted_at: now }).eq("id", o.id);
+      } else {
+        failed++;
+        errors.push(`${o.email}: ${g.errors.join("; ")}`);
+      }
     }
+
+    await logAudit(supabase, {
+      actor: payload.email, action: "grant_orders",
+      targetType: "orders", targetId: ids ? ids.join(",") : "all_pending",
+      meta: { granted, failed }, req,
+    });
+
+    return NextResponse.json({ ok: true, granted, failed, errors });
+  } catch (err) {
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
   }
-
-  await logAudit(supabase, {
-    actor: payload.email, action: "grant_orders",
-    targetType: "orders", targetId: ids ? ids.join(",") : "all_pending",
-    meta: { granted, failed }, req,
-  });
-
-  return NextResponse.json({ ok: true, granted, failed, errors });
 }
