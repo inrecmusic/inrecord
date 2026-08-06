@@ -23,7 +23,8 @@ export async function POST(req) {
     // 撈候選官網已付款訂單（給 ids 就限縮）
     let q = supabase.from("orders").select("id, email, plan, plan_label, source, status")
       .eq("source", "payuni").eq("status", "paid");
-    if (ids && ids.length) q = q.in("id", ids);
+    // ids===null（body 沒帶 ids）→ 全部；ids 為陣列（含空陣列 []）→ 用 .in 限縮，[] 撈 0 筆＝no-op（避免誤開全部）。
+    if (ids) q = q.in("id", ids);
     const { data: orders, error } = await q;
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 

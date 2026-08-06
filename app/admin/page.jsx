@@ -1183,6 +1183,7 @@ function OrdersPage({leads,showToast}){
     id:o.mer_trade_no||o.id,
     realId:o.id,
     source:o.source,
+    plan:o.plan,
     enrolled:o.enrolled===true,
     student:o.buyer_name||o.email?.split("@")[0]||"學員",
     email:o.email,
@@ -1202,8 +1203,8 @@ function OrdersPage({leads,showToast}){
 
   const [sel,setSel]=useState(()=>new Set());
   const [granting,setGranting]=useState(false);
-  // 可開通的官網訂單：payuni + 已付款 + 未開通
-  const ungranted=allOrders.filter(o=>o.source==="payuni"&&o.status==="paid"&&!o.enrolled);
+  // 可開通的官網訂單：payuni + 已付款 + plan∈{course,bundle}（開通的是「課程」，game 不寫 enrollments 本就不該進名單）+ 未開通
+  const ungranted=allOrders.filter(o=>o.source==="payuni"&&o.status==="paid"&&(o.plan==="course"||o.plan==="bundle")&&!o.enrolled);
   const ungrantedIds=ungranted.map(o=>o.realId);
   const toggle=(id)=>setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
 
@@ -1422,7 +1423,7 @@ function OrdersPage({leads,showToast}){
                   <td className={styles.dim}>{o.method}</td>
                   <td><OrderStatusPill status={o.status}/></td>
                   <td>
-                    {o.source==="payuni"&&o.status==="paid"
+                    {o.source==="payuni"&&o.status==="paid"&&(o.plan==="course"||o.plan==="bundle")
                       ? (o.enrolled
                           ? <span style={{color:"#16a34a",fontWeight:700}}>已開通</span>
                           : <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
