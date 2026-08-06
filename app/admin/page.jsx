@@ -1220,7 +1220,7 @@ function OrdersPage({leads,showToast}){
         setSel(new Set());
         await loadOrders();
       }
-    }finally{setGranting(false);}
+    }catch(e){showToast?.("❌ 開通失敗："+e.message);}finally{setGranting(false);}
   }
   const grantSelected=()=>grantIds(Array.from(sel));
   const grantAll=()=>grantIds(ungrantedIds,{all:true});
