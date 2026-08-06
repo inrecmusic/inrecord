@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
-import { needsFulfillment, needsInvoice, autoInvoiceEnabled } from "@/lib/order-fulfillment";
+import { needsFulfillment, needsInvoice, autoInvoiceEnabled, autoGrantEnabled } from "@/lib/order-fulfillment";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
@@ -117,11 +117,9 @@ export async function POST(req) {
         }
         let invoiceFailed = false, invoiceReason = "";
         let emailFailed = false,   emailReason   = "";
-        if (order?.email) {
-          // 課程／遊戲存取開通（共用 lib/fulfillment-grant，與後台手動開通同一來源）。
-          // ⚠️ 冪等：enrollments(onConflict email,course_id) + subscriptions(onConflict payuni_order_id,
-          //   ignoreDuplicates) 確保 Payuni 並發／重送 notify 不會重複開通。
-          //   subscriptions 需搭配唯一索引 uniq_sub_purchase_order（見 supabase-hardening.sql）。
+        // 自動開通（fail-safe 預設關）：官網直購改為付款後不自動開通、由後台手動開通。
+        // 設 AUTO_GRANT_ACCESS=on 才恢復付款即開通。開關 off 時本段整段跳過。
+        if (autoGrantEnabled() && order?.email) {
           const grant = await grantAccess(supabase, order);
           if (!grant.ok) console.error("[payuni notify] grantAccess error", grant.errors.join("; "));
         }
@@ -173,7 +171,8 @@ export async function POST(req) {
                 plan:       order.plan,
                 planLabel:  order.plan_label,
                 merTradeNo: params.MerTradeNo,
-                presale:    isPresale(saleSettings, new Date()),
+                // 不自動開通時，信一律「預購成功、開通後 Email 通知」文案（開通改人工）。
+                presale:    !autoGrantEnabled() ? true : isPresale(saleSettings, new Date()),
               });
               if (mailResult.success) {
                 console.log("[mail] 開課確認信已寄出:", params.MerTradeNo, mailResult.messageId || "");
