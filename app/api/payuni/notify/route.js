@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
-import { needsFulfillment, needsInvoice } from "@/lib/order-fulfillment";
+import { needsFulfillment, needsInvoice, autoInvoiceEnabled } from "@/lib/order-fulfillment";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
@@ -188,8 +188,10 @@ export async function POST(req) {
           }
         }
 
-        // 開立發票：以 invoice_no 作為去重旗標，可在開票失敗時隨後重試（手動或重送 notify）
-        if (needsInvoice(order)) {
+        // 開立發票：預設關閉（AUTO_INVOICE=on 才自動開票）。
+        // 目前發票由人員依 PAYUNi 訂單記錄人工開立（尚未申請電子發票票匭），避免自動開出測試假發票／與人工重複開立。
+        // 待 Amego 切正式＋申請票匭後設 AUTO_INVOICE=on 恢復。以 invoice_no 作為去重旗標，開票失敗時可隨後重試。
+        if (autoInvoiceEnabled() && needsInvoice(order)) {
           const invoiceResult = await createInvoice({
             orderId: order.id,
             buyerName: order.buyer_name || "學員",
