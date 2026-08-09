@@ -2866,6 +2866,11 @@ function NewsletterPage({showToast}){
 // ── Helpers ────────────────────────────────────────────────────────────────
 function statusLabel(s){return{requested:"已留 Email",preview_mode:"預覽模式",email_sent:"已寄試看信",demo_opened:"已開 Demo",purchased:"已購買"}[s]||s||"—";}
 function levelLabel(l){return{none:"沒碰過",little:"摸過一點",some:"有基礎"}[l]||"—";}
+// 學員資料頁（student_profiles）enum 顯示對照，比照 levelLabel；空值/未知值一律回退「—」。
+function sourceLabel(v){return{ig:"Instagram",friend:"朋友介紹",concert:"演奏會",search:"網路搜尋",other:"其他"}[v]||"—";}
+function equipmentLabel(v){return{acoustic:"鋼琴",digital:"電鋼琴",none:"目前沒有"}[v]||"—";}
+function ageGroupLabel(v){return{"under18":"未滿18","18_29":"18–29","30_44":"30–44","45_59":"45–59","60plus":"60以上"}[v]||"—";}
+function genderLabel(v){return{male:"男",female:"女",other:"其他",prefer_not:"不願透露"}[v]||"—";}
 function fmt(v){if(!v)return "—";try{return new Date(v).toLocaleString("zh-TW");}catch{return v;}}
 
 // ── Course Detail Page (classroom sub-pages) ──────────────────────────────
@@ -3010,8 +3015,8 @@ function CustomerLookupPage({showToast}){
                 <div>姓名：{data.profile.real_name||"—"}　手機：{data.profile.phone||"—"}</div>
                 <div>程度：{({none:"沒碰過",little:"摸過一點",some:"有基礎"})[data.profile.level]||"—"}</div>
                 <div>目標：{data.profile.goal||"—"}</div>
-                <div>來源：{data.profile.source||"—"}　器材：{data.profile.equipment||"—"}</div>
-                <div>年齡層：{data.profile.age_group||"—"}　性別：{data.profile.gender||"—"}</div>
+                <div>來源：{sourceLabel(data.profile.source)}　器材：{equipmentLabel(data.profile.equipment)}</div>
+                <div>年齡層：{ageGroupLabel(data.profile.age_group)}　性別：{genderLabel(data.profile.gender)}</div>
                 <div>填寫時間：{data.profile.consent_at?fmt(data.profile.consent_at):"—"}</div>
               </div>
             </div>
