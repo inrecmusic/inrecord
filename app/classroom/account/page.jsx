@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { validateDisplayName } from "@/lib/account";
 import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
+import { LEVELS } from "@/lib/student-profile";
 import Logo from "@/components/Logo";
+import ProfileFields from "@/components/ProfileFields";
 
 const F = "'PingFang TC','Noto Sans TC',system-ui,-apple-system,sans-serif";
 
@@ -16,6 +18,10 @@ export default function AccountPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [orders, setOrders] = useState(null); // null=載入中, []=空
+  const [prof, setProf] = useState({ real_name: "", phone: "", level: "", goal: "", source: "", equipment: "", age_group: "", gender: "" });
+  const [profSaving, setProfSaving] = useState(false);
+  const [profSaved, setProfSaved] = useState(false);
+  const [profErr, setProfErr] = useState("");
 
   useEffect(() => {
     async function init() {
@@ -51,6 +57,17 @@ export default function AccountPage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
+      const d = await r.json().catch(() => ({}));
+      if (d.prefill) setProf(d.prefill); // 預填：帶入既有值或訂單姓名/手機
+    })();
+  }, []);
+
   async function handleSave(e) {
     e.preventDefault();
     setError(""); setSaved(false);
@@ -68,6 +85,25 @@ export default function AccountPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleSaveProfile(e) {
+    e.preventDefault(); setProfErr(""); setProfSaved(false);
+    if (!prof.real_name.trim()) { setProfErr("請填真實姓名"); return; }
+    if (!/^09\d{8}$/.test(prof.phone.trim())) { setProfErr("手機格式需為 09 開頭共 10 碼"); return; }
+    if (!LEVELS.includes(prof.level)) { setProfErr("請選擇鋼琴程度"); return; }
+    setProfSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch("/api/classroom/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify(prof),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.ok === false) setProfErr("儲存失敗：" + (d.error || "unknown"));
+      else setProfSaved(true);
+    } finally { setProfSaving(false); }
   }
 
   const wrap = { minHeight: "100vh", background: "#f1f5f9", padding: 24, fontFamily: F, display: "grid", placeItems: "center" };
@@ -139,6 +175,16 @@ export default function AccountPage() {
               })}
             </div>
           )}
+        </div>
+        <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 12px" }}>我的學員資料</h3>
+          <form onSubmit={handleSaveProfile} style={{ display: "grid", gap: 12 }}>
+            <ProfileFields prof={prof} setProf={setProf} styles={{ input, label }} />
+            {profErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{profErr}</p>}
+            {profSaved && <p style={{ color: "#16a34a", fontSize: 13, margin: 0 }}>已儲存 ✓</p>}
+            <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>填寫即表示同意依<a href="/privacy" style={{ color: "#2563eb" }}>隱私政策</a>將資料用於課程服務與聯繫。</p>
+            <button type="submit" style={btn} disabled={profSaving}>{profSaving ? "儲存中…" : "儲存學員資料"}</button>
+          </form>
         </div>
         <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
           <a href="/classroom/reset-password" style={{ color: "#2563eb", fontSize: 14, textDecoration: "none", display: "block" }}>修改密碼 →</a>
