@@ -11,11 +11,12 @@ export async function GET(req) {
   const email = (new URL(req.url).searchParams.get("email") || "").trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "missing_email" }, { status: 400 });
 
-  const [ord, enr, sub, mail] = await Promise.all([
+  const [ord, enr, sub, mail, prof] = await Promise.all([
     supabase.from("orders").select("id, plan, plan_label, amount, status, source, mer_trade_no, invoice_no, created_at, access_granted_at, presale_email_sent_at, phone, buyer_name").ilike("email", email).order("created_at", { ascending: false }),
     supabase.from("enrollments").select("course_id, enrolled_at, order_id").ilike("email", email),
     supabase.from("subscriptions").select("plan_type, status, expires_at, source, created_at").ilike("email", email).order("created_at", { ascending: false }),
     supabase.from("email_log").select("subject, kind, status, error, created_at").ilike("to_email", email).order("created_at", { ascending: false }).limit(50),
+    supabase.from("student_profiles").select("*").ilike("email", email).maybeSingle(),
   ]);
 
   return NextResponse.json({
@@ -25,5 +26,6 @@ export async function GET(req) {
     enrollments: enr.data || [],
     subscriptions: sub.data || [],
     emails: mail.data || [],
+    profile: prof.data || null,
   });
 }

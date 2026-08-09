@@ -2996,6 +2996,19 @@ function CustomerLookupPage({showToast}){
               <div>遊戲存取：{data.subscriptions.length?data.subscriptions.map(s=>`${s.plan_type}（${s.status}）`).join("、"):"（無）"}</div>
             </div>
           </div>
+          {data.profile&&(
+            <div className={styles.panel}>
+              <div className={styles.panelHead}><h3 style={{margin:0}}>學員資料</h3></div>
+              <div style={{padding:"4px 14px 14px",fontSize:13,color:"#374151",lineHeight:1.9}}>
+                <div>姓名：{data.profile.real_name||"—"}　手機：{data.profile.phone||"—"}</div>
+                <div>程度：{({none:"沒碰過",little:"摸過一點",some:"有基礎"})[data.profile.level]||"—"}</div>
+                <div>目標：{data.profile.goal||"—"}</div>
+                <div>來源：{data.profile.source||"—"}　器材：{data.profile.equipment||"—"}</div>
+                <div>年齡層：{data.profile.age_group||"—"}　性別：{data.profile.gender||"—"}</div>
+                <div>填寫時間：{data.profile.consent_at?fmt(data.profile.consent_at):"—"}</div>
+              </div>
+            </div>
+          )}
           <div className={styles.panel}>
             <div className={styles.panelHead}><h3 style={{margin:0}}>寄信紀錄（最近 {data.emails.length}）</h3></div>
             <div className={styles.tableWrap}><table style={{width:"100%",borderCollapse:"collapse"}}>
