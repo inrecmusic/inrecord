@@ -930,6 +930,7 @@ export default function ClassroomPage() {
 
   const [profile, setProfile]             = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileErr, setProfileErr]       = useState(false);
 
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
@@ -1022,14 +1023,21 @@ export default function ClassroomPage() {
     load();
   }, [hasPurchased, token]);
 
-  /* 抓學員資料（首次引導判斷用；核心未填會在下方 gate 顯示 ProfileOnboarding，仿上方 course/progress 抓法） */
+  /* 抓學員資料（首次引導判斷用；核心未填會在下方 gate 顯示 ProfileOnboarding，仿上方 course/progress 抓法）。
+     fetch 本身失敗（如離線）也要 fail-open：profileErr 記錄失敗、profileLoaded 無論成敗都設 true，
+     否則下方 gate 會一直卡在 loading，把已購課使用者鎖死。 */
   useEffect(() => {
     if (!hasPurchased || !token) return;
     (async () => {
-      const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
-      const d = await r.json().catch(() => ({}));
-      setProfile(d.profile || d.prefill || {});
-      setProfileLoaded(true);
+      try {
+        const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
+        const d = await r.json().catch(() => ({}));
+        setProfile(d.profile || d.prefill || {});
+      } catch {
+        setProfileErr(true);
+      } finally {
+        setProfileLoaded(true);
+      }
     })();
   }, [hasPurchased, token]);
 
@@ -1158,8 +1166,8 @@ export default function ClassroomPage() {
     window.location.href = "/";
   }
 
-  /* ── Loading ── */
-  if (loading) return (
+  /* ── Loading ──（已購課但 profile 尚未抓完也算 loading，避免先閃教室主體再跳引導表單） */
+  if (loading || (hasPurchased && token && !profileLoaded)) return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#fff", fontFamily: F }}>
       <div style={{ textAlign: "center" }}>
         <div style={{
@@ -1205,8 +1213,8 @@ export default function ClassroomPage() {
     </div>
   );
 
-  // 首次引導：已購課但核心資料未填 → 先完善資料（選配可跳過）
-  if (hasPurchased && profileLoaded && !isProfileCoreComplete(profile)) {
+  // 首次引導：已購課但核心資料未填 → 先完善資料（選配可跳過）；profileErr（fetch 失敗）fail-open 放行進教室，不卡在引導
+  if (hasPurchased && profileLoaded && !profileErr && !isProfileCoreComplete(profile)) {
     return <ProfileOnboarding token={token} initial={profile} onDone={(p) => setProfile(p)} />;
   }
 
