@@ -815,6 +815,7 @@ function StudentsPage({showToast}){
   const [students,setStudents]=useState([]);
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState("");
+  const [showUnfilledOnly,setShowUnfilledOnly]=useState(false);
   const [detailStudent,setDetailStudent]=useState(null);
   const [busy,setBusy]=useState(false);
   const dlRef=useRef(null);
@@ -858,7 +859,7 @@ function StudentsPage({showToast}){
   const purchased=students.filter(s=>s.purchased);
 
   const display=useMemo(()=>students.map(s=>({...s,name:(s.email?.split("@")[0])||"—",purchasedCount:s.purchased?1:0})),[students]);
-  const filtered=display.filter(s=>!search||s.email?.toLowerCase().includes(search.toLowerCase())||s.name?.toLowerCase().includes(search.toLowerCase()));
+  const filtered=display.filter(s=>!search||s.email?.toLowerCase().includes(search.toLowerCase())||s.name?.toLowerCase().includes(search.toLowerCase())).filter(s=>!showUnfilledOnly||!s.hasProfile);
 
   return(
     <div>
@@ -877,14 +878,16 @@ function StudentsPage({showToast}){
       <div className={styles.panel}>
         <div className={styles.panelHead}>
           <input className={styles.searchInput} placeholder="搜尋學員姓名、Email…" value={search} onChange={e=>setSearch(e.target.value)}/>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap"}}>
+            <input type="checkbox" checked={showUnfilledOnly} onChange={e=>setShowUnfilledOnly(e.target.checked)}/> 只看未填資料</label>
           <span className={styles.dim}>共 {filtered.length} 位</span>
         </div>
         {loading?<p style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</p>:(
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-              <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead>
+              <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>程度</th><th>已填</th><th>建立時間</th><th>操作</th></tr></thead>
               <tbody>
-                {!filtered.length?<tr><td colSpan={8} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>
+                {!filtered.length?<tr><td colSpan={10} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>
                 :filtered.map(s=>(
                   <tr key={s.id}>
                     <td><div className={styles.studentAvatar}>{s.name[0]?.toUpperCase()}</div></td>
@@ -893,6 +896,8 @@ function StudentsPage({showToast}){
                     <td className={styles.dim}>{s.phone||"—"}</td>
                     <td><span className={styles.courseBadge}>{s.purchasedCount}</span></td>
                     <td><span className={`${styles.pill} ${styles[s.status]||styles.requested}`}>{statusLabel(s.status)}</span></td>
+                    <td className={styles.dim}>{levelLabel(s.level)}</td>
+                    <td className={styles.dim}>{s.hasProfile?"✓":"—"}</td>
                     <td className={styles.dim}>{fmt(s.created_at)}</td>
                     <td>
                       <div className={styles.rowActions}>
@@ -931,6 +936,7 @@ function StudentsPage({showToast}){
                 ["電話",detailStudent.phone||"—"],
                 ["已購課程",detailStudent.purchased?(detailStudent.plan_label||"從零開始學鋼琴"):"—"],
                 ["開通狀態",detailStudent.purchased?(detailStudent.enrolled?"已開通":"未開通（待開課）"):"—"],
+                ["程度",levelLabel(detailStudent.level)],
                 ["來源",detailStudent.source||"—"],
                 ["建立時間",fmt(detailStudent.created_at)],
               ].map(([label,val])=>(
@@ -2859,6 +2865,7 @@ function NewsletterPage({showToast}){
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function statusLabel(s){return{requested:"已留 Email",preview_mode:"預覽模式",email_sent:"已寄試看信",demo_opened:"已開 Demo",purchased:"已購買"}[s]||s||"—";}
+function levelLabel(l){return{none:"沒碰過",little:"摸過一點",some:"有基礎"}[l]||"—";}
 function fmt(v){if(!v)return "—";try{return new Date(v).toLocaleString("zh-TW");}catch{return v;}}
 
 // ── Course Detail Page (classroom sub-pages) ──────────────────────────────

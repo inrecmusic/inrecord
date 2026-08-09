@@ -13,19 +13,22 @@ export async function GET(req) {
   if (!supabase) return NextResponse.json({ ok: true, data: [], total: 0 });
 
   try {
-    const [enr, ord, lead] = await Promise.all([
+    const [enr, ord, lead, profile] = await Promise.all([
       supabase.from("enrollments").select("email,enrolled_at,course_id"),
       supabase.from("orders").select("email,phone,plan,plan_label,source,status,created_at").eq("status", "paid"),
       supabase.from("course_preview_leads").select("id,email,source,status,created_at").order("created_at", { ascending: false }),
+      supabase.from("student_profiles").select("email, real_name, phone, level, source, age_group, gender"),
     ]);
     if (enr.error) throw enr.error;
     if (ord.error) throw ord.error;
     if (lead.error) throw lead.error;
+    if (profile.error) throw profile.error;
 
     const data = mergeStudents({
       enrollments: enr.data || [],
       orders: ord.data || [],
       leads: lead.data || [],
+      profiles: profile.data || [],
     });
     return NextResponse.json({ ok: true, data, total: data.length });
   } catch (err) {
