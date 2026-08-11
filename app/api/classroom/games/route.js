@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { pickAllowedDeviceIds, buildWatermark } from "@/lib/game-devices";
 
 function getUserClient(token) {
   return createClient(
@@ -39,32 +40,52 @@ export async function GET(req) {
   /* ── single game (with content) ── */
   if (gameId) {
     const { data: game, error } = await supabase
-      .from("games")
-      .select("*")
-      .eq("id", gameId)
-      .single();
+      .from("games").select("*").eq("id", gameId).single();
 
-    if (error || !game || game.is_active === false) return NextResponse.json({ error: "game_not_found" }, { status: 404 });
+    if (error || !game || game.is_active === false)
+      return NextResponse.json({ error: "game_not_found" }, { status: 404 });
 
+    // url 類型＝公開試玩：不套裝置上限/浮水印
     if (game.game_type === "url") {
       return NextResponse.json({ game: { ...game, html_content: null } });
     }
 
+    // ── 裝置上限（只對 html 付費遊戲）──
+    const deviceId = searchParams.get("device_id");
+    if (!deviceId) return NextResponse.json({ error: "device_required" }, { status: 400 });
+    const ua = req.headers.get("user-agent") || null;
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+    const nowIso = new Date().toISOString();
+    await supabase.from("game_devices").upsert(
+      { user_id: user.id, device_id: deviceId, user_agent: ua, ip, last_seen_at: nowIso },
+      { onConflict: "user_id,device_id" }
+    );
+    const { data: settings } = await supabase
+      .from("game_settings").select("device_limit").eq("id", "default").single();
+    const limit = settings?.device_limit ?? 3;
+    const { data: devices } = await supabase
+      .from("game_devices").select("device_id, last_seen_at").eq("user_id", user.id);
+    const allowed = pickAllowedDeviceIds(devices || [], limit);
+    if (!allowed.includes(deviceId))
+      return NextResponse.json({ error: "device_limit", limit }, { status: 403 });
+
+    // 浮水印（含日期）＋防嵌入
     const siteHost = process.env.NEXT_PUBLIC_SITE_URL
       ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname
       : "inrecordmusic.com";
-
     let html = (game.html_content || "").replace(
-      "</body>",
-      `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);opacity:0.06;font-size:16px;color:#fff;pointer-events:none;z-index:9999;white-space:nowrap;user-select:none">${user.email} · InRecord</div></body>`
+      "</body>", `${buildWatermark(user.email, nowIso.slice(0, 10))}</body>`
     );
-
     html = html.replace(
       "<head>",
       `<head><script>if(window.top!==window.self&&!document.referrer.includes('${siteHost}')){document.body.innerHTML='⛔ 未授權存取';}</script>`
     );
 
-    return NextResponse.json({ game: { ...game, html_content: html } });
+    // no-store：html 內容不落瀏覽器快取
+    return new NextResponse(
+      JSON.stringify({ game: { ...game, html_content: html } }),
+      { status: 200, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }
+    );
   }
 
   /* ── list games for a video unit ── */
