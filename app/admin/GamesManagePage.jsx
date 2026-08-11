@@ -29,6 +29,9 @@ export default function GamesManagePage({ showToast }) {
   const [testingUrl, setTestingUrl]   = useState(false);
   const [urlStatus, setUrlStatus]     = useState(null); // null | "ok" | "fail"
 
+  const [deviceLimit, setDeviceLimit] = useState(3);
+  const [dlSaved, setDlSaved]         = useState(false);
+
   /* ── fetch all ── */
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -46,6 +49,29 @@ export default function GamesManagePage({ showToast }) {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  /* ── device limit setting (mount fetch) ── */
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await api("/api/admin/game-settings");
+        const d = await r.json();
+        if (r.ok) setDeviceLimit(d.device_limit ?? 3);
+      } catch {}
+    })();
+  }, []);
+
+  async function saveDeviceLimit() {
+    setDlSaved(false);
+    try {
+      const r = await api("/api/admin/game-settings", {
+        method: "PATCH",
+        body:   JSON.stringify({ device_limit: Number(deviceLimit) }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error);
+      setDlSaved(true);
+    } catch (err) { showToast("❌ " + (err.message || "儲存失敗")); }
+  }
 
   /* ── filtered videos by chapter ── */
   const filteredVideos = form.chapter_id
@@ -165,6 +191,15 @@ export default function GamesManagePage({ showToast }) {
           <button className={styles.btnSmall} onClick={fetchAll}><RefreshCw size={13} /> 重新整理</button>
           <button className={styles.btnPrimary} onClick={openCreate}><Plus size={14} /> 新增遊戲</button>
         </div>
+      </div>
+
+      <div className={styles.panel} style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 0 16px", fontSize: 14 }}>
+        <span>遊戲同時登入裝置上限：</span>
+        <input type="number" min={1} max={20} value={deviceLimit}
+          onChange={e => { setDeviceLimit(e.target.value); setDlSaved(false); }}
+          style={{ width: 64, padding: "6px 8px", border: "1px solid #d5dce6", borderRadius: 8 }} />
+        <button className={styles.btnSmall} onClick={saveDeviceLimit}>儲存</button>
+        {dlSaved && <span style={{ color: "#16a34a" }}>已儲存 ✓</span>}
       </div>
 
       <div className={styles.panel}>
@@ -356,6 +391,11 @@ export default function GamesManagePage({ showToast }) {
                     </div>
                     {urlStatus === "ok"   && <p style={{ color: "#16a34a", fontSize: 12, margin: "6px 0 0" }}>✅ 連線成功</p>}
                     {urlStatus === "fail" && <p style={{ color: "#dc2626", fontSize: 12, margin: "6px 0 0" }}>❌ 無法連線，請確認網址</p>}
+                    {form.game_type === "url" && (
+                      <p style={{ fontSize: 12, color: "#b45309", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 10px", margin: "6px 0 0" }}>
+                        ⚠️ 公開試玩：此網址任何人都能開啟／分享，<b>付費內容請改用「HTML 內嵌」</b>（才有登入＋購買＋裝置上限保護）。
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
