@@ -1195,7 +1195,7 @@ function OrdersPage({leads,showToast}){
     email:o.email,
     course:o.plan_label||"從零開始學鋼琴",
     amount:Number(o.amount)||0,
-    method:o.pay_type||"—",
+    method:payTypeLabel(o.pay_type),
     status:o.status||"pending",
     time:fmt(o.created_at||o.updated_at),
     createdRaw:o.created_at||o.updated_at, // 原始時間，供日期篩選（顯示用 time 已在地化，不可拿來 new Date）
@@ -2871,6 +2871,8 @@ function sourceLabel(v){return{ig:"Instagram",friend:"朋友介紹",concert:"演
 function equipmentLabel(v){return{acoustic:"鋼琴",digital:"電鋼琴",none:"目前沒有"}[v]||"—";}
 function ageGroupLabel(v){return{"under18":"未滿18","18_29":"18–29","30_44":"30–44","45_59":"45–59","60plus":"60以上"}[v]||"—";}
 function genderLabel(v){return{male:"男",female:"女",other:"其他",prefer_not:"不願透露"}[v]||"—";}
+// PayUni PaymentType 數字→中文（比照 lib/dashboard.js PAY_TYPE_LABELS）；未知原樣顯示、空值—
+function payTypeLabel(v){return{"1":"信用卡","2":"ATM轉帳","3":"超商代碼",Credit:"信用卡",ATM:"ATM轉帳",CVS:"超商代碼"}[v]||v||"—";}
 function fmt(v){if(!v)return "—";try{return new Date(v).toLocaleString("zh-TW");}catch{return v;}}
 
 // ── Course Detail Page (classroom sub-pages) ──────────────────────────────
