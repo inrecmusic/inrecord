@@ -527,6 +527,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     if (!selectedGame) return;
     if (selectedGame.game_type === "url") { setGameError(""); setGameContent(selectedGame); return; }
     if (gameCache?.current[selectedGame.id]) {
+      setGameError("");
       setGameContent(gameCache.current[selectedGame.id]);
       return;
     }
@@ -542,8 +543,8 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
           const d = await r.json().catch(() => ({}));
           if (d.error === "device_limit") {
             if (!cancelled) setGameError(`已達裝置上限（${d.limit} 台）。請在其他常用裝置登出遊戲，或聯繫客服。`);
-            return null;
           }
+          return null;
         }
         return r.json();
       })
