@@ -32,6 +32,13 @@ function loadPlayerJs() {
   return _playerJsPromise;
 }
 
+function getDeviceId() {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem("inrec_device_id");
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem("inrec_device_id", id); }
+  return id;
+}
+
 /* ── CommentsSection ─────────────────────────────────────────────────────────── */
 function CommentsSection({ token, video, chapters }) {
   const [filter, setFilter]   = useState("unit");
@@ -489,6 +496,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
   const [selectedGame, setSelectedGame] = useState(null);
   const [gameContent, setGameContent]   = useState(null);
   const [gameLoading, setGameLoading]   = useState(false);
+  const [gameError, setGameError]       = useState("");
   const [listLoading, setListLoading]   = useState(false);
 
   const videoId = video?.id;
@@ -517,7 +525,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
 
   useEffect(() => {
     if (!selectedGame) return;
-    if (selectedGame.game_type === "url") { setGameContent(selectedGame); return; }
+    if (selectedGame.game_type === "url") { setGameError(""); setGameContent(selectedGame); return; }
     if (gameCache?.current[selectedGame.id]) {
       setGameContent(gameCache.current[selectedGame.id]);
       return;
@@ -525,9 +533,23 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     let cancelled = false; // 避免快速切換遊戲時，較慢回來的舊請求覆蓋新選遊戲的內容
     setGameLoading(true);
     setGameContent(null);
-    fetch(`/api/classroom/games?id=${selectedGame.id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(({ game }) => {
+    setGameError("");
+    fetch(`/api/classroom/games?id=${selectedGame.id}&device_id=${getDeviceId()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async r => {
+        if (r.status === 403) {
+          const d = await r.json().catch(() => ({}));
+          if (d.error === "device_limit") {
+            if (!cancelled) setGameError(`已達裝置上限（${d.limit} 台）。請在其他常用裝置登出遊戲，或聯繫客服。`);
+            return null;
+          }
+        }
+        return r.json();
+      })
+      .then(data => {
+        if (!data) return;
+        const game = data.game;
         if (game && gameCache) gameCache.current[selectedGame.id] = game;
         if (!cancelled) setGameContent(game || null);
       })
@@ -590,9 +612,19 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
           <span style={{ color: "#f5f5f7", fontSize: 14, fontWeight: 600, fontFamily: F }}>
             🎮 {selectedGame.title}
           </span>
+          {selectedGame.game_type === "url" && (
+            <span style={{ marginLeft: 8, fontSize: 11, background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 980, fontWeight: 600 }}>試玩</span>
+          )}
         </div>
         {/* Game content */}
-        {isUrlGame ? (
+        {gameError ? (
+          <div style={{ flex: 1, display: "grid", placeItems: "center", padding: "40px 20px", textAlign: "center" }}>
+            <div>
+              <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+              <p style={{ color: "#e2e8f0", fontSize: 15, lineHeight: 1.7, margin: 0, maxWidth: 320 }}>{gameError}</p>
+            </div>
+          </div>
+        ) : isUrlGame ? (
           <iframe
             src={selectedGame.external_url}
             allow="autoplay; fullscreen"
