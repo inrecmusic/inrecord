@@ -56,15 +56,17 @@ export async function GET(req) {
     const ua = req.headers.get("user-agent") || null;
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
     const nowIso = new Date().toISOString();
-    await supabase.from("game_devices").upsert(
+    const { error: upErr } = await supabase.from("game_devices").upsert(
       { user_id: user.id, device_id: deviceId, user_agent: ua, ip, last_seen_at: nowIso },
       { onConflict: "user_id,device_id" }
     );
+    if (upErr) return NextResponse.json({ error: "device_check_failed" }, { status: 500 });
     const { data: settings } = await supabase
       .from("game_settings").select("device_limit").eq("id", "default").single();
     const limit = settings?.device_limit ?? 3;
-    const { data: devices } = await supabase
+    const { data: devices, error: devErr } = await supabase
       .from("game_devices").select("device_id, last_seen_at").eq("user_id", user.id);
+    if (devErr) return NextResponse.json({ error: "device_check_failed" }, { status: 500 });
     const allowed = pickAllowedDeviceIds(devices || [], limit);
     if (!allowed.includes(deviceId))
       return NextResponse.json({ error: "device_limit", limit }, { status: 403 });
