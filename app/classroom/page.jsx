@@ -692,6 +692,9 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
         >
           <div style={{ fontSize: 32, marginBottom: 8 }}>🎮</div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", lineHeight: 1.4 }}>{game.title}</div>
+          {game.game_type === "url" && (
+            <span style={{ display: "inline-block", marginTop: 6, fontSize: 11, background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 980, fontWeight: 600 }}>試玩</span>
+          )}
         </button>
       ))}
     </div>
