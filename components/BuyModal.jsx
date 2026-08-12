@@ -68,6 +68,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const [couponApplied, setCouponApplied]   = useState(null); // 驗證通過的優惠券
   const [couponCheckFailed, setCouponCheckFailed] = useState(false); // autoCoupon 驗證失敗（回退底價）
   const [couponMsg, setCouponMsg]           = useState("");
+  const [couponChecking, setCouponChecking] = useState(false);
   const [proofUrl, setProofUrl]             = useState(null);
   const [fanUploading, setFanUploading]     = useState(false);
   const [fanError, setFanError]             = useState("");
@@ -149,6 +150,24 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const fanProofPending = fanProof && !couponApplied && !proofUrl;
   // 序號購買尚未輸入有效序號：先顯示預期粉絲價（$3,999），引導輸入序號；套券後改顯示實際價。
   const serialPending = serialEntry && !couponApplied;
+
+  async function applyCouponCode() {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponChecking(true); setCouponMsg("");
+    try {
+      const r = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, plan: plan.plan }),
+      });
+      const d = await r.json();
+      if (d.valid) setCouponApplied(d);
+      else setCouponMsg(COUPON_ERRORS[d.error] || "優惠碼無效");
+    } catch { setCouponMsg("驗證失敗，請稍後再試"); }
+    finally { setCouponChecking(false); }
+  }
+  function removeCoupon() { setCouponApplied(null); setCouponInput(""); setCouponMsg(""); setProofUrl(null); }
 
   async function handleFanProof(file) {
     if (!file) return;
@@ -295,6 +314,26 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
               </div>
             </div>
           </div>
+
+          {!autoCoupon && !serialEntry && !fanProof && (
+            <>
+              <div className={styles.couponRow}>
+                <input
+                  className={styles.couponInput}
+                  type="text"
+                  placeholder={onSale ? "輸入優惠碼（選填）" : "輸入序號兌換"}
+                  value={couponInput}
+                  disabled={!!couponApplied}
+                  onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(""); }}
+                  onKeyDown={e => { if (e.key === "Enter" && !couponApplied) { e.preventDefault(); applyCouponCode(); } }}
+                />
+                {couponApplied
+                  ? <button type="button" className={styles.couponBtn} onClick={removeCoupon}>移除</button>
+                  : <button type="button" className={styles.couponBtn} onClick={applyCouponCode} disabled={couponChecking || !couponInput.trim()}>{couponChecking ? "驗證中…" : "套用"}</button>}
+              </div>
+              {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
+            </>
+          )}
 
           {fanProof && plan.plan === "bundle" && (
             <div className={styles.fanProof}>
