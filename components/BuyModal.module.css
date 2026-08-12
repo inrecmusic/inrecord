@@ -79,7 +79,7 @@
 
 /* === 三方案：特色清單與開通帳號（2026-05） === */
 .features {
-  list-style: none; margin: 0 0 18px; padding: 0;
+  list-style: none; margin: 20px 0 18px; padding: 0;
   display: flex; flex-direction: column; gap: 9px;
 }
 .features li {
