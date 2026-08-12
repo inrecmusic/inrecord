@@ -372,6 +372,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                 // 粉絲價鎖定中（未被覆蓋）：不可移除，另開「輸入其他優惠碼」框
                 <>
                   <div className={styles.fanProofDone}>✓ 已套用粉絲價 NT${Number(couponApplied.finalPrice).toLocaleString()}</div>
+                  <p className={styles.couponHint}>有其他優惠碼？輸入後套用</p>
                   <div className={styles.couponRow}>
                     <input
                       className={styles.couponInput}
@@ -386,10 +387,12 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                   {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
                 </>
               ) : couponApplied ? (
-                // 已用其他券覆蓋粉絲價：可一鍵改回粉絲價
+                // 已用其他券覆蓋粉絲價：移除即回粉絲價（沿用 revertToFanCoupon，呈現改為單列「移除」鈕）
                 <>
-                  <div className={styles.fanProofDone}>已套用 {couponApplied.code} NT${Number(couponApplied.finalPrice).toLocaleString()}</div>
-                  <button type="button" className={styles.retry} onClick={revertToFanCoupon} disabled={couponChecking}>{couponChecking ? "處理中…" : "改回粉絲價"}</button>
+                  <div className={styles.fanProofDone}>
+                    <span>已套用 {couponApplied.code} NT${Number(couponApplied.finalPrice).toLocaleString()}</span>
+                    <button type="button" className={styles.couponBtn} onClick={revertToFanCoupon} disabled={couponChecking}>{couponChecking ? "處理中…" : "移除"}</button>
+                  </div>
                   {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
                 </>
               ) : null}
