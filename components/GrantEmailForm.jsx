@@ -18,7 +18,7 @@ const btnStyle = {
 
 // 付款成功頁：確認/修改開通用 email（購買 email 可能 ≠ 想登入教室的 email）。
 // 選填——學員不改、不按「確認」也不影響，預設仍用訂單本身的 email 開通。
-export default function GrantEmailForm({ tradeNo, defaultEmail }) {
+export default function GrantEmailForm({ tradeNo, defaultEmail, grantToken }) {
   const [email, setEmail] = useState(defaultEmail || "");
   const [status, setStatus] = useState("idle"); // idle | saving | done | error
   const [message, setMessage] = useState("");
@@ -30,7 +30,7 @@ export default function GrantEmailForm({ tradeNo, defaultEmail }) {
       const res = await fetch("/api/order/grant-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ MerTradeNo: tradeNo, email }),
+        body: JSON.stringify({ MerTradeNo: tradeNo, email, grantToken }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

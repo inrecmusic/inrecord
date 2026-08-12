@@ -2,6 +2,7 @@ import Logo from "@/components/Logo";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getTrackingSettings } from "@/lib/tracking";
+import { signGrantToken } from "@/lib/grant-token";
 import PurchaseTracking from "@/components/tracking/PurchaseTracking";
 import GrantEmailForm from "@/components/GrantEmailForm";
 
@@ -25,6 +26,8 @@ export default async function SuccessPage({ searchParams }) {
   const sp = searchParams || {};
   const tradeNo = sp.MerTradeNo || sp.TradeNo || "";
   const failed = sp.status === "failed";
+  // 開通 email 表單的簽章憑證：證明請求者確實看得到這筆訂單的成功頁（防 IDOR）。
+  const grantToken = tradeNo ? signGrantToken(tradeNo) : "";
 
   // 與購買信（lib/brevo-email.js）一致：預售期間顯示「預購成功」、開課後顯示「購買成功，課程已開通」。
   // 讀取失敗時安全 fallback 成預購（= 現況），不讓成功頁壞掉。
@@ -102,7 +105,7 @@ export default async function SuccessPage({ searchParams }) {
           </div>
         )}
 
-        {tradeNo && orderExists && <GrantEmailForm tradeNo={tradeNo} defaultEmail={orderEmail} />}
+        {tradeNo && orderExists && <GrantEmailForm tradeNo={tradeNo} defaultEmail={orderEmail} grantToken={grantToken} />}
 
         {tradeNo && <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 24 }}>訂單編號：{tradeNo}</p>}
 
