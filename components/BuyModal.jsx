@@ -368,10 +368,10 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                   </div>
                   {couponMsg && <p className={styles.couponErr}>{couponMsg}</p>}
                 </>
-              ) : couponApplied?.code === autoCoupon ? (
-                // 粉絲價鎖定中（未被覆蓋）：不可移除，另開「輸入其他優惠碼」框
+              ) : (couponApplied?.code === autoCoupon || couponPending) ? (
+                // 粉絲價鎖定中（含驗證中 couponPending，一開窗就顯示、不等 async）：不可移除，另開「輸入其他優惠碼」框
                 <>
-                  <div className={styles.fanProofDone}>✓ 已套用粉絲價 NT${Number(couponApplied.finalPrice).toLocaleString()}</div>
+                  <div className={styles.fanProofDone}>✓ 已套用粉絲價 NT${Number(couponApplied?.finalPrice ?? fanDirectPrice).toLocaleString()}</div>
                   <p className={styles.couponHint}>有其他優惠碼？輸入後套用</p>
                   <div className={styles.couponRow}>
                     <input
