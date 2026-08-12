@@ -3,6 +3,7 @@ import { getSaleSettings, isPresale } from "@/lib/sale";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getTrackingSettings } from "@/lib/tracking";
 import PurchaseTracking from "@/components/tracking/PurchaseTracking";
+import GrantEmailForm from "@/components/GrantEmailForm";
 
 // 付款成功頁需即時讀 sale 狀態（預購 / 已開課），故 server component + 動態。
 export const dynamic = "force-dynamic";
@@ -30,23 +31,29 @@ export default async function SuccessPage({ searchParams }) {
   let presale = true;
   try { presale = isPresale(await getSaleSettings()); } catch { presale = true; }
 
-  // 回查訂單以觸發 Purchase 轉換追蹤；best-effort，任何失敗都不影響成功頁本身。
+  // 回查訂單以觸發 Purchase 轉換追蹤 + 取得開通 email 預填值；best-effort，任何失敗都不影響成功頁本身。
   let purchase = null;
+  let orderExists = false;
+  let orderEmail = "";
   if (tradeNo && !failed) {
     try {
       const sb = getSupabaseAdmin();
       const { data: order } = sb
-        ? await sb.from("orders").select("amount, plan, status").eq("mer_trade_no", tradeNo).maybeSingle()
+        ? await sb.from("orders").select("amount, plan, status, email").eq("mer_trade_no", tradeNo).maybeSingle()
         : { data: null };
-      if (order && order.status !== "refunded") {
-        const platforms = await getTrackingSettings();
-        purchase = {
-          transactionId: tradeNo,
-          value: Number(order.amount) || 0,
-          contentIds: [order.plan],
-          googleAdsSendTo: platforms?.googleAds?.purchaseLabel ? `${platforms.googleAds.id}/${platforms.googleAds.purchaseLabel}` : null,
-          lineTagId: platforms?.line?.id || null,
-        };
+      if (order) {
+        orderExists = true;
+        orderEmail = order.email || "";
+        if (order.status !== "refunded") {
+          const platforms = await getTrackingSettings();
+          purchase = {
+            transactionId: tradeNo,
+            value: Number(order.amount) || 0,
+            contentIds: [order.plan],
+            googleAdsSendTo: platforms?.googleAds?.purchaseLabel ? `${platforms.googleAds.id}/${platforms.googleAds.purchaseLabel}` : null,
+            lineTagId: platforms?.line?.id || null,
+          };
+        }
       }
     } catch {}
   }
@@ -94,6 +101,8 @@ export default async function SuccessPage({ searchParams }) {
             <p style={{ margin: "7px 0 0", color: "#3b82f6", fontSize: 13, lineHeight: 1.7, textAlign: "center" }}>屆時即可使用本次購買的 Email 登入學習，請留意收信。</p>
           </div>
         )}
+
+        {tradeNo && orderExists && <GrantEmailForm tradeNo={tradeNo} defaultEmail={orderEmail} />}
 
         {tradeNo && <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 24 }}>訂單編號：{tradeNo}</p>}
 
