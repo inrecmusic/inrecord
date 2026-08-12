@@ -315,7 +315,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
             </div>
           </div>
 
-          {!autoCoupon && !serialEntry && !fanProof && (
+          {!serialEntry && !fanProof && (
             <>
               <div className={styles.couponRow}>
                 <input
