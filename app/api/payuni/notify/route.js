@@ -109,7 +109,7 @@ export async function POST(req) {
           }
         ).eq("mer_trade_no", params.MerTradeNo)
          .neq("status", "refunded")  // 已退款訂單不可被遲到/重送的 notify 翻回 paid 並重新開通
-         .select("id, email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at, attribution, capi_data").single();
+         .select("id, email, grant_email, plan, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no, coupon_code, fulfilled_at, attribution, capi_data").single();
         // 更新未命中（訂單不存在，或已退款被守衛擋下）→ 不開通、不履約、不開票，直接回 SUCCESS
         if (!order) {
           console.error("[payuni notify] 略過：訂單不存在或已退款，不重新開通", params.MerTradeNo, error?.message || "");

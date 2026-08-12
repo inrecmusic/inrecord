@@ -306,3 +306,10 @@ AS $$
     watched_at      = NOW()
   RETURNING *;
 $$;
+
+-- ────────────────────────────────────────────────────────────────────────
+-- ⑨ 付款成功頁指定開通 email：學員可在 /success 修改想登入教室的 email，
+--    與下單 email 分離。開通（grantAccess）與「已開通」判斷皆改用
+--    effective email = grant_email ?? email（見 lib/order-enrolled.js、lib/fulfillment-grant.js）。
+-- ────────────────────────────────────────────────────────────────────────
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS grant_email TEXT;
