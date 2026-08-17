@@ -85,14 +85,41 @@ export async function POST(req) {
       if (supabase) {
         // 先讀原訂單（狀態 + 下單金額）。若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
         // 付款仍要認（顧客已付錢），但限量券的預扣已被退回，稍後需補回扣抵 + 告警。
-        const { data: prior } = await supabase
+        const { data: prior, error: priorError } = await supabase
           .from("orders").select("status, amount").eq("mer_trade_no", params.MerTradeNo).maybeSingle();
+
+        // DB 錯誤（非「查無此單」，maybeSingle 查無資料時 error 為 null）：不可與「真的查無訂單」
+        // 混為一談回 SUCCESS，否則暫時性資料庫錯誤會讓真實付款被永久略過、且無任何訊號。
+        // 回 FAIL 讓 PAYUNi 依重送機制重試，並先告警供人工留意。
+        if (priorError) {
+          console.error("[payuni notify] 讀取訂單失敗（DB 錯誤）", params.MerTradeNo, priorError.message);
+          try {
+            await sendAdminAlert(buildAdminAlertHtml({
+              kind: "notify_db_error",
+              order: { mer_trade_no: params.MerTradeNo },
+              reason: priorError.message || "讀取訂單時發生資料庫錯誤",
+            }));
+          } catch (e) {
+            console.error("[admin alert error]", e);
+          }
+          return new Response("FAIL", { status: 500 });
+        }
+
         const pay = interpretPayment(prior, params.TradeAmt);
 
         // 未知訂單：notify 的 MerTradeNo 在 DB 找不到 → 不可憑空 upsert 出 plan/email 為 NULL 的孤兒單。
         if (!pay.known) {
           console.error("[payuni notify] 未知訂單，略過不建立", params.MerTradeNo);
-          return new Response("SUCCESS"); // 對 PAYUNi 回 SUCCESS 避免重送轟炸；已記錄供查
+          try {
+            await sendAdminAlert(buildAdminAlertHtml({
+              kind: "unknown_order",
+              order: { mer_trade_no: params.MerTradeNo },
+              reason: "收到 PayUni notify 但查無對應訂單",
+            }));
+          } catch (e) {
+            console.error("[admin alert error]", e);
+          }
+          return new Response("SUCCESS"); // 對 PAYUNi 回 SUCCESS 避免重送轟炸；已記錄+告警供查
         }
         if (!pay.amountValid) console.error("[payuni notify] TradeAmt 非數字，發票沿用下單金額", params.TradeAmt);
         if (pay.amountMismatch) console.error("[payuni notify] ⚠️ 付款金額與下單金額不符", { merTradeNo: params.MerTradeNo, paid: pay.paidAmt, order: pay.orderAmount });

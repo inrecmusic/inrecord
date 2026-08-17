@@ -158,32 +158,38 @@ export async function POST(req) {
     const fbc = typeof src.fbc === "string" && src.fbc.length <= 256 ? src.fbc : undefined;
     const capi_data = { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}), ip: clientIp(req), ua: (req.headers.get("user-agent") || "").slice(0, 512) || undefined };
     const supabase = getSupabaseAdmin();
-    if (supabase) {
-      const { error } = await supabase.from("orders").insert({
-        plan,
-        plan_label:   label || plan,
-        amount:       Number(price),
-        currency:     "twd",
-        mer_trade_no: tradeNo,
-        email,
-        status:       "pending",
-        buyer_name:   buyerName || null,
-        buyer_tax_id: buyerTaxId || null,
-        carrier_type: carrierType || null,
-        carrier_id:   carrierId || null,
-        coupon_code:  couponCode || null,
-        attribution,
-        capi_data,
-        ...(isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
-      });
-      if (error) {
-        console.error("[payuni checkout] supabase error", error.message);
-        // 訂單沒寫進去 → 釋放剛才預扣的限量券額度（CAS 還原本人那一次）
-        if (couponClaimed) {
-          await supabase.from("coupons").update({ used: couponPrevUsed })
-            .eq("code", couponCode).eq("used", couponPrevUsed + 1);
-        }
+    if (!supabase) {
+      console.error("[payuni checkout] supabase admin unavailable，訂單無法寫入，拒絕吐出付款欄位");
+      // 沒有 DB 連線就不能吐出可付款的 EncryptInfo/HashInfo，否則顧客能真的付款但 DB 完全查無此單（靜默漏款）。
+      return NextResponse.json({ error: "order_create_failed" }, { status: 500 });
+    }
+
+    const { error } = await supabase.from("orders").insert({
+      plan,
+      plan_label:   label || plan,
+      amount:       Number(price),
+      currency:     "twd",
+      mer_trade_no: tradeNo,
+      email,
+      status:       "pending",
+      buyer_name:   buyerName || null,
+      buyer_tax_id: buyerTaxId || null,
+      carrier_type: carrierType || null,
+      carrier_id:   carrierId || null,
+      coupon_code:  couponCode || null,
+      attribution,
+      capi_data,
+      ...(isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
+    });
+    if (error) {
+      console.error("[payuni checkout] supabase error", error.message);
+      // 訂單沒寫進去 → 釋放剛才預扣的限量券額度（CAS 還原本人那一次）
+      if (couponClaimed) {
+        await supabase.from("coupons").update({ used: couponPrevUsed })
+          .eq("code", couponCode).eq("used", couponPrevUsed + 1);
       }
+      // 訂單沒寫進去就不能吐出可付款的 EncryptInfo/HashInfo，否則顧客能真的付款但 DB 查無此單（靜默漏款）。
+      return NextResponse.json({ error: "order_create_failed" }, { status: 500 });
     }
 
     return NextResponse.json({
