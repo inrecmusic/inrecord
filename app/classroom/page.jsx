@@ -1041,7 +1041,7 @@ export default function ClassroomPage() {
     async function load() {
       try {
         const [cr, pr] = await Promise.all([
-          fetch("/api/classroom/course",   { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`/api/classroom/course?device_id=${getDeviceId()}`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch("/api/classroom/progress", { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         const course = await cr.json();
