@@ -11,7 +11,8 @@ const COURSE_ID = "piano-101"; // 單一課程架構
 
 // 後台「手動開通課程」：直接輸入 Email(+電話/姓名/方案) 開通線上課程，不依賴 webhook 名單。
 // 建一筆 source='manual' 訂單作稽核 → grantAccess 建 enrollments(+bundle 加 subscriptions) →
-// 可選寄開課/預購通知信。已開通(該 email 已有 enrollment)則不重複建單。
+// 可選寄開課/預購通知信。該 email 已有 manual 單或已開通(enrollment)一律視為重複請求，
+// 不重複建單/開通/寄信，直接回既有結果（防雙擊與併發重複寄信）。
 export async function POST(req) {
   const payload = await verifyAdminToken(req);
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -24,6 +25,26 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
+  // 防重複／防併發：先讀該 email 是否已有對應 manual 單、或已開通(enrollment)。
+  // 已有就視為重複請求（雙擊/併發/重試）——不重複建單、不重複開通、不重複寄信，直接回既有結果。
+  const [{ data: dupOrder }, { data: dupEnrollment }] = await Promise.all([
+    supabase.from("orders").select("id, presale_email_sent_at, email_error")
+      .eq("email", email).eq("source", "manual").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("enrollments").select("id").eq("email", email).eq("course_id", COURSE_ID).maybeSingle(),
+  ]);
+  if (dupOrder || dupEnrollment) {
+    await logAudit(supabase, { actor: payload.email, action: "course.manual_grant", targetType: "email", targetId: email, meta: { plan, grant, sendEmail, duplicate: true }, req });
+    return NextResponse.json({
+      ok: true,
+      granted: false,
+      alreadyGranted: !!dupEnrollment,
+      emailSent: !!dupOrder?.presale_email_sent_at,
+      emailError: dupOrder?.email_error || null,
+      mode: grant ? "grant" : "email_only",
+      duplicate: true,
+    });
+  }
+
   let orderId = null;
   let alreadyGranted = false;
   // 信件用的方案名稱／參考號：開通時用訂單值；只寄信時用通用名 + 預購參考號
@@ -32,38 +53,27 @@ export async function POST(req) {
 
   // 開通課程存取（建立 enrollment / bundle 加 subscriptions）
   if (grant) {
-    // 防重：已有 piano-101 enrollment 就不重複建單（grantAccess 本身冪等，但避免重複稽核訂單）
-    const { data: existing } = await supabase
-      .from("enrollments")
+    const orderPayload = buildManualOrder({ email, plan, phone, name, now: new Date() });
+    planLabel = orderPayload.plan_label;
+    merTradeNo = orderPayload.mer_trade_no;
+
+    const { data: order, error: insErr } = await supabase
+      .from("orders")
+      .insert(orderPayload)
       .select("id")
-      .eq("email", email)
-      .eq("course_id", COURSE_ID)
-      .maybeSingle();
-    alreadyGranted = !!existing;
+      .single();
+    if (insErr) {
+      return NextResponse.json({ error: "order_insert_failed", detail: insErr.message }, { status: 500 });
+    }
+    orderId = order.id;
 
-    if (!alreadyGranted) {
-      const orderPayload = buildManualOrder({ email, plan, phone, name, now: new Date() });
-      planLabel = orderPayload.plan_label;
-      merTradeNo = orderPayload.mer_trade_no;
-
-      const { data: order, error: insErr } = await supabase
-        .from("orders")
-        .insert(orderPayload)
-        .select("id")
-        .single();
-      if (insErr) {
-        return NextResponse.json({ error: "order_insert_failed", detail: insErr.message }, { status: 500 });
-      }
-      orderId = order.id;
-
-      const res = await grantAccess(supabase, { id: orderId, email, plan });
-      if (!res.ok) {
-        return NextResponse.json({ error: "grant_failed", detail: res.errors.join("; ") }, { status: 500 });
-      }
+    const res = await grantAccess(supabase, { id: orderId, email, plan });
+    if (!res.ok) {
+      return NextResponse.json({ error: "grant_failed", detail: res.errors.join("; ") }, { status: 500 });
     }
   }
 
-  // 只寄信、沒有建開通訂單時（grant=false，或 grant 但已開通）：建一筆 status='notified'
+  // 只寄信、沒有建開通訂單時（grant=false）：建一筆 status='notified'
   // 的 manual 紀錄單，好讓「這次寄信」可事後查證（成功/失敗都會落在這筆上）。
   if (sendEmail && !orderId) {
     const recPayload = buildManualOrder({ email, plan, phone, name, now: new Date(), granted: false });

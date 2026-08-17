@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { createInvoice } from "@/lib/amego-invoice";
+import { isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 
 // 後台手動開立發票（呼叫同一個 createInvoice 函數）
 export async function POST(req) {
@@ -16,12 +17,19 @@ export async function POST(req) {
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, email, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no")
+    .select("id, status, email, plan_label, amount, buyer_name, buyer_tax_id, carrier_type, carrier_id, invoice_no")
     .eq("id", id)
     .single();
 
   if (error || !order) return NextResponse.json({ error: "order_not_found" }, { status: 404 });
   if (order.invoice_no) return NextResponse.json({ error: "already_issued", invoiceNo: order.invoice_no }, { status: 400 });
+  if (order.status !== "paid") return NextResponse.json({ error: "order_not_paid" }, { status: 400 });
+  if (order.buyer_tax_id && !isValidTaxId(order.buyer_tax_id)) {
+    return NextResponse.json({ error: "invalid_tax_id" }, { status: 400 });
+  }
+  if (order.carrier_id && !isValidMobileBarcode(order.carrier_id)) {
+    return NextResponse.json({ error: "invalid_carrier_id" }, { status: 400 });
+  }
 
   const result = await createInvoice({
     orderId: order.id,
