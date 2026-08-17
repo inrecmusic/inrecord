@@ -862,19 +862,20 @@ function QuizTab({ token, video }) {
         <button onClick={() => { setActive(null); setResult(null); }} style={{ background: "none", border: "none", color: "#2563eb", fontSize: 13, cursor: "pointer", marginBottom: 12, fontFamily: F }}>← 返回測驗列表</button>
         <h3 style={{ margin: "0 0 14px", fontSize: 16, color: "#0f172a" }}>{active.quiz.title}</h3>
         {active.questions.map((q, i) => {
-          const correctIdx = result?.correct?.[i];
+          // 後端只回每題對錯 boolean（不含正解索引），只能對「學員選的那項」上色，無法標出正解在哪。
+          const answeredCorrectly = result?.results?.[i];
           return (
             <div key={q.id} style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 6 }}>{i + 1}. {q.question}</div>
               {(q.options || []).map((o, j) => {
                 const chosen = answers[i] === j;
-                const showCorrect = result && j === correctIdx;
-                const showWrong = result && chosen && j !== correctIdx;
+                const showCorrect = result && chosen && answeredCorrectly === true;
+                const showWrong = result && chosen && answeredCorrectly === false;
                 return (
                   <label key={j} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, marginBottom: 4, cursor: result ? "default" : "pointer",
                     background: showCorrect ? "#dcfce7" : showWrong ? "#fee2e2" : chosen ? "#eff6ff" : "#f8fafc", fontSize: 14, color: "#0f172a" }}>
                     <input type="radio" name={`q-${q.id}`} disabled={!!result} checked={chosen} onChange={() => setAnswers(a => ({ ...a, [i]: j }))} />
-                    {o}{showCorrect ? "　✔ 正解" : ""}
+                    {o}{showCorrect ? "　✔" : showWrong ? "　✘" : ""}
                   </label>
                 );
               })}
