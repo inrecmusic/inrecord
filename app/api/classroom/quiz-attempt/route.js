@@ -26,9 +26,9 @@ export async function POST(req) {
   // DB 錯誤不可當成「0 題」照樣計 0 分並寫入永久 attempt（比照 certificate/notes 路由）
   if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
 
-  const { score, passed, correct } = gradeQuiz(questions || [], answers, quiz.pass_score);
+  const { score, passed } = gradeQuiz(questions || [], answers, quiz.pass_score);
 
   const { error: insErr } = await supabase.from("quiz_attempts").insert({ user_id: user.id, quiz_id: quizId, score, passed, answers });
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
-  return NextResponse.json({ score, passed, correct });
+  return NextResponse.json({ score, passed });
 }
