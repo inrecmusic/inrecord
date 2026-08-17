@@ -17,7 +17,7 @@ export async function POST(req) {
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, email, plan, status, payuni_trade_no")
+    .select("id, email, grant_email, plan, status, payuni_trade_no")
     .eq("id", id)
     .single();
 
@@ -63,6 +63,7 @@ export async function POST(req) {
   // 退款已成功 → 標記訂單 + 撤銷存取。逐項檢查 error：撤銷失敗不可靜默吞錯，
   // 否則會變成「已退款但存取權還在」。退款本身已成功，故不回 5xx，而是回報需人工補撤的項目。
   const revokeFailed = [];
+  let enrollmentKept = false; // 該 email 尚有其他有效訂單時保留課程存取，不撤 enrollment
   const { error: stErr } = await supabase
     .from("orders")
     .update({ status: "refunded", updated_at: new Date().toISOString() })
@@ -77,17 +78,39 @@ export async function POST(req) {
     if (subErr) revokeFailed.push(`subscriptions: ${subErr.message}`);
   }
   if (order.plan === "course" || order.plan === "bundle") {
-    const { error: enErr } = await supabase.from("enrollments").delete().eq("order_id", order.id);
-    if (enErr) revokeFailed.push(`enrollments: ${enErr.message}`);
+    // enrollments 用 upsert(onConflict: email,course_id) 寫入：同 email 多筆訂單只會有一列、
+    // order_id 會被最新一筆覆蓋，故不能靠 order_id 判斷／刪除。改為：先查該 email 名下是否還有
+    // 其他有效訂單（其他 paid 的 course/bundle），有則保留存取；沒有才用真正的 key（email+course_id）撤。
+    const email = order.grant_email || order.email; // effective email，需與 grantAccess 開通時一致
+    const { data: paidOrders, error: othersErr } = await supabase
+      .from("orders")
+      .select("id, email, grant_email")
+      .eq("status", "paid")
+      .in("plan", ["course", "bundle"]);
+    if (othersErr) {
+      revokeFailed.push(`enrollments_check: ${othersErr.message}`);
+    } else if (paidOrders.some((o) => o.id !== order.id && (o.grant_email || o.email) === email)) {
+      enrollmentKept = true;
+    } else {
+      const { error: enErr } = await supabase.from("enrollments").delete().eq("email", email).eq("course_id", "piano-101");
+      if (enErr) revokeFailed.push(`enrollments: ${enErr.message}`);
+    }
   }
 
-  await logAudit(supabase, { actor: payload.email, action: "order.refund", targetType: "order", targetId: order.id, meta: { email: order.email, plan: order.plan, method, revokeFailed: revokeFailed.length ? revokeFailed : undefined }, req });
+  await logAudit(supabase, { actor: payload.email, action: "order.refund", targetType: "order", targetId: order.id, meta: { email: order.email, plan: order.plan, method, revokeFailed: revokeFailed.length ? revokeFailed : undefined, enrollmentKept: enrollmentKept || undefined }, req });
 
   if (revokeFailed.length) {
     console.error("[admin refund] 退款成功但撤銷存取失敗", { orderId: order.id, revokeFailed });
     return NextResponse.json({
       ok: true, method, refunded: true, revokeFailed,
       detail: "PAYUNi 退款已成功，但撤銷課程/遊戲存取時發生錯誤，請手動確認並撤銷存取。",
+    });
+  }
+
+  if (enrollmentKept) {
+    return NextResponse.json({
+      ok: true, method, enrollmentKept: true,
+      detail: "退款成功；因該 email 尚有其他有效訂單，未撤銷課程存取。",
     });
   }
 
