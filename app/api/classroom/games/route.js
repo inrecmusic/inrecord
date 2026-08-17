@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { buildWatermark, exceedsDeviceLimit } from "@/lib/game-devices";
+import { buildWatermark, enforceDeviceLimit } from "@/lib/game-devices";
 
 function getUserClient(token) {
   return createClient(
@@ -50,33 +50,17 @@ export async function GET(req) {
       return NextResponse.json({ game: { ...game, html_content: null } });
     }
 
-    // ── 裝置上限（只對 html 付費遊戲）──
+    // ── 裝置上限（只對 html 付費遊戲；擠最舊維持 N 台，不再用時間窗擋）──
     const deviceId = searchParams.get("device_id");
     if (!deviceId) return NextResponse.json({ error: "device_required" }, { status: 400 });
 
-    const { data: settings } = await supabase
-      .from("game_settings").select("device_limit").eq("id", "default").single();
-    const limit = settings?.device_limit ?? 3;
-
-    const { data: devices, error: devErr } = await supabase
-      .from("game_devices").select("device_id, last_seen_at").eq("user_id", user.id);
-    if (devErr) return NextResponse.json({ error: "device_check_failed" }, { status: 500 });
-
-    // 先檢查（基於 bump 前狀態）：近 30 分鐘其他活躍裝置達上限 → 擋
-    if (exceedsDeviceLimit(devices || [], deviceId, limit, Date.now(), 30 * 60 * 1000))
-      return NextResponse.json({ error: "device_limit", limit }, { status: 403 });
-
-    // 放行後才更新當前裝置 last_seen
     const ua = req.headers.get("user-agent") || null;
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
-    const nowIso = new Date().toISOString();
-    const { error: upErr } = await supabase.from("game_devices").upsert(
-      { user_id: user.id, device_id: deviceId, user_agent: ua, ip, last_seen_at: nowIso },
-      { onConflict: "user_id,device_id" }
-    );
-    if (upErr) return NextResponse.json({ error: "device_check_failed" }, { status: 500 });
+    const dev = await enforceDeviceLimit(supabase, { userId: user.id, deviceId, ua, ip });
+    if (dev.error) return NextResponse.json({ error: dev.error }, { status: dev.status });
 
     // 浮水印（含日期）＋防嵌入
+    const nowIso = new Date().toISOString();
     const siteHost = process.env.NEXT_PUBLIC_SITE_URL
       ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname
       : "inrecordmusic.com";
