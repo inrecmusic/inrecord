@@ -1106,7 +1106,7 @@ function WordpressLeadsPanel({rows,reload,showToast}){
   );
 }
 
-function OrdersPage({leads,showToast}){
+function OrdersPage({showToast}){
   const [statusFilter,setStatusFilter]=useState("all");
   const [search,setSearch]=useState("");
   const [dateFrom,setDateFrom]=useState("");
@@ -1130,12 +1130,10 @@ function OrdersPage({leads,showToast}){
       const{data}=await res.json();
       setRows(data||[]);
     }catch{
-      // 後端尚未部署 / 無資料表：以 leads 衍生顯示（無發票資訊）
-      setRows((leads||[]).filter(l=>l.purchased||l.status==="purchased").map((l,i)=>({
-        id:`LEAD-${i+1}`,mer_trade_no:`ORD-REAL-${String(i+1).padStart(3,"0")}`,email:l.email,plan_label:"零基礎流行鋼琴入門課",amount:3000,pay_type:"信用卡",status:"paid",created_at:l.purchased_at||l.updated_at||l.created_at,
-      })));
+      setRows([]);
+      showToast?.("載入訂單失敗，顯示空白列表");
     }
-  },[leads]);
+  },[showToast]);
 
   useEffect(()=>{loadOrders();},[loadOrders]);
 
