@@ -218,32 +218,46 @@ export async function POST(req) {
         // 目前發票由人員依 PAYUNi 訂單記錄人工開立（尚未申請電子發票票匭），避免自動開出測試假發票／與人工重複開立。
         // 待 Amego 切正式＋申請票匭後設 AUTO_INVOICE=on 恢復。以 invoice_no 作為去重旗標，開票失敗時可隨後重試。
         if (autoInvoiceEnabled() && needsInvoice(order)) {
-          const invoiceResult = await createInvoice({
-            orderId: order.id,
-            buyerName: order.buyer_name || "學員",
-            buyerEmail: order.email,
-            buyerTaxId: order.buyer_tax_id || null,
-            amount: order.amount,
-            productName: order.plan_label || "從零開始學鋼琴",
-            carrierType: order.carrier_type || "",
-            carrierId: order.carrier_id || "",
-            trackApiCode: process.env.AMEGO_TRACK_API_CODE || "",
-          });
+          // 原子 claim 防並發／重送重複開票：把 invoice_claimed_at NULL→now，只有搶到的請求才呼叫 Amego。
+          // （needsInvoice 只讀進來當下的 invoice_no，屬 check-then-act；並發時多個 notify 會同時通過，故需此 CAS。）
+          const { data: invClaim } = await supabase
+            .from("orders")
+            .update({ invoice_claimed_at: new Date().toISOString() })
+            .eq("id", order.id)
+            .is("invoice_no", null)
+            .is("invoice_claimed_at", null)
+            .select("id")
+            .maybeSingle();
 
-          if (invoiceResult.success) {
-            await supabase
-              .from("orders")
-              .update({ invoice_no: invoiceResult.invoiceNo, invoice_error: null })
-              .eq("id", order.id);
-            console.log("[Invoice] 開立成功:", invoiceResult.invoiceNo);
-          } else {
-            invoiceFailed = true;
-            invoiceReason = invoiceResult.error || `code_${invoiceResult.code || "unknown"}`;
-            await supabase
-              .from("orders")
-              .update({ invoice_error: invoiceReason })
-              .eq("id", order.id);
-            console.error("[Invoice] 開立失敗:", invoiceResult.error);
+          if (invClaim) {
+            const invoiceResult = await createInvoice({
+              orderId: order.id,
+              buyerName: order.buyer_name || "學員",
+              buyerEmail: order.email,
+              buyerTaxId: order.buyer_tax_id || null,
+              amount: order.amount,
+              productName: order.plan_label || "從零開始學鋼琴",
+              carrierType: order.carrier_type || "",
+              carrierId: order.carrier_id || "",
+              trackApiCode: process.env.AMEGO_TRACK_API_CODE || "",
+            });
+
+            if (invoiceResult.success) {
+              await supabase
+                .from("orders")
+                .update({ invoice_no: invoiceResult.invoiceNo, invoice_error: null })
+                .eq("id", order.id);
+              console.log("[Invoice] 開立成功:", invoiceResult.invoiceNo);
+            } else {
+              invoiceFailed = true;
+              invoiceReason = invoiceResult.error || `code_${invoiceResult.code || "unknown"}`;
+              // 開票失敗：清掉 claim，讓後續重送 notify／後台可再次開票（保留「失敗可重試」語意）
+              await supabase
+                .from("orders")
+                .update({ invoice_error: invoiceReason, invoice_claimed_at: null })
+                .eq("id", order.id);
+              console.error("[Invoice] 開立失敗:", invoiceResult.error);
+            }
           }
         }
 
