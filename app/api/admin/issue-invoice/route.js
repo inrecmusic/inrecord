@@ -31,6 +31,18 @@ export async function POST(req) {
     return NextResponse.json({ error: "invalid_carrier_id" }, { status: 400 });
   }
 
+  // 原子 claim 防與 notify 自動開票／管理員雙擊並發重複開票（與 notify 共用 invoice_claimed_at）：
+  // 只有把 invoice_claimed_at NULL→now 搶到的請求才呼叫 Amego，其餘回 409。
+  const { data: invClaim } = await supabase
+    .from("orders")
+    .update({ invoice_claimed_at: new Date().toISOString() })
+    .eq("id", order.id)
+    .is("invoice_no", null)
+    .is("invoice_claimed_at", null)
+    .select("id")
+    .maybeSingle();
+  if (!invClaim) return NextResponse.json({ error: "invoice_in_progress" }, { status: 409 });
+
   const result = await createInvoice({
     orderId: order.id,
     buyerName: order.buyer_name || "學員",
@@ -44,6 +56,8 @@ export async function POST(req) {
   });
 
   if (!result.success) {
+    // 失敗清 claim，讓後續重試（notify 或後台）可再搶（保留「開票失敗可重試」語意）
+    await supabase.from("orders").update({ invoice_claimed_at: null }).eq("id", order.id);
     return NextResponse.json({ error: result.error || "issue_failed", code: result.code }, { status: 500 });
   }
 
