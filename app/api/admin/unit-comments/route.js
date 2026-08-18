@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -25,7 +26,7 @@ export async function GET(req) {
   if (status && status !== "all") q = q.eq("status", status);
   if (video_id && video_id !== "all") q = q.eq("video_id", video_id);
   const { data, error, count } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data, total: count });
 }
 
@@ -36,7 +37,7 @@ export async function DELETE(req) {
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const id = new URL(req.url).searchParams.get("id");
   const { error } = await db.from("comments").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }
 
@@ -51,6 +52,6 @@ export async function PATCH(req) {
   if (status !== undefined) updates.status = status;
   if (!Object.keys(updates).length) return NextResponse.json({ error: "no_updates" }, { status: 400 });
   const { data, error } = await db.from("comments").update(updates).eq("id", id).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }

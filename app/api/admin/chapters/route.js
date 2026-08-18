@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -8,7 +9,7 @@ export async function GET(req) {
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ ok: true, data: [] });
   const { data, error } = await db.from("chapters").select("*").order("sort_order", { ascending: true });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -19,7 +20,7 @@ export async function POST(req) {
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const { title, sort_order } = await req.json();
   const { data, error } = await db.from("chapters").insert({ title, sort_order }).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -30,7 +31,7 @@ export async function PATCH(req) {
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const { id, ...updates } = await req.json();
   const { data, error } = await db.from("chapters").update(updates).eq("id", id).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -46,9 +47,9 @@ export async function DELETE(req) {
   // 章節就擋下，要求先改綁或刪除測驗。（videos.chapter_id 是 SET NULL，非破壞性故不擋。）
   const { count: quizCount, error: qcErr } = await db
     .from("quizzes").select("id", { count: "exact", head: true }).eq("chapter_id", id);
-  if (qcErr) return NextResponse.json({ error: qcErr.message }, { status: 500 });
+  if (qcErr) return serverError(qcErr);
   if (quizCount > 0) return NextResponse.json({ error: "chapter_has_quizzes" }, { status: 409 });
   const { error } = await db.from("chapters").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }

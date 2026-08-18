@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -14,7 +15,7 @@ export async function GET(req) {
     .select("device_limit")
     .eq("id", "default")
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ device_limit: data?.device_limit ?? 3 });
 }
 
@@ -34,6 +35,6 @@ export async function PATCH(req) {
     .from("game_settings")
     .update({ device_limit: n, updated_at: new Date().toISOString() })
     .eq("id", "default");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, device_limit: n });
 }

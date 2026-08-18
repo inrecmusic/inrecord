@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -16,6 +17,6 @@ export async function GET(req) {
     .select("id, actor_email, action, target_type, target_id, meta, ip, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data: data || [] });
 }

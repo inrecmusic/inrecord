@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -11,7 +12,7 @@ export async function GET(req) {
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
   const { data, error } = await supabase.from("newsletter").select("*").eq("id", "default").maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({
     ok: true,
     data: data || { id: "default", subject: "", body_md: "", last_sent_at: null, last_sent_count: 0 },
@@ -34,6 +35,6 @@ export async function PATCH(req) {
     { id: "default", subject, body_md, updated_at: new Date().toISOString() },
     { onConflict: "id" }
   );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }

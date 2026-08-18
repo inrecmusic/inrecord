@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
@@ -21,7 +22,7 @@ export async function POST(req) {
     flagColumn: "presale_email_sent_at",
     ids,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   // presale 文案旗標依目前 sale_settings 決定（與 notify 一致）
   const saleSettings = await getSaleSettings();

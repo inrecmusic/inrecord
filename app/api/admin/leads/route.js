@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { buildLeadPatch } from "@/lib/preview-leads";
@@ -26,7 +27,7 @@ export async function GET(req) {
     if (error) throw error;
     return NextResponse.json({ ok: true, data, total: count, page, perPage });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -47,6 +48,6 @@ export async function PATCH(req) {
     if (error) throw error;
     return NextResponse.json({ ok: true, data });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return serverError(err);
   }
 }

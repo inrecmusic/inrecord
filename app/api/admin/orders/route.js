@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { selectAll } from "@/lib/supabase-paginate";
@@ -22,6 +23,6 @@ export async function GET(req) {
     const withEnrolled = markEnrolled(data, enr.map((e) => e.email));
     return NextResponse.json({ ok: true, data: withEnrolled });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return serverError(err);
   }
 }

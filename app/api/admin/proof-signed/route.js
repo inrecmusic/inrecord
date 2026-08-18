@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -27,6 +28,6 @@ export async function POST(req) {
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 300); // 5 分鐘
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ signedUrl: data.signedUrl });
 }

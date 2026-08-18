@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { generateBatchCodes, normalizeManualCodes, MAX_BATCH_QUANTITY } from "@/lib/serial-codes";
@@ -12,7 +13,7 @@ export async function GET(req) {
 
   const { data: batches, error } = await supabase
     .from("coupon_batches").select("*").order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   const { data: codes } = await supabase.from("coupons").select("batch_id, used").not("batch_id", "is", null);
   const stats = {};
@@ -77,7 +78,7 @@ export async function POST(req) {
   const { data: batch, error: bErr } = await supabase.from("coupon_batches")
     .insert({ name, type, value: Math.round(value), prefix, note, starts_at, ends_at, plan })
     .select().single();
-  if (bErr) return NextResponse.json({ error: bErr.message }, { status: 500 });
+  if (bErr) return serverError(bErr);
 
   // 4) 寫入序號（usage_limit=1）
   const rows = wantCodes.map((code) => ({
@@ -89,7 +90,7 @@ export async function POST(req) {
     // 回滾批次，避免留下空批次
     await supabase.from("coupon_batches").delete().eq("id", batch.id);
     if (cErr.code === "23505") return NextResponse.json({ error: "code_exists" }, { status: 409 });
-    return NextResponse.json({ error: cErr.message }, { status: 500 });
+    return serverError(cErr);
   }
 
   return NextResponse.json({ data: { ...batch, total: rows.length, used: 0 } });
@@ -106,6 +107,6 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
   const { error } = await supabase.from("coupon_batches").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }

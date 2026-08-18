@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -16,7 +17,7 @@ export async function GET(req, { params }) {
     .select("id, code, used, type, value")
     .eq("batch_id", id)
     .order("created_at", { ascending: true });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   // 兌換反查：以 orders.coupon_code 比對已付款訂單
   const codeList = (codes || []).map(c => c.code);

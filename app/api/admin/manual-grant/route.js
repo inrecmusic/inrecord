@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { grantAccess } from "@/lib/fulfillment-grant";
@@ -63,13 +64,13 @@ export async function POST(req) {
       .select("id")
       .single();
     if (insErr) {
-      return NextResponse.json({ error: "order_insert_failed", detail: insErr.message }, { status: 500 });
+      return serverError(insErr, "order_insert_failed");
     }
     orderId = order.id;
 
     const res = await grantAccess(supabase, { id: orderId, email, plan });
     if (!res.ok) {
-      return NextResponse.json({ error: "grant_failed", detail: res.errors.join("; ") }, { status: 500 });
+      return serverError(res.errors.join("; "), "grant_failed");
     }
   }
 

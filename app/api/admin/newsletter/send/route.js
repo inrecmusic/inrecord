@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { renderNewsletterHtml } from "@/lib/newsletter";
@@ -54,7 +55,7 @@ export async function POST(req) {
     pending = await filterUnsent(supabase, hash, emails); // 跳過這封已寄過的對象
     sentToday = await countSentToday(supabase);            // 今日實際已寄（跨呼叫累計）
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return serverError(e);
   }
   const alreadySent = emails.length - pending.length;
   const remaining = Math.max(0, DAILY_LIMIT - sentToday); // 真正的每日剩餘額度

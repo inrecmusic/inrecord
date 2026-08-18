@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -16,7 +17,7 @@ export async function GET(req) {
   if (chapter_id) query = query.eq("chapter_id", chapter_id);
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data: data || [] });
 }
 
@@ -42,7 +43,7 @@ export async function POST(req) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -67,7 +68,7 @@ export async function PATCH(req) {
   if (fields.assignment_due  !== undefined) updateData.assignment_due  = fields.assignment_due || null;
 
   const { error } = await supabase.from("videos").update(updateData).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }
 
@@ -80,6 +81,6 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
   const { error } = await supabase.from("videos").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }

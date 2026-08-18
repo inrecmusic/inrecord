@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { validateDateRange } from "@/lib/date-range";
@@ -16,7 +17,7 @@ export async function GET(req) {
     .is("batch_id", null)              // 序號（批次碼）不出現在一般優惠券列表
     .order("created_at", { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ data: data || [] });
 }
 
@@ -54,7 +55,7 @@ export async function POST(req) {
 
   if (error) {
     if (error.code === "23505") return NextResponse.json({ error: "code_exists" }, { status: 409 });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return serverError(error);
   }
   await logAudit(supabase, { actor: payload.email, action: "coupon.create", targetType: "coupon", targetId: data?.id, meta: { code, type, value: Math.round(value), plan }, req });
   return NextResponse.json({ data });
@@ -100,7 +101,7 @@ export async function PATCH(req) {
 
   if (Object.keys(allowed).length === 0) return NextResponse.json({ ok: true });
   const { error } = await supabase.from("coupons").update(allowed).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "coupon.update", targetType: "coupon", targetId: id, meta: allowed, req });
   return NextResponse.json({ ok: true });
 }
@@ -116,7 +117,7 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
   const { error } = await supabase.from("coupons").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "coupon.delete", targetType: "coupon", targetId: id, req });
   return NextResponse.json({ ok: true });
 }

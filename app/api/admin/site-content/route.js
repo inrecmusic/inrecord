@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
@@ -11,7 +12,7 @@ export async function GET(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ ok: true, data: {} });
   const { data, error } = await supabase.from("site_content").select("key, body_md, updated_at");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   const map = {};
   for (const r of data || []) map[r.key] = r.body_md;
   return NextResponse.json({ ok: true, data: map });
@@ -29,7 +30,7 @@ export async function PATCH(req) {
 
   const { error } = await supabase.from("site_content")
     .upsert({ key, body_md, updated_at: new Date().toISOString() }, { onConflict: "key" });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   await logAudit(supabase, { actor: payload.email, action: "site_content.update", targetType: "site_content", targetId: key, meta: { length: body_md.length }, req });
   return NextResponse.json({ ok: true });

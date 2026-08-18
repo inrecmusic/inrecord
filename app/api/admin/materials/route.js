@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { randomUUID } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
@@ -21,7 +22,7 @@ export async function GET(req) {
     .order("created_at", { ascending: true });
   q = videoId ? q.eq("video_id", videoId) : q.is("video_id", null);
   const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ materials: data || [] });
 }
 
@@ -53,7 +54,7 @@ export async function POST(req) {
   const { error: upErr } = await supabase.storage
     .from(BUCKET)
     .upload(path, buf, { contentType: "application/pdf", upsert: false });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return serverError(upErr);
 
   const { data, error } = await supabase
     .from("materials")
@@ -63,7 +64,7 @@ export async function POST(req) {
   if (error) {
     // 入庫失敗 → 清掉剛上傳的孤兒檔
     await supabase.storage.from(BUCKET).remove([path]);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return serverError(error);
   }
 
   await logAudit(supabase, {
@@ -86,7 +87,7 @@ export async function DELETE(req) {
   // 先刪 DB row（權威）再刪 storage blob：順序相反時若 storage 已刪但 DB 刪失敗，會留下
   // 一筆指向已消失檔案的死列（學員清單點不開）。寧可 blob 短暫殘留也不要死列。
   const { error } = await supabase.from("materials").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   if (row?.storage_path) {
     const { error: rmErr } = await supabase.storage.from(BUCKET).remove([row.storage_path]);
     if (rmErr) console.error("[materials] storage 移除失敗（DB 已刪，檔案暫成孤兒）", row.storage_path, rmErr.message);

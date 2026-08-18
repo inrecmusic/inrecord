@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { mergeStudents } from "@/lib/admin-students";
@@ -32,6 +33,6 @@ export async function GET(req) {
     });
     return NextResponse.json({ ok: true, data, total: data.length });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return serverError(err);
   }
 }

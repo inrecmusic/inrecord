@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -9,7 +10,7 @@ export async function POST(req) {
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const { comment_id, admin_content } = await req.json();
   const { data, error } = await db.from("comment_replies").insert({ comment_id, admin_content }).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   // Mark comment as replied
   await db.from("comments").update({ status: "replied" }).eq("id", comment_id);
   return NextResponse.json({ ok: true, data });

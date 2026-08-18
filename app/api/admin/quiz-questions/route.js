@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
@@ -25,7 +26,7 @@ export async function GET(req) {
   const { data, error } = await supabase.from("quiz_questions")
     .select("id, quiz_id, question, options, correct_index, sort_order")
     .eq("quiz_id", quizId).order("sort_order", { ascending: true });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ questions: data || [] });
 }
 
@@ -42,7 +43,7 @@ export async function POST(req) {
   const { data, error } = await supabase.from("quiz_questions")
     .insert({ quiz_id: quizId, question: v.text, options: v.opts, correct_index: v.ci, sort_order: Number.isFinite(b.sort_order) ? Math.round(b.sort_order) : 0 })
     .select("id").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "quiz_question.create", targetType: "quiz_question", targetId: data?.id, meta: { quiz_id: quizId }, req });
   return NextResponse.json({ ok: true, id: data?.id });
 }
@@ -61,7 +62,7 @@ export async function PATCH(req) {
   const allowed = { question: v.text, options: v.opts, correct_index: v.ci };
   if (Number.isFinite(b.sort_order)) allowed.sort_order = Math.round(b.sort_order);
   const { error } = await supabase.from("quiz_questions").update(allowed).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "quiz_question.update", targetType: "quiz_question", targetId: id, meta: { quiz_id: b.quiz_id }, req });
   return NextResponse.json({ ok: true });
 }
@@ -83,7 +84,7 @@ export async function DELETE(req) {
     }
   }
   const { error } = await supabase.from("quiz_questions").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "quiz_question.delete", targetType: "quiz_question", targetId: id, meta: {}, req });
   return NextResponse.json({ ok: true });
 }

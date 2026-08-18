@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -16,7 +17,7 @@ export async function GET(req) {
   let q = db.from("ratings").select("*, rating_replies(admin_content,created_at)", { count: "exact" }).order("created_at", { ascending: false }).range(from, to);
   if (status && status !== "all") q = q.eq("status", status);
   const { data, error, count } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data, total: count });
 }
 
@@ -27,6 +28,6 @@ export async function PATCH(req) {
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const { id, ...updates } = await req.json();
   const { data, error } = await db.from("ratings").update(updates).eq("id", id).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { grantAccess } from "@/lib/fulfillment-grant";
@@ -21,7 +22,7 @@ export async function POST(req) {
     flagColumn: "access_granted_at",
     ids,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   let granted = 0, failed = 0;
   const errors = [];

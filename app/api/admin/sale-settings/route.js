@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { PLAN_CATALOG } from "@/lib/plans";
@@ -10,7 +11,7 @@ export async function GET(req) {
   const sb = getSupabaseAdmin();
   if (!sb) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
   const { data, error } = await sb.from("sale_settings").select("*").eq("id", "default").maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ data: data || null });
 }
 
@@ -104,12 +105,12 @@ export async function PATCH(req) {
   if ("fan_plan" in body) {
     const { error: cErr } = await sb.from("coupons")
       .upsert(fanPlanCoupon(patch.fan_plan), { onConflict: "code" });
-    if (cErr) return NextResponse.json({ error: "fan_coupon_sync_failed: " + cErr.message }, { status: 500 });
+    if (cErr) return serverError(cErr, "fan_coupon_sync_failed");
   }
 
   const { data, error } = await sb.from("sale_settings")
     .upsert(patch, { onConflict: "id" }).select("*").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   const { id, updated_at, ...changed } = patch; // 記錄實際變更的欄位
   await logAudit(sb, { actor: payload.email, action: "sale_settings.update", targetType: "sale_settings", targetId: "default", meta: changed, req });

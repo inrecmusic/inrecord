@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { buildAdReport } from "@/lib/ad-report";
@@ -17,7 +18,7 @@ export async function GET(req) {
     sb.from("ad_insights").select("campaign_id, campaign_name, date, spend, impressions, clicks, reach, frequency, meta_conversions, meta_conversion_value").gte("date", sinceDate),
     sb.from("orders").select("amount, created_at, attribution").eq("status", "paid").gte("created_at", sinceISO),
   ]);
-  if (e1 || e2) return NextResponse.json({ error: (e1 || e2).message }, { status: 500 });
+  if (e1 || e2) return serverError(e1 || e2);
 
   const report = buildAdReport({ insights: insights || [], paidOrders: orders || [], targetRoas });
   return NextResponse.json({ data: report, days, targetRoas });

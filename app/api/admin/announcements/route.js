@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
@@ -14,7 +15,7 @@ export async function GET(req) {
     .select("id, title, body, pinned, published, created_at, updated_at")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ announcements: data || [] });
 }
 
@@ -37,7 +38,7 @@ export async function POST(req) {
     published: body.published === true,
   };
   const { data, error } = await supabase.from("announcements").insert(row).select("id").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   await logAudit(supabase, {
     actor: payload.email, action: "announcement.create", targetType: "announcement",
@@ -64,7 +65,7 @@ export async function PATCH(req) {
   if (Object.keys(allowed).length === 0) return NextResponse.json({ error: "no_fields" }, { status: 400 });
 
   const { error } = await supabase.from("announcements").update(allowed).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   await logAudit(supabase, {
     actor: payload.email, action: "announcement.update", targetType: "announcement", targetId: id, meta: allowed, req,
@@ -82,7 +83,7 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "no_id" }, { status: 400 });
 
   const { error } = await supabase.from("announcements").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   await logAudit(supabase, {
     actor: payload.email, action: "announcement.delete", targetType: "announcement", targetId: id, meta: {}, req,

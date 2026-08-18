@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 
@@ -12,7 +13,7 @@ export async function GET(req) {
     .select("*")
     .order("created_at", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data: data || [] });
 }
 
@@ -34,7 +35,7 @@ export async function POST(req) {
     status: body.status === "draft" ? "draft" : "published",
   }).select().single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -54,7 +55,7 @@ export async function PATCH(req) {
   allowed.updated_at = new Date().toISOString();
 
   const { error } = await supabase.from("courses").update(allowed).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }
 
@@ -68,6 +69,6 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
   const { error } = await supabase.from("courses").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }

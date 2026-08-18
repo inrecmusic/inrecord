@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
@@ -14,7 +15,7 @@ export async function GET(req) {
     .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (chapterId) q = q.eq("chapter_id", chapterId);
   const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ quizzes: data || [] });
 }
 
@@ -31,7 +32,7 @@ export async function POST(req) {
   // 新建測驗此刻還沒有任何題目，一律以未發布建立；加完題目後再用 PATCH 發布（發布時會驗題數）。
   const row = { chapter_id, title, pass_score, published: false };
   const { data, error } = await supabase.from("quizzes").insert(row).select("id").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "quiz.create", targetType: "quiz", targetId: data?.id, meta: { title, chapter_id }, req });
   return NextResponse.json({ ok: true, id: data?.id });
 }
@@ -54,11 +55,11 @@ export async function PATCH(req) {
   if (allowed.published === true) {
     const { count, error: cErr } = await supabase.from("quiz_questions")
       .select("id", { count: "exact", head: true }).eq("quiz_id", id);
-    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+    if (cErr) return serverError(cErr);
     if (!count) return NextResponse.json({ error: "no_questions" }, { status: 409 });
   }
   const { error } = await supabase.from("quizzes").update(allowed).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "quiz.update", targetType: "quiz", targetId: id, meta: allowed, req });
   return NextResponse.json({ ok: true });
 }
@@ -71,7 +72,7 @@ export async function DELETE(req) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "no_id" }, { status: 400 });
   const { error } = await supabase.from("quizzes").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   await logAudit(supabase, { actor: payload.email, action: "quiz.delete", targetType: "quiz", targetId: id, meta: {}, req });
   return NextResponse.json({ ok: true });
 }

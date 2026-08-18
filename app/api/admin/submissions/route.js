@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -12,7 +13,7 @@ export async function GET(req) {
   let q = db.from("submissions").select("*").order("submitted_at", { ascending: false });
   if (video_id) q = q.eq("video_id", video_id);
   const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
 
@@ -23,6 +24,6 @@ export async function PATCH(req) {
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const { id, ...updates } = await req.json();
   const { data, error } = await db.from("submissions").update(updates).eq("id", id).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }
