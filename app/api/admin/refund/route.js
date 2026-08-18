@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { payuniTrade } from "@/lib/payuni";
 import { logAudit } from "@/lib/audit";
+import { effectiveEmail, hasOtherPaidCourseAccess } from "@/lib/refund-guard";
 
 // 後台申請退款：呼叫 PAYUNi trade/close（CloseType=2 退款），成功後標記訂單並撤銷存取
 export async function POST(req) {
@@ -81,7 +82,7 @@ export async function POST(req) {
     // enrollments 用 upsert(onConflict: email,course_id) 寫入：同 email 多筆訂單只會有一列、
     // order_id 會被最新一筆覆蓋，故不能靠 order_id 判斷／刪除。改為：先查該 email 名下是否還有
     // 其他有效訂單（其他 paid 的 course/bundle），有則保留存取；沒有才用真正的 key（email+course_id）撤。
-    const email = order.grant_email || order.email; // effective email，需與 grantAccess 開通時一致
+    const email = effectiveEmail(order); // 與 grantAccess 開通時一致
     const { data: paidOrders, error: othersErr } = await supabase
       .from("orders")
       .select("id, email, grant_email")
@@ -89,7 +90,7 @@ export async function POST(req) {
       .in("plan", ["course", "bundle"]);
     if (othersErr) {
       revokeFailed.push(`enrollments_check: ${othersErr.message}`);
-    } else if (paidOrders.some((o) => o.id !== order.id && (o.grant_email || o.email) === email)) {
+    } else if (hasOtherPaidCourseAccess(order, paidOrders)) {
       enrollmentKept = true;
     } else {
       const { error: enErr } = await supabase.from("enrollments").delete().eq("email", email).eq("course_id", "piano-101");
