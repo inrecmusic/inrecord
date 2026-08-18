@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { stripAnswers } from "@/lib/quiz";
 
@@ -20,7 +21,7 @@ export async function GET(req) {
   const { data: questions, error: qErr } = await supabase.from("quiz_questions")
     .select("id, question, options, sort_order").eq("quiz_id", id)
     .order("sort_order", { ascending: true }).order("id", { ascending: true });
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return serverError(qErr);
 
   return NextResponse.json({
     quiz: { id: quiz.id, title: quiz.title, pass_score: quiz.pass_score },

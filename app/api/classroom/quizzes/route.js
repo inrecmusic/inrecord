@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -13,7 +14,7 @@ export async function GET(req) {
   const { data: quizzes, error } = await g.supabase.from("quizzes")
     .select("id, title, pass_score").eq("chapter_id", chapterId).eq("published", true)
     .order("sort_order", { ascending: true });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   const ids = (quizzes || []).map(q => q.id);
   let bestByQuiz = {};

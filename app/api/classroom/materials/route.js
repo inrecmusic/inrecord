@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 
 const BUCKET = "course-materials";
@@ -18,7 +19,7 @@ export async function GET(req) {
   if (signId) {
     const { data: m, error: mErr } = await supabase
       .from("materials").select("storage_path, video_id").eq("id", signId).maybeSingle();
-    if (mErr) return NextResponse.json({ error: mErr.message }, { status: 500 });
+    if (mErr) return serverError(mErr);
     if (!m) return NextResponse.json({ error: "not_found" }, { status: 404 });
     // 綁定單元的講義：該單元須已發布，避免用未公開單元的 UUID 提前取得下載連結
     if (m.video_id) {
@@ -42,7 +43,7 @@ export async function GET(req) {
     .order("sort_order", { ascending: true });
   q = videoId ? q.or(`video_id.eq.${videoId},video_id.is.null`) : q.is("video_id", null);
   const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   const materials = (data || []).map((m) => ({ id: m.id, title: m.title, file_size: m.file_size, video_id: m.video_id }));
   return NextResponse.json({ materials });

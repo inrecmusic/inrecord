@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { certificateStatus } from "@/lib/certificate";
 import { generateCode } from "@/lib/serial-codes";
@@ -16,7 +17,7 @@ export async function GET(req) {
   // 影片/測驗使 eligible 翻 false 而讓既有證書變成看不到（且省去重訪必觸發的 23505）。
   const { data: existing, error: exErr } = await supabase
     .from("certificates").select("cert_code, issued_at").eq("user_id", user.id).maybeSingle();
-  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
+  if (exErr) return serverError(exErr);
   if (existing) {
     return NextResponse.json({
       eligible: true, name, courseTitle: COURSE_TITLE,
@@ -32,7 +33,7 @@ export async function GET(req) {
   ]);
 
   for (const r of [pv, cv, pq, pa]) {
-    if (r.error) return NextResponse.json({ error: r.error.message }, { status: 500 });
+    if (r.error) return serverError(r.error);
   }
 
   const status = certificateStatus({
@@ -56,7 +57,7 @@ export async function GET(req) {
     .from("certificates")
     .insert({ user_id: user.id, email: user.email, cert_code: generateCode("INREC") });
   if (insErr && insErr.code !== "23505") {
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
+    return serverError(insErr);
   }
   const { data: cert, error: certErr } = await supabase
     .from("certificates")

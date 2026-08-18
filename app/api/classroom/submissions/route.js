@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { createClient } from "@supabase/supabase-js";
 
 function getUserClient(token) {
@@ -25,6 +26,6 @@ export async function GET(req) {
   let q = db.from("submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false });
   if (video_id) q = q.eq("video_id", video_id);
   const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }

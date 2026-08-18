@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { hasCourseAccess } from "@/lib/course-access";
@@ -48,7 +49,7 @@ export async function POST(req) {
   if (error) {
     // 唯一索引 ratings_user_unique 兜底：先查後插仍可能並發 → 第二筆撞 23505 視為已評分
     if (error.code === "23505") return NextResponse.json({ error: "already_rated" }, { status: 409 });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return serverError(error);
   }
   return NextResponse.json({ ok: true, data });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { sortNotes } from "@/lib/notes-format";
 
@@ -17,7 +18,7 @@ export async function GET(req) {
     .select("id, seconds, body, created_at")
     .eq("user_id", g.user.id)
     .eq("video_id", videoId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ notes: sortNotes(data || []) });
 }
 
@@ -36,7 +37,7 @@ export async function POST(req) {
     .insert({ user_id: g.user.id, video_id: videoId, seconds, body: text.slice(0, BODY_MAX) })
     .select("id")
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, id: data?.id });
 }
 
@@ -47,6 +48,6 @@ export async function DELETE(req) {
   if (!id) return NextResponse.json({ error: "no_id" }, { status: 400 });
   // 同時限縮 user_id：只能刪本人筆記
   const { error } = await g.supabase.from("notes").delete().eq("id", id).eq("user_id", g.user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true });
 }

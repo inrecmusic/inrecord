@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { enforceDeviceLimit } from "@/lib/game-devices";
 
@@ -26,8 +27,8 @@ export async function GET(req) {
       .order("sort_order", { ascending: true }),
   ]);
 
-  if (chapRes.error) return NextResponse.json({ error: chapRes.error.message }, { status: 500 });
-  if (vidRes.error) return NextResponse.json({ error: vidRes.error.message }, { status: 500 });
+  if (chapRes.error) return serverError(chapRes.error);
+  if (vidRes.error) return serverError(vidRes.error);
 
   return NextResponse.json({ ok: true, chapters: chapRes.data, videos: vidRes.data });
 }

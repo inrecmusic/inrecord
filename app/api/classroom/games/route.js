@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { buildWatermark, enforceDeviceLimit } from "@/lib/game-devices";
@@ -89,7 +90,7 @@ export async function GET(req) {
 
   const { data: rawGames, error: listErr } = await query;
 
-  if (listErr) return NextResponse.json({ error: listErr.message }, { status: 500 });
+  if (listErr) return serverError(listErr);
 
   // filter active, strip html_content from list to keep payload small
   const games = (rawGames || [])

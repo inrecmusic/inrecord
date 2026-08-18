@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { gradeQuiz } from "@/lib/quiz";
 
@@ -24,11 +25,11 @@ export async function POST(req) {
     .select("id, correct_index, sort_order").eq("quiz_id", quizId)
     .order("sort_order", { ascending: true }).order("id", { ascending: true });
   // DB 錯誤不可當成「0 題」照樣計 0 分並寫入永久 attempt（比照 certificate/notes 路由）
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return serverError(qErr);
 
   const { score, passed, results } = gradeQuiz(questions || [], answers, quiz.pass_score);
 
   const { error: insErr } = await supabase.from("quiz_attempts").insert({ user_id: user.id, quiz_id: quizId, score, passed, answers });
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+  if (insErr) return serverError(insErr);
   return NextResponse.json({ score, passed, results });
 }

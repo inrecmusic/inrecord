@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -35,7 +36,7 @@ export async function GET(req) {
       .eq("published", true),
   ]);
 
-  if (progRes.error) return NextResponse.json({ error: progRes.error.message }, { status: 500 });
+  if (progRes.error) return serverError(progRes.error);
 
   const progress = progRes.data || [];
   const completedCount = progress.filter(p => p.completed).length;
@@ -91,6 +92,6 @@ export async function POST(req) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
 }

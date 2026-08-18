@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { requireClassroomAuth } from "@/lib/classroom-auth";
 
 export async function GET(req) {
@@ -13,7 +14,7 @@ export async function GET(req) {
     .select("mer_trade_no, plan, plan_label, amount, currency, status, invoice_no, source, created_at")
     .eq("email", user.email)
     .order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError(error);
 
   return NextResponse.json({ orders: data || [] });
 }
