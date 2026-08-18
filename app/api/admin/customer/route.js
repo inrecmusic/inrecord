@@ -19,6 +19,12 @@ export async function GET(req) {
     supabase.from("student_profiles").select("*").ilike("email", email).maybeSingle(),
   ]);
 
+  const dbErr = ord.error || enr.error || sub.error || mail.error || prof.error;
+  if (dbErr) {
+    console.error("[admin customer] 查詢失敗:", dbErr.message);
+    return NextResponse.json({ error: "query_failed" }, { status: 500 });
+  }
+
   return NextResponse.json({
     ok: true,
     email,

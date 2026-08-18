@@ -3,6 +3,10 @@ import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { validateProofImage } from "@/lib/proof-image";
+import { createDistributedLimiter } from "@/lib/rate-limit";
+
+// 已登入端點：每用戶每分鐘 5 次，擋濫傳耗 storage（比照 fan-proof）
+const limiter = createDistributedLimiter({ limit: 5, windowMs: 60_000, prefix: "rl:upload-proof" });
 
 export async function POST(req) {
   // Require authenticated Supabase user
@@ -16,6 +20,11 @@ export async function POST(req) {
   );
   const { data: { user }, error: authErr } = await userClient.auth.getUser();
   if (authErr || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const rl = await limiter(user.id);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(rl.retryAfter) } });
+  }
 
   try {
     const formData = await req.formData();

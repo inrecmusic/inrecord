@@ -10,8 +10,8 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const video_id = searchParams.get("video_id");
-  const page = Number(searchParams.get("page") || 1);
-  const perPage = Number(searchParams.get("per_page") || 20);
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const perPage = Math.min(200, Math.max(1, Number(searchParams.get("per_page")) || 20));
   const countOnly = searchParams.get("count") === "true";
 
   if (countOnly) {

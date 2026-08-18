@@ -8,8 +8,8 @@ export async function GET(req) {
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const page = Number(searchParams.get("page") || 1);
-  const perPage = Number(searchParams.get("per_page") || 50);
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const perPage = Math.min(200, Math.max(1, Number(searchParams.get("per_page")) || 50));
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
