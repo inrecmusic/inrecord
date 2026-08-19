@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { logAudit } from "@/lib/audit";
 
 export async function PATCH(req, { params }) {
   const payload = await verifyAdminToken(req);
@@ -29,5 +30,6 @@ export async function PATCH(req, { params }) {
     .eq("id", id);
 
   if (error) return NextResponse.json({ ok: false, error: "update_failed" }, { status: 500 });
+  await logAudit(supabase, { actor: payload.email, action: "order.fan_review", targetType: "order", targetId: id, meta: { fan_review: v }, req });
   return NextResponse.json({ ok: true });
 }

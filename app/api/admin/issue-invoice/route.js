@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { createInvoice } from "@/lib/amego-invoice";
 import { isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
+import { logAudit } from "@/lib/audit";
 
 // 後台手動開立發票（呼叫同一個 createInvoice 函數）
 export async function POST(req) {
@@ -62,5 +63,6 @@ export async function POST(req) {
   }
 
   await supabase.from("orders").update({ invoice_no: result.invoiceNo, invoice_error: null }).eq("id", order.id);
+  await logAudit(supabase, { actor: payload.email, action: "invoice.issue", targetType: "order", targetId: order.id, meta: { invoiceNo: result.invoiceNo, amount: order.amount }, req });
   return NextResponse.json({ ok: true, invoiceNo: result.invoiceNo });
 }

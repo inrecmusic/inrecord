@@ -3,6 +3,7 @@ import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { selectAll } from "@/lib/supabase-paginate";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -22,7 +23,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
@@ -48,11 +50,13 @@ export async function POST(req) {
   }).select().single();
 
   if (error) return serverError(error);
+  await logAudit(supabase, { actor: payload.email, action: "subscription.grant", targetType: "subscription", targetId: data.id, meta: { email: data.email, plan_type, expires_at: exp.toISOString() }, req });
   return NextResponse.json({ data });
 }
 
 export async function PATCH(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
@@ -66,6 +70,7 @@ export async function PATCH(req) {
       .update({ status: "cancelled" })
       .eq("id", id);
     if (error) return serverError(error);
+    await logAudit(supabase, { actor: payload.email, action: "subscription.cancel", targetType: "subscription", targetId: id, req });
     return NextResponse.json({ ok: true });
   }
 
@@ -85,6 +90,7 @@ export async function PATCH(req) {
       .update({ expires_at: newExpiry.toISOString(), status: "active" })
       .eq("id", id);
     if (error) return serverError(error);
+    await logAudit(supabase, { actor: payload.email, action: "subscription.extend", targetType: "subscription", targetId: id, meta: { expires_at: newExpiry.toISOString() }, req });
     return NextResponse.json({ ok: true });
   }
 

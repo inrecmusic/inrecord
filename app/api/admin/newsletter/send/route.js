@@ -8,6 +8,7 @@ import {
   contentHash, filterUnsent, countSentToday, recordSent,
 } from "@/lib/newsletter-send";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
+import { logAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 群發逐封寄，給足執行時間
@@ -79,5 +80,6 @@ export async function POST(req) {
     .update({ last_sent_at: new Date().toISOString(), last_sent_count: result.sent })
     .eq("id", "default");
 
+  await logAudit(supabase, { actor: payload.email, action: "newsletter.send", targetType: "newsletter", targetId: audience, meta: { audience, sent: result.sent, failed: result.failed, alreadySent }, req });
   return NextResponse.json({ ok: true, audience, alreadySent, ...result });
 }
