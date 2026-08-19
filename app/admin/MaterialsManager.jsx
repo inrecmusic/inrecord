@@ -21,7 +21,7 @@ export default function MaterialsManager({ videoId, title, onClose, showToast })
       const r = await fetch(`/api/admin/materials${qs}`, { headers: { Authorization: `Bearer ${pw()}` } });
       const d = await r.json();
       setItems(d.materials || []);
-    } catch { setItems([]); }
+    } catch { showToast("❌ 載入失敗"); setItems([]); }
     setLoading(false);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [videoId]);

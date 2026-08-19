@@ -55,7 +55,7 @@ export default function CourseRatingsPage({ showToast }) {
       const { data, total: t } = await r.json();
       setRatings(data || []);
       setTotal(t || 0);
-    } catch {}
+    } catch { showToast("❌ 載入失敗"); setRatings([]); setTotal(0); }
     finally { setLoading(false); }
   }, [page, statusFilter]);
 

@@ -44,7 +44,7 @@ export default function GamesManagePage({ showToast }) {
       setGames((await gr.json()).data || []);
       setChapters((await cr.json()).data || []);
       setVideos((await vr.json()).data || []);
-    } catch {}
+    } catch { showToast("❌ 載入失敗"); setGames([]); setChapters([]); setVideos([]); }
     finally { setLoading(false); }
   }, []);
 

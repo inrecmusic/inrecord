@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { validateDisplayName } from "@/lib/account";
 import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
-import { LEVELS } from "@/lib/student-profile";
+import { isValidMobile, LEVELS } from "@/lib/student-profile";
 import Logo from "@/components/Logo";
 import ProfileFields from "@/components/ProfileFields";
 
@@ -91,7 +91,7 @@ export default function AccountPage() {
   async function handleSaveProfile(e) {
     e.preventDefault(); setProfErr(""); setProfSaved(false);
     if (!prof.real_name.trim()) { setProfErr("請填真實姓名"); return; }
-    if (!/^09\d{8}$/.test(prof.phone.trim())) { setProfErr("手機格式需為 09 開頭共 10 碼"); return; }
+    if (!isValidMobile(prof.phone)) { setProfErr("手機格式需為 09 開頭共 10 碼"); return; }
     if (!LEVELS.includes(prof.level)) { setProfErr("請選擇鋼琴程度"); return; }
     setProfSaving(true);
     try {

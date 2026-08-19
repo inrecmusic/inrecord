@@ -23,7 +23,7 @@ export default function AnnouncementsPage({ showToast }) {
       const r = await api("/api/admin/announcements");
       const d = await r.json();
       setItems(d.announcements || []);
-    } catch { setItems([]); }
+    } catch { showToast("❌ 載入失敗"); setItems([]); }
     setLoading(false);
   }
   useEffect(() => { load(); }, []);

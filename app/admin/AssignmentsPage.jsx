@@ -41,7 +41,7 @@ export default function AssignmentsPage({ showToast }) {
       const r = await api("/api/admin/videos");
       const { data } = await r.json();
       setVideos((data || []).filter(v => v.assignment_desc));
-    } catch {}
+    } catch { showToast("❌ 載入失敗"); setVideos([]); }
     finally { setLoading(false); }
   }, []);
 
@@ -57,7 +57,7 @@ export default function AssignmentsPage({ showToast }) {
       const map = {};
       subs.forEach(s => { map[s.id] = s.feedback || ""; });
       setFeedbackMap(map);
-    } catch {}
+    } catch { showToast("❌ 載入失敗"); setSubmissions([]); }
     finally { setSubLoading(false); }
   }
 

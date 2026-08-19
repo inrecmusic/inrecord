@@ -54,7 +54,7 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
       setTotal(t || 0);
       const unread = (data || []).filter(c => c.status === "pending").length;
       onUnreadChange?.(unread);
-    } catch {}
+    } catch { showToast("❌ 載入失敗"); setComments([]); setTotal(0); }
     finally { setLoading(false); }
   }, [page, statusFilter, videoFilter, onUnreadChange]);
 
@@ -63,7 +63,7 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
       const [rv, rc] = await Promise.all([api("/api/admin/videos"), api("/api/admin/chapters")]);
       setVideos((await rv.json()).data || []);
       setChapters((await rc.json()).data || []);
-    } catch {}
+    } catch { showToast("❌ 載入失敗"); setVideos([]); setChapters([]); }
   }, []);
 
   useEffect(() => { fetchMeta(); }, [fetchMeta]);

@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { pickBanner } from "@/lib/announcements-view";
 import { formatSeconds, sortNotes } from "@/lib/notes-format";
-import { isProfileCoreComplete, LEVELS } from "@/lib/student-profile";
+import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
@@ -925,7 +925,7 @@ function ProfileOnboarding({ token, initial, onDone }) {
   async function save(skipOptional) {
     setErr("");
     if (!f.real_name.trim()) { setErr("請填真實姓名"); return; }
-    if (!/^09\d{8}$/.test(f.phone.trim())) { setErr("手機格式需為 09 開頭共 10 碼"); return; }
+    if (!isValidMobile(f.phone)) { setErr("手機格式需為 09 開頭共 10 碼"); return; }
     if (!LEVELS.includes(f.level)) { setErr("請選擇鋼琴程度"); return; }
     setBusy(true);
     try {
