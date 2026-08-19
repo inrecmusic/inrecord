@@ -1,35 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { signBunnyEmbedUrl } from "@/lib/bunny";
 
-function getUserClient(token) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-}
-
 // 簽發課程影片 embed URL：驗登入 + 已購買後，回傳帶 token 的 Bunny 安全 URL。
+// 授權統一走 requireClassroomAuth（requireCourse:true）：等同原本「登入 + 查 piano-101 enrollment」。
 export async function GET(req) {
-  const token = (req.headers.get("authorization") || "").replace("Bearer ", "");
-  if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const { data: { user }, error: authErr } = await getUserClient(token).auth.getUser();
-  if (authErr || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
-
-  // 伺服器端購買驗證（補上 embed 原本缺的權限把關）
-  const { data: enroll } = await supabase
-    .from("enrollments")
-    .select("id")
-    .eq("email", user.email)
-    .eq("course_id", "piano-101")
-    .maybeSingle();
-  if (!enroll) return NextResponse.json({ error: "purchase_required" }, { status: 403 });
+  const g = await requireClassroomAuth(req, { requireCourse: true });
+  if (g.res) return g.res;
+  const { supabase } = g;
 
   const { searchParams } = new URL(req.url);
   const videoId = searchParams.get("video_id");
