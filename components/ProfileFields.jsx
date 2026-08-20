@@ -13,7 +13,9 @@ export default function ProfileFields({ prof, setProf, styles }) {
       <div><label style={label} htmlFor="prof-level">鋼琴程度 *</label>
         <select id="prof-level" style={input} value={prof.level} onChange={e => setProf(p => ({ ...p, level: e.target.value }))}>
           <option value="">請選擇</option><option value="none">完全沒碰過</option>
-          <option value="little">摸過一點</option><option value="some">有基礎</option></select></div>
+          <option value="self">自學摸索中</option><option value="numbered">會看簡譜彈</option>
+          <option value="staff">能看五線譜彈簡單曲</option><option value="sight">有基礎、能視奏</option>
+          <option value="trained">曾正式學過數年</option></select></div>
       <div><label style={label} htmlFor="prof-goal">學習目標（選填）</label>
         <input id="prof-goal" style={input} value={prof.goal} onChange={e => setProf(p => ({ ...p, goal: e.target.value }))} /></div>
       <div><label style={label} htmlFor="prof-source">怎麼認識 InRecord（選填）</label>
@@ -22,11 +24,14 @@ export default function ProfileFields({ prof, setProf, styles }) {
           <option value="concert">演奏會</option><option value="search">網路搜尋</option><option value="other">其他</option></select></div>
       <div><label style={label} htmlFor="prof-equipment">練習器材（選填）</label>
         <select id="prof-equipment" style={input} value={prof.equipment} onChange={e => setProf(p => ({ ...p, equipment: e.target.value }))}>
-          <option value="">請選擇</option><option value="acoustic">鋼琴</option><option value="digital">電鋼琴</option><option value="none">目前沒有</option></select></div>
+          <option value="">請選擇</option><option value="acoustic">鋼琴</option><option value="digital">電鋼琴</option>
+          <option value="electronic">電子琴</option><option value="midi">MIDI 鍵盤</option><option value="none">目前沒有</option></select></div>
       <div><label style={label} htmlFor="prof-age_group">年齡層（選填）</label>
         <select id="prof-age_group" style={input} value={prof.age_group} onChange={e => setProf(p => ({ ...p, age_group: e.target.value }))}>
-          <option value="">請選擇</option><option value="under18">未滿 18</option><option value="18_29">18–29</option>
-          <option value="30_44">30–44</option><option value="45_59">45–59</option><option value="60plus">60 以上</option></select></div>
+          <option value="">請選擇</option><option value="under15">未滿 15</option><option value="15_19">15–19</option>
+          <option value="20_24">20–24</option><option value="25_29">25–29</option><option value="30_34">30–34</option>
+          <option value="35_39">35–39</option><option value="40_44">40–44</option><option value="45_49">45–49</option>
+          <option value="50_54">50–54</option><option value="55_59">55–59</option><option value="60plus">60 以上</option></select></div>
       <div><label style={label} htmlFor="prof-gender">性別（選填）</label>
         <select id="prof-gender" style={input} value={prof.gender} onChange={e => setProf(p => ({ ...p, gender: e.target.value }))}>
           <option value="">請選擇</option><option value="male">男</option><option value="female">女</option>

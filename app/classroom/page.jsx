@@ -929,9 +929,13 @@ function ProfileOnboarding({ token, initial, onDone }) {
     if (!LEVELS.includes(f.level)) { setErr("請選擇鋼琴程度"); return; }
     setBusy(true);
     try {
+      // 掛太久 access_token 可能過期 → 存檔前取最新 session（supabase 會自動刷新），避免 401
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || token;
       const body = skipOptional ? { real_name: f.real_name, phone: f.phone, level: f.level } : f;
       const r = await fetch("/api/classroom/profile", { method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(body) });
+      if (r.status === 401) { setErr("登入狀態逾時，請重新整理頁面後再存一次"); return; }
       const d = await r.json().catch(() => ({}));
       if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "unknown")); return; }
       onDone({ ...f, ...body });
