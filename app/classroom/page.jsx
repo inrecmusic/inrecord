@@ -1301,12 +1301,8 @@ export default function ClassroomPage() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 22px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 600, fontSize: 15, color: "#0f172a" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#2563eb" strokeWidth="2"/>
-            <circle cx="12" cy="12" r="4" fill="#dc2626"/>
-          </svg>
-          音樂教室
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <img src="/logo.svg" alt="InRecord" style={{ height: 28, width: "auto", display: "block" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
