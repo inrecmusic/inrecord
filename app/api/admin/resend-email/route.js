@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { getSaleSettings, isPresale } from "@/lib/sale";
 
 // 後台補寄開課確認信（比照 issue-invoice 結構）
 export async function POST(req) {
@@ -22,11 +23,15 @@ export async function POST(req) {
   if (error || !order) return NextResponse.json({ error: "order_not_found" }, { status: 404 });
   if (!order.email) return NextResponse.json({ error: "missing_email" }, { status: 400 });
 
+  // 依目前 sale_settings 決定「預購成功」vs「課程已開通」文案（與 notify／send-presale-email 一致）；
+  // 否則預購期補寄會誤寄「課程已開通」，但教室其實還鎖著。
+  const presale = isPresale(await getSaleSettings(), new Date());
   const result = await sendPurchaseEmail({
     email:      order.email,
     plan:       order.plan,
     planLabel:  order.plan_label,
     merTradeNo: order.mer_trade_no,
+    presale,
   });
 
   if (!result.success) {

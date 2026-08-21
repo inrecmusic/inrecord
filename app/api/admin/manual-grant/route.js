@@ -70,6 +70,8 @@ export async function POST(req) {
 
     const res = await grantAccess(supabase, { id: orderId, email, plan });
     if (!res.ok) {
+      // 開通失敗 → 刪掉剛建的孤兒訂單，否則去重守衛下次以「有 manual 單」誤判為已處理、回假成功並永久卡住重試。
+      await supabase.from("orders").delete().eq("id", orderId);
       return serverError(res.errors.join("; "), "grant_failed");
     }
   }

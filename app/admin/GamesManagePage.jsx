@@ -453,12 +453,13 @@ export default function GamesManagePage({ showToast }) {
                 <button
                   className={styles.btnSmall}
                   onClick={() => {
+                    // noopener 斷開 window.opener，避免全螢幕視窗（尤其貼入的第三方/AI HTML）讀取後台 admin token
                     if (previewModal.game_type === "url") {
-                      window.open(previewModal.external_url, "_blank");
+                      window.open(previewModal.external_url, "_blank", "noopener");
                     } else {
-                      const w = window.open("", "_blank");
-                      w.document.write(previewModal.html_content || "");
-                      w.document.close();
+                      const url = URL.createObjectURL(new Blob([previewModal.html_content || ""], { type: "text/html" }));
+                      window.open(url, "_blank", "noopener");
+                      setTimeout(() => URL.revokeObjectURL(url), 60000);
                     }
                   }}
                 ><Maximize2 size={12} /> 全螢幕</button>

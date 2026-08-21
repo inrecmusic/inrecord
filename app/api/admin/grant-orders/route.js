@@ -20,13 +20,13 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
 
   try {
-    // 撈候選官網已付款訂單（給 ids 就限縮）
-    let q = supabase.from("orders").select("id, email, grant_email, plan, plan_label, source, status")
-      .eq("source", "payuni").eq("status", "paid");
+    // 撈候選官網已付款訂單（給 ids 就限縮）。用 selectAll 分頁，避免 >1000 筆時「全部開通」被 PostgREST 預設上限靜默截斷而漏開。
     // ids===null（body 沒帶 ids）→ 全部；ids 為陣列（含空陣列 []）→ 用 .in 限縮，[] 撈 0 筆＝no-op（避免誤開全部）。
-    if (ids) q = q.in("id", ids);
-    const { data: orders, error } = await q;
-    if (error) return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
+    const orders = await selectAll(supabase, "orders", (q) => {
+      const base = q.select("id, email, grant_email, plan, plan_label, source, status")
+        .eq("source", "payuni").eq("status", "paid");
+      return ids ? base.in("id", ids) : base;
+    });
 
     // 撈已開通 email → 篩出真正未開通者（分頁避免 >1000 列 truncate）
     const enr = await selectAll(supabase, "enrollments", (q) => q.select("email").eq("course_id", "piano-101"));
