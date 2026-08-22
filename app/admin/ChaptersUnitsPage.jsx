@@ -37,7 +37,7 @@ export default function ChaptersUnitsPage({ showToast }) {
 
   // unit modal
   const [videoModal, setVideoModal] = useState(null); // null | "create:{chapId}" | video object
-  const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
+  const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", assignment_due: "", published: false });
   const [videoFormErr, setVideoFormErr] = useState("");
 
   // materials modal
@@ -107,12 +107,12 @@ export default function ChaptersUnitsPage({ showToast }) {
 
   /* ── Video CRUD ── */
   function openVideoCreate(chapId) {
-    setVideoForm({ chapter_id: chapId, title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", published: false });
+    setVideoForm({ chapter_id: chapId, title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", assignment_due: "", published: false });
     setVideoFormErr(""); setVideoModal("create");
   }
 
   function openVideoEdit(v) {
-    setVideoForm({ chapter_id: v.chapter_id || "", title: v.title || "", bunny_video_id: v.bunny_video_id || "", vimeo_url: v.vimeo_id ? `https://vimeo.com/${v.vimeo_id}` : "", vimeo_id: v.vimeo_id || "", duration: v.duration || "", assignment_desc: v.assignment_desc || "", published: v.published || false });
+    setVideoForm({ chapter_id: v.chapter_id || "", title: v.title || "", bunny_video_id: v.bunny_video_id || "", vimeo_url: v.vimeo_id ? `https://vimeo.com/${v.vimeo_id}` : "", vimeo_id: v.vimeo_id || "", duration: v.duration || "", assignment_desc: v.assignment_desc || "", assignment_due: v.assignment_due || "", published: v.published || false });
     setVideoFormErr(""); setVideoModal(v);
   }
 
@@ -124,7 +124,7 @@ export default function ChaptersUnitsPage({ showToast }) {
     try {
       const isEdit = videoModal && videoModal !== "create";
       const vimeo_id = videoForm.vimeo_url.match(/vimeo\.com\/(\d+)/)?.[1] || videoForm.vimeo_id;
-      const body = { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), bunny_video_id: videoForm.bunny_video_id.trim() || null, vimeo_id: vimeo_id || null, duration: videoForm.duration, assignment_desc: videoForm.assignment_desc, published: videoForm.published };
+      const body = { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), bunny_video_id: videoForm.bunny_video_id.trim() || null, vimeo_id: vimeo_id || null, duration: videoForm.duration, assignment_desc: videoForm.assignment_desc, assignment_due: videoForm.assignment_due || null, published: videoForm.published };
       if (isEdit) body.id = videoModal.id;
       else body.sort_order = videos.filter(v => v.chapter_id === videoForm.chapter_id).length;
       const r = await api("/api/admin/videos", { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(body) });
@@ -374,6 +374,10 @@ export default function ChaptersUnitsPage({ showToast }) {
               <div className={styles.formGroup}>
                 <label>作業說明（選填）</label>
                 <textarea className={styles.replyTextarea} rows={3} value={videoForm.assignment_desc} onChange={e => setVideoForm(p => ({ ...p, assignment_desc: e.target.value }))} placeholder="描述本單元的作業要求…" />
+              </div>
+              <div className={styles.formGroup}>
+                <label>作業截止日期（選填）</label>
+                <input type="date" className={styles.input} value={videoForm.assignment_due || ""} onChange={e => setVideoForm(p => ({ ...p, assignment_due: e.target.value }))} />
               </div>
               {videoFormErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0, fontWeight: 700 }}>{videoFormErr}</p>}
               <div className={styles.modalActions}>

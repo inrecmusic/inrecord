@@ -34,13 +34,19 @@ export default function AssignmentsPage({ showToast }) {
   const [subLoading, setSubLoading] = useState(false);
   const [savingId, setSavingId] = useState(null);
   const [feedbackMap, setFeedbackMap] = useState({});
+  const [counts, setCounts] = useState({}); // { video_id: 繳交筆數 }，整站一次載入
 
   const fetchVideos = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await api("/api/admin/videos");
-      const { data } = await r.json();
+      const [rv, rc] = await Promise.all([
+        api("/api/admin/videos"),
+        api("/api/admin/submissions?counts=1"),
+      ]);
+      const { data } = await rv.json();
+      const { counts: c } = await rc.json();
       setVideos((data || []).filter(v => v.assignment_desc));
+      setCounts(c || {});
     } catch { showToast("❌ 載入失敗"); setVideos([]); }
     finally { setLoading(false); }
   }, []);
@@ -80,12 +86,6 @@ export default function AssignmentsPage({ showToast }) {
 
   const paged = useMemo(() => videos.slice((page - 1) * PER_PAGE, page * PER_PAGE), [videos, page]);
 
-  const subCount = useMemo(() => {
-    const m = {};
-    submissions.forEach(s => { m[s.video_id] = (m[s.video_id] || 0) + 1; });
-    return m;
-  }, [submissions]);
-
   return (
     <div>
       <div className={styles.pageHeader}>
@@ -111,7 +111,7 @@ export default function AssignmentsPage({ showToast }) {
                     </td>
                     <td className={styles.dim}>{v.assignment_due || "—"}</td>
                     <td>
-                      <span className={styles.courseBadge}>{subCount[v.id] ?? "—"}</span>
+                      <span className={styles.courseBadge}>{counts[v.id] ?? 0}</span>
                     </td>
                     <td>
                       <span className={styles.pill} style={{ background: v.published ? "#dcfce7" : "#f1f5f9", color: v.published ? "#166534" : "#475569" }}>

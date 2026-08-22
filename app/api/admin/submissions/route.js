@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { selectAll } from "@/lib/supabase-paginate";
 
 export async function GET(req) {
   const payload = await verifyAdminToken(req);
@@ -9,6 +10,17 @@ export async function GET(req) {
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ ok: true, data: [] });
   const { searchParams } = new URL(req.url);
+
+  // counts 模式：回各單元的繳交總筆數 { video_id: n }，供作業列表顯示（分頁繞過 1000 列上限）。
+  if (searchParams.get("counts")) {
+    try {
+      const rows = await selectAll(db, "submissions", (q) => q.select("video_id"));
+      const counts = {};
+      for (const r of rows) counts[r.video_id] = (counts[r.video_id] || 0) + 1;
+      return NextResponse.json({ ok: true, counts });
+    } catch (e) { return serverError(e); }
+  }
+
   const video_id = searchParams.get("video_id");
   let q = db.from("submissions").select("*").order("submitted_at", { ascending: false });
   if (video_id) q = q.eq("video_id", video_id);

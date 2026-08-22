@@ -5,7 +5,7 @@ import { verifyAdminToken } from "@/lib/adminAuth";
 import { renderNewsletterHtml } from "@/lib/newsletter";
 import {
   gatherAudienceEmails, sendNewsletterBatch,
-  contentHash, filterUnsent, countSentToday, recordSent,
+  contentHash, filterUnsent, countSentToday, claimSend, releaseSend,
 } from "@/lib/newsletter-send";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
 import { logAudit } from "@/lib/audit";
@@ -71,8 +71,9 @@ export async function POST(req) {
   const result = await sendNewsletterBatch({
     emails: pending,
     dailyLimit: remaining,
-    send: (to) => sendNewsletterEmail({ to, subject, html }),
-    onSent: (to) => recordSent(supabase, hash, to),
+    claim:   (to) => claimSend(supabase, hash, to),   // 送前原子佔位，防併發重寄
+    release: (to) => releaseSend(supabase, hash, to), // 送失敗退回佔位，保留重寄機會
+    send:    (to) => sendNewsletterEmail({ to, subject, html }),
   });
 
   await supabase

@@ -4,14 +4,6 @@ import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
 
-// 裝置 id（course API 需要；與播放頁一致）
-function getDeviceId() {
-  if (typeof window === "undefined") return "";
-  let id = localStorage.getItem("inrec_device_id");
-  if (!id) { id = crypto.randomUUID(); localStorage.setItem("inrec_device_id", id); }
-  return id;
-}
-
 const F = `var(--type-body)`;
 
 /* ── 首次引導（核心資料未填時，仿播放頁一致）───────────────────────────────── */
@@ -75,7 +67,7 @@ export default function ClassroomHub() {
   const [theme, setTheme]                 = useState(null);   // null=跟系統；'dark'/'light'=手動
   const [greeting, setGreeting]           = useState("歡迎回來");
 
-  /* auth + 購課/遊戲驗證 */
+  /* auth + 教室資料一次載入（bootstrap 單一往返，取代原本 5 支 API 的兩個 wave）*/
   useEffect(() => {
     (async () => {
       try {
@@ -86,52 +78,26 @@ export default function ClassroomHub() {
         const accessToken = session?.access_token || "";
         setUser(u); setToken(accessToken);
         try {
-          const authHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` };
-          const [pr, sr] = await Promise.all([
-            fetch("/api/classroom/verify-purchase", { method: "POST", headers: authHeaders }),
-            fetch("/api/classroom/verify-subscription", { method: "POST", headers: authHeaders }),
-          ]);
-          setHasPurchased(!!(await pr.json()).hasPurchased);
-          setHasSubscription(!!(await sr.json()).hasSubscription);
-        } catch { setHasPurchased(false); setHasSubscription(false); }
+          const r = await fetch("/api/classroom/bootstrap", { headers: { Authorization: `Bearer ${accessToken}` } });
+          const d = await r.json().catch(() => ({}));
+          setHasPurchased(!!d.hasPurchased);
+          setHasSubscription(!!d.hasSubscription);
+          setChapters(d.chapters || []);
+          setVideos(d.videos || []);
+          setProgress(d.progress || []);
+          setPct(d.percentage || 0);
+          setDone(d.completedCount || 0);
+          setTotal(d.totalCount || (d.videos || []).length);
+          setProfile(d.profile || d.prefill || {});
+        } catch {
+          setProfileErr(true); // fail-open：資料載入失敗不強制擋在首次引導頁
+        } finally {
+          setProfileLoaded(true);
+        }
       } catch { window.location.href = "/classroom/login"; }
       finally { setLoading(false); }
     })();
   }, []);
-
-  /* 課程章節 + 進度 */
-  useEffect(() => {
-    if (!hasPurchased || !token) return;
-    (async () => {
-      try {
-        const [cr, pr] = await Promise.all([
-          fetch(`/api/classroom/course?device_id=${getDeviceId()}`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/classroom/progress", { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        const course = await cr.json();
-        const prog   = await pr.json();
-        setChapters(course.chapters || []);
-        setVideos(course.videos || []);
-        setProgress(prog.progress || []);
-        setPct(prog.percentage || 0);
-        setDone(prog.completedCount || 0);
-        setTotal(prog.totalCount || (course.videos || []).length);
-      } catch {}
-    })();
-  }, [hasPurchased, token]);
-
-  /* 學員資料（首次引導判斷；fail-open）*/
-  useEffect(() => {
-    if (!hasPurchased || !token) return;
-    (async () => {
-      try {
-        const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
-        const d = await r.json().catch(() => ({}));
-        setProfile(d.profile || d.prefill || {});
-      } catch { setProfileErr(true); }
-      finally { setProfileLoaded(true); }
-    })();
-  }, [hasPurchased, token]);
 
   /* 主題：mount 後讀 localStorage（避免 SSR hydration 不一致）；問候依時間 */
   useEffect(() => {
