@@ -24,6 +24,14 @@ export async function POST(req) {
     return NextResponse.json({ error: "not_admin" }, { status: 403 });
   }
 
+  // 必須是「已驗證 email」且「透過 Google 登入」才發後台 token。
+  // 擋掉：站上有開 email/密碼註冊，若 Supabase email 確認關閉，有人可自助註冊成 ADMIN_EMAIL 冒充管理員。
+  const providers = user.app_metadata?.providers || [];
+  const viaGoogle = user.app_metadata?.provider === "google" || providers.includes("google");
+  if (!user.email_confirmed_at || !viaGoogle) {
+    return NextResponse.json({ error: "not_admin" }, { status: 403 });
+  }
+
   const secret = getJwtSecret();
   if (!secret) {
     console.error("[admin google-login] JWT_SECRET 未設定或長度不足，拒絕簽發 token");

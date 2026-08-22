@@ -6,7 +6,10 @@ import { currentPrice, getSaleSettings, isOnSale } from "@/lib/sale";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 import { isOwnProofUrl } from "@/lib/fan-proof";
-import { clientIp } from "@/lib/rate-limit";
+import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+
+// 公開下單端點限流：擋洗 pending 單、灌爆 Amego/稅務查詢、當優惠券預言機、燒序號庫存。
+const checkoutLimiter = createDistributedLimiter({ limit: 10, windowMs: 60_000, prefix: "rl:checkout" });
 
 // Payuni 統一金流 AES-256-GCM 加密
 // 輸出格式：hex( base64(密文) + ':::' + base64(GCM tag) )，與官方 SDK 一致
@@ -37,7 +40,16 @@ export async function POST(req) {
   let couponPrevUsed = 0;
   let couponClaimed = false;
   try {
+    const rl = await checkoutLimiter(clientIp(req));
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(rl.retryAfter) } });
+    }
     const body = await req.json();
+    // 後台「測試 Payuni 連線」用：只檢查金流設定是否齊全，不建立訂單（避免每次測試都灌一筆垃圾 pending 單）。
+    if (body.dryRun) {
+      const configured = !!(process.env.PAYUNI_MERCHANT_ID && process.env.PAYUNI_HASH_KEY && process.env.PAYUNI_HASH_IV);
+      return NextResponse.json(configured ? { ok: true } : { error: "missing_payuni_config" }, { status: configured ? 200 : 500 });
+    }
     const { plan, email, proofUrl } = body;
     const attribution = body.attribution || null;
 
@@ -71,22 +83,12 @@ export async function POST(req) {
 
     let price = currentPrice(plan, saleSettings, new Date());
 
-    // 限量券原子預扣（序號 usage_limit=1）＋套用折扣
+    // 這裡只算折扣價、先不預扣額度。限量券（序號 usage_limit=1）的原子預扣延到「所有驗證通過、
+    // 緊接寫單前」才做——否則中途任何 early-return（價格過低／發票欄位錯／設定缺）都會把序號永久
+    // 燒掉，而此刻訂單還沒建、逾時回收 cron 也掃不到 → 無法回收。
     if (coupon) {
-      const codeUp = coupon.code;
-      if (coupon.usage_limit != null) {
-        const prevUsed = coupon.used || 0;
-        const { data: claimed } = await sb
-          .from("coupons").update({ used: prevUsed + 1 })
-          .eq("code", codeUp).eq("used", prevUsed).select("id");
-        if (!claimed || claimed.length === 0) {
-          return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
-        }
-        couponPrevUsed = prevUsed;
-        couponClaimed = true;
-      }
       price = applyCoupon(price, coupon);
-      couponCode = codeUp;
+      couponCode = coupon.code;
     }
     if (price < 1) return NextResponse.json({ error: "amount_too_low" }, { status: 400 });
 
@@ -164,6 +166,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "order_create_failed" }, { status: 500 });
     }
 
+    // 限量券原子預扣（CAS）：延到此刻（所有驗證已過、緊接寫單）才扣，之後唯一失敗路徑就是下方 insert，
+    // 失敗即釋放；杜絕中途 early-return 漏扣。
+    if (coupon && coupon.usage_limit != null) {
+      const prevUsed = coupon.used || 0;
+      const { data: claimed } = await supabase
+        .from("coupons").update({ used: prevUsed + 1 })
+        .eq("code", coupon.code).eq("used", prevUsed).select("id");
+      if (!claimed || claimed.length === 0) {
+        return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
+      }
+      couponPrevUsed = prevUsed;
+      couponClaimed = true;
+    }
+
     const { error } = await supabase.from("orders").insert({
       plan,
       plan_label:   label || plan,
@@ -206,6 +222,6 @@ export async function POST(req) {
           .eq("code", couponCode).eq("used", couponPrevUsed + 1);
       } catch {}
     }
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: "checkout_failed" }, { status: 500 });
   }
 }

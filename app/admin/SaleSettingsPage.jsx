@@ -26,6 +26,7 @@ export default function SaleSettingsPage({ showToast }) {
   const [s, setS] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
     adminFetch("/api/admin/sale-settings")
@@ -67,11 +68,16 @@ export default function SaleSettingsPage({ showToast }) {
   };
 
   const sendLaunch = async () => {
+    if (launching) return; // 防連點重觸發群發
     if (!confirm("確定立即寄送開課通知給所有已預購買家？")) return;
-    const res = await adminFetch("/api/admin/send-launch-notify", { method: "POST" });
-    const d = await res.json().catch(() => ({}));
-    if (res.ok) showToast?.(d.alreadyNotified ? "先前已寄送過" : `已寄送 ${d.sent ?? 0} 封`);
-    else showToast?.(`寄送失敗：${d.error || res.status}`);
+    setLaunching(true);
+    try {
+      const res = await adminFetch("/api/admin/send-launch-notify", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) showToast?.(d.alreadyNotified ? "先前已寄送過" : `已寄送 ${d.sent ?? 0} 封`);
+      else showToast?.(`寄送失敗：${d.error || res.status}`);
+    } catch { showToast?.("寄送失敗，請稍後再試"); }
+    finally { setLaunching(false); }
   };
 
   const field = { display: "block", marginBottom: 16 };
@@ -172,9 +178,9 @@ export default function SaleSettingsPage({ showToast }) {
           style={{ background: "#2563eb", color: "#fff", border: 0, borderRadius: 10, padding: "10px 18px", fontWeight: 800, cursor: "pointer" }}>
           {saving ? "儲存中…" : "儲存"}
         </button>
-        <button onClick={sendLaunch}
-          style={{ background: "#0f172a", color: "#fff", border: 0, borderRadius: 10, padding: "10px 18px", fontWeight: 800, cursor: "pointer" }}>
-          立即寄送開課通知
+        <button onClick={sendLaunch} disabled={launching}
+          style={{ background: "#0f172a", color: "#fff", border: 0, borderRadius: 10, padding: "10px 18px", fontWeight: 800, cursor: launching ? "default" : "pointer", opacity: launching ? 0.6 : 1 }}>
+          {launching ? "寄送中…" : "立即寄送開課通知"}
         </button>
         <span style={{ fontSize: 13, color: "#64748b" }}>
           {s.launch_notified_at ? `已於 ${new Date(s.launch_notified_at).toLocaleString("zh-TW")} 寄送` : "尚未寄送"}

@@ -39,6 +39,7 @@ export default function AccountPage() {
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState("");
   const [devBusy, setDevBusy] = useState("");
+  const [devErr, setDevErr] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -114,28 +115,32 @@ export default function AccountPage() {
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      // 先存暱稱（auth metadata）；成功後再存學員資料——避免「資料存了但暱稱失敗」的半成功困惑。
+      const { error: e2 } = await supabase.auth.updateUser({ data: { full_name: dn } });
+      if (e2) { setErr(e2.message || "暱稱儲存失敗"); return; }
       const r = await fetch("/api/classroom/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify(prof),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "unknown")); return; }
-      const { error: e2 } = await supabase.auth.updateUser({ data: { full_name: dn } });
-      if (e2) { setErr(e2.message || "顯示名稱儲存失敗"); return; }
+      if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "請稍後再試")); return; }
       setSaved(true);
-    } finally { setSaving(false); }
+    } catch { setErr("儲存失敗，請稍後再試"); }
+    finally { setSaving(false); }
   }
 
   async function signOutDevice(id) {
-    setDevBusy(id);
+    setDevBusy(id); setDevErr("");
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`/api/classroom/devices?device_id=${encodeURIComponent(id)}`, {
+      const r = await fetch(`/api/classroom/devices?device_id=${encodeURIComponent(id)}`, {
         method: "DELETE", headers: { Authorization: `Bearer ${session?.access_token}` },
       });
+      if (!r.ok) { setDevErr("登出裝置失敗，請稍後再試"); return; }
       await loadDevices();
-    } finally { setDevBusy(""); }
+    } catch { setDevErr("登出裝置失敗，請稍後再試"); }
+    finally { setDevBusy(""); }
   }
   async function handleLogout() { await supabase?.auth.signOut(); window.location.href = "/"; }
 
@@ -174,7 +179,7 @@ export default function AccountPage() {
           <div className="me">
             <div className="avatar">
               {avatarUrl
-                ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setAvatarUrl("")} />
                 : <svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="32" r="14" fill="currentColor" opacity=".85" /><path d="M14 72c1.5-15 12-24 26-24s24.5 9 26 24z" fill="currentColor" opacity=".85" /></svg>}
             </div>
             <div className="nm">{name}</div>
@@ -246,6 +251,7 @@ export default function AccountPage() {
               <div className="phead"><h1>登入裝置</h1></div>
               <div className="pbody">
                 <p className="devnote">InRecord 允許同時在多台裝置上課。當裝置數量達到上限，新裝置要進來時會擠掉最久沒用的那一台、自動登出。你也可以在這裡手動登出不再使用的裝置。</p>
+                {devErr && <p className="msg err" style={{ margin: "0 0 8px" }}>{devErr}</p>}
                 {devices === null ? <p className="muted">載入中…</p>
                   : devices.length === 0 ? <p className="muted">目前沒有已記錄的上課裝置。</p>
                   : (

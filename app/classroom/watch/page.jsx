@@ -67,15 +67,16 @@ function CommentsSection({ token, video, chapters }) {
     if (!text.trim() || !video) return;
     setPosting(true);
     try {
-      await fetch("/api/classroom/comment", {
+      const r = await fetch("/api/classroom/comment", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ video_id: video.id, chapter_id: video.chapter_id, content: text.trim() }),
       });
+      if (!r.ok) throw new Error("send_failed"); // 失敗不清空輸入、不顯示假成功
       setText(""); setMsg("留言已送出");
       setTimeout(() => setMsg(""), 2500);
       load();
-    } catch { setMsg("送出失敗"); }
+    } catch { setMsg("送出失敗，請稍後再試"); setTimeout(() => setMsg(""), 2500); }
     finally { setPosting(false); }
   }
 

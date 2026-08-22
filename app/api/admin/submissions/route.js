@@ -34,7 +34,12 @@ export async function PATCH(req) {
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
-  const { id, ...updates } = await req.json();
+  const body = await req.json();
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
+  const updates = {}; // 白名單：後台批改只改 reviewed / feedback，防 mass-assignment
+  if (body.reviewed !== undefined) updates.reviewed = !!body.reviewed;
+  if (body.feedback !== undefined) updates.feedback = String(body.feedback || "");
   const { data, error } = await db.from("submissions").update(updates).eq("id", id).select().single();
   if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });

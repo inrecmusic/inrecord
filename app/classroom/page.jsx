@@ -59,6 +59,7 @@ export default function ClassroomHub() {
   const [profile, setProfile]             = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileErr, setProfileErr]       = useState(false);
+  const [loadError, setLoadError]         = useState(false); // bootstrap 載入失敗→顯示重試，不誤判未購買
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
   const [progress, setProgress]           = useState([]);
@@ -81,6 +82,7 @@ export default function ClassroomHub() {
         setUser(u); setToken(accessToken);
         try {
           const r = await fetch("/api/classroom/bootstrap", { headers: { Authorization: `Bearer ${accessToken}` } });
+          if (!r.ok) { setLoadError(true); return; } // 載入失敗→重試畫面，別掉到「尚未購買」
           const d = await r.json().catch(() => ({}));
           setHasPurchased(!!d.hasPurchased);
           setHasSubscription(!!d.hasSubscription);
@@ -92,7 +94,7 @@ export default function ClassroomHub() {
           setTotal(d.totalCount || (d.videos || []).length);
           setProfile(d.profile || d.prefill || {});
         } catch {
-          setProfileErr(true); // fail-open：資料載入失敗不強制擋在首次引導頁
+          setLoadError(true); // 網路/逾時失敗→重試，別誤判未購買
         } finally {
           setProfileLoaded(true);
         }
@@ -122,6 +124,18 @@ export default function ClassroomHub() {
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0e1118" }}>
         <div style={{ width: 28, height: 28, border: "2.5px solid rgba(255,255,255,.12)", borderTopColor: "#e8c583", borderRadius: "50%", animation: "hubspin .7s linear infinite" }} />
         <style>{`@keyframes hubspin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+  if (loadError) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#f1f5f9", color: "#0f172a", textAlign: "center", padding: 32, fontFamily: F }}>
+        <div>
+          <div style={{ fontSize: 40, marginBottom: 14 }}>🎹</div>
+          <h2 style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 700 }}>教室載入時出了點問題</h2>
+          <p style={{ color: "#475569", marginBottom: 24, fontSize: 15 }}>可能是網路或伺服器忙碌，請稍後再試一次。</p>
+          <button onClick={() => window.location.reload()} style={{ padding: "12px 30px", background: "#2563eb", color: "#fff", border: 0, borderRadius: 980, fontWeight: 600, fontSize: 15, cursor: "pointer" }}>重新整理</button>
+        </div>
       </div>
     );
   }

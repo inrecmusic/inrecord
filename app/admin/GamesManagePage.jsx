@@ -169,10 +169,11 @@ export default function GamesManagePage({ showToast }) {
   /* ── toggle active ── */
   async function toggleActive(game) {
     try {
-      await api("/api/admin/games", {
+      const r = await api("/api/admin/games", {
         method: "PATCH",
         body:   JSON.stringify({ id: game.id, is_active: !game.is_active }),
       });
+      if (!r.ok) throw new Error("toggle_failed"); // 非 2xx 也要進 catch，別靜默還原讓管理員誤以為成功
       fetchAll();
     } catch { showToast("❌ 操作失敗"); }
   }

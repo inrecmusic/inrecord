@@ -78,8 +78,13 @@ export async function PATCH(req) {
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
   const body = await req.json();
-  const { id, ...fields } = body;
+  const { id } = body;
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
+
+  // 白名單：只允許這些欄位（防 mass-assignment 寫任意欄位）
+  const ALLOWED = ["title", "description", "chapter_id", "video_id", "game_type", "html_content", "external_url", "is_active", "sort_order"];
+  const fields = {};
+  for (const k of ALLOWED) if (body[k] !== undefined) fields[k] = body[k];
 
   const { error } = await supabase
     .from("games")

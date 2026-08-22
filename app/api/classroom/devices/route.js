@@ -4,11 +4,11 @@ import { requireClassroomAuth } from "@/lib/classroom-auth";
 
 // 粗略解析 UA → { device, browser }（登入裝置顯示用，非精準）。
 function parseUA(ua = "") {
-  const s = String(ua || "");
+  const s = String(ua || "").slice(0, 400); // 截斷：UA 為攻擊者可控，避免超長字串觸發正規式回溯（ReDoS）
   let device = "未知裝置";
   if (/iPhone/.test(s)) device = "iPhone";
   else if (/iPad/.test(s)) device = "iPad";
-  else if (/Android/.test(s)) { const m = s.match(/Android[^;)]*;\s*([^;)]+?)\s*(?:Build|\))/); device = m ? m[1].trim() : "Android 裝置"; }
+  else if (/Android/.test(s)) { const m = s.match(/Android[^;)]*;\s*([^;)]{1,60}?)\s*(?:Build|\))/); device = m ? m[1].trim() : "Android 裝置"; }
   else if (/Macintosh|Mac OS X/.test(s)) device = "Mac";
   else if (/Windows NT/.test(s)) device = "Windows";
   else if (/Linux/.test(s)) device = "Linux";

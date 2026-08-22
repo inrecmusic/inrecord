@@ -29,7 +29,12 @@ export async function PATCH(req) {
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
-  const { id, ...updates } = await req.json();
+  const body = await req.json();
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
+  const updates = {}; // 白名單：只允許改動的欄位（防 mass-assignment 寫任意欄位）
+  if (body.title !== undefined) updates.title = body.title;
+  if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
   const { data, error } = await db.from("chapters").update(updates).eq("id", id).select().single();
   if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });

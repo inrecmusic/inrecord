@@ -17,6 +17,7 @@ export async function GET(req) {
     .from("videos")
     .select("bunny_video_id, vimeo_id")
     .eq("id", videoId)
+    .eq("published", true) // 只簽發已發布影片，擋已購課者猜 UUID 取未發布草稿的簽名網址
     .maybeSingle();
   if (!video) return NextResponse.json({ error: "video_not_found" }, { status: 404 });
 
