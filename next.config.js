@@ -1,12 +1,30 @@
 /** @type {import('next').NextConfig} */
 
 // 全站安全標頭（HSTS 由 Vercel 提供，這裡不重複）
+// CSP：先以 Report-Only 上線（只回報違規、不阻擋，確認無誤報再轉正式 enforcing）。
+// 放行：Bunny 影片播放器＋player.js、Vimeo legacy、Supabase(含 realtime wss)、PAYUNi 金流、
+// 追蹤碼中心可能載入的 GTM/FB/Google/PostHog、Unsplash 圖。inline 因大量 inline style／Next 內聯腳本而保留。
+const csp = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "form-action 'self' https://*.payuni.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.mediadelivery.net https://www.googletagmanager.com https://connect.facebook.net https://us.i.posthog.com https://tools.google.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "frame-src 'self' https://iframe.mediadelivery.net https://player.vimeo.com https://*.vimeo.com https://*.payuni.com https://www.instagram.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com https://www.googletagmanager.com",
+].join("; ");
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // 僅關閉確定用不到的功能；microphone 不關，保留唱名/音感類互動可能用途
   { key: "Permissions-Policy", value: "camera=(), geolocation=()" },
+  { key: "Content-Security-Policy-Report-Only", value: csp },
 ];
 
 const nextConfig = {
