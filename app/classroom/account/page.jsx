@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { validateDisplayName } from "@/lib/account";
 import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
@@ -7,54 +7,65 @@ import { isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
 import Logo from "@/components/Logo";
 
+// 單一課程架構：目前只有一門課，訂單以此課名顯示（多課程再改為讀 courses）。
+const COURSE_NAME = "Crossverick Vol.1　從零開始學鋼琴｜了解三和弦與基礎伴奏";
+
+function getDeviceId() {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem("inrec_device_id");
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem("inrec_device_id", id); }
+  return id;
+}
+function fmtDate(s) { try { return new Date(s).toLocaleDateString("zh-TW"); } catch { return ""; } }
+function fmtDateTime(s) {
+  try { return new Date(s).toLocaleString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).replace(/\//g, "-"); }
+  catch { return "—"; }
+}
+
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [noConfig, setNoConfig] = useState(false);
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [orders, setOrders] = useState(null); // null=載入中, []=空
+  const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [prof, setProf] = useState({ real_name: "", phone: "", level: "", goal: "", source: "", equipment: "", age_group: "", gender: "" });
-  const [profSaving, setProfSaving] = useState(false);
-  const [profSaved, setProfSaved] = useState(false);
-  const [profErr, setProfErr] = useState("");
-  const [theme, setTheme] = useState(null); // null=跟系統；'dark'/'light'=手動（與儀表板共用 localStorage）
-  const [sysDark, setSysDark] = useState(true); // 系統是否偏好深色（logo white 判斷用）
+  const [orders, setOrders] = useState(null);
+  const [devices, setDevices] = useState(null);
+  const [curDevice, setCurDevice] = useState("");
+  const [tab, setTab] = useState("profile");
+  const [theme, setTheme] = useState(null);
+  const [sysDark, setSysDark] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState("");
+  const [devBusy, setDevBusy] = useState("");
 
   useEffect(() => {
-    async function init() {
+    (async () => {
       if (!supabase) { setNoConfig(true); setLoading(false); return; }
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { window.location.href = "/classroom/login"; return; }
         setEmail(user.email || "");
-        setName(user.user_metadata?.full_name || "");
-      } catch {
-        window.location.href = "/classroom/login";
-        return;
-      } finally {
-        setLoading(false);
-      }
-    }
-    init();
+        setDisplayName(user.user_metadata?.full_name || "");
+        setAvatarUrl(user.user_metadata?.avatar_url || user.user_metadata?.picture || "");
+        setCurDevice(getDeviceId());
+      } catch { window.location.href = "/classroom/login"; return; }
+      finally { setLoading(false); }
+    })();
   }, []);
 
   useEffect(() => {
     if (!supabase) { setOrders([]); return; }
-    let cancelled = false;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      if (!token) { if (!cancelled) setOrders([]); return; }
+      if (!token) { setOrders([]); return; }
       try {
         const r = await fetch("/api/classroom/my-orders", { headers: { Authorization: `Bearer ${token}` } });
-        const d = r.ok ? await r.json() : { orders: [] };
-        if (!cancelled) setOrders(d.orders || []);
-      } catch { if (!cancelled) setOrders([]); }
+        setOrders((r.ok ? (await r.json()).orders : []) || []);
+      } catch { setOrders([]); }
     })();
-    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -65,9 +76,21 @@ export default function AccountPage() {
       if (!token) return;
       const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
       const d = await r.json().catch(() => ({}));
-      if (d.prefill) setProf(d.prefill); // 預填：帶入既有值或訂單姓名/手機
+      if (d.prefill) setProf(d.prefill);
     })();
   }, []);
+
+  const loadDevices = useCallback(async () => {
+    if (!supabase) { setDevices([]); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setDevices([]); return; }
+    try {
+      const r = await fetch("/api/classroom/devices", { headers: { Authorization: `Bearer ${token}` } });
+      setDevices((r.ok ? (await r.json()).devices : []) || []);
+    } catch { setDevices([]); }
+  }, []);
+  useEffect(() => { loadDevices(); }, [loadDevices]);
 
   useEffect(() => {
     try { const s = localStorage.getItem("inrec-hub-theme"); if (s) setTheme(s); } catch {}
@@ -79,32 +102,16 @@ export default function AccountPage() {
     setTheme(next);
     try { localStorage.setItem("inrec-hub-theme", next); } catch {}
   }
+  const effectiveDark = theme ? theme === "dark" : sysDark;
 
-  async function handleSave(e) {
-    e.preventDefault();
-    setError(""); setSaved(false);
-    if (!supabase) { setError("系統設定有誤，請聯繫管理員"); return; }
-    const check = validateDisplayName(name);
-    if (!check.ok) { setError(check.error); return; }
+  async function saveProfile(e) {
+    e.preventDefault(); setErr(""); setSaved(false);
+    if (!prof.real_name.trim()) { setErr("請填真實姓名"); return; }
+    if (!isValidMobile(prof.phone)) { setErr("手機格式需為 09 開頭共 10 碼"); return; }
+    if (!LEVELS.includes(prof.level)) { setErr("請選擇鋼琴程度"); return; }
+    let dn = displayName.trim();
+    if (dn) { const c = validateDisplayName(dn); if (!c.ok) { setErr(c.error); return; } dn = c.value; }
     setSaving(true);
-    try {
-      const { error: err } = await supabase.auth.updateUser({ data: { full_name: check.value } });
-      if (err) throw err;
-      setName(check.value);
-      setSaved(true);
-    } catch (err) {
-      setError(err.message || "儲存失敗，請再試一次");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleSaveProfile(e) {
-    e.preventDefault(); setProfErr(""); setProfSaved(false);
-    if (!prof.real_name.trim()) { setProfErr("請填真實姓名"); return; }
-    if (!isValidMobile(prof.phone)) { setProfErr("手機格式需為 09 開頭共 10 碼"); return; }
-    if (!LEVELS.includes(prof.level)) { setProfErr("請選擇鋼琴程度"); return; }
-    setProfSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const r = await fetch("/api/classroom/profile", {
@@ -113,210 +120,262 @@ export default function AccountPage() {
         body: JSON.stringify(prof),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || d.ok === false) setProfErr("儲存失敗：" + (d.error || "unknown"));
-      else setProfSaved(true);
-    } finally { setProfSaving(false); }
+      if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "unknown")); return; }
+      const { error: e2 } = await supabase.auth.updateUser({ data: { full_name: dn } });
+      if (e2) { setErr(e2.message || "顯示名稱儲存失敗"); return; }
+      setSaved(true);
+    } finally { setSaving(false); }
   }
 
-  // 表單欄位樣式用 CSS 變數 → 隨深/淺主題自動變色（ProfileFields 也吃這組）
-  const inp = { width: "100%", padding: "11px 14px", fontSize: 16, border: "1px solid var(--in-line)", borderRadius: 10, outline: "none", background: "var(--in-bg)", color: "var(--ink)", boxSizing: "border-box", fontFamily: "inherit" };
-  const roInp = { ...inp, opacity: .6, cursor: "not-allowed" };
-  const lab = { display: "block", fontSize: 13, color: "var(--ink-soft)", marginBottom: 6, fontWeight: 500 };
+  async function signOutDevice(id) {
+    setDevBusy(id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/classroom/devices?device_id=${encodeURIComponent(id)}`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      await loadDevices();
+    } finally { setDevBusy(""); }
+  }
+  async function handleLogout() { await supabase?.auth.signOut(); window.location.href = "/"; }
 
-  const effectiveDark = theme ? theme === "dark" : sysDark; // 目前實際是深色嗎（logo 用白版）
-  const logo = (
-    <a href="/classroom" aria-label="回教室"><Logo white={effectiveDark} size={24} /></a>
-  );
+  const inp = { width: "100%", padding: "11px 14px", fontSize: 14.5, border: "1px solid var(--in-line)", borderRadius: 10, outline: "none", background: "var(--in-bg)", color: "var(--ink)", boxSizing: "border-box", fontFamily: "inherit" };
+  const roInp = { ...inp, opacity: .5, cursor: "not-allowed" };
+  const lab = { display: "block", fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 8, fontWeight: 600, letterSpacing: ".02em" };
+
+  const name = prof.real_name || displayName || email.split("@")[0] || "同學";
 
   if (loading || noConfig) {
     return (
-      <div className="acct" data-theme={theme || undefined}>
-        <style>{ACCT_CSS}</style>
+      <div className="mc" data-theme={theme || undefined}>
+        <style>{MC_CSS}</style>
         <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
-          {noConfig
-            ? <p style={{ color: "var(--err)", fontSize: 14 }}>系統設定有誤，請聯繫管理員</p>
-            : <div className="spin" aria-label="載入中" />}
+          {noConfig ? <p style={{ color: "var(--danger)", fontSize: 14 }}>系統設定有誤，請聯繫管理員</p> : <div className="spin" aria-label="載入中" />}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="acct" data-theme={theme || undefined}>
-      <style>{ACCT_CSS}</style>
-      <div className="glow" aria-hidden="true" />
+    <div className="mc" data-theme={theme || undefined}>
+      <style>{MC_CSS}</style>
 
-      <nav>
-        {logo}
-        <div className="r">
-          <a href="/classroom">教室</a>
+      <div className="top">
+        <a href="/classroom" aria-label="InRecord"><Logo white={effectiveDark} size={22} /></a>
+        <div className="right">
           <a href="/classroom/watch">音樂教室</a>
+          <span className="cur">會員中心</span>
           <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{effectiveDark ? "☾" : "☀"}</button>
         </div>
-      </nav>
-
-      <div className="wrap">
-        <div className="head">
-          <div className="eyebrow">Account</div>
-          <h1>帳號設定</h1>
-        </div>
-
-        {/* 基本資料 */}
-        <section className="card">
-          <h2>基本資料</h2>
-          <form onSubmit={handleSave}>
-            <div className="fg">
-              <label style={lab} htmlFor="account-email">Email（登入帳號，不能修改）</label>
-              <input id="account-email" style={roInp} value={email} readOnly />
-            </div>
-            <div className="fg">
-              <label style={lab} htmlFor="name">顯示名稱</label>
-              <input id="name" style={inp} value={name}
-                onChange={e => { setName(e.target.value); setSaved(false); }}
-                placeholder="留言、評分時顯示的名字" maxLength={40} />
-              <p className="hint">改了之後，只有之後的留言和評分會用新名字，之前發過的不會變。</p>
-            </div>
-            {error && <p className="err">{error}</p>}
-            {saved && <p className="ok">已儲存</p>}
-            <button type="submit" className="btn" disabled={saving}>{saving ? "儲存中…" : "儲存"}</button>
-          </form>
-        </section>
-
-        {/* 學員資料 */}
-        <section className="card">
-          <h2>我的學員資料</h2>
-          <form onSubmit={handleSaveProfile} style={{ display: "grid", gap: 12 }}>
-            <ProfileFields prof={prof} setProf={setProf} styles={{ input: inp, label: lab }} />
-            {profErr && <p className="err" style={{ margin: 0 }}>{profErr}</p>}
-            {profSaved && <p className="ok" style={{ margin: 0 }}>已儲存 ✓</p>}
-            <p className="hint" style={{ margin: 0 }}>送出即表示你同意依<a className="ilink" href="/privacy">隱私政策</a>，將資料用於課程服務與聯繫。</p>
-            <button type="submit" className="btn" style={{ marginTop: 4 }} disabled={profSaving}>{profSaving ? "儲存中…" : "儲存學員資料"}</button>
-          </form>
-        </section>
-
-        {/* 訂單 */}
-        <section className="card">
-          <h2>我的訂單</h2>
-          {orders === null ? (
-            <p className="muted">載入中…</p>
-          ) : orders.length === 0 ? (
-            <p className="muted">還沒有訂單</p>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {sortOrdersDesc(orders).map(o => {
-                const st = o.status;
-                const stColor = st === "paid" ? "var(--ok)" : st === "refunded" ? "var(--err)" : st === "pending" ? "#d99a3c" : "var(--ink-faint)";
-                return (
-                  <div key={o.mer_trade_no} className="order">
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>{o.plan_label || o.plan || "課程"}</span>
-                      <span style={{ fontSize: 14, color: "var(--ink)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>NT${(o.amount || 0).toLocaleString()}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: stColor }}>{statusLabel(o.status)}</span>
-                      <span className="muted" style={{ fontSize: 12 }}>{o.created_at ? new Date(o.created_at).toLocaleDateString("zh-TW") : ""}</span>
-                    </div>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{invoiceText(o.invoice_no)}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* 其他 */}
-        <section className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <a className="link" href="/classroom/reset-password">修改密碼 →</a>
-          <a className="muted" href="/classroom">← 回教室</a>
-          {/* 完課證書入口暫隱藏：尚未製作，有學員申請再開；證書頁 /classroom/certificate 仍保留、日後取消本註解即恢復 */}
-        </section>
       </div>
 
-      <div className="keys" aria-hidden="true">{Array.from({ length: 24 }).map((_, i) => <i key={i} />)}</div>
+      <div className="shell">
+        <aside className="side">
+          <div className="me">
+            <div className="avatar">
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                : <svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="32" r="14" fill="currentColor" opacity=".85" /><path d="M14 72c1.5-15 12-24 26-24s24.5 9 26 24z" fill="currentColor" opacity=".85" /></svg>}
+            </div>
+            <div className="nm">{name}</div>
+            <div className="em">{email}</div>
+            <div className="badge">已驗證</div>
+          </div>
+          <nav className="nav">
+            <a href="/classroom">我的學習</a>
+            <button className={tab === "profile" ? "on" : ""} onClick={() => setTab("profile")}>會員資料</button>
+            <button className={tab === "orders" ? "on" : ""} onClick={() => setTab("orders")}>訂單紀錄</button>
+            <button className={tab === "devices" ? "on" : ""} onClick={() => setTab("devices")}>登入裝置</button>
+            <div className="sep" />
+            <a href="/classroom/reset-password" className="out">修改密碼</a>
+            <button className="out" onClick={handleLogout}>登出</button>
+          </nav>
+        </aside>
+
+        <main>
+          {tab === "profile" && (
+            <section className="panel">
+              <div className="phead"><h1>基本資料</h1><p>這些資料用來安排適合的教學與聯繫；暱稱會顯示在課程留言、評分區。</p></div>
+              <form onSubmit={saveProfile}>
+                <div className="pbody">
+                  <div className="grid2">
+                    <div><label style={lab}>暱稱</label>
+                      <input style={inp} value={displayName} onChange={(e) => { setDisplayName(e.target.value); setSaved(false); }} placeholder="公開顯示在留言、評分區" maxLength={40} /></div>
+                    <div><label style={lab}>電子信箱（不能修改）</label>
+                      <input style={roInp} value={email} readOnly /></div>
+                    <ProfileFields prof={prof} setProf={setProf} styles={{ input: inp, label: lab }} />
+                  </div>
+                  <p className="hint">送出即表示你同意依<a className="ilink" href="/privacy">隱私政策</a>，將資料用於課程服務與聯繫。</p>
+                  {err && <p className="msg err">{err}</p>}
+                  {saved && <p className="msg ok">已儲存 ✓</p>}
+                </div>
+                <div className="pfoot"><button type="submit" className="btn" disabled={saving}>{saving ? "儲存中…" : "儲存"}</button></div>
+              </form>
+            </section>
+          )}
+
+          {tab === "orders" && (
+            <section className="panel">
+              <div className="phead"><h1>訂單紀錄</h1><p>你在 InRecord 的購課與付款紀錄。</p></div>
+              <div className="pbody">
+                {orders === null ? <p className="muted">載入中…</p>
+                  : orders.length === 0 ? <p className="muted">還沒有訂單</p>
+                  : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {sortOrdersDesc(orders).map((o) => (
+                        <div key={o.mer_trade_no} className="order">
+                          <div className="r1">
+                            <span className="pl">{COURSE_NAME}</span>
+                            <span className="amt">NT${(o.amount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="r2">
+                            <span className="plan">方案：{o.plan_label || o.plan || "課程"}</span>
+                            <span><span className={"st " + (o.status === "paid" ? "paid" : o.status === "refunded" ? "refund" : "")}>{statusLabel(o.status)}</span> <span className="muted">· {fmtDate(o.created_at)}</span></span>
+                          </div>
+                          {invoiceText(o.invoice_no) && <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>{invoiceText(o.invoice_no)}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            </section>
+          )}
+
+          {tab === "devices" && (
+            <section className="panel">
+              <div className="phead"><h1>登入裝置</h1></div>
+              <div className="pbody">
+                <p className="devnote">InRecord 允許同時在多台裝置上課。當裝置數量達到上限，新裝置要進來時會擠掉最久沒用的那一台、自動登出。你也可以在這裡手動登出不再使用的裝置。</p>
+                {devices === null ? <p className="muted">載入中…</p>
+                  : devices.length === 0 ? <p className="muted">目前沒有已記錄的上課裝置。</p>
+                  : (
+                    <div style={{ marginTop: 8 }}>
+                      {devices.map((d) => {
+                        const isCur = d.device_id === curDevice;
+                        return (
+                          <div key={d.device_id} className="dev">
+                            <dl className="kv">
+                              <dt>裝置</dt><dd>{d.device || "未知裝置"}</dd>
+                              <dt>瀏覽器</dt><dd>{d.browser || "—"}</dd>
+                              <dt>登入時間</dt><dd>{fmtDateTime(d.created_at)}</dd>
+                              <dt>最後使用</dt><dd>{fmtDateTime(d.last_seen_at)}</dd>
+                            </dl>
+                            <div className="side2">
+                              {isCur ? <span className="cur2">目前裝置</span>
+                                : <button className="signout" onClick={() => signOutDevice(d.device_id)} disabled={devBusy === d.device_id}>{devBusy === d.device_id ? "登出中…" : "登出此裝置"}</button>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-const ACCT_CSS = `
-.acct{
-  --bg1:#1c2438; --bg2:#0e1118; --bg3:#090b10;
-  --ink:#ece7db; --ink-soft:#a9a496; --ink-faint:#8f8a7d;
-  --gold:#e8c583; --gold-line:rgba(232,197,131,.55);
-  --card:rgba(255,255,255,.05); --card-b:rgba(255,255,255,.02);
-  --line-soft:rgba(255,255,255,.15);
-  --cta-bg:#e8c583; --cta-ink:#241a08;
-  --glow:rgba(232,197,131,.16);
-  --key-a:#171b22; --key-b:#0c0e13; --key-black:#05070b; --key-line:rgba(0,0,0,.55); --keys-op:.5;
-  --in-bg:rgba(255,255,255,.05); --in-line:rgba(255,255,255,.18); --focus:rgba(232,197,131,.28);
-  --tgl-bg:rgba(255,255,255,.07); --tgl-line:rgba(255,255,255,.2); --tgl-ink:#e8c583;
-  --ok:#7fd69b; --err:#f2a3a3;
-  --serif:"Songti TC","Noto Serif TC",Georgia,serif;
+const MC_CSS = `
+.mc{
+  --page:#f5f7fa; --card:#ffffff; --card-2:#f7f9fc;
+  --ink:#16233b; --ink-soft:#586378; --ink-faint:#9aa3b2;
+  --accent:#2563eb; --accent-soft:#eaf0ff;
+  --line:#eaeef4; --line-2:#f0f3f8;
+  --ok:#0f9d58; --ok-bg:#e8f6ee; --danger:#dc2626;
+  --in-bg:#ffffff; --in-line:#dbe1ea; --focus:rgba(37,99,235,.14);
+  --tgl-bg:#f0f4fb; --tgl-line:#e2e8f2; --tgl-ink:#2563eb;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Helvetica Neue",sans-serif;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 12px 32px -18px rgba(16,24,40,.18);
+  color-scheme:light;
+  min-height:100vh; background:var(--page); color:var(--ink); font-family:var(--sans);
+  -webkit-font-smoothing:antialiased; letter-spacing:.01em; transition:background .35s,color .3s;
+}
+.mc[data-theme="dark"]{
+  --page:#0c0f15; --card:#141922; --card-2:#0f141c;
+  --ink:#ece7db; --ink-soft:#a7a294; --ink-faint:#7f7a6f;
+  --accent:#e8c583; --accent-soft:rgba(232,197,131,.12);
+  --line:#3a4553; --line-2:#2c3542;
+  --ok:#7fd69b; --ok-bg:rgba(127,214,155,.12); --danger:#f0a1a1;
+  --in-bg:#0f141c; --in-line:#414c5a; --focus:rgba(232,197,131,.22);
+  --tgl-bg:#1a2029; --tgl-line:#414c5a; --tgl-ink:#e8c583;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px -20px rgba(0,0,0,.6);
   color-scheme:dark;
-  min-height:100vh; position:relative; overflow-x:hidden; padding-bottom:84px;
-  color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",sans-serif;
-  background:radial-gradient(120% 90% at 82% -10%,var(--bg1) 0%,var(--bg2) 46%,var(--bg3) 100%);
-  transition:background .5s ease,color .35s ease;
 }
-@media (prefers-color-scheme:light){ .acct:not([data-theme]){
-  --bg1:#ffffff; --bg2:#f7faff; --bg3:#edf3ff;
-  --ink:#15233f; --ink-soft:#4d5a72; --ink-faint:#8590a4;
-  --gold:#2563eb; --gold-line:rgba(37,99,235,.42);
-  --card:rgba(255,255,255,.72); --card-b:rgba(238,244,255,.55);
-  --line-soft:rgba(30,50,95,.12);
-  --cta-bg:#2563eb; --cta-ink:#ffffff;
-  --glow:rgba(37,99,235,.13);
-  --key-a:#ffffff; --key-b:#e8f0fc; --key-black:#1a2b4d; --key-line:rgba(37,99,235,.16); --keys-op:.75;
-  --in-bg:#ffffff; --in-line:rgba(37,99,235,.22); --focus:rgba(37,99,235,.16);
-  --tgl-bg:rgba(37,99,235,.09); --tgl-line:rgba(37,99,235,.24); --tgl-ink:#2563eb;
-  --ok:#16a34a; --err:#dc2626;
-  color-scheme:light;
+@media (prefers-color-scheme:dark){ .mc:not([data-theme]){
+  --page:#0c0f15; --card:#141922; --card-2:#0f141c;
+  --ink:#ece7db; --ink-soft:#a7a294; --ink-faint:#7f7a6f;
+  --accent:#e8c583; --accent-soft:rgba(232,197,131,.12);
+  --line:#3a4553; --line-2:#2c3542;
+  --ok:#7fd69b; --ok-bg:rgba(127,214,155,.12); --danger:#f0a1a1;
+  --in-bg:#0f141c; --in-line:#414c5a; --focus:rgba(232,197,131,.22);
+  --tgl-bg:#1a2029; --tgl-line:#414c5a; --tgl-ink:#e8c583;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px -20px rgba(0,0,0,.6);
+  color-scheme:dark;
 }}
-.acct[data-theme="light"]{
-  --bg1:#ffffff; --bg2:#f7faff; --bg3:#edf3ff;
-  --ink:#15233f; --ink-soft:#4d5a72; --ink-faint:#8590a4;
-  --gold:#2563eb; --gold-line:rgba(37,99,235,.42);
-  --card:rgba(255,255,255,.72); --card-b:rgba(238,244,255,.55);
-  --line-soft:rgba(30,50,95,.12);
-  --cta-bg:#2563eb; --cta-ink:#ffffff;
-  --glow:rgba(37,99,235,.13);
-  --key-a:#ffffff; --key-b:#e8f0fc; --key-black:#1a2b4d; --key-line:rgba(37,99,235,.16); --keys-op:.75;
-  --in-bg:#ffffff; --in-line:rgba(37,99,235,.22); --focus:rgba(37,99,235,.16);
-  --tgl-bg:rgba(37,99,235,.09); --tgl-line:rgba(37,99,235,.24); --tgl-ink:#2563eb;
-  --ok:#16a34a; --err:#dc2626;
-  color-scheme:light;
-}
-.acct *{box-sizing:border-box}
-.acct a{text-decoration:none; color:inherit}
-.acct .glow{position:absolute; top:-160px; right:-120px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,var(--glow),transparent 62%); pointer-events:none}
-.acct nav{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,60px); position:relative; z-index:3}
-.acct nav .r{display:flex; align-items:center; gap:18px; font-size:14px}
-.acct nav .r a{color:var(--ink-soft); transition:.2s}
-.acct nav .r a:hover{color:var(--ink)}
-.acct .toggle{width:40px;height:40px;border-radius:50%;border:1px solid var(--tgl-line);background:var(--tgl-bg);color:var(--tgl-ink);display:grid;place-items:center;cursor:pointer;transition:.25s;font-size:16px}
-.acct .toggle:hover{transform:rotate(-18deg)}
-.acct .wrap{max-width:600px; margin:0 auto; padding:8px clamp(20px,5vw,60px) 0; position:relative; z-index:2}
-.acct .eyebrow{font-size:12px; letter-spacing:.34em; text-transform:uppercase; color:var(--gold); font-weight:600}
-.acct .head h1{font-family:var(--serif); font-weight:600; font-size:clamp(26px,5vw,38px); margin:10px 0 24px}
-.acct .card{background:var(--card); border:1px solid var(--line-soft); border-radius:16px; padding:24px; margin-bottom:16px}
-.acct .card h2{font-family:var(--serif); font-size:20px; color:var(--ink); margin:0 0 16px; display:flex; align-items:baseline; gap:12px; font-weight:600}
-.acct .card h2::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--gold-line),transparent)}
-.acct .fg{margin-bottom:14px}
-.acct .hint{font-size:12px; color:var(--ink-faint); margin:6px 0 0; line-height:1.6}
-.acct .ilink{color:var(--gold); font-weight:600}
-.acct .err{color:var(--err); font-size:13px; margin:10px 0 0}
-.acct .ok{color:var(--ok); font-size:13px; margin:10px 0 0}
-.acct input:focus, .acct select:focus{box-shadow:0 0 0 3px var(--focus)}
-.acct .btn{width:100%; margin-top:16px; padding:13px; font-size:15px; font-weight:700; color:var(--cta-ink); background:var(--cta-bg); border:0; border-radius:100px; cursor:pointer; font-family:inherit; transition:transform .2s}
-.acct .btn:hover{transform:translateY(-2px)}
-.acct .btn:disabled{opacity:.6; cursor:default; transform:none}
-.acct .order{border:1px solid var(--line-soft); border-radius:12px; padding:12px 14px; background:var(--card-b)}
-.acct .link{color:var(--gold); font-weight:600; font-size:14px}
-.acct .muted{color:var(--ink-faint); font-size:13px}
-.acct .spin{width:28px;height:28px;border:2.5px solid var(--line-soft);border-top-color:var(--gold);border-radius:50%;animation:acctspin .7s linear infinite}
-@keyframes acctspin{to{transform:rotate(360deg)}}
-.acct .keys{position:absolute; bottom:0; left:0; right:0; height:60px; display:flex; opacity:var(--keys-op); pointer-events:none}
-.acct .keys i{flex:1; border-right:1px solid var(--key-line); background:linear-gradient(var(--key-a),var(--key-b))}
-.acct .keys i:nth-child(2n)::after{content:""; display:block; width:58%; height:62%; margin:0 auto; background:var(--key-black); border-radius:0 0 3px 3px}
-@media (prefers-reduced-motion:reduce){ .acct *{transition:none!important; animation:none!important} }
-@media(max-width:520px){ .acct nav .r a{display:none} }
+.mc *{box-sizing:border-box}
+.mc a{color:inherit; text-decoration:none}
+.mc .top{display:flex; align-items:center; justify-content:space-between; padding:18px clamp(16px,4vw,44px); max-width:1140px; margin:0 auto}
+.mc .top .right{display:flex; align-items:center; gap:22px; font-size:14px; color:var(--ink-soft)}
+.mc .top .right a:hover{color:var(--ink)}
+.mc .top .right .cur{color:var(--accent); font-weight:600}
+.mc .toggle{width:36px;height:36px;border-radius:50%;border:1px solid var(--tgl-line);background:var(--tgl-bg);color:var(--tgl-ink);cursor:pointer;font-size:15px;display:grid;place-items:center;transition:.2s}
+.mc .toggle:hover{border-color:var(--accent)}
+.mc .shell{max-width:1140px; margin:0 auto; padding:8px clamp(16px,4vw,44px) 60px; display:grid; grid-template-columns:250px 1fr; gap:24px; align-items:start}
+@media(max-width:820px){ .mc .shell{grid-template-columns:1fr; gap:16px} }
+.mc .side{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 14px 14px; box-shadow:var(--shadow); position:sticky; top:16px}
+@media(max-width:820px){ .mc .side{position:static} }
+.mc .me{display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 6px 20px; border-bottom:1px solid var(--line-2)}
+.mc .avatar{width:80px;height:80px;border-radius:50%;overflow:hidden;background:var(--card-2);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-faint)}
+.mc .avatar img{width:100%;height:100%;object-fit:cover}
+.mc .avatar svg{width:100%;height:100%}
+.mc .me .nm{margin-top:13px;font-weight:700;font-size:17px;color:var(--ink);letter-spacing:.02em}
+.mc .me .em{margin-top:4px;font-size:12.5px;color:var(--ink-faint);word-break:break-all}
+.mc .badge{margin-top:11px;font-size:11.5px;font-weight:600;color:var(--ok);background:var(--ok-bg);border-radius:6px;padding:3px 10px}
+.mc .nav{display:flex;flex-direction:column;gap:1px;margin-top:12px}
+.mc .nav a,.mc .nav button{display:block;width:100%;text-align:left;padding:11px 14px;border:0;background:none;border-radius:9px;font-size:14.5px;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:.14s;font-family:inherit}
+.mc .nav a:hover,.mc .nav button:hover{background:var(--card-2);color:var(--ink)}
+.mc .nav button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.mc .nav .sep{height:1px;background:var(--line-2);margin:9px 8px}
+.mc .nav a.out,.mc .nav button.out{color:var(--ink-faint);font-size:14px}
+.mc .panel{background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden}
+.mc .phead{padding:26px 28px 0}
+.mc .phead h1{margin:0;font-weight:700;font-size:21px;letter-spacing:-.01em}
+.mc .phead p{margin:8px 0 0;font-size:13.5px;color:var(--ink-soft);line-height:1.7}
+.mc .pbody{padding:24px 28px}
+.mc .pfoot{display:flex;justify-content:flex-end;padding:16px 28px;border-top:1px solid var(--line-2)}
+.mc .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px 22px}
+@media(max-width:560px){ .mc .grid2{grid-template-columns:1fr} }
+.mc input:focus,.mc select:focus{box-shadow:0 0 0 3px var(--focus)}
+.mc .hint{font-size:12px;color:var(--ink-faint);margin:16px 0 0;line-height:1.6}
+.mc .ilink{color:var(--accent);font-weight:600}
+.mc .msg{font-size:13px;margin:10px 0 0}
+.mc .msg.err{color:var(--danger)} .mc .msg.ok{color:var(--ok)}
+.mc .btn{border:0;border-radius:10px;padding:11px 30px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;background:var(--accent);color:#fff;transition:transform .15s}
+.mc[data-theme="dark"] .btn{color:#241a08}
+@media (prefers-color-scheme:dark){ .mc:not([data-theme]) .btn{color:#241a08} }
+.mc .btn:hover{transform:translateY(-1px)} .mc .btn:disabled{opacity:.6;transform:none;cursor:default}
+.mc .order{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--card-2)}
+.mc .order .r1{display:flex;justify-content:space-between;gap:14px;align-items:baseline}
+.mc .order .pl{font-weight:600;font-size:14.5px;line-height:1.5}
+.mc .order .amt{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mc .order .r2{display:flex;justify-content:space-between;gap:12px;margin-top:9px;font-size:12.5px;flex-wrap:wrap}
+.mc .plan{color:var(--ink-soft)}
+.mc .st{font-weight:600} .mc .st.paid{color:var(--ok)} .mc .st.refund{color:var(--danger)}
+.mc .muted{color:var(--ink-faint)}
+.mc .devnote{font-size:13.5px;color:var(--ink-soft);line-height:1.75;margin:0}
+.mc .dev{display:grid;grid-template-columns:1fr auto;gap:14px;padding:20px 0;border-bottom:1px solid var(--line-2)}
+.mc .dev:last-child{border-bottom:0;padding-bottom:2px}
+.mc .dev .kv{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;font-size:13px;margin:0}
+.mc .dev .kv dt{color:var(--ink-faint)}
+.mc .dev .kv dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
+.mc .dev .side2{display:flex;align-items:flex-start;justify-content:flex-end;white-space:nowrap}
+.mc .cur2{font-size:12.5px;font-weight:600;color:var(--accent)}
+.mc .signout{font-size:12.5px;color:var(--danger);border:1px solid var(--in-line);background:transparent;border-radius:8px;padding:6px 13px;cursor:pointer;font-family:inherit}
+.mc .signout:hover{border-color:var(--danger)} .mc .signout:disabled{opacity:.6;cursor:default}
+.mc .spin{width:28px;height:28px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:mcspin .7s linear infinite}
+@keyframes mcspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){ .mc *{transition:none!important;animation:none!important} }
 `;
