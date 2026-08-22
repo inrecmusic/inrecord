@@ -9,7 +9,7 @@ import {
   Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
   Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity, BarChart3
+  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity, BarChart3, History
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
 import AssignmentsPage from "./AssignmentsPage";
@@ -21,6 +21,7 @@ import SaleSettingsPage from "./SaleSettingsPage";
 import TrackingSettingsPage from "./TrackingSettingsPage";
 import AdsPerformancePage from "./AdsPerformancePage";
 import AnnouncementsPage from "./AnnouncementsPage";
+import ChangelogPage from "./ChangelogPage";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
@@ -55,6 +56,7 @@ const NAV_GROUPS = [
     { id:"terms",       label:"服務條款",   icon:FileText },
     { id:"newsletter",  label:"電子報",     icon:Mail },
     { id:"announcements", label:"公告",    icon:Megaphone },
+    { id:"changelog",   label:"更新記錄",  icon:History },
   ]},
 ];
 
@@ -3269,6 +3271,7 @@ export default function AdminPage(){
           {page==="terms"       &&<TermsPage showToast={showToast}/>}
           {page==="newsletter"  &&<NewsletterPage showToast={showToast}/>}
           {page==="announcements" &&<AnnouncementsPage showToast={showToast}/>}
+          {page==="changelog"     &&<ChangelogPage/>}
         </div>
       </div>
 
