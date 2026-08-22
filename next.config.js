@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 // 全站安全標頭（HSTS 由 Vercel 提供，這裡不重複）
-// CSP：先以 Report-Only 上線（只回報違規、不阻擋，確認無誤報再轉正式 enforcing）。
+// CSP（enforcing）：2026-08-22 以 Report-Only 巡查首頁/教室/播放頁皆零違規後，轉為正式阻擋。
 // 放行：Bunny 影片播放器＋player.js、Vimeo legacy、Supabase(含 realtime wss)、PAYUNi 金流、
 // 追蹤碼中心可能載入的 GTM/FB/Google/PostHog、Unsplash 圖。inline 因大量 inline style／Next 內聯腳本而保留。
 const csp = [
@@ -24,7 +24,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // 僅關閉確定用不到的功能；microphone 不關，保留唱名/音感類互動可能用途
   { key: "Permissions-Policy", value: "camera=(), geolocation=()" },
-  { key: "Content-Security-Policy-Report-Only", value: csp },
+  { key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig = {
