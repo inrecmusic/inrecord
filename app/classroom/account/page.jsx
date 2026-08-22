@@ -5,6 +5,7 @@ import { validateDisplayName } from "@/lib/account";
 import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
 import { isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
+import Logo from "@/components/Logo";
 
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,7 @@ export default function AccountPage() {
   const [profSaved, setProfSaved] = useState(false);
   const [profErr, setProfErr] = useState("");
   const [theme, setTheme] = useState(null); // null=跟系統；'dark'/'light'=手動（與儀表板共用 localStorage）
+  const [sysDark, setSysDark] = useState(true); // 系統是否偏好深色（logo white 判斷用）
 
   useEffect(() => {
     async function init() {
@@ -69,6 +71,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     try { const s = localStorage.getItem("inrec-hub-theme"); if (s) setTheme(s); } catch {}
+    try { setSysDark(window.matchMedia("(prefers-color-scheme: dark)").matches); } catch {}
   }, []);
   function toggleTheme() {
     const eff = theme || (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
@@ -120,15 +123,9 @@ export default function AccountPage() {
   const roInp = { ...inp, opacity: .6, cursor: "not-allowed" };
   const lab = { display: "block", fontSize: 13, color: "var(--ink-soft)", marginBottom: 6, fontWeight: 500 };
 
+  const effectiveDark = theme ? theme === "dark" : sysDark; // 目前實際是深色嗎（logo 用白版）
   const logo = (
-    <a href="/classroom" aria-label="回教室">
-      <svg className="logo" viewBox="0 0 280 60" role="img" aria-label="InRecord">
-        <text x="36" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">InRec</text>
-        <circle cx="180" cy="37" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
-        <circle cx="180" cy="37" r="4" fill="#ff2028" />
-        <text x="194" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">rd</text>
-      </svg>
-    </a>
+    <a href="/classroom" aria-label="回教室"><Logo white={effectiveDark} size={24} /></a>
   );
 
   if (loading || noConfig) {
@@ -153,8 +150,8 @@ export default function AccountPage() {
         {logo}
         <div className="r">
           <a href="/classroom">教室</a>
-          <a href="/classroom/watch">播放教室</a>
-          <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{(theme || "dark") === "light" ? "☀" : "☾"}</button>
+          <a href="/classroom/watch">音樂教室</a>
+          <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{effectiveDark ? "☾" : "☀"}</button>
         </div>
       </nav>
 
@@ -292,7 +289,6 @@ const ACCT_CSS = `
 .acct a{text-decoration:none; color:inherit}
 .acct .glow{position:absolute; top:-160px; right:-120px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,var(--glow),transparent 62%); pointer-events:none}
 .acct nav{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,60px); position:relative; z-index:3}
-.acct .logo{height:26px; width:auto; color:var(--ink); display:block}
 .acct nav .r{display:flex; align-items:center; gap:18px; font-size:14px}
 .acct nav .r a{color:var(--ink-soft); transition:.2s}
 .acct nav .r a:hover{color:var(--ink)}

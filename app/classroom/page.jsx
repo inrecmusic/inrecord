@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
+import Logo from "@/components/Logo";
 
 const F = `var(--type-body)`;
 
@@ -65,6 +66,7 @@ export default function ClassroomHub() {
   const [done, setDone]                   = useState(0);
   const [total, setTotal]                 = useState(0);
   const [theme, setTheme]                 = useState(null);   // null=跟系統；'dark'/'light'=手動
+  const [sysDark, setSysDark]             = useState(true);   // 系統是否偏好深色（logo white 判斷用）
   const [greeting, setGreeting]           = useState("歡迎回來");
 
   /* auth + 教室資料一次載入（bootstrap 單一往返，取代原本 5 支 API 的兩個 wave）*/
@@ -102,6 +104,7 @@ export default function ClassroomHub() {
   /* 主題：mount 後讀 localStorage（避免 SSR hydration 不一致）；問候依時間 */
   useEffect(() => {
     try { const s = localStorage.getItem("inrec-hub-theme"); if (s) setTheme(s); } catch {}
+    try { setSysDark(window.matchMedia("(prefers-color-scheme: dark)").matches); } catch {}
     const h = new Date().getHours();
     setGreeting(h >= 5 && h < 11 ? "早安" : h >= 11 && h < 17 ? "午安" : "晚安");
   }, []);
@@ -144,6 +147,7 @@ export default function ClassroomHub() {
   const roman = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ","Ⅵ","Ⅶ","Ⅷ","Ⅸ","Ⅹ"];
   const name = (profile && profile.real_name) || user?.email?.split("@")[0] || "同學";
   const dash = 578, offset = Math.round(dash * (1 - Math.min(100, pct) / 100));
+  const effectiveDark = theme ? theme === "dark" : sysDark; // 目前實際是深色嗎（logo 用白版）
 
   return (
     <div className="hub" data-theme={theme || undefined}>
@@ -151,16 +155,11 @@ export default function ClassroomHub() {
       <div className="glow" aria-hidden="true" />
 
       <nav>
-        <svg className="logo" viewBox="0 0 280 60" role="img" aria-label="InRecord">
-          <text x="36" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">InRec</text>
-          <circle cx="180" cy="37" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
-          <circle cx="180" cy="37" r="4" fill="#ff2028" />
-          <text x="194" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">rd</text>
-        </svg>
+        <a href="/classroom" aria-label="InRecord"><Logo white={effectiveDark} size={24} /></a>
         <div className="r">
-          <a href="/classroom/watch">播放教室</a>
+          <a href="/classroom/watch">音樂教室</a>
           <a href="/classroom/account">帳號</a>
-          <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{(theme || "dark") === "light" ? "☀" : "☾"}</button>
+          <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{effectiveDark ? "☾" : "☀"}</button>
           <div className="av">{name.slice(0, 1)}</div>
         </div>
       </nav>
@@ -273,7 +272,6 @@ const HUB_CSS = `
 .hub .numt{font-variant-numeric:tabular-nums}
 .hub .glow{position:absolute; top:-160px; right:-120px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,var(--glow),transparent 62%); pointer-events:none}
 .hub nav{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,60px); position:relative; z-index:3}
-.hub .logo{height:26px; width:auto; color:var(--ink); display:block}
 .hub nav .r{display:flex; align-items:center; gap:20px; font-size:14px}
 .hub nav .r a{color:var(--ink-soft); transition:.2s}
 .hub nav .r a:hover{color:var(--ink)}
