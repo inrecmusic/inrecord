@@ -103,7 +103,7 @@ export default function ClassroomHub() {
   useEffect(() => {
     try { const s = localStorage.getItem("inrec-hub-theme"); if (s) setTheme(s); } catch {}
     const h = new Date().getHours();
-    setGreeting(h < 5 ? "夜深了" : h < 11 ? "早安" : h < 14 ? "午安" : h < 18 ? "午后好" : "晚安");
+    setGreeting(h >= 5 && h < 11 ? "早安" : h >= 11 && h < 17 ? "午安" : "晚安");
   }, []);
   function toggleTheme() {
     const eff = theme || (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
@@ -151,7 +151,12 @@ export default function ClassroomHub() {
       <div className="glow" aria-hidden="true" />
 
       <nav>
-        <div className="logo">InRec<i></i>rd</div>
+        <svg className="logo" viewBox="0 0 280 60" role="img" aria-label="InRecord">
+          <text x="36" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">InRec</text>
+          <circle cx="180" cy="37" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
+          <circle cx="180" cy="37" r="4" fill="#ff2028" />
+          <text x="194" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">rd</text>
+        </svg>
         <div className="r">
           <a href="/classroom/watch">播放教室</a>
           <a href="/classroom/account">帳號</a>
@@ -164,8 +169,8 @@ export default function ClassroomHub() {
         <div className="hero">
           <div>
             <div className="eyebrow">Welcome back</div>
-            <h1>{greeting}，{name}。{nextVideo ? <><br />接著我們從 <span>{nextVideo.title}</span> 繼續。</> : <><br />準備好開始了嗎？</>}</h1>
-            <p>{total > 0 ? <>你的鋼琴之路已經走了 {pct}%（{done}/{total} 單元）。點下方回到上次的進度。</> : <>課程即將上線，敬請期待第一堂課。</>}</p>
+            <h1>{greeting}，{name}。{nextVideo ? <><br />上次上到 <span>{nextVideo.title}</span>，我們繼續吧。</> : <><br />準備好，我們開始吧。</>}</h1>
+            <p>{total > 0 ? <>已經完成 {pct}%（{done}/{total} 單元）了，點下面接著上次的進度。</> : <>課程即將上線，第一堂課很快和你見面。</>}</p>
             {nextVideo && <a className="cta" href={`/classroom/watch?v=${nextVideo.id}`}>▶ 繼續上課 · {nextVideo.title}</a>}
           </div>
           <div className="ring">
@@ -268,9 +273,7 @@ const HUB_CSS = `
 .hub .numt{font-variant-numeric:tabular-nums}
 .hub .glow{position:absolute; top:-160px; right:-120px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,var(--glow),transparent 62%); pointer-events:none}
 .hub nav{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,60px); position:relative; z-index:3}
-.hub .logo{font-weight:800; font-size:19px; letter-spacing:-.02em; display:flex; align-items:center; gap:2px; color:var(--ink)}
-.hub .logo i{width:9px;height:9px;border:2.5px solid var(--ink);border-radius:50%;position:relative;display:inline-block}
-.hub .logo i::after{content:"";position:absolute;inset:2px;background:#ff2028;border-radius:50%}
+.hub .logo{height:26px; width:auto; color:var(--ink); display:block}
 .hub nav .r{display:flex; align-items:center; gap:20px; font-size:14px}
 .hub nav .r a{color:var(--ink-soft); transition:.2s}
 .hub nav .r a:hover{color:var(--ink)}
