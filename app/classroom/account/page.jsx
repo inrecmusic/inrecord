@@ -4,10 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { validateDisplayName } from "@/lib/account";
 import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
 import { isValidMobile, LEVELS } from "@/lib/student-profile";
-import Logo from "@/components/Logo";
 import ProfileFields from "@/components/ProfileFields";
-
-const F = "'PingFang TC','Noto Sans TC',system-ui,-apple-system,sans-serif";
 
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
@@ -22,6 +19,7 @@ export default function AccountPage() {
   const [profSaving, setProfSaving] = useState(false);
   const [profSaved, setProfSaved] = useState(false);
   const [profErr, setProfErr] = useState("");
+  const [theme, setTheme] = useState(null); // null=跟系統；'dark'/'light'=手動（與儀表板共用 localStorage）
 
   useEffect(() => {
     async function init() {
@@ -69,10 +67,20 @@ export default function AccountPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    try { const s = localStorage.getItem("inrec-hub-theme"); if (s) setTheme(s); } catch {}
+  }, []);
+  function toggleTheme() {
+    const eff = theme || (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const next = eff === "dark" ? "light" : "dark";
+    setTheme(next);
+    try { localStorage.setItem("inrec-hub-theme", next); } catch {}
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     setError(""); setSaved(false);
-    if (!supabase) { setError("系統設定錯誤，請聯繫管理員"); return; }
+    if (!supabase) { setError("系統設定有誤，請聯繫管理員"); return; }
     const check = validateDisplayName(name);
     if (!check.ok) { setError(check.error); return; }
     setSaving(true);
@@ -82,7 +90,7 @@ export default function AccountPage() {
       setName(check.value);
       setSaved(true);
     } catch (err) {
-      setError(err.message || "儲存失敗，請重試");
+      setError(err.message || "儲存失敗，請再試一次");
     } finally {
       setSaving(false);
     }
@@ -107,94 +115,212 @@ export default function AccountPage() {
     } finally { setProfSaving(false); }
   }
 
-  const wrap = { minHeight: "100vh", background: "#f1f5f9", padding: 24, fontFamily: F, display: "grid", placeItems: "center" };
-  const card = { width: "100%", maxWidth: 420, background: "#fff", borderRadius: 18, padding: "30px 28px", boxShadow: "0 10px 40px rgba(0,0,0,.08)" };
-  const input = { width: "100%", padding: "11px 14px", fontSize: 16, border: "1px solid #d5dce6", borderRadius: 10, outline: "none", fontFamily: F, boxSizing: "border-box" };
-  const roInput = { ...input, background: "#f1f5f9", color: "#64748b" };
-  const label = { display: "block", fontSize: 13, color: "#475569", marginBottom: 6, fontWeight: 500 };
-  const btn = { width: "100%", padding: "12px", fontSize: 15, fontWeight: 600, color: "#fff", background: "#2563eb", border: 0, borderRadius: 10, cursor: "pointer", fontFamily: F };
+  // 表單欄位樣式用 CSS 變數 → 隨深/淺主題自動變色（ProfileFields 也吃這組）
+  const inp = { width: "100%", padding: "11px 14px", fontSize: 16, border: "1px solid var(--in-line)", borderRadius: 10, outline: "none", background: "var(--in-bg)", color: "var(--ink)", boxSizing: "border-box", fontFamily: "inherit" };
+  const roInp = { ...inp, opacity: .6, cursor: "not-allowed" };
+  const lab = { display: "block", fontSize: 13, color: "var(--ink-soft)", marginBottom: 6, fontWeight: 500 };
 
-  if (loading) return (<div style={wrap}><p style={{ color: "#64748b" }}>載入中…</p></div>);
-
-  if (noConfig) return (
-    <div style={wrap}>
-      <div style={card}>
-        <p style={{ color: "#dc2626", fontSize: 14 }}>系統設定錯誤，請聯繫管理員</p>
-      </div>
-    </div>
+  const logo = (
+    <a href="/classroom" aria-label="回教室">
+      <svg className="logo" viewBox="0 0 280 60" role="img" aria-label="InRecord">
+        <text x="36" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">InRec</text>
+        <circle cx="180" cy="37" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
+        <circle cx="180" cy="37" r="4" fill="#ff2028" />
+        <text x="194" y="48" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold" fontSize="46" fill="currentColor">rd</text>
+      </svg>
+    </a>
   );
 
+  if (loading || noConfig) {
+    return (
+      <div className="acct" data-theme={theme || undefined}>
+        <style>{ACCT_CSS}</style>
+        <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
+          {noConfig
+            ? <p style={{ color: "var(--err)", fontSize: 14 }}>系統設定有誤，請聯繫管理員</p>
+            : <div className="spin" aria-label="載入中" />}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={wrap}>
-      <div style={card}>
-        <div style={{ marginBottom: 18 }}><Logo size={24} /></div>
-        <h2 style={{ margin: "0 0 22px", fontSize: 22, color: "#0f172a" }}>帳號設定</h2>
+    <div className="acct" data-theme={theme || undefined}>
+      <style>{ACCT_CSS}</style>
+      <div className="glow" aria-hidden="true" />
 
-        <form onSubmit={handleSave}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={label} htmlFor="account-email">Email（登入帳號，無法修改）</label>
-            <input id="account-email" style={roInput} value={email} readOnly />
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <label style={label} htmlFor="name">顯示名稱</label>
-            <input id="name" style={input} value={name}
-              onChange={e => { setName(e.target.value); setSaved(false); }}
-              placeholder="用於留言與評分掛名" maxLength={40} />
-          </div>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 18px", lineHeight: 1.6 }}>
-            修改後僅影響日後的留言與評分掛名，先前發表的內容不會更動。
-          </p>
-          {error && <p style={{ color: "#dc2626", fontSize: 13, margin: "0 0 12px" }}>{error}</p>}
-          {saved && <p style={{ color: "#16a34a", fontSize: 13, margin: "0 0 12px" }}>已儲存</p>}
-          <button type="submit" style={btn} disabled={saving}>{saving ? "儲存中…" : "儲存"}</button>
-        </form>
+      <nav>
+        {logo}
+        <div className="r">
+          <a href="/classroom">教室</a>
+          <a href="/classroom/watch">播放教室</a>
+          <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{(theme || "dark") === "light" ? "☀" : "☾"}</button>
+        </div>
+      </nav>
 
-        <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
-          <h3 style={{ margin: "0 0 12px", fontSize: 15, color: "#0f172a" }}>我的訂單</h3>
+      <div className="wrap">
+        <div className="head">
+          <div className="eyebrow">Account</div>
+          <h1>帳號設定</h1>
+        </div>
+
+        {/* 基本資料 */}
+        <section className="card">
+          <h2>基本資料</h2>
+          <form onSubmit={handleSave}>
+            <div className="fg">
+              <label style={lab} htmlFor="account-email">Email（登入帳號，不能修改）</label>
+              <input id="account-email" style={roInp} value={email} readOnly />
+            </div>
+            <div className="fg">
+              <label style={lab} htmlFor="name">顯示名稱</label>
+              <input id="name" style={inp} value={name}
+                onChange={e => { setName(e.target.value); setSaved(false); }}
+                placeholder="留言、評分時顯示的名字" maxLength={40} />
+              <p className="hint">改了之後，只有之後的留言和評分會用新名字，之前發過的不會變。</p>
+            </div>
+            {error && <p className="err">{error}</p>}
+            {saved && <p className="ok">已儲存</p>}
+            <button type="submit" className="btn" disabled={saving}>{saving ? "儲存中…" : "儲存"}</button>
+          </form>
+        </section>
+
+        {/* 學員資料 */}
+        <section className="card">
+          <h2>我的學員資料</h2>
+          <form onSubmit={handleSaveProfile} style={{ display: "grid", gap: 12 }}>
+            <ProfileFields prof={prof} setProf={setProf} styles={{ input: inp, label: lab }} />
+            {profErr && <p className="err" style={{ margin: 0 }}>{profErr}</p>}
+            {profSaved && <p className="ok" style={{ margin: 0 }}>已儲存 ✓</p>}
+            <p className="hint" style={{ margin: 0 }}>送出即表示你同意依<a className="ilink" href="/privacy">隱私政策</a>，將資料用於課程服務與聯繫。</p>
+            <button type="submit" className="btn" style={{ marginTop: 4 }} disabled={profSaving}>{profSaving ? "儲存中…" : "儲存學員資料"}</button>
+          </form>
+        </section>
+
+        {/* 訂單 */}
+        <section className="card">
+          <h2>我的訂單</h2>
           {orders === null ? (
-            <p style={{ color: "#94a3b8", fontSize: 13 }}>載入中…</p>
+            <p className="muted">載入中…</p>
           ) : orders.length === 0 ? (
-            <p style={{ color: "#94a3b8", fontSize: 13 }}>目前沒有訂單</p>
+            <p className="muted">還沒有訂單</p>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {sortOrdersDesc(orders).map(o => {
                 const st = o.status;
-                const stColor = st === "paid" ? "#16a34a" : st === "refunded" ? "#dc2626" : st === "pending" ? "#b45309" : "#64748b";
+                const stColor = st === "paid" ? "var(--ok)" : st === "refunded" ? "var(--err)" : st === "pending" ? "#d99a3c" : "var(--ink-faint)";
                 return (
-                  <div key={o.mer_trade_no} style={{ border: "1px solid #eef2f7", borderRadius: 10, padding: "10px 12px" }}>
+                  <div key={o.mer_trade_no} className="order">
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{o.plan_label || o.plan || "課程"}</span>
-                      <span style={{ fontSize: 14, color: "#0f172a", flexShrink: 0 }}>NT${(o.amount || 0).toLocaleString()}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>{o.plan_label || o.plan || "課程"}</span>
+                      <span style={{ fontSize: 14, color: "var(--ink)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>NT${(o.amount || 0).toLocaleString()}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: stColor }}>{statusLabel(o.status)}</span>
-                      <span style={{ fontSize: 12, color: "#94a3b8" }}>{o.created_at ? new Date(o.created_at).toLocaleDateString("zh-TW") : ""}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: stColor }}>{statusLabel(o.status)}</span>
+                      <span className="muted" style={{ fontSize: 12 }}>{o.created_at ? new Date(o.created_at).toLocaleDateString("zh-TW") : ""}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{invoiceText(o.invoice_no)}</div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{invoiceText(o.invoice_no)}</div>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
-        <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 12px" }}>我的學員資料</h3>
-          <form onSubmit={handleSaveProfile} style={{ display: "grid", gap: 12 }}>
-            <ProfileFields prof={prof} setProf={setProf} styles={{ input, label }} />
-            {profErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{profErr}</p>}
-            {profSaved && <p style={{ color: "#16a34a", fontSize: 13, margin: 0 }}>已儲存 ✓</p>}
-            <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>填寫即表示同意依<a href="/privacy" style={{ color: "#2563eb" }}>隱私政策</a>將資料用於課程服務與聯繫。</p>
-            <button type="submit" style={btn} disabled={profSaving}>{profSaving ? "儲存中…" : "儲存學員資料"}</button>
-          </form>
-        </div>
-        <div style={{ borderTop: "1px solid #eef2f7", marginTop: 22, paddingTop: 18 }}>
-          <a href="/classroom/reset-password" style={{ color: "#2563eb", fontSize: 14, textDecoration: "none", display: "block" }}>修改密碼 →</a>
+        </section>
+
+        {/* 其他 */}
+        <section className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <a className="link" href="/classroom/reset-password">修改密碼 →</a>
+          <a className="muted" href="/classroom">← 回教室</a>
           {/* 完課證書入口暫隱藏：尚未製作，有學員申請再開；證書頁 /classroom/certificate 仍保留、日後取消本註解即恢復 */}
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <a href="/classroom" style={{ color: "#94a3b8", fontSize: 13, textDecoration: "none" }}>← 返回教室</a>
-        </div>
+        </section>
       </div>
+
+      <div className="keys" aria-hidden="true">{Array.from({ length: 24 }).map((_, i) => <i key={i} />)}</div>
     </div>
   );
 }
+
+const ACCT_CSS = `
+.acct{
+  --bg1:#1c2438; --bg2:#0e1118; --bg3:#090b10;
+  --ink:#ece7db; --ink-soft:#a9a496; --ink-faint:#8f8a7d;
+  --gold:#e8c583; --gold-line:rgba(232,197,131,.55);
+  --card:rgba(255,255,255,.05); --card-b:rgba(255,255,255,.02);
+  --line-soft:rgba(255,255,255,.15);
+  --cta-bg:#e8c583; --cta-ink:#241a08;
+  --glow:rgba(232,197,131,.16);
+  --key-a:#171b22; --key-b:#0c0e13; --key-black:#05070b; --key-line:rgba(0,0,0,.55); --keys-op:.5;
+  --in-bg:rgba(255,255,255,.05); --in-line:rgba(255,255,255,.18); --focus:rgba(232,197,131,.28);
+  --tgl-bg:rgba(255,255,255,.07); --tgl-line:rgba(255,255,255,.2); --tgl-ink:#e8c583;
+  --ok:#7fd69b; --err:#f2a3a3;
+  --serif:"Songti TC","Noto Serif TC",Georgia,serif;
+  color-scheme:dark;
+  min-height:100vh; position:relative; overflow-x:hidden; padding-bottom:84px;
+  color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",sans-serif;
+  background:radial-gradient(120% 90% at 82% -10%,var(--bg1) 0%,var(--bg2) 46%,var(--bg3) 100%);
+  transition:background .5s ease,color .35s ease;
+}
+@media (prefers-color-scheme:light){ .acct:not([data-theme]){
+  --bg1:#ffffff; --bg2:#f7faff; --bg3:#edf3ff;
+  --ink:#15233f; --ink-soft:#4d5a72; --ink-faint:#8590a4;
+  --gold:#2563eb; --gold-line:rgba(37,99,235,.42);
+  --card:rgba(255,255,255,.72); --card-b:rgba(238,244,255,.55);
+  --line-soft:rgba(30,50,95,.12);
+  --cta-bg:#2563eb; --cta-ink:#ffffff;
+  --glow:rgba(37,99,235,.13);
+  --key-a:#ffffff; --key-b:#e8f0fc; --key-black:#1a2b4d; --key-line:rgba(37,99,235,.16); --keys-op:.75;
+  --in-bg:#ffffff; --in-line:rgba(37,99,235,.22); --focus:rgba(37,99,235,.16);
+  --tgl-bg:rgba(37,99,235,.09); --tgl-line:rgba(37,99,235,.24); --tgl-ink:#2563eb;
+  --ok:#16a34a; --err:#dc2626;
+  color-scheme:light;
+}}
+.acct[data-theme="light"]{
+  --bg1:#ffffff; --bg2:#f7faff; --bg3:#edf3ff;
+  --ink:#15233f; --ink-soft:#4d5a72; --ink-faint:#8590a4;
+  --gold:#2563eb; --gold-line:rgba(37,99,235,.42);
+  --card:rgba(255,255,255,.72); --card-b:rgba(238,244,255,.55);
+  --line-soft:rgba(30,50,95,.12);
+  --cta-bg:#2563eb; --cta-ink:#ffffff;
+  --glow:rgba(37,99,235,.13);
+  --key-a:#ffffff; --key-b:#e8f0fc; --key-black:#1a2b4d; --key-line:rgba(37,99,235,.16); --keys-op:.75;
+  --in-bg:#ffffff; --in-line:rgba(37,99,235,.22); --focus:rgba(37,99,235,.16);
+  --tgl-bg:rgba(37,99,235,.09); --tgl-line:rgba(37,99,235,.24); --tgl-ink:#2563eb;
+  --ok:#16a34a; --err:#dc2626;
+  color-scheme:light;
+}
+.acct *{box-sizing:border-box}
+.acct a{text-decoration:none; color:inherit}
+.acct .glow{position:absolute; top:-160px; right:-120px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,var(--glow),transparent 62%); pointer-events:none}
+.acct nav{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,60px); position:relative; z-index:3}
+.acct .logo{height:26px; width:auto; color:var(--ink); display:block}
+.acct nav .r{display:flex; align-items:center; gap:18px; font-size:14px}
+.acct nav .r a{color:var(--ink-soft); transition:.2s}
+.acct nav .r a:hover{color:var(--ink)}
+.acct .toggle{width:40px;height:40px;border-radius:50%;border:1px solid var(--tgl-line);background:var(--tgl-bg);color:var(--tgl-ink);display:grid;place-items:center;cursor:pointer;transition:.25s;font-size:16px}
+.acct .toggle:hover{transform:rotate(-18deg)}
+.acct .wrap{max-width:600px; margin:0 auto; padding:8px clamp(20px,5vw,60px) 0; position:relative; z-index:2}
+.acct .eyebrow{font-size:12px; letter-spacing:.34em; text-transform:uppercase; color:var(--gold); font-weight:600}
+.acct .head h1{font-family:var(--serif); font-weight:600; font-size:clamp(26px,5vw,38px); margin:10px 0 24px}
+.acct .card{background:var(--card); border:1px solid var(--line-soft); border-radius:16px; padding:24px; margin-bottom:16px}
+.acct .card h2{font-family:var(--serif); font-size:20px; color:var(--ink); margin:0 0 16px; display:flex; align-items:baseline; gap:12px; font-weight:600}
+.acct .card h2::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--gold-line),transparent)}
+.acct .fg{margin-bottom:14px}
+.acct .hint{font-size:12px; color:var(--ink-faint); margin:6px 0 0; line-height:1.6}
+.acct .ilink{color:var(--gold); font-weight:600}
+.acct .err{color:var(--err); font-size:13px; margin:10px 0 0}
+.acct .ok{color:var(--ok); font-size:13px; margin:10px 0 0}
+.acct input:focus, .acct select:focus{box-shadow:0 0 0 3px var(--focus)}
+.acct .btn{width:100%; margin-top:16px; padding:13px; font-size:15px; font-weight:700; color:var(--cta-ink); background:var(--cta-bg); border:0; border-radius:100px; cursor:pointer; font-family:inherit; transition:transform .2s}
+.acct .btn:hover{transform:translateY(-2px)}
+.acct .btn:disabled{opacity:.6; cursor:default; transform:none}
+.acct .order{border:1px solid var(--line-soft); border-radius:12px; padding:12px 14px; background:var(--card-b)}
+.acct .link{color:var(--gold); font-weight:600; font-size:14px}
+.acct .muted{color:var(--ink-faint); font-size:13px}
+.acct .spin{width:28px;height:28px;border:2.5px solid var(--line-soft);border-top-color:var(--gold);border-radius:50%;animation:acctspin .7s linear infinite}
+@keyframes acctspin{to{transform:rotate(360deg)}}
+.acct .keys{position:absolute; bottom:0; left:0; right:0; height:60px; display:flex; opacity:var(--keys-op); pointer-events:none}
+.acct .keys i{flex:1; border-right:1px solid var(--key-line); background:linear-gradient(var(--key-a),var(--key-b))}
+.acct .keys i:nth-child(2n)::after{content:""; display:block; width:58%; height:62%; margin:0 auto; background:var(--key-black); border-radius:0 0 3px 3px}
+@media (prefers-reduced-motion:reduce){ .acct *{transition:none!important; animation:none!important} }
+@media(max-width:520px){ .acct nav .r a{display:none} }
+`;
