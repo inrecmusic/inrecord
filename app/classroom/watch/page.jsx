@@ -5,6 +5,7 @@ import { pickBanner } from "@/lib/announcements-view";
 import { formatSeconds, sortNotes } from "@/lib/notes-format";
 import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
+import Logo from "@/components/Logo";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
@@ -1305,9 +1306,9 @@ export default function ClassroomPage() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 22px",
       }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <img src="/logo.svg" alt="InRecord" style={{ height: 28, width: "auto", display: "block" }} />
-        </div>
+        <a href="/classroom" aria-label="回教室" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <Logo size={26} />
+        </a>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
 
@@ -1488,9 +1489,8 @@ export default function ClassroomPage() {
             {[
               { id: "rating",     label: "課程評價" },
               { id: "assignment", label: "作業繳交" },
-              { id: "games",      label: "🎮 互動遊戲" },
-              { id: "notes",      label: "📝 筆記" },
-              { id: "quiz",       label: "📋 測驗" },
+              { id: "games",      label: "互動遊戲" },
+              { id: "notes",      label: "筆記" },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
@@ -1512,7 +1512,6 @@ export default function ClassroomPage() {
             {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
-            {tab === "quiz"       && <QuizTab token={token} video={currentVideo} />}
           </div>
         </div>
 
@@ -1589,7 +1588,7 @@ export default function ClassroomPage() {
                     textTransform: "uppercase", letterSpacing: ".06em",
                     padding: "12px 6px 5px",
                   }}>
-                    {`Ch${ci + 1}  ${c.title}`}
+                    {c.title}
                   </div>
 
                   {/* Unit buttons */}
