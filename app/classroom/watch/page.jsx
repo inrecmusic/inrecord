@@ -40,6 +40,15 @@ function getDeviceId() {
   return id;
 }
 
+// 送出前取「當下最新」的 access_token（getSession 會在過期時自動刷新），避免用到頁面
+// 載入時抓的過期 token 而 401。取不到就退回傳入的 fallback token。
+async function freshToken(fallback) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || fallback || "";
+  } catch { return fallback || ""; }
+}
+
 /* ── CommentsSection ─────────────────────────────────────────────────────────── */
 function CommentsSection({ token, video, chapters }) {
   const [filter, setFilter]   = useState("unit");
@@ -68,9 +77,10 @@ function CommentsSection({ token, video, chapters }) {
     if (!text.trim() || !video) return;
     setPosting(true);
     try {
+      const tk = await freshToken(token);
       const r = await fetch("/api/classroom/comment", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
         body: JSON.stringify({ video_id: video.id, chapter_id: video.chapter_id, content: text.trim() }),
       });
       if (!r.ok) throw new Error("send_failed"); // 失敗不清空輸入、不顯示假成功
@@ -339,17 +349,18 @@ function RatingTab({ token }) {
 
   async function submit() {
     if (!selected) return;
-    setSubmitting(true);
+    setSubmitting(true); setErr("");
     try {
+      const tk = await freshToken(token);
       const r = await fetch("/api/classroom/rating", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
         body: JSON.stringify({ score: selected, content }),
       });
-      const json = await r.json();
-      if (!r.ok && json.error !== "already_rated") throw new Error(json.error);
+      const json = await r.json().catch(() => ({}));
+      if (!r.ok && json.error !== "already_rated") throw new Error(json.error || "送出失敗");
       setDone(true);
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(e.message === "unauthorized" ? "登入狀態逾時，請重新整理頁面再送一次" : (e.message || "送出失敗，請稍後再試")); }
     finally { setSubmitting(false); }
   }
 
@@ -513,15 +524,17 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     }
     let cancelled = false;
     setListLoading(true);
-    fetch(`/api/classroom/games?video_id=${videoId}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(({ games }) => {
+    (async () => {
+      try {
+        const tk = await freshToken(token); // 取當下最新 token，避免頁面開久後 401 導致誤判「此單元暫無遊戲」
+        const r = await fetch(`/api/classroom/games?video_id=${videoId}`, { headers: { Authorization: `Bearer ${tk}` } });
+        const { games } = await r.json();
         const list = games || [];
         if (gameCache) gameCache.current[cacheKey] = list;
         if (!cancelled) setGames(list);
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setListLoading(false); });
+      } catch {}
+      finally { if (!cancelled) setListLoading(false); }
+    })();
     return () => { cancelled = true; };
   }, [hasSubscription, token, videoId]);
 
@@ -537,9 +550,9 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     setGameLoading(true);
     setGameContent(null);
     setGameError("");
-    fetch(`/api/classroom/games?id=${selectedGame.id}&device_id=${getDeviceId()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    freshToken(token).then(tk => fetch(`/api/classroom/games?id=${selectedGame.id}&device_id=${getDeviceId()}`, {
+      headers: { Authorization: `Bearer ${tk}` },
+    }))
       .then(async r => {
         if (r.status === 403) {
           const d = await r.json().catch(() => ({}));
@@ -708,6 +721,7 @@ function NotesTab({ token, video, playerCtrl }) {
   const [notes, setNotes] = useState([]);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [noteErr, setNoteErr] = useState("");
   const vidRef = useRef(video?.id); // 目前顯示的影片；add() 完成時據此判斷是否仍為同一支
 
   useEffect(() => {
@@ -732,21 +746,24 @@ function NotesTab({ token, video, playerCtrl }) {
       seconds = Math.max(0, Math.floor(Number(s) || 0));
     } catch { seconds = 0; }
     try {
+      const tk = await freshToken(token);
       const r = await fetch("/api/classroom/notes", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
         body: JSON.stringify({ video_id: vid, seconds, body: text }),
       });
       if (r.ok) {
         const d = await r.json().catch(() => ({}));
-        setBody("");
+        setBody(""); setNoteErr("");
         // 直接把新筆記併入本地 state（免再抓整份清單），省一次往返；並比對 vidRef 確保
         // 期間未切換影片，否則跳過本地插入（該筆已存 DB，回到此影片時 effect 會重新載入）。
         if (d.id && vidRef.current === vid) {
           setNotes(prev => sortNotes([...prev, { id: d.id, video_id: vid, seconds, body: text }]));
         }
+      } else {
+        setNoteErr(r.status === 401 ? "登入狀態逾時，請重新整理頁面再試" : "筆記儲存失敗，請稍後再試");
       }
-    } catch {}
+    } catch { setNoteErr("筆記儲存失敗，請稍後再試"); }
     setBusy(false);
   }
 
@@ -782,6 +799,7 @@ function NotesTab({ token, video, playerCtrl }) {
           border: "none", borderRadius: 10, cursor: busy || !body.trim() ? "default" : "pointer", fontFamily: F, flexShrink: 0,
         }}>＋ 在此刻加筆記</button>
       </div>
+      {noteErr && <p style={{ color: "#dc2626", fontSize: 13, margin: "0 0 10px" }}>{noteErr}</p>}
 
       {notes.length === 0 ? (
         <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此單元尚無筆記</p>
@@ -1042,6 +1060,17 @@ export default function ClassroomPage() {
     init();
   }, []);
 
+  /* 保持 access_token 新鮮：Supabase 背景會自動刷新（預設 1h 到期），
+     這裡訂閱刷新事件同步更新 token state，否則播放頁開久後所有寫入
+     （評分／筆記／進度）會用到過期 token 而默默 401 失敗。 */
+  useEffect(() => {
+    if (!supabase) return;
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) setToken(session.access_token);
+    });
+    return () => sub?.subscription?.unsubscribe?.();
+  }, []);
+
   /* load real course data */
   useEffect(() => {
     if (!hasPurchased || !token) return;
@@ -1116,9 +1145,10 @@ export default function ClassroomPage() {
             player.getDuration(),
           ]);
           if (!duration) return;
+          const tk = await freshToken(token);
           const r = await fetch("/api/classroom/progress", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
             body: JSON.stringify({
               video_id: videoId,
               watched_seconds: Math.floor(currentTime),
@@ -1162,9 +1192,10 @@ export default function ClassroomPage() {
     async function postProgress() {
       if (!lastDuration) return;
       try {
+        const tk = await freshToken(token);
         const r = await fetch("/api/classroom/progress", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
           body: JSON.stringify({
             video_id: videoId,
             watched_seconds: Math.floor(lastSeconds),
