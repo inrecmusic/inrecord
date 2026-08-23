@@ -435,20 +435,21 @@ function AssignmentTab({ video, token }) {
     }
     setErr(""); setUploading(true);
     try {
+      const tk = await freshToken(token); // 取最新 token，避免頁面開久後上傳/繳交 401
       const fd = new FormData();
       fd.append("file", file);
-      const uploadRes = await fetch("/api/upload-proof", { method: "POST", body: fd, headers: { Authorization: `Bearer ${token}` } });
+      const uploadRes = await fetch("/api/upload-proof", { method: "POST", body: fd, headers: { Authorization: `Bearer ${tk}` } });
       const uploadData = await uploadRes.json().catch(() => ({}));
       if (!uploadRes.ok || !uploadData.url) throw new Error(uploadData.error || "上傳失敗，請確認 Supabase Storage 已設定");
       const url = uploadData.url;
       const subRes = await fetch("/api/classroom/submission", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
         body: JSON.stringify({ video_id: video.id, file_name: file.name, file_url: url }),
       });
-      if (!subRes.ok) throw new Error((await subRes.json()).error || "提交失敗");
+      if (!subRes.ok) throw new Error((await subRes.json().catch(() => ({}))).error || "提交失敗");
       setDone(true);
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(e.message || "繳交失敗，請稍後再試"); }
     finally { setUploading(false); }
   }
 

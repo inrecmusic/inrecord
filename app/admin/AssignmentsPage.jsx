@@ -70,6 +70,16 @@ export default function AssignmentsPage({ showToast }) {
   function openDrawer(v) { setDrawerVideo(v); fetchSubmissions(v.id); }
   function closeDrawer() { setDrawerVideo(null); setSubmissions([]); }
 
+  // proof-uploads 為私有 bucket，公開網址打不開 → 以 admin 簽名網址開啟繳交檔案
+  async function viewFile(url) {
+    try {
+      const r = await api("/api/admin/proof-signed", { method: "POST", body: JSON.stringify({ url }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.signedUrl) window.open(d.signedUrl, "_blank", "noopener");
+      else showToast("❌ 無法開啟檔案");
+    } catch { showToast("❌ 無法開啟檔案"); }
+  }
+
   async function markReviewed(sub) {
     setSavingId(sub.id);
     try {
@@ -165,9 +175,9 @@ export default function AssignmentsPage({ showToast }) {
                           : <span className={styles.pill} style={{ background: "#fef3c7", color: "#92400e" }}>待批改</span>}
                       </div>
                       {s.file_url && (
-                        <a href={s.file_url} target="_blank" rel="noreferrer" className={styles.btnSmall} style={{ display: "inline-flex", marginBottom: 10 }}>
+                        <button onClick={() => viewFile(s.file_url)} className={styles.btnSmall} style={{ display: "inline-flex", marginBottom: 10 }}>
                           <Eye size={12} /> 查看檔案
-                        </a>
+                        </button>
                       )}
                       <div className={styles.formGroup}>
                         <label>批改備註</label>
