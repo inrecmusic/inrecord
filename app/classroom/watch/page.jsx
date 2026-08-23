@@ -814,7 +814,7 @@ function NotesTab({ token, video, playerCtrl, videos, onJump }) {
       if (r.ok) {
         setNotes(prev => prev.map(n => n.id === id ? { ...n, body: text } : n));
         setAllNotes(prev => prev.map(n => n.id === id ? { ...n, body: text } : n));
-        setEditId(null); setEditText("");
+        setEditId(null); setEditText(""); resumeIfPaused();
       } else { setNoteErr("筆記更新失敗，請稍後再試"); }
     } catch { setNoteErr("筆記更新失敗，請稍後再試"); }
     setBusy(false);
@@ -840,26 +840,23 @@ function NotesTab({ token, video, playerCtrl, videos, onJump }) {
     if (target && onJump) onJump(target);
   }
 
-  const TimeChip = ({ sec, onClick, title }) => (
-    <button onClick={onClick} title={title} style={{
-      flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1d4ed8",
-      background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7, padding: "3px 8px",
-      cursor: "pointer", fontFamily: F,
-    }}>{formatSeconds(sec)}</button>
-  );
-
-  function NoteRow({ n, showUnit }) {
+  // ⚠️ 用「render 函式」而非巢狀 <NoteRow> 元件——巢狀元件每次父重繪都被當新元件整個
+  // 卸載重掛，會導致編輯 textarea 一打字就失焦。函式回傳 JSX 則只是內聯、不建立元件邊界。
+  function renderRow(n, showUnit) {
     const editing = editId === n.id;
     return (
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 12px", border: "1px solid #eef2f7", borderRadius: 10 }}>
-        <TimeChip sec={n.seconds} title={showUnit ? "跳到此單元此時間點" : "跳到此時間點"} onClick={() => jumpTo(n)} />
+      <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 12px", border: "1px solid #eef2f7", borderRadius: 10 }}>
+        <button onClick={() => jumpTo(n)} title={showUnit ? "跳到此單元此時間點" : "跳到此時間點"} style={{
+          flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1d4ed8",
+          background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7, padding: "3px 8px", cursor: "pointer", fontFamily: F,
+        }}>{formatSeconds(n.seconds)}</button>
         {editing ? (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={2}
+            <textarea value={editText} onChange={e => setEditText(e.target.value)} onFocus={onFocusNote} autoFocus rows={2}
               style={{ width: "100%", padding: "7px 10px", fontSize: 14, border: "1px solid #d5dce6", borderRadius: 8, outline: "none", fontFamily: F, resize: "vertical", boxSizing: "border-box" }} />
             <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
               <button onClick={() => saveEdit(n.id)} disabled={busy || !editText.trim()} style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: busy || !editText.trim() ? "#94a3b8" : "#2563eb", border: 0, borderRadius: 7, padding: "5px 12px", cursor: "pointer", fontFamily: F }}>儲存</button>
-              <button onClick={() => { setEditId(null); setEditText(""); }} style={{ fontSize: 12, color: "#64748b", background: "none", border: 0, cursor: "pointer", fontFamily: F }}>取消</button>
+              <button onClick={() => { setEditId(null); setEditText(""); resumeIfPaused(); }} style={{ fontSize: 12, color: "#64748b", background: "none", border: 0, cursor: "pointer", fontFamily: F }}>取消</button>
             </div>
           </div>
         ) : (
@@ -869,8 +866,8 @@ function NotesTab({ token, video, playerCtrl, videos, onJump }) {
           </div>
         )}
         {!editing && (
-          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            <button onClick={() => { setEditId(n.id); setEditText(n.body); }} aria-label="編輯筆記" title="編輯" style={{ background: "none", border: "none", color: "#64748b", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>✎</button>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <button onClick={() => { setEditId(n.id); setEditText(n.body); }} aria-label="編輯筆記" title="編輯" style={{ background: "none", border: "none", color: "#64748b", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>✎</button>
             <button onClick={() => remove(n.id)} disabled={busy} aria-label="刪除筆記" title="刪除" style={{ background: "none", border: "none", color: "#dc2626", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
           </div>
         )}
@@ -928,7 +925,7 @@ function NotesTab({ token, video, playerCtrl, videos, onJump }) {
         notes.length === 0 ? (
           <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此單元尚無筆記</p>
         ) : (
-          <div style={{ display: "grid", gap: 8 }}>{sortNotes(notes).map(n => <NoteRow key={n.id} n={n} showUnit={false} />)}</div>
+          <div style={{ display: "grid", gap: 8 }}>{sortNotes(notes).map(n => renderRow(n, false))}</div>
         )
       ) : (
         loadingAll ? (
@@ -937,7 +934,7 @@ function NotesTab({ token, video, playerCtrl, videos, onJump }) {
           <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>還沒有任何筆記</p>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>
-            {[...allNotes].sort((a, b) => (a.video_id === b.video_id ? a.seconds - b.seconds : String(a.video_id).localeCompare(String(b.video_id)))).map(n => <NoteRow key={n.id} n={n} showUnit={true} />)}
+            {[...allNotes].sort((a, b) => (a.video_id === b.video_id ? a.seconds - b.seconds : String(a.video_id).localeCompare(String(b.video_id)))).map(n => renderRow(n, true))}
           </div>
         )
       )}
