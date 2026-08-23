@@ -131,6 +131,10 @@
   flex-shrink: 0; padding: 8px 16px; border: 0; border-radius: 10px;
   background: #2563eb; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
   transition: opacity .2s;
+  /* 固定寬度避免「套用↔驗證中…」文字變動造成 reflow；translateZ(0) 提升為 GPU 圖層，
+     消除 iOS Safari 在捲動容器內重繪時的按鈕疊影（殘影）。 */
+  min-width: 76px; white-space: nowrap; text-align: center;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden; transform: translateZ(0);
 }
 .couponBtn:hover { opacity: .9; }
 .couponBtn:disabled { opacity: .5; cursor: not-allowed; }
