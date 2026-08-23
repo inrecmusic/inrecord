@@ -716,13 +716,22 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
 }
 
 /* ── NotesTab ────────────────────────────────────────────────────────────────── */
-function NotesTab({ token, video, playerCtrl }) {
-  const [notes, setNotes] = useState([]);
-  const [body, setBody] = useState("");
-  const [busy, setBusy] = useState(false);
+function NotesTab({ token, video, playerCtrl, videos, onJump }) {
+  const [scope, setScope]   = useState("unit"); // 'unit'=此單元 | 'all'=全部
+  const [notes, setNotes]   = useState([]);
+  const [allNotes, setAllNotes] = useState([]);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [body, setBody]     = useState("");
+  const [busy, setBusy]     = useState(false);
   const [noteErr, setNoteErr] = useState("");
-  const vidRef = useRef(video?.id); // 目前顯示的影片；add() 完成時據此判斷是否仍為同一支
+  const [editId, setEditId] = useState(null);   // 編輯中的筆記 id
+  const [editText, setEditText] = useState("");
+  const pausedRef = useRef(false);               // 是否因記筆記而暫停（供結束後恢復播放）
+  const vidRef = useRef(video?.id);
 
+  const titleOf = (vid) => (videos || []).find(v => v.id === vid)?.title || "課程單元";
+
+  // 此單元筆記
   useEffect(() => {
     vidRef.current = video?.id;
     if (!token || !video?.id) { setNotes([]); return; }
@@ -733,6 +742,32 @@ function NotesTab({ token, video, playerCtrl }) {
       .catch(() => { if (!cancelled) setNotes([]); });
     return () => { cancelled = true; };
   }, [token, video?.id]);
+
+  // 全部單元筆記（切到「全部」時載入）
+  useEffect(() => {
+    if (scope !== "all" || !token) return;
+    let cancelled = false;
+    setLoadingAll(true);
+    (async () => {
+      try {
+        const tk = await freshToken(token);
+        const r = await fetch("/api/classroom/notes?all=1", { headers: { Authorization: `Bearer ${tk}` } });
+        const d = await r.json().catch(() => ({}));
+        if (!cancelled) setAllNotes(d.notes || []);
+      } catch { if (!cancelled) setAllNotes([]); }
+      finally { if (!cancelled) setLoadingAll(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [scope, token]);
+
+  // 自動暫停：聚焦輸入框時暫停影片，方便記筆記
+  function onFocusNote() {
+    if (playerCtrl?.current?.pause) { try { playerCtrl.current.pause(); pausedRef.current = true; } catch {} }
+  }
+  function resumeIfPaused() {
+    if (pausedRef.current && playerCtrl?.current?.play) { try { playerCtrl.current.play(); } catch {} }
+    pausedRef.current = false;
+  }
 
   async function add() {
     const text = body.trim();
@@ -754,11 +789,10 @@ function NotesTab({ token, video, playerCtrl }) {
       if (r.ok) {
         const d = await r.json().catch(() => ({}));
         setBody(""); setNoteErr("");
-        // 直接把新筆記併入本地 state（免再抓整份清單），省一次往返；並比對 vidRef 確保
-        // 期間未切換影片，否則跳過本地插入（該筆已存 DB，回到此影片時 effect 會重新載入）。
         if (d.id && vidRef.current === vid) {
           setNotes(prev => sortNotes([...prev, { id: d.id, video_id: vid, seconds, body: text }]));
         }
+        resumeIfPaused(); // 記完自動繼續播放
       } else {
         setNoteErr(r.status === 401 ? "登入狀態逾時，請重新整理頁面再試" : "筆記儲存失敗，請稍後再試");
       }
@@ -766,11 +800,32 @@ function NotesTab({ token, video, playerCtrl }) {
     setBusy(false);
   }
 
+  async function saveEdit(id) {
+    const text = editText.trim();
+    if (!text) return;
+    setBusy(true);
+    try {
+      const tk = await freshToken(token);
+      const r = await fetch("/api/classroom/notes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tk}` },
+        body: JSON.stringify({ id, body: text }),
+      });
+      if (r.ok) {
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, body: text } : n));
+        setAllNotes(prev => prev.map(n => n.id === id ? { ...n, body: text } : n));
+        setEditId(null); setEditText("");
+      } else { setNoteErr("筆記更新失敗，請稍後再試"); }
+    } catch { setNoteErr("筆記更新失敗，請稍後再試"); }
+    setBusy(false);
+  }
+
   async function remove(id) {
     setBusy(true);
     try {
-      const r = await fetch(`/api/classroom/notes?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (r.ok) setNotes(prev => prev.filter(n => n.id !== id));
+      const tk = await freshToken(token);
+      const r = await fetch(`/api/classroom/notes?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${tk}` } });
+      if (r.ok) { setNotes(prev => prev.filter(n => n.id !== id)); setAllNotes(prev => prev.filter(n => n.id !== id)); }
     } catch {}
     setBusy(false);
   }
@@ -778,44 +833,113 @@ function NotesTab({ token, video, playerCtrl }) {
   function seek(sec) {
     if (playerCtrl?.current?.seek) { try { playerCtrl.current.seek(sec); } catch {} }
   }
+  // 全部檢視點筆記：非本單元→先切到該單元再跳秒
+  function jumpTo(n) {
+    if (n.video_id === video?.id) { seek(n.seconds); return; }
+    const target = (videos || []).find(v => v.id === n.video_id);
+    if (target && onJump) onJump(target);
+  }
+
+  const TimeChip = ({ sec, onClick, title }) => (
+    <button onClick={onClick} title={title} style={{
+      flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1d4ed8",
+      background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7, padding: "3px 8px",
+      cursor: "pointer", fontFamily: F,
+    }}>{formatSeconds(sec)}</button>
+  );
+
+  function NoteRow({ n, showUnit }) {
+    const editing = editId === n.id;
+    return (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 12px", border: "1px solid #eef2f7", borderRadius: 10 }}>
+        <TimeChip sec={n.seconds} title={showUnit ? "跳到此單元此時間點" : "跳到此時間點"} onClick={() => jumpTo(n)} />
+        {editing ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={2}
+              style={{ width: "100%", padding: "7px 10px", fontSize: 14, border: "1px solid #d5dce6", borderRadius: 8, outline: "none", fontFamily: F, resize: "vertical", boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              <button onClick={() => saveEdit(n.id)} disabled={busy || !editText.trim()} style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: busy || !editText.trim() ? "#94a3b8" : "#2563eb", border: 0, borderRadius: 7, padding: "5px 12px", cursor: "pointer", fontFamily: F }}>儲存</button>
+              <button onClick={() => { setEditId(null); setEditText(""); }} style={{ fontSize: 12, color: "#64748b", background: "none", border: 0, cursor: "pointer", fontFamily: F }}>取消</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {showUnit && <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 3, fontWeight: 600 }}>{titleOf(n.video_id)}</div>}
+            <span style={{ fontSize: 14, color: "#0f172a", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.body}</span>
+          </div>
+        )}
+        {!editing && (
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            <button onClick={() => { setEditId(n.id); setEditText(n.body); }} aria-label="編輯筆記" title="編輯" style={{ background: "none", border: "none", color: "#64748b", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>✎</button>
+            <button onClick={() => remove(n.id)} disabled={busy} aria-label="刪除筆記" title="刪除" style={{ background: "none", border: "none", color: "#dc2626", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (!video) return (
     <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, padding: "28px 0", fontFamily: F }}>請先選擇課程單元</div>
   );
 
+  const tab = (id, label) => (
+    <button onClick={() => setScope(id)} style={{
+      padding: "6px 14px", fontSize: 13, fontWeight: scope === id ? 600 : 500, borderRadius: 8, cursor: "pointer",
+      border: 0, fontFamily: F, background: scope === id ? "#fff" : "transparent", color: scope === id ? "#0f172a" : "#64748b",
+      boxShadow: scope === id ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+    }}>{label}</button>
+  );
+
   return (
     <div style={{ fontFamily: F }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <textarea
-          value={body} onChange={e => setBody(e.target.value)}
-          placeholder="在目前播放位置記筆記…"
-          rows={2}
-          style={{ flex: 1, padding: "9px 12px", fontSize: 14, border: "1px solid #d5dce6", borderRadius: 10, outline: "none", fontFamily: F, resize: "vertical" }}
-        />
-        <button onClick={add} disabled={busy || !body.trim()} style={{
-          alignSelf: "stretch", padding: "0 16px", fontSize: 13, fontWeight: 600,
-          color: "#fff", background: busy || !body.trim() ? "#94a3b8" : "#2563eb",
-          border: "none", borderRadius: 10, cursor: busy || !body.trim() ? "default" : "pointer", fontFamily: F, flexShrink: 0,
-        }}>＋ 在此刻加筆記</button>
+      {/* scope 切換 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 8, padding: 2 }}>
+          {tab("unit", "此單元")}
+          {tab("all", "全部單元")}
+        </div>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>{scope === "unit" ? `${notes.length} 則筆記` : `${allNotes.length} 則筆記`}</span>
       </div>
+
+      {/* 新增（僅此單元檢視）*/}
+      {scope === "unit" && (
+        <>
+          <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+            <textarea
+              value={body} onChange={e => setBody(e.target.value)}
+              onFocus={onFocusNote}
+              placeholder="在目前播放位置記筆記…（點這裡會自動暫停影片）"
+              rows={2}
+              style={{ flex: 1, padding: "9px 12px", fontSize: 14, border: "1px solid #d5dce6", borderRadius: 10, outline: "none", fontFamily: F, resize: "vertical" }}
+            />
+            <button onClick={add} disabled={busy || !body.trim()} style={{
+              alignSelf: "stretch", padding: "0 16px", fontSize: 13, fontWeight: 600,
+              color: "#fff", background: busy || !body.trim() ? "#94a3b8" : "#2563eb",
+              border: "none", borderRadius: 10, cursor: busy || !body.trim() ? "default" : "pointer", fontFamily: F, flexShrink: 0,
+            }}>＋ 在此刻加筆記</button>
+          </div>
+          <p style={{ fontSize: 11.5, color: "#94a3b8", margin: "0 0 14px" }}>記完會自動繼續播放。</p>
+        </>
+      )}
       {noteErr && <p style={{ color: "#dc2626", fontSize: 13, margin: "0 0 10px" }}>{noteErr}</p>}
 
-      {notes.length === 0 ? (
-        <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此單元尚無筆記</p>
+      {/* 清單 */}
+      {scope === "unit" ? (
+        notes.length === 0 ? (
+          <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此單元尚無筆記</p>
+        ) : (
+          <div style={{ display: "grid", gap: 8 }}>{sortNotes(notes).map(n => <NoteRow key={n.id} n={n} showUnit={false} />)}</div>
+        )
       ) : (
-        <div style={{ display: "grid", gap: 8 }}>
-          {notes.map(n => (
-            <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 12px", border: "1px solid #eef2f7", borderRadius: 10 }}>
-              <button onClick={() => seek(n.seconds)} title="跳到此時間點" style={{
-                flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#1d4ed8",
-                background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7, padding: "3px 8px",
-                cursor: "pointer", fontFamily: F,
-              }}>{formatSeconds(n.seconds)}</button>
-              <span style={{ flex: 1, fontSize: 14, color: "#0f172a", lineHeight: 1.6, whiteSpace: "pre-wrap", minWidth: 0 }}>{n.body}</span>
-              <button onClick={() => remove(n.id)} disabled={busy} aria-label="刪除筆記" style={{ flexShrink: 0, background: "none", border: "none", color: "#dc2626", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
-            </div>
-          ))}
-        </div>
+        loadingAll ? (
+          <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>載入中…</p>
+        ) : allNotes.length === 0 ? (
+          <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>還沒有任何筆記</p>
+        ) : (
+          <div style={{ display: "grid", gap: 8 }}>
+            {[...allNotes].sort((a, b) => (a.video_id === b.video_id ? a.seconds - b.seconds : String(a.video_id).localeCompare(String(b.video_id)))).map(n => <NoteRow key={n.id} n={n} showUnit={true} />)}
+          </div>
+        )
       )}
     </div>
   );
@@ -1001,7 +1125,7 @@ export default function ClassroomPage() {
   const [tab, setTab]                     = useState("rating");
 
   const gameCacheRef                      = useRef({});
-  const playerCtrlRef = useRef(null); // { getSeconds: ()=>Promise<number>, seek: (sec)=>void }
+  const playerCtrlRef = useRef(null); // { getSeconds, seek, pause, play }
   const [isTablet, setIsTablet]           = useState(false);
   const [isPhone, setIsPhone]             = useState(false);
   const [drawerOpen, setDrawerOpen]       = useState(false);
@@ -1135,6 +1259,8 @@ export default function ClassroomPage() {
       playerCtrlRef.current = {
         getSeconds: () => player.getCurrentTime(),
         seek: (sec) => player.setCurrentTime(sec),
+        pause: () => { try { player.pause(); } catch {} },
+        play: () => { try { player.play(); } catch {} },
       };
 
       interval = setInterval(async () => {
@@ -1221,6 +1347,8 @@ export default function ClassroomPage() {
         playerCtrlRef.current = {
           getSeconds: () => Promise.resolve(lastSeconds),
           seek: (sec) => player.setCurrentTime(sec),
+          pause: () => { try { player.pause(); } catch {} },
+          play: () => { try { player.play(); } catch {} },
         };
         player.on("timeupdate", (d) => { lastSeconds = d?.seconds || 0; lastDuration = d?.duration || 0; });
         player.on("ended", () => { if (lastDuration) { lastSeconds = lastDuration; postProgress(); } });
@@ -1541,7 +1669,7 @@ export default function ClassroomPage() {
             {tab === "rating"     && <RatingTab token={token} />}
             {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} />}
-            {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
+            {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} videos={videos} onJump={handleSelect} />}
           </div>
         </div>
 

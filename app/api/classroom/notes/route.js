@@ -9,7 +9,19 @@ const BODY_MAX = 2000;
 export async function GET(req) {
   const g = await requireClassroomAuth(req);
   if (g.res) return g.res;
-  const raw = new URL(req.url).searchParams.get("video_id");
+  const sp = new URL(req.url).searchParams;
+
+  // all=1：跨單元，回本人所有筆記（含 video_id，前端用課程清單標單元）。
+  if (sp.get("all")) {
+    const { data, error } = await g.supabase
+      .from("notes")
+      .select("id, seconds, body, created_at, video_id")
+      .eq("user_id", g.user.id);
+    if (error) return serverError(error);
+    return NextResponse.json({ notes: data || [] });
+  }
+
+  const raw = sp.get("video_id");
   const videoId = raw && UUID_RE.test(raw) ? raw : null;
   if (!videoId) return NextResponse.json({ notes: [] });
 
@@ -20,6 +32,25 @@ export async function GET(req) {
     .eq("video_id", videoId);
   if (error) return serverError(error);
   return NextResponse.json({ notes: sortNotes(data || []) });
+}
+
+// 編輯本人筆記內容（只改 body）。
+export async function PATCH(req) {
+  const g = await requireClassroomAuth(req);
+  if (g.res) return g.res;
+  const body = await req.json().catch(() => ({}));
+  const id = (body.id || "").toString();
+  const text = (body.body || "").toString().trim();
+  if (!UUID_RE.test(id)) return NextResponse.json({ error: "bad_id" }, { status: 400 });
+  if (!text) return NextResponse.json({ error: "no_body" }, { status: 400 });
+
+  const { error } = await g.supabase
+    .from("notes")
+    .update({ body: text.slice(0, BODY_MAX) })
+    .eq("id", id)
+    .eq("user_id", g.user.id); // 只能改本人筆記
+  if (error) return serverError(error);
+  return NextResponse.json({ ok: true });
 }
 
 export async function POST(req) {
