@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { X, Upload, Trash2, FileText } from "lucide-react";
+import { X } from "lucide-react";
 import styles from "./admin.module.css";
 
 const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
@@ -76,8 +76,12 @@ export default function MaterialsManager({ videoId, title, onClose, showToast })
 
         <form onSubmit={upload} style={{ display: "grid", gap: 10, marginBottom: 18 }}>
           <input className={styles.input} placeholder="講義名稱（例：第 1 課 和弦表）" value={name} onChange={e => setName(e.target.value)} />
-          <input type="file" accept="application/pdf" onChange={e => setFile(e.target.files?.[0] || null)} ref={fileRef} />
-          <button type="submit" className={styles.btnPrimary} disabled={busy}><Upload size={14} /> {busy ? "上傳中…" : "上傳 PDF"}</button>
+          <input type="file" accept="application/pdf" onChange={e => setFile(e.target.files?.[0] || null)} ref={fileRef} style={{ display: "none" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button type="button" className={styles.btnSmall} onClick={() => fileRef.current?.click()} style={{ flexShrink: 0 }}>選擇 PDF 檔案</button>
+            <span style={{ fontSize: 13, color: file ? "#0f172a" : "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{file ? file.name : "尚未選擇檔案"}</span>
+          </div>
+          <button type="submit" className={styles.btnPrimary} disabled={busy}>{busy ? "上傳中…" : "上傳 PDF"}</button>
         </form>
 
         {loading ? <p style={{ color: "#94a3b8", fontSize: 14 }}>載入中…</p> : items.length === 0 ? (
@@ -86,9 +90,8 @@ export default function MaterialsManager({ videoId, title, onClose, showToast })
           <div style={{ display: "grid", gap: 8 }}>
             {items.map(m => (
               <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                <FileText size={16} color="#dc2626" />
                 <span style={{ flex: 1, fontSize: 14, color: "#0f172a" }}>{m.title}</span>
-                <button className={styles.iconBtn} onClick={() => remove(m.id)} disabled={busy} aria-label="刪除講義"><Trash2 size={15} color="#dc2626" /></button>
+                <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => remove(m.id)} disabled={busy}>刪除</button>
               </div>
             ))}
           </div>
