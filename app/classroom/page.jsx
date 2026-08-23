@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
-import Logo from "@/components/Logo";
 
 const F = `var(--type-body)`;
 
@@ -170,7 +169,7 @@ export default function ClassroomHub() {
       <div className="glow" aria-hidden="true" />
 
       <nav>
-        <a href="/classroom" aria-label="InRecord"><Logo white={effectiveDark} size={24} /></a>
+        <a href="/classroom" aria-label="InRecord"><img src={effectiveDark ? "/logo-wordmark-white.png" : "/logo-wordmark.png"} alt="InRecord" style={{ height: 22, width: "auto", display: "block" }} /></a>
         <div className="r">
           <a href="/classroom/watch">音樂教室</a>
           <a href="/classroom/account">帳號</a>

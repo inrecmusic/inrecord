@@ -5,7 +5,6 @@ import { validateDisplayName } from "@/lib/account";
 import { statusLabel, invoiceText, sortOrdersDesc } from "@/lib/my-orders-view";
 import { isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
-import Logo from "@/components/Logo";
 
 // 單一課程架構：目前只有一門課，訂單以此課名顯示（多課程再改為讀 courses）。
 const COURSE_NAME = "Crossverick Vol.1　從零開始學鋼琴｜了解三和弦與基礎伴奏";
@@ -170,7 +169,7 @@ export default function AccountPage() {
       <style>{MC_CSS}</style>
 
       <div className="top">
-        <a href="/classroom" aria-label="InRecord"><Logo white={effectiveDark} size={22} /></a>
+        <a href="/classroom" aria-label="InRecord"><img src={effectiveDark ? "/logo-wordmark-white.png" : "/logo-wordmark.png"} alt="InRecord" style={{ height: 22, width: "auto", display: "block" }} /></a>
         <div className="right">
           <a href="/classroom/watch">音樂教室</a>
           <span className="cur">會員中心</span>

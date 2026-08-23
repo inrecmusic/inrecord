@@ -5,7 +5,6 @@ import { pickBanner } from "@/lib/announcements-view";
 import { formatSeconds, sortNotes } from "@/lib/notes-format";
 import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
 import ProfileFields from "@/components/ProfileFields";
-import Logo from "@/components/Logo";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
@@ -1338,7 +1337,7 @@ export default function ClassroomPage() {
         padding: "0 22px",
       }}>
         <a href="/classroom" aria-label="回教室" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-          <Logo size={26} />
+          <img src="/logo-wordmark.png" alt="InRecord" style={{ height: 24, width: "auto", display: "block" }} />
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
