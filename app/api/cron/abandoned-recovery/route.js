@@ -30,7 +30,7 @@ export async function GET(req) {
     .lt("created_at", minCutoff)
     .gt("created_at", maxCutoff)
     .limit(200);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) { console.error("[cron abandoned-recovery]", error.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
 
   const candidates = selectRecoveryCandidates(rows, now, { minHours, maxHours });
 

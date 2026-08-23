@@ -102,7 +102,10 @@ export default function ChaptersUnitsPage({ showToast }) {
 
   async function reorderChapters(arr) {
     setChapters(arr);
-    try { await Promise.all(arr.map((c, i) => api("/api/admin/chapters", { method: "PATCH", body: JSON.stringify({ id: c.id, sort_order: i }) }))); } catch {}
+    try {
+      const rs = await Promise.all(arr.map((c, i) => api("/api/admin/chapters", { method: "PATCH", body: JSON.stringify({ id: c.id, sort_order: i }) })));
+      if (rs.some(r => !r.ok)) throw new Error("reorder_failed");
+    } catch { showToast("❌ 排序儲存失敗，已還原"); fetchAll(); } // 失敗回報＋refetch 還原真實順序
   }
 
   /* ── Video CRUD ── */

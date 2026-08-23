@@ -41,6 +41,7 @@ export async function POST(req) {
     }
     return NextResponse.json({ valid: false, error: "invalid_type" }, { status: 400 });
   } catch (err) {
-    return NextResponse.json({ valid: true, degraded: true, error: err.message });
+    console.error("[invoice/validate]", err.message);
+    return NextResponse.json({ valid: true, degraded: true });
   }
 }

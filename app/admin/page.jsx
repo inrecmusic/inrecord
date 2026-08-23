@@ -2967,7 +2967,7 @@ function CustomerLookupPage({showToast}){
       const r=await _api(`/api/admin/customer?email=${encodeURIComponent(q)}`);
       const d=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(d.error||"查詢失敗");
-      setData(d);
+      setData({orders:[],enrollments:[],subscriptions:[],emails:[],...d}); // 陣列欄位保底，回應不完整不整頁崩
     }catch(e2){setErr(e2.message||"查詢失敗");}
     finally{setLoading(false);}
   }

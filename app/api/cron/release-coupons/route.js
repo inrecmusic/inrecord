@@ -35,7 +35,7 @@ export async function GET(req) {
     .not("coupon_code", "is", null)
     .lt("created_at", cutoff)
     .limit(500);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) { console.error("[cron release-coupons]", error.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
 
   let expired = 0;
   let released = 0;

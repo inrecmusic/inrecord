@@ -40,7 +40,7 @@ export async function POST(req) {
 
   const { data: order, error: findError } = await supabase
     .from("orders").select("id, status, grant_email").eq("mer_trade_no", MerTradeNo).maybeSingle();
-  if (findError) return NextResponse.json({ error: findError.message }, { status: 500 });
+  if (findError) { console.error("[grant-email] find", findError.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
   if (!order) return NextResponse.json({ error: "order_not_found" }, { status: 404 });
   if (order.status !== "paid") return NextResponse.json({ error: "not_paid" }, { status: 403 });
   if (order.grant_email) return NextResponse.json({ error: "already_set" }, { status: 409 });
@@ -48,7 +48,7 @@ export async function POST(req) {
   const grantEmail = email.trim().toLowerCase();
   const { error: updateError } = await supabase
     .from("orders").update({ grant_email: grantEmail }).eq("mer_trade_no", MerTradeNo);
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError) { console.error("[grant-email] update", updateError.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
 
   return NextResponse.json({ ok: true, email: grantEmail });
 }

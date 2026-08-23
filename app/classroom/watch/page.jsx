@@ -938,9 +938,10 @@ function ProfileOnboarding({ token, initial, onDone }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(body) });
       if (r.status === 401) { setErr("登入狀態逾時，請重新整理頁面後再存一次"); return; }
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "unknown")); return; }
+      if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "請稍後再試")); return; }
       onDone({ ...f, ...body });
-    } finally { setBusy(false); }
+    } catch { setErr("儲存失敗，請稍後再試"); }
+    finally { setBusy(false); }
   }
   const label = { display: "block", fontSize: 13, color: "#475569", marginBottom: 6, fontWeight: 500 };
   const input = { width: "100%", padding: "11px 14px", fontSize: 16, border: "1px solid #d5dce6", borderRadius: 10 };

@@ -104,10 +104,13 @@ export default function QuizzesPage({ showToast, courseId }) {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [cr, qr] = await Promise.all([api("/api/admin/chapters"), api("/api/admin/quizzes")]);
-    const cd = await cr.json(); const qd = await qr.json();
-    setChapters(cd.data || []); setQuizzes(qd.quizzes || []);
-  }, []);
+    try {
+      const [cr, qr] = await Promise.all([api("/api/admin/chapters"), api("/api/admin/quizzes")]);
+      if (!cr.ok || !qr.ok) throw new Error("load_failed");
+      const cd = await cr.json(); const qd = await qr.json();
+      setChapters(cd.data || []); setQuizzes(qd.quizzes || []);
+    } catch { showToast?.("❌ 測驗載入失敗，請重新整理頁面"); } // 失敗別靜默顯示「尚無測驗」誤導
+  }, [showToast]);
   useEffect(() => { load(); }, [load]);
 
   const chapterTitle = (id) => chapters.find(c => c.id === id)?.title || "（未指定章節）";

@@ -53,6 +53,7 @@ export async function POST(req) {
       discount: basePrice - finalPrice,
     });
   } catch (e) {
-    return NextResponse.json({ valid: false, error: e.message }, { status: 500 });
+    console.error("[coupons/validate]", e.message);
+    return NextResponse.json({ valid: false, error: "validate_failed" }, { status: 500 });
   }
 }

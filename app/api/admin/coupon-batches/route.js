@@ -64,7 +64,8 @@ export async function POST(req) {
     try {
       wantCodes = generateBatchCodes({ prefix: prefix || "", quantity, existing });
     } catch (e) {
-      return NextResponse.json({ error: e.message }, { status: 409 });
+      console.error("[coupon-batches]", e.message);
+      return NextResponse.json({ error: "batch_failed" }, { status: 409 });
     }
   }
 
