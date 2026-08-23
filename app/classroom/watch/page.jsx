@@ -879,9 +879,9 @@ function NotesTab({ token, video, playerCtrl }) {
           </div>
         )}
         {!editing && (
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <button onClick={() => { setEditId(n.id); setEditText(n.body); }} aria-label="編輯筆記" title="編輯" style={{ background: "none", border: "none", color: "#64748b", fontSize: 15, cursor: "pointer", lineHeight: 1 }}>✎</button>
-            <button onClick={() => remove(n.id)} disabled={busy} aria-label="刪除筆記" title="刪除" style={{ background: "none", border: "none", color: "#dc2626", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+          <div style={{ display: "flex", gap: 12, flexShrink: 0, alignItems: "center" }}>
+            <button onClick={() => { setEditId(n.id); setEditText(n.body); }} style={{ background: "none", border: "none", color: "#64748b", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: F, padding: 0 }}>編輯</button>
+            <button onClick={() => remove(n.id)} disabled={busy} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: F, padding: 0 }}>刪除</button>
           </div>
         )}
       </div>
