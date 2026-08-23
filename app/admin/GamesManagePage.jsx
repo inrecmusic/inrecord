@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import styles from "./admin.module.css";
-import { Plus, Edit2, Trash2, X, Eye, EyeOff, RefreshCw, Maximize2, Globe, Code2 } from "lucide-react";
+import { X, Maximize2, Globe, Code2 } from "lucide-react";
 
 const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
 function api(path, opts = {}) {
@@ -189,8 +189,8 @@ export default function GamesManagePage({ showToast }) {
           <p>管理各單元的互動遊戲</p>
         </div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={fetchAll}><RefreshCw size={13} /> 重新整理</button>
-          <button className={styles.btnPrimary} onClick={openCreate}><Plus size={14} /> 新增遊戲</button>
+          <button className={styles.btnSmall} onClick={fetchAll}>重新整理</button>
+          <button className={styles.btnPrimary} onClick={openCreate}>新增遊戲</button>
         </div>
       </div>
 
@@ -259,19 +259,19 @@ export default function GamesManagePage({ showToast }) {
                         background: game.is_active ? "#dcfce7" : "#f1f5f9",
                         color: game.is_active ? "#166534" : "#475569",
                       }}>
-                        {game.is_active ? <><Eye size={10} /> 啟用</> : <><EyeOff size={10} /> 停用</>}
+                        {game.is_active ? "啟用" : "停用"}
                       </span>
                     </td>
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         <button className={styles.btnSmall} onClick={() => openPreview(game)} disabled={previewLoading}>
-                          <Eye size={12} /> 預覽
+                          預覽
                         </button>
-                        <button className={styles.btnSmall} onClick={() => openEdit(game)}><Edit2 size={12} /> 編輯</button>
+                        <button className={styles.btnSmall} onClick={() => openEdit(game)}>編輯</button>
                         <button className={styles.btnSmall} onClick={() => toggleActive(game)} style={{ minWidth: 56 }}>
-                          {game.is_active ? <><EyeOff size={12} /> 停用</> : <><Eye size={12} /> 啟用</>}
+                          {game.is_active ? "停用" : "啟用"}
                         </button>
-                        <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => setDeleteId(game.id)}><Trash2 size={12} /></button>
+                        <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => setDeleteId(game.id)}>刪除</button>
                       </div>
                     </td>
                   </tr>

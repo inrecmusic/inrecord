@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import styles from "./admin.module.css";
-import { MessageSquare, Trash2, X } from "lucide-react";
 
 const PER_PAGE = 20;
 
@@ -175,9 +174,9 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
                       <td>
                         <div className={styles.rowActions}>
                           <button className={styles.btnSmall} onClick={() => openReply(c)}>
-                            <MessageSquare size={12} /> {replyingId === c.id ? "收起" : "回覆"}
+                            {replyingId === c.id ? "收起" : "回覆"}
                           </button>
-                          <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => setDeleteId(c.id)}><Trash2 size={12} /></button>
+                          <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => setDeleteId(c.id)}>刪除</button>
                         </div>
                       </td>
                     </tr>

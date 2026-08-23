@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import styles from "./admin.module.css";
-import { Star, Eye, EyeOff, MessageSquare, Trash2 } from "lucide-react";
+import { Star } from "lucide-react";
 
 const PER_PAGE = 20;
 
@@ -189,7 +189,7 @@ export default function CourseRatingsPage({ showToast }) {
                       <td>
                         <div className={styles.rowActions}>
                           <button className={styles.btnSmall} onClick={() => openReply(r)}>
-                            <MessageSquare size={12} /> {replyingId === r.id ? "收起" : "回覆"}
+                            {replyingId === r.id ? "收起" : "回覆"}
                           </button>
                           <button
                             className={`${styles.btnSmall} ${r.hidden ? "" : styles.btnDanger}`}
@@ -197,7 +197,7 @@ export default function CourseRatingsPage({ showToast }) {
                             onClick={() => toggleHidden(r)}
                             disabled={savingId === r.id}
                           >
-                            {r.hidden ? <><Eye size={12} /> 顯示</> : <><EyeOff size={12} /> 隱藏</>}
+                            {r.hidden ? "顯示" : "隱藏"}
                           </button>
                         </div>
                       </td>

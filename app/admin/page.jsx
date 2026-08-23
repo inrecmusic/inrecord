@@ -5,10 +5,10 @@ import styles from "./admin.module.css";
 import {
   LayoutDashboard, BookOpen, MessageCircle, Image as Img,
   Users, ShoppingCart, Ticket, TrendingUp, Settings, Shield, FileText,
-  DollarSign, RefreshCw, Download, LogOut, ExternalLink,
-  Eye, ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
-  CheckCircle2, BarChart2, Play, Video, X, Plus, Upload,
-  Trash2, Edit2, Copy, Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
+  DollarSign, LogOut, ExternalLink,
+  ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
+  CheckCircle2, BarChart2, Play, Video, X,
+  Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
   AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity, BarChart3, History
 } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
@@ -302,9 +302,9 @@ function CoursesPage({leads, onManage, showToast}){
       <div className={styles.pageHeader}>
         <div><h1>課程管理</h1><p>管理您的所有課程內容</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={fetchCourses}><RefreshCw size={13}/> 重新整理</button>
-          <a href="/" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><Eye size={13}/> 前台預覽</a>
-          <button className={styles.btnPrimary} onClick={openCreate}><Plus size={14}/> 新增課程</button>
+          <button className={styles.btnSmall} onClick={fetchCourses}>重新整理</button>
+          <a href="/" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}>前台預覽</a>
+          <button className={styles.btnPrimary} onClick={openCreate}>新增課程</button>
         </div>
       </div>
       <div className={styles.panel}>
@@ -331,11 +331,11 @@ function CoursesPage({leads, onManage, showToast}){
                   <td className={styles.dim}>{fmt(c.created_at).split(" ")[0]}</td>
                   <td>
                     <div className={styles.rowActions}>
-                      <a href="/" target="_blank" className={styles.btnSmall}><Eye size={12}/> 查看</a>
-                      <button className={styles.btnSmall} onClick={()=>openEdit(c)}><Edit2 size={12}/> 編輯</button>
+                      <a href="/" target="_blank" className={styles.btnSmall}>查看</a>
+                      <button className={styles.btnSmall} onClick={()=>openEdit(c)}>編輯</button>
                       <button className={styles.btnSmall} onClick={()=>toggleStatus(c)}>{c.status==="published"?"下架":"發佈"}</button>
                       <button className={styles.btnPrimary} style={{padding:"6px 12px",fontSize:12}} onClick={()=>onManage?.(c)}><BookOpen size={12}/> 管理教室</button>
-                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>removeCourse(c)}><Trash2 size={12}/></button>
+                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>removeCourse(c)}>刪除</button>
                     </div>
                   </td>
                 </tr>
@@ -761,7 +761,7 @@ function MediaPage(){
       <div className={styles.pageHeader}>
         <div><h1>媒體中心</h1><p>檢視課程影片單元與串接狀態</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={fetchVideos}><RefreshCw size={13}/> 重新整理</button>
+          <button className={styles.btnSmall} onClick={fetchVideos}>重新整理</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
@@ -796,7 +796,7 @@ function MediaPage(){
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:6}}>
                   <span className={styles.pill} style={{background:v.published?"#dcfce7":"#f1f5f9",color:v.published?"#166534":"#475569",fontSize:11}}>{v.published?"已發布":"草稿"}</span>
                   <div className={styles.rowActions}>
-                    {v.vimeo_id&&<a href={`https://vimeo.com/${v.vimeo_id}`} target="_blank" rel="noreferrer" className={styles.btnSmall} style={{padding:"4px 8px",fontSize:12}}><Eye size={11}/></a>}
+                    {v.vimeo_id&&<a href={`https://vimeo.com/${v.vimeo_id}`} target="_blank" rel="noreferrer" className={styles.btnSmall} style={{padding:"4px 8px",fontSize:12}}>查看</a>}
                   </div>
                 </div>
               </div>
@@ -868,8 +868,8 @@ function StudentsPage({showToast}){
       <div className={styles.pageHeader}>
         <div><h1>學員管理</h1><p>共 {students.length} 位學員</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={load}><RefreshCw size={13}/> 重新整理</button>
-          <button className={styles.btnSmall} onClick={exportCsv}><Download size={13}/> 匯出 CSV</button>
+          <button className={styles.btnSmall} onClick={load}>重新整理</button>
+          <button className={styles.btnSmall} onClick={exportCsv}>匯出 CSV</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
@@ -903,7 +903,7 @@ function StudentsPage({showToast}){
                     <td className={styles.dim}>{fmt(s.created_at)}</td>
                     <td>
                       <div className={styles.rowActions}>
-                        <button className={styles.btnSmall} onClick={()=>setDetailStudent(s)}><Eye size={12}/> 詳情</button>
+                        <button className={styles.btnSmall} onClick={()=>setDetailStudent(s)}>詳情</button>
                         {s.isLead&&!s.purchased&&<>
                           <button className={styles.btnSmall} disabled={busy} onClick={()=>mark(s,"demo_opened")}>Demo ✓</button>
                           <button className={`${styles.btnSmall} ${styles.green}`} disabled={busy} onClick={()=>mark(s,"purchased")}><CheckCircle2 size={12}/> 購買 ✓</button>
@@ -1305,7 +1305,7 @@ function OrdersPage({showToast}){
           <button className={styles.btnSmall} onClick={()=>{setComposeTo("");setComposeOpen(true);}}>✉️ 寄送單封信</button>
           <button className={styles.btnSmall} disabled={!followupTargets.length} title={followupTargets.length?`對 ${followupTargets.length} 位未付款顧客批次追單`:"目前篩選無未付款訂單"} onClick={()=>setBulkOpen(true)}>📨 批次追單{followupTargets.length?`（${followupTargets.length}）`:""}</button>
           <a href="https://www.payuni.com.tw" target="_blank" className={styles.btnSmall} style={{display:"flex",alignItems:"center",gap:5}}><ExternalLink size={13}/> Payuni 後台</a>
-          <button className={styles.btnSmall} onClick={exportOrders}><Download size={13}/> 匯出 CSV</button>
+          <button className={styles.btnSmall} onClick={exportOrders}>匯出 CSV</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
@@ -1348,7 +1348,7 @@ function OrdersPage({showToast}){
       <div className={styles.panel} style={{marginBottom:16}}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
           <h3 style={{margin:0}}>對帳彙整（依日期區間）</h3>
-          <button className={styles.btnSmall} onClick={exportReconciliation}><Download size={13}/> 匯出對帳 CSV</button>
+          <button className={styles.btnSmall} onClick={exportReconciliation}>匯出對帳 CSV</button>
         </div>
         <div className={styles.reconPeriod}>期間：{(dateFrom||dateTo)?`${dateFrom||"…"} ~ ${dateTo||"…"}`:"全部期間"}（不受狀態／搜尋篩選影響）</div>
         <div className={styles.reconGrid}>
@@ -1449,7 +1449,7 @@ function OrdersPage({showToast}){
                           : <span style={{color:"#94a3b8"}}>尚未開立</span>)}
                   </td>
                   <td className={styles.dim} style={{fontSize:12,whiteSpace:"nowrap"}}>{o.time}</td>
-                  <td><button className={styles.btnSmall} onClick={()=>setDetailOrder(o)}><Eye size={12}/> 查看</button></td>
+                  <td><button className={styles.btnSmall} onClick={()=>setDetailOrder(o)}>查看</button></td>
                 </tr>
               ))}
             </tbody>
@@ -1730,8 +1730,8 @@ function CouponsPage({ showToast }){
       <div className={styles.pageHeader}>
         <div><h1>優惠券管理</h1><p>建立與管理折扣代碼（結帳時自動套用）</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={fetchCoupons}><RefreshCw size={13}/> 重新整理</button>
-          <button className={styles.btnPrimary} onClick={()=>setShowCreate(true)}><Plus size={14}/> 新增優惠券</button>
+          <button className={styles.btnSmall} onClick={fetchCoupons}>重新整理</button>
+          <button className={styles.btnPrimary} onClick={()=>setShowCreate(true)}>新增優惠券</button>
         </div>
       </div>
       <div className={styles.statsGrid4}>
@@ -1756,7 +1756,7 @@ function CouponsPage({ showToast }){
                   <td>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <code style={{background:"#f1f5f9",padding:"3px 8px",borderRadius:6,fontSize:12,fontWeight:700,letterSpacing:1}}>{c.code}</code>
-                      <button className={styles.iconBtn} onClick={()=>{navigator.clipboard?.writeText(c.code)}} title="複製"><Copy size={12}/></button>
+                      <button className={styles.iconBtn} onClick={()=>{navigator.clipboard?.writeText(c.code)}} title="複製">複製</button>
                     </div>
                   </td>
                   <td>
@@ -1777,7 +1777,7 @@ function CouponsPage({ showToast }){
                   <td>
                     <div className={styles.rowActions}>
                       <button className={styles.btnSmall} onClick={()=>toggleStatus(c)}>{c.status==="active"?"停用":"啟用"}</button>
-                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>setDeleteId(c.id)}><Trash2 size={12}/></button>
+                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>setDeleteId(c.id)}>刪除</button>
                     </div>
                   </td>
                 </tr>
@@ -1791,8 +1791,8 @@ function CouponsPage({ showToast }){
       <div className={styles.pageHeader} style={{marginTop:32}}>
         <div><h2 style={{margin:0}}>序號庫</h2><p>現場活動限定：批次產生獨立序號，每組限用一次</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={fetchBatches}><RefreshCw size={13}/> 重新整理</button>
-          <button className={styles.btnPrimary} onClick={()=>setShowBatchCreate(true)}><Plus size={14}/> 新增批次</button>
+          <button className={styles.btnSmall} onClick={fetchBatches}>重新整理</button>
+          <button className={styles.btnPrimary} onClick={()=>setShowBatchCreate(true)}>新增批次</button>
         </div>
       </div>
       <div className={styles.panel}>
@@ -1827,7 +1827,7 @@ function CouponsPage({ showToast }){
                   <td>
                     <div className={styles.rowActions}>
                       <button className={styles.btnSmall} onClick={()=>toggleExpand(b)}>{expandId===b.id?"收合":"查看序號"}</button>
-                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>setDeleteBatch(b)}><Trash2 size={12}/></button>
+                      <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={()=>setDeleteBatch(b)}>刪除</button>
                     </div>
                   </td>
                 </tr>
@@ -1840,8 +1840,8 @@ function CouponsPage({ showToast }){
                         return(
                         <div style={{padding:"8px 4px"}}>
                           <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-                            <button className={styles.btnSmall} onClick={copyAllCodes}><Copy size={12}/> 全選複製</button>
-                            <button className={styles.btnSmall} onClick={()=>downloadCsv(b)}><Download size={12}/> 下載 CSV</button>
+                            <button className={styles.btnSmall} onClick={copyAllCodes}>全選複製</button>
+                            <button className={styles.btnSmall} onClick={()=>downloadCsv(b)}>下載 CSV</button>
                             <div style={{display:"flex",gap:4}}>
                               {[["all","全部"],["unused","未使用"],["used","已使用"]].map(([k,label])=>(
                                 <button key={k} className={`${styles.btnSmall} ${codeFilter===k?styles.filterActive:""}`} onClick={()=>{setCodeFilter(k);setCodeLimit(60);}}>{label}</button>
@@ -2127,8 +2127,8 @@ function SubscriptionsPage({ showToast }) {
       <div className={styles.pageHeader}>
         <div><h1>遊戲存取</h1><p>管理已購買互動遊戲的學員存取</p></div>
         <div className={styles.pageActions}>
-          <button className={styles.btnSmall} onClick={fetchSubs}><RefreshCw size={13}/> 重新整理</button>
-          <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}><Plus size={14}/> 手動新增</button>
+          <button className={styles.btnSmall} onClick={fetchSubs}>重新整理</button>
+          <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}>手動新增</button>
         </div>
       </div>
 
@@ -2330,7 +2330,7 @@ function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonu
                     </td>
                     <td style={{fontWeight:800}}>{r.orders} 筆</td>
                     <td style={{fontWeight:800}}>NT$ {r.revenue.toLocaleString()}</td>
-                    <td><a href="/" target="_blank" className={styles.btnSmall}><Eye size={12}/> 查看課程</a></td>
+                    <td><a href="/" target="_blank" className={styles.btnSmall}>查看課程</a></td>
                   </tr>
                 ))}
               </tbody>
@@ -2394,7 +2394,7 @@ function IntegrationPage({showToast}){
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:48,height:48,borderRadius:14,background:"#D4192C",display:"grid",placeItems:"center",color:"#fff",fontWeight:900,fontSize:16,flexShrink:0}}>PAY</div><div style={{flex:1}}><h3 style={s2.h3}>Payuni 統一金流</h3><div style={{color:"#94a3b8",fontSize:13}}>信用卡、ATM 轉帳、超商繳費 金流結帳</div></div><div style={s2.badge(payuniStatus)}>{payuniStatus==="ok"?"已連線":payuniStatus==="error"?"連線失敗":"未測試"}</div></div>
         <table style={s2.envTable}><thead><tr><th style={s2.th}>環境變數</th><th style={s2.th}>說明</th></tr></thead><tbody>{[["PAYUNI_MERCHANT_ID","特店代號（Payuni 後台取得）"],["PAYUNI_HASH_KEY","HashKey（32 字元）"],["PAYUNI_HASH_IV","HashIV（16 字元）"],["PAYUNI_API_URL","正式：https://api.payuni.com.tw/api/upp"],["NEXT_PUBLIC_SITE_URL","正式網域，用於 ReturnURL / NotifyURL"]].map(([k,d])=><tr key={k}><td><code style={s2.code}>{k}</code></td><td style={{color:"#64748b"}}>{d}</td></tr>)}</tbody></table>
         <ol style={{...s2.stepList,marginTop:14}}><li>前往 <strong>www.payuni.com.tw</strong> → 申請特店帳號</li><li>後台 → 系統設定 → 取得 特店代號、HashKey、HashIV</li><li>測試環境使用 <code style={s2.code}>https://sandbox-api.payuni.com.tw/api/upp</code></li><li>Vercel 填入所有變數後重新部署，測試通過後換成正式 API URL</li></ol>
-        <div style={s2.testRow}><button onClick={testPayuni} disabled={payuniStatus==="testing"} style={{border:0,background:"#D4192C",color:"#fff",borderRadius:10,padding:"9px 14px",fontWeight:900,cursor:payuniStatus==="testing"?"default":"pointer",opacity:payuniStatus==="testing"?0.6:1}}>🔍 測試 Payuni 連線</button>{payuniMsg&&<span style={{fontSize:13,fontWeight:800,color:payuniStatus==="ok"?"#16a34a":"#dc2626"}}>{payuniMsg}</span>}</div>
+        <div style={s2.testRow}><button onClick={testPayuni} disabled={payuniStatus==="testing"} style={{border:0,background:"#D4192C",color:"#fff",borderRadius:10,padding:"9px 14px",fontWeight:900,cursor:payuniStatus==="testing"?"default":"pointer",opacity:payuniStatus==="testing"?0.6:1}}>測試 Payuni 連線</button>{payuniMsg&&<span style={{fontSize:13,fontWeight:800,color:payuniStatus==="ok"?"#16a34a":"#dc2626"}}>{payuniMsg}</span>}</div>
       </div>
       <div style={s2.card}>
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:48,height:48,borderRadius:14,background:"#3ECF8E",display:"grid",placeItems:"center",color:"#fff",fontWeight:900,fontSize:16,flexShrink:0}}>SB</div><div><h3 style={s2.h3}>Supabase</h3><div style={{color:"#94a3b8",fontSize:13}}>PostgreSQL 資料庫・名單 + 訂單記錄</div></div></div>
@@ -3062,7 +3062,7 @@ function AuditLogPage(){
     <div>
       <div className={styles.pageHeader}>
         <div><h1>紀錄</h1><p>後台敏感操作稽核（退款／開通／優惠券／銷售設定）與所有對外寄信紀錄</p></div>
-        <div className={styles.pageActions}><button className={styles.btnSmall} onClick={load}><RefreshCw size={13}/> 重新整理</button></div>
+        <div className={styles.pageActions}><button className={styles.btnSmall} onClick={load}>重新整理</button></div>
       </div>
       <div className={styles.filterGroup} style={{marginBottom:14}}>
         <button className={`${styles.filterBtn} ${tab==="audit"?styles.filterActive:""}`} onClick={()=>setTab("audit")}>操作紀錄</button>

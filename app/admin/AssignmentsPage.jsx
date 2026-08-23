@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import styles from "./admin.module.css";
-import { X, Eye, CheckCircle2, ClipboardList } from "lucide-react";
+import { X, ClipboardList } from "lucide-react";
 
 const PER_PAGE = 20;
 
@@ -104,7 +104,7 @@ export default function AssignmentsPage({ showToast }) {
 
       <div className={styles.panel}>
         <div className={styles.panelHead}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: 7 }}><ClipboardList size={16} color="#2563eb" /> 有作業的單元</h2>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 7 }}>有作業的單元</h2>
           <span className={styles.dim}>{videos.length} 個單元有作業</span>
         </div>
         <div className={styles.tableWrap}>
@@ -129,7 +129,7 @@ export default function AssignmentsPage({ showToast }) {
                       </span>
                     </td>
                     <td>
-                      <button className={styles.btnSmall} onClick={() => openDrawer(v)}><Eye size={12} /> 批改</button>
+                      <button className={styles.btnSmall} onClick={() => openDrawer(v)}>批改</button>
                     </td>
                   </tr>
                 ))}
@@ -171,12 +171,12 @@ export default function AssignmentsPage({ showToast }) {
                           </div>
                         </div>
                         {s.reviewed
-                          ? <span className={styles.pill} style={{ background: "#dcfce7", color: "#166534" }}><CheckCircle2 size={11} style={{ marginRight: 3 }} />已批改</span>
+                          ? <span className={styles.pill} style={{ background: "#dcfce7", color: "#166534" }}>已批改</span>
                           : <span className={styles.pill} style={{ background: "#fef3c7", color: "#92400e" }}>待批改</span>}
                       </div>
                       {s.file_url && (
                         <button onClick={() => viewFile(s.file_url)} className={styles.btnSmall} style={{ display: "inline-flex", marginBottom: 10 }}>
-                          <Eye size={12} /> 查看檔案
+                          查看檔案
                         </button>
                       )}
                       <div className={styles.formGroup}>

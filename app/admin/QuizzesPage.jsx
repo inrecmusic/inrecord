@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, Eye, EyeOff, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import styles from "./admin.module.css";
 
 const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
@@ -66,7 +66,7 @@ function QuestionEditor({ quizId, showToast, onChange }) {
         <div key={q.id} style={{ marginBottom: 8, fontSize: 13 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
             <span style={{ color: "#0f172a", fontWeight: 600 }}>{i + 1}. {q.question}</span>
-            <button className={styles.iconBtn} onClick={() => removeQuestion(q.id)} disabled={busy} aria-label="刪除題目"><Trash2 size={13} color="#dc2626" /></button>
+            <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => removeQuestion(q.id)} disabled={busy}>刪除</button>
           </div>
           <div style={{ color: "#64748b", marginTop: 2 }}>
             {(q.options || []).map((o, j) => (
@@ -84,12 +84,12 @@ function QuestionEditor({ quizId, showToast, onChange }) {
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input type="radio" name={`correct-${quizId}`} checked={form.correct_index === i} onChange={() => setForm(f => ({ ...f, correct_index: i }))} title="正解" />
             <input className={styles.input} style={{ flex: 1 }} placeholder={`選項 ${i + 1}`} value={o} onChange={e => setOpt(i, e.target.value)} />
-            {form.options.length > 2 && <button type="button" className={styles.iconBtn} onClick={() => removeOpt(i)} aria-label="移除選項"><Trash2 size={13} /></button>}
+            {form.options.length > 2 && <button type="button" className={styles.btnSmall} onClick={() => removeOpt(i)}>移除</button>}
           </div>
         ))}
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className={styles.btnSmall} onClick={addOpt}>＋ 選項</button>
-          <button type="submit" className={styles.btnPrimary} disabled={busy}><Plus size={13} /> 新增題目（勾選左側圓鈕為正解）</button>
+          <button type="submit" className={styles.btnPrimary} disabled={busy}>新增題目（勾選左側圓鈕為正解）</button>
         </div>
       </form>
     </div>
@@ -161,7 +161,7 @@ export default function QuizzesPage({ showToast, courseId }) {
         <label style={{ fontSize: 13, color: "#475569", display: "flex", alignItems: "center", gap: 8 }}>
           及格分 <input className={styles.input} style={{ width: 90 }} type="number" min={0} max={100} value={form.pass_score} onChange={e => setForm(f => ({ ...f, pass_score: e.target.value }))} /> 分
         </label>
-        <button type="submit" className={styles.btnPrimary} disabled={busy}><Plus size={14} /> 建立測驗</button>
+        <button type="submit" className={styles.btnPrimary} disabled={busy}>建立測驗</button>
       </form>
 
       {quizzes.length === 0 ? <p style={{ color: "#94a3b8" }}>尚無測驗</p> : (
@@ -176,10 +176,8 @@ export default function QuizzesPage({ showToast, courseId }) {
                   <strong style={{ fontSize: 15, color: "#0f172a" }}>{q.title}</strong>
                   <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{chapterTitle(q.chapter_id)}・及格 {q.pass_score} 分{q.published ? "" : "・未發布"}</div>
                 </div>
-                <button className={styles.iconBtn} title={q.published ? "設為未發布" : "發布"} onClick={() => togglePublish(q)} disabled={busy} aria-label={q.published ? "設為未發布" : "發布"}>
-                  {q.published ? <Eye size={15} /> : <EyeOff size={15} color="#991b1b" />}
-                </button>
-                <button className={styles.iconBtn} onClick={() => removeQuiz(q.id)} disabled={busy} aria-label="刪除測驗"><Trash2 size={15} color="#dc2626" /></button>
+                <button className={styles.btnSmall} onClick={() => togglePublish(q)} disabled={busy}>{q.published ? "設為未發布" : "發布"}</button>
+                <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => removeQuiz(q.id)} disabled={busy}>刪除</button>
               </div>
               {expanded === q.id && <QuestionEditor quizId={q.id} showToast={showToast} />}
             </div>

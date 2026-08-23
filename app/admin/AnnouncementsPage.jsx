@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Pin, Eye, EyeOff } from "lucide-react";
+import { Pin } from "lucide-react";
 import styles from "./admin.module.css";
 
 const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
@@ -92,7 +92,7 @@ export default function AnnouncementsPage({ showToast }) {
           </label>
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
             {editingId && <button type="button" className={styles.btnSmall} onClick={resetForm}>取消</button>}
-            <button type="submit" className={styles.btnPrimary} disabled={busy}><Plus size={14} /> {editingId ? "更新" : "發布"}</button>
+            <button type="submit" className={styles.btnPrimary} disabled={busy}>{editingId ? "更新" : "發布"}</button>
           </div>
         </div>
       </form>
@@ -112,11 +112,11 @@ export default function AnnouncementsPage({ showToast }) {
                 <p style={{ margin: "6px 0 0", fontSize: 13, color: "#64748b", whiteSpace: "pre-wrap" }}>{a.body}</p>
               </div>
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                <button className={styles.iconBtn} title={a.published ? "設為未發布" : "發布"} onClick={() => togglePublish(a)} disabled={busy} aria-label={a.published ? "設為未發布" : "發布"}>
-                  {a.published ? <Eye size={15} /> : <EyeOff size={15} color="#991b1b" />}
+                <button className={styles.btnSmall} title={a.published ? "設為未發布" : "發布"} onClick={() => togglePublish(a)} disabled={busy} aria-label={a.published ? "設為未發布" : "發布"}>
+                  {a.published ? "設為未發布" : "發布"}
                 </button>
                 <button className={styles.btnSmall} onClick={() => edit(a)}>編輯</button>
-                <button className={styles.iconBtn} onClick={() => remove(a.id)} disabled={busy} aria-label="刪除公告"><Trash2 size={15} color="#dc2626" /></button>
+                <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => remove(a.id)} disabled={busy} aria-label="刪除公告">刪除</button>
               </div>
             </div>
           ))}
