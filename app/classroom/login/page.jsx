@@ -81,7 +81,11 @@ export default function ClassroomLoginPage() {
     setError("");
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin + "/auth/callback" },
+      options: {
+        redirectTo: window.location.origin + "/auth/callback",
+        // 強制每次都顯示「選擇帳號」，不要沿用上次登入的 Google 帳號
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (err) {
       setError(err.message);
