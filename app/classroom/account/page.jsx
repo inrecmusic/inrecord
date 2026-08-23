@@ -25,6 +25,7 @@ function fmtDateTime(s) {
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [noConfig, setNoConfig] = useState(false);
+  const [profileReady, setProfileReady] = useState(false); // 學員資料抓好前先轉圈，避免空表單先閃出
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -71,13 +72,16 @@ export default function AccountPage() {
 
   useEffect(() => {
     (async () => {
-      if (!supabase) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) return;
-      const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
-      const d = await r.json().catch(() => ({}));
-      if (d.prefill) setProf(d.prefill);
+      if (!supabase) { setProfileReady(true); return; }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+        const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
+        const d = await r.json().catch(() => ({}));
+        if (d.prefill) setProf(d.prefill);
+      } catch {}
+      finally { setProfileReady(true); } // 一律標記完成，避免無限轉圈
     })();
   }, []);
 
@@ -150,7 +154,7 @@ export default function AccountPage() {
 
   const name = prof.real_name || displayName || email.split("@")[0] || "同學";
 
-  if (loading || noConfig) {
+  if (loading || noConfig || !profileReady) {
     return (
       <div className="mc" data-theme={theme || undefined}>
         <style>{MC_CSS}</style>
