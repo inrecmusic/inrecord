@@ -6,7 +6,7 @@ import {
   TrendingUp, Play, Award, Star,
   Camera, PlayCircle, MessageCircle,
   Menu, X, ChevronDown,
-  ShoppingCart, Heart, Mic2,
+  Heart, Mic2,
   Hand, Sun, Moon, Shuffle, Headphones,
   Layers, Waves, RotateCcw,
   Zap, BarChart2, Gamepad2, Clock,
@@ -862,7 +862,6 @@ export default function HomeClient({ sale }) {
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
                   onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
-                  <ShoppingCart size={17} />
                   {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
@@ -879,13 +878,12 @@ export default function HomeClient({ sale }) {
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale}>
-                  <ShoppingCart size={17} />
                   {sale.onSale ? `${buyShort}　NT$${offer.price.toLocaleString()}` : "即將開賣"}
                 </button>
               </motion.div>
               )}
             </motion.div>
-            <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・購買後立即開通・永久有效</p>
+            <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・課程永久有效</p>
           </div>
         </RevealSection>
 
@@ -940,7 +938,7 @@ export default function HomeClient({ sale }) {
           <span className={styles.stickyBuyLabel}>粉絲限定方案</span>
         </div>
         <button className={styles.stickyBuyBtn} onClick={scrollToPricing}>
-          <ShoppingCart size={17} />{buyShort}
+          {buyShort}
         </button>
       </div>
 

@@ -249,6 +249,7 @@ export default function ClassroomLoginPage() {
         </button>
 
         <p className={styles.hint}>購課後請使用購買時的 Email 登入</p>
+        <p className={styles.hint} style={{ marginTop: -4 }}>第一次使用？用 Google 或「Email 驗證碼登入（免密碼）」即可，系統會自動為你建立帳號。</p>
         <a href="/#pricing" className={styles.back}>查看課程方案 →</a>
       </div>
     </div>
