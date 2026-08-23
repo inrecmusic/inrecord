@@ -80,7 +80,7 @@ export default async function SuccessPage({ searchParams }) {
     );
   }
 
-  const heading = presale ? "預購成功，感謝你的支持！" : "購買成功，課程已開通！";
+  const heading = presale ? "預購成功，感謝你的支持！" : "購買成功，感謝你的支持！";
   const intro = presale
     ? "你已完成預購，課程正式開課後我們會以 Email 通知你登入學習。"
     : "恭喜你加入《從零開始學鋼琴》，課程已為你開通。";
