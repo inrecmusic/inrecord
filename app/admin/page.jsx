@@ -1165,7 +1165,7 @@ function OrdersPage({showToast}){
 
   async function refundOrder(realId){
     if(!realId||refunding)return;
-    if(!window.confirm("確定要對此訂單申請退款嗎？\n退款成功後將同步撤銷該學員的課程／遊戲存取，且無法復原。"))return;
+    if(!window.confirm("確定要對此訂單申請退款嗎？\n\n・退款成功後將同步撤銷該學員的課程／遊戲存取，且無法復原。\n・信用卡「當日交易」可能因銀行尚未結算而無法立即線上退款；此時請隔日再試，或至 PAYUNi 商店後台直接處理。"))return;
     setRefunding(true);
     try{
       const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId})});

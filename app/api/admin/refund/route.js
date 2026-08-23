@@ -49,12 +49,19 @@ export async function POST(req) {
         closeStatus: result.status, closeMsg, closeData: result.data,
         cancelStatus: cancel.status, cancelMsg, cancelData: cancel.data,
       });
+      // 常見情境：信用卡「當日交易尚未結算(撥款)」→ 請退款無可退金額、取消授權也查無請款。
+      // 這不是系統錯誤，是金流結算時序：需隔日結算後才能線上退，或走 PAYUNi 商店後台。
+      const notSettled = /未有請退款金額|尚未請款|未請款|無.*請款金額/.test(closeMsg)
+        || /查無符合請款|查無請款|查無.*請款/.test(cancelMsg);
+      const friendly = notSettled
+        ? "此筆為近期交易、銀行尚未完成結算，暫時無法線上退款。請於隔日（結算後）再操作一次退款；若需立即退款，可至 PAYUNi 商店後台直接處理。"
+        : "PAYUNi 退款未成功。可稍後再試，或至 PAYUNi 商店後台直接退款；仍有問題請聯繫 PAYUNi 客服。";
       return NextResponse.json(
         {
           error: "refund_failed",
-          detail: `PAYUNi 退款失敗：${closeMsg}；取消授權失敗：${cancelMsg}`,
-          close_detail:  result.data?.Message || result.message || result.data,
-          cancel_detail: cancel.data?.Message || cancel.message || cancel.data,
+          reason: notSettled ? "not_settled" : "gateway_error",
+          detail: friendly,
+          gateway_detail: `PAYUNi 回應：${closeMsg}／${cancelMsg}`, // 技術細節附註，供進階排查
         },
         { status: 502 }
       );
