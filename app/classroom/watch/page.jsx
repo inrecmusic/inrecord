@@ -1445,7 +1445,9 @@ export default function ClassroomPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
 
-          {hasSubscription ? (
+          {/* 所有在賣方案(bundle)皆含遊戲、遊戲不再單賣 → 已購課者必有遊戲存取，
+              僅顯示「已開通」徽章；移除會導到重買整包的「購買遊戲」死按鈕。 */}
+          {hasSubscription && (
             <div style={{
               display: "flex", alignItems: "center", gap: 5,
               fontSize: 12, fontWeight: 600, color: "#16a34a",
@@ -1457,14 +1459,6 @@ export default function ClassroomPage() {
               }} />
               遊戲・已開通
             </div>
-          ) : (
-            <a href="/#pricing" style={{
-              background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
-              color: "#fff", borderRadius: 980, padding: "4px 12px",
-              fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: F,
-            }}>
-              🎮 購買遊戲
-            </a>
           )}
 
           <a href="/classroom/account" style={{
