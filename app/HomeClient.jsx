@@ -577,7 +577,7 @@ export default function HomeClient({ sale }) {
                   ? <span className={`${styles.btnLogin} ${styles.navBtn}`} style={{ opacity: .55, cursor: "default" }} title="開課將以 Email 通知">課程準備中</span>
                   : <a href="/classroom" className={`${styles.btnLogin} ${styles.navBtn}`}>進入教室</a>)
               : <a href="/classroom/login" className={`${styles.btnLogin} ${styles.navBtn}`}>學員登入</a>}
-            {user && <button className={styles.navBtn} onClick={handleLogout} style={{ background: "none", border: 0, cursor: "pointer", color: "inherit", fontSize: 14, opacity: .7 }}>登出</button>}
+            {user && <button className={`${styles.btnLogin} ${styles.navBtn}`} onClick={handleLogout} style={{ cursor: "pointer" }}>登出</button>}
             <button className={`${styles.btnPrimary} ${styles.navBtn}`} onClick={scrollToPricing} style={{ wordBreak: "keep-all", lineBreak: "strict" }}>{buyShort}</button>
           </div>
           <button className={styles.hamburger} onClick={() => setMenuOpen(o => !o)} aria-label="選單">

@@ -227,7 +227,8 @@ export default function ClassroomHub() {
         </div>
       </div>
 
-      <div className="keys" aria-hidden="true">{Array.from({ length: 24 }).map((_, i) => <i key={i} />)}</div>
+      {/* 真實鋼琴鍵：白鍵等寬，黑鍵依八度落在 C#/D#/F#/G#/A#（白鍵 index%7 ∈ {0,1,3,4,5}）*/}
+      <div className="keys" aria-hidden="true">{Array.from({ length: 21 }).map((_, i) => <i key={i} className={[0, 1, 3, 4, 5].includes(i % 7) ? "bk" : ""} />)}</div>
       <button className="signout" onClick={handleLogout}>登出</button>
     </div>
   );
@@ -320,9 +321,9 @@ const HUB_CSS = `
 .hub .tile h4{font-family:var(--serif); font-size:19px; margin-bottom:6px; color:var(--ink)}
 .hub .tile p{color:var(--ink-soft); font-size:13.5px; line-height:1.65}
 .hub .tile .link{color:var(--gold); font-weight:600; font-size:13.5px; margin-top:14px; display:inline-block}
-.hub .keys{position:absolute; bottom:0; left:0; right:0; height:60px; display:flex; opacity:var(--keys-op); pointer-events:none}
-.hub .keys i{flex:1; border-right:1px solid var(--key-line); background:linear-gradient(var(--key-a),var(--key-b))}
-.hub .keys i:nth-child(2n)::after{content:""; display:block; width:58%; height:62%; margin:0 auto; background:var(--key-black); border-radius:0 0 3px 3px}
+.hub .keys{position:absolute; bottom:0; left:0; right:0; height:58px; display:flex; opacity:.96; pointer-events:none; overflow:hidden}
+.hub .keys i{position:relative; flex:1; background:#fbfbfb; border-right:1px solid #bcbcbc; box-shadow:inset 0 -3px 4px -3px rgba(0,0,0,.25)}
+.hub .keys i.bk::after{content:""; position:absolute; top:0; right:-30%; width:60%; height:62%; z-index:2; background:linear-gradient(#2b2b2b,#0a0a0a); border-radius:0 0 3px 3px; box-shadow:0 2px 2px rgba(0,0,0,.4)}
 .hub .signout{position:fixed; bottom:16px; right:16px; z-index:5; background:var(--tgl-bg); border:1px solid var(--tgl-line); color:var(--ink-soft); font-size:12px; padding:7px 14px; border-radius:100px; cursor:pointer; font-family:inherit}
 .hub .signout:hover{color:var(--ink)}
 @media (prefers-reduced-motion:reduce){ .hub *{transition:none!important} }
