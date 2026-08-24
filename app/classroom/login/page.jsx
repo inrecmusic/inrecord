@@ -151,7 +151,7 @@ export default function ClassroomLoginPage() {
 
         {inApp && (
           <div className={styles.banner}>
-            你正從 App 內建瀏覽器開啟，<strong>Google 登入會被擋下</strong>。請改用下方「Email 驗證碼登入」，
+            你正從 App 內建瀏覽器開啟，<strong>Google 登入會被擋下</strong>。請改用下方「Email 連結登入」，
             或點右下角的「⋯」選擇「在 Safari／瀏覽器開啟」。
           </div>
         )}
@@ -169,7 +169,7 @@ export default function ClassroomLoginPage() {
               {googleLoading ? "跳轉中…" : "使用 Google 登入"}
             </button>
             <div className={styles.divider}>
-              {mode === "otp" ? "或使用 Email 驗證碼" : "或使用 Email 登入"}
+              {mode === "otp" ? "或使用 Email 連結" : "或使用 Email 登入"}
             </div>
           </>
         )}
@@ -228,12 +228,12 @@ export default function ClassroomLoginPage() {
                   placeholder="輸入信件中的驗證碼" required
                   autoComplete="one-time-code"
                 />
-                <p className={styles.helpText}>已寄出登入信。可輸入信中的驗證碼，或直接點信中的登入連結。</p>
+                <p className={styles.helpText}>已寄出登入信，點信中的「登入音樂教室」按鈕即可完成登入；或輸入信中的驗證碼。</p>
               </div>
             )}
             {error && <p className={styles.error}>{error}</p>}
             <button type="submit" className={styles.submit} disabled={loading || googleLoading}>
-              {loading ? "處理中…" : otpSent ? "驗證並登入" : "寄送驗證碼"}
+              {loading ? "處理中…" : otpSent ? "驗證並登入" : "寄送登入連結"}
             </button>
             {otpSent && (
               <button type="button" className={styles.linkBtn} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); }}>
@@ -245,11 +245,11 @@ export default function ClassroomLoginPage() {
 
         {/* 模式切換 */}
         <button type="button" className={styles.linkBtn} onClick={() => switchMode(mode === "otp" ? "password" : "otp")}>
-          {mode === "otp" ? "改用密碼登入" : "改用 Email 驗證碼登入（免密碼）"}
+          {mode === "otp" ? "改用密碼登入" : "改用 Email 連結登入（免密碼）"}
         </button>
 
         <p className={styles.hint}>購課後請使用購買時的 Email 登入</p>
-        <p className={styles.hint} style={{ marginTop: -4 }}>第一次使用？用 Google 或「Email 驗證碼登入（免密碼）」即可，系統會自動為你建立帳號。</p>
+        <p className={styles.hint} style={{ marginTop: -4 }}>第一次使用？用 Google 或「Email 連結登入（免密碼）」即可，系統會自動為你建立帳號。</p>
         <a href="/#pricing" className={styles.back}>查看課程方案 →</a>
       </div>
     </div>

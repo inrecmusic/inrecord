@@ -43,7 +43,7 @@ export async function POST(req) {
       if (r?.success) sent++;
       else failed.push({ to, error: r?.error || "send_failed" });
     } catch (e) {
-      failed.push({ to, error: e?.message || "exception" });
+      console.error("[bulk-followup]", to, e?.message); failed.push({ to, error: "send_failed" });
     }
   }
 

@@ -617,29 +617,21 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
   }, [selectedGame, token]);
 
   if (!hasSubscription) {
+    // 所有在賣方案皆含遊戲 → 已購課者理論上必有存取；會走到這裡多半是資料未同步或載入異常。
+    // 不再顯示「前往購買」死 CTA（會導去重買整包），改為誠實的引導。
     return (
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
         <h3 style={{ margin: "0 0 8px", fontFamily: "var(--type-display)", fontSize: 22, fontWeight: 500, color: "#0f172a", letterSpacing: "-.01em" }}>
-          尚未開通遊戲
+          遊戲存取尚未生效
         </h3>
-        <p style={{ color: "#475569", margin: "0 0 24px", fontSize: 14, lineHeight: 1.6 }}>
-          購買「學琴全攻略」即可永久暢玩
+        <p style={{ color: "#475569", margin: "0 0 20px", fontSize: 14, lineHeight: 1.7 }}>
+          你的方案包含互動遊戲。若看到此畫面，請先重新整理頁面；<br />仍未開通的話，聯繫我們幫你處理。
         </p>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
-          <a href="/#pricing"
-            style={{
-              background: "#2563eb", color: "#fff", padding: "10px 22px",
-              borderRadius: 980, textDecoration: "none", fontWeight: 600, fontSize: 14,
-              fontFamily: F,
-            }}
-          >
-            前往購買
-          </a>
-        </div>
-        <p style={{ color: "#94a3b8", fontSize: 12, margin: 0 }}>
-          一次買斷・永久使用・無訂閱月費
-        </p>
+        <button onClick={() => window.location.reload()} style={{
+          background: "#2563eb", color: "#fff", padding: "10px 22px", border: 0,
+          borderRadius: 980, fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: F,
+        }}>重新整理</button>
       </div>
     );
   }

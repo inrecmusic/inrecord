@@ -1631,7 +1631,10 @@ function CouponsPage({ showToast }){
     finally{setBatchSaving(false);}
   }
 
+  const [batchDelBusy,setBatchDelBusy]=useState(false);
   async function confirmDeleteBatch(){
+    if(batchDelBusy)return; // 防連點重複刪整批序號
+    setBatchDelBusy(true);
     try{
       const r=await _api(`/api/admin/coupon-batches?id=${deleteBatch.id}`,{method:"DELETE"});
       if(!r.ok)throw new Error();
@@ -1639,6 +1642,7 @@ function CouponsPage({ showToast }){
       if(expandId===deleteBatch.id){setExpandId(null);setExpandCodes([]);}
       fetchBatches();
     }catch{showToast?.("❌ 刪除失敗");}
+    finally{setBatchDelBusy(false);}
   }
 
   function copyAllCodes(){
@@ -1717,12 +1721,16 @@ function CouponsPage({ showToast }){
       fetchCoupons();
     }catch{showToast?.("❌ 操作失敗");}
   }
+  const [delBusy,setDelBusy]=useState(false);
   async function confirmDelete(){
+    if(delBusy)return; // 防連點重複 DELETE
+    setDelBusy(true);
     try{
       const r=await _api(`/api/admin/coupons?id=${deleteId}`,{method:"DELETE"});
       if(!r.ok)throw new Error();
       showToast?.("✅ 優惠券已刪除");setDeleteId(null);fetchCoupons();
     }catch{showToast?.("❌ 刪除失敗");}
+    finally{setDelBusy(false);}
   }
 
   return(
@@ -1949,7 +1957,7 @@ function CouponsPage({ showToast }){
           <div className={styles.modalCard} onClick={e=>e.stopPropagation()}>
             <h3 style={{margin:"0 0 8px",fontSize:17}}>確認刪除優惠券</h3>
             <p style={{margin:"0 0 20px",color:"#64748b",fontSize:14}}>刪除後無法復原，確定要刪除嗎？</p>
-            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteId(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDelete}>確認刪除</button></div>
+            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteId(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDelete} disabled={delBusy}>確認刪除</button></div>
           </div>
         </div>
       )}
@@ -2031,7 +2039,7 @@ function CouponsPage({ showToast }){
           <div className={styles.modalCard} onClick={e=>e.stopPropagation()}>
             <h3 style={{margin:"0 0 8px",fontSize:17}}>確認刪除批次</h3>
             <p style={{margin:"0 0 20px",color:"#64748b",fontSize:14}}>將刪除「{deleteBatch.name}」及其 {deleteBatch.total} 組序號（已使用 {deleteBatch.used} 組）。已成立訂單不受影響，但未使用的序號將失效，無法復原。</p>
-            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteBatch(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDeleteBatch}>確認刪除</button></div>
+            <div className={styles.modalActions}><button className={styles.btnSmall} onClick={()=>setDeleteBatch(null)}>取消</button><button className={`${styles.btnPrimary} ${styles.btnDangerFill}`} onClick={confirmDeleteBatch} disabled={batchDelBusy}>確認刪除</button></div>
           </div>
         </div>
       )}
@@ -2105,8 +2113,11 @@ function SubscriptionsPage({ showToast }) {
     finally { setActing(null); }
   }
 
+  const [adding,setAdding]=useState(false);
   async function handleAdd(e) {
     e.preventDefault(); setAddErr("");
+    if (adding) return; // 防連點重複新增
+    setAdding(true);
     if (!addForm.email.trim()) { setAddErr("請輸入 Email"); return; }
     if (!addForm.expires_at)   { setAddErr("請選擇到期日"); return; }
     try {
@@ -2120,6 +2131,7 @@ function SubscriptionsPage({ showToast }) {
       setAddForm({ email: "", plan_type: "bundle", expires_at: "2999-12-31" });
       fetchSubs();
     } catch (e) { setAddErr(e.message || "新增失敗"); }
+    finally { setAdding(false); }
   }
 
   return (

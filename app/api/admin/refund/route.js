@@ -76,14 +76,14 @@ export async function POST(req) {
     .from("orders")
     .update({ status: "refunded", updated_at: new Date().toISOString() })
     .eq("id", order.id);
-  if (stErr) revokeFailed.push(`order_status: ${stErr.message}`);
+  if (stErr) { console.error("[refund] order_status:", stErr.message); revokeFailed.push("order_status"); }
 
   if (order.plan === "game" || order.plan === "bundle") {
     const { error: subErr } = await supabase
       .from("subscriptions")
       .update({ status: "cancelled" })
       .eq("payuni_order_id", order.id);
-    if (subErr) revokeFailed.push(`subscriptions: ${subErr.message}`);
+    if (subErr) { console.error("[refund] subscriptions:", subErr.message); revokeFailed.push("subscriptions"); }
   }
   if (order.plan === "course" || order.plan === "bundle") {
     // enrollments 用 upsert(onConflict: email,course_id) 寫入：同 email 多筆訂單只會有一列、
@@ -96,12 +96,12 @@ export async function POST(req) {
       .eq("status", "paid")
       .in("plan", ["course", "bundle"]);
     if (othersErr) {
-      revokeFailed.push(`enrollments_check: ${othersErr.message}`);
+      console.error("[refund] enrollments_check:", othersErr.message); revokeFailed.push("enrollments_check");
     } else if (hasOtherPaidCourseAccess(order, paidOrders)) {
       enrollmentKept = true;
     } else {
       const { error: enErr } = await supabase.from("enrollments").delete().eq("email", email).eq("course_id", "piano-101");
-      if (enErr) revokeFailed.push(`enrollments: ${enErr.message}`);
+      if (enErr) { console.error("[refund] enrollments:", enErr.message); revokeFailed.push("enrollments"); }
     }
   }
 
