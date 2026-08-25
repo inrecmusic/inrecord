@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { selectAll } from "@/lib/supabase-paginate";
 import { buildAdReport } from "@/lib/ad-report";
 
 export async function GET(req) {
@@ -14,12 +15,15 @@ export async function GET(req) {
   const sinceDate = sinceISO.slice(0, 10);
   const targetRoas = Number(process.env.META_TARGET_ROAS) || 3;
 
-  const [{ data: insights, error: e1 }, { data: orders, error: e2 }] = await Promise.all([
-    sb.from("ad_insights").select("campaign_id, campaign_name, date, spend, impressions, clicks, reach, frequency, meta_conversions, meta_conversion_value").gte("date", sinceDate),
-    sb.from("orders").select("amount, created_at, attribution").eq("status", "paid").gte("created_at", sinceISO),
-  ]);
-  if (e1 || e2) return serverError(e1 || e2);
+  // selectAll 分頁：長區間（如 365 天）的每日 insights 與訂單量都可能超過 1000 列而被截斷
+  let insights, orders;
+  try {
+    [insights, orders] = await Promise.all([
+      selectAll(sb, "ad_insights", q => q.select("campaign_id, campaign_name, date, spend, impressions, clicks, reach, frequency, meta_conversions, meta_conversion_value").gte("date", sinceDate)),
+      selectAll(sb, "orders", q => q.select("amount, created_at, attribution").eq("status", "paid").gte("created_at", sinceISO)),
+    ]);
+  } catch (e) { return serverError(e); }
 
-  const report = buildAdReport({ insights: insights || [], paidOrders: orders || [], targetRoas });
+  const report = buildAdReport({ insights, paidOrders: orders, targetRoas });
   return NextResponse.json({ data: report, days, targetRoas });
 }

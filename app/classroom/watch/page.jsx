@@ -3,8 +3,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { pickBanner } from "@/lib/announcements-view";
 import { formatSeconds, sortNotes } from "@/lib/notes-format";
-import { isProfileCoreComplete, isValidMobile, LEVELS } from "@/lib/student-profile";
-import ProfileFields from "@/components/ProfileFields";
+import { isProfileCoreComplete } from "@/lib/student-profile";
+import ProfileOnboarding from "@/components/ProfileOnboarding";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
@@ -196,7 +196,7 @@ function CommentsSection({ token, video, chapters }) {
 /* ── AnnouncementsBanner ───────────────────────────────────────────────────────── */
 const DISMISS_KEY = "inrec_dismissed_announcement";
 
-function AnnouncementsBanner({ token }) {
+function AnnouncementsBanner({ items }) {
   const [list, setList] = useState([]);
   const [dismissedId, setDismissedId] = useState(null);
   const [showAll, setShowAll] = useState(false);
@@ -205,16 +205,7 @@ function AnnouncementsBanner({ token }) {
     if (typeof window !== "undefined") setDismissedId(localStorage.getItem(DISMISS_KEY));
   }, []);
 
-  useEffect(() => {
-    if (!token) { setList([]); return; }
-    let cancelled = false;
-    freshToken(token)
-      .then(tk => fetch("/api/classroom/announcements", { headers: { Authorization: `Bearer ${tk}` } }))
-      .then(r => (r.ok ? r.json() : { announcements: [] }))
-      .then(d => { if (!cancelled) setList(d.announcements || []); })
-      .catch(() => { if (!cancelled) setList([]); });
-    return () => { cancelled = true; };
-  }, [token]);
+  useEffect(() => { setList(items || []); }, [items]); // 公告由 bootstrap 一併帶回，不另外請求
 
   const banner = pickBanner(list, dismissedId);
 
@@ -925,49 +916,6 @@ function NotesTab({ token, video, playerCtrl }) {
   );
 }
 
-/* ── ProfileOnboarding ───────────────────────────────────────────────────────── */
-function ProfileOnboarding({ token, initial, onDone }) {
-  const [f, setF] = useState({ real_name: "", phone: "", level: "", goal: "", source: "", equipment: "", age_group: "", gender: "", ...initial });
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  async function save(skipOptional) {
-    setErr("");
-    if (!f.real_name.trim()) { setErr("請填真實姓名"); return; }
-    if (!isValidMobile(f.phone)) { setErr("手機格式需為 09 開頭共 10 碼"); return; }
-    if (!LEVELS.includes(f.level)) { setErr("請選擇鋼琴程度"); return; }
-    setBusy(true);
-    try {
-      // 掛太久 access_token 可能過期 → 存檔前取最新 session（supabase 會自動刷新），避免 401
-      const authToken = await freshToken(token);
-      const body = skipOptional ? { real_name: f.real_name, phone: f.phone, level: f.level } : f;
-      const r = await fetch("/api/classroom/profile", { method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(body) });
-      if (r.status === 401) { setErr("登入狀態逾時，請重新整理頁面後再存一次"); return; }
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok || d.ok === false) { setErr("儲存失敗：" + (d.error || "請稍後再試")); return; }
-      onDone({ ...f, ...body });
-    } catch { setErr("儲存失敗，請稍後再試"); }
-    finally { setBusy(false); }
-  }
-  const label = { display: "block", fontSize: 13, color: "#475569", marginBottom: 6, fontWeight: 500 };
-  const input = { width: "100%", padding: "11px 14px", fontSize: 16, border: "1px solid #d5dce6", borderRadius: 10 };
-  return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", display: "grid", placeItems: "center", padding: "40px 20px" }}>
-      <div style={{ width: "min(480px,100%)", background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
-        <h2 style={{ margin: "0 0 6px", fontSize: 22 }}>完善你的學員資料</h2>
-        <p style={{ margin: "0 0 18px", fontSize: 13, color: "#64748b" }}>幾個問題，幫我們更了解你、安排適合的教學（核心必填，其餘可之後補）。</p>
-        <div style={{ display: "grid", gap: 12 }}>
-          <ProfileFields prof={f} setProf={setF} styles={{ input, label }} />
-          {err && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{err}</p>}
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>填寫即表示同意依<a href="/privacy" style={{ color: "#2563eb" }}>隱私政策</a>將資料用於課程服務與聯繫。</p>
-          <button onClick={() => save(false)} disabled={busy} style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, color: "#fff", background: "#2563eb", border: 0, borderRadius: 10 }}>{busy ? "儲存中…" : "儲存並開始上課"}</button>
-          <button onClick={() => save(true)} disabled={busy} style={{ width: "100%", padding: 10, fontSize: 13, color: "#64748b", background: "none", border: 0 }}>只填必填、其餘之後補</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Main ────────────────────────────────────────────────────────────────────── */
 export default function ClassroomPage() {
   const [user, setUser]                   = useState(null);
@@ -982,6 +930,7 @@ export default function ClassroomPage() {
   const [profileErr, setProfileErr]       = useState(false);
 
   const [chapters, setChapters]           = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
   const [embedSrc, setEmbedSrc] = useState("");
@@ -1015,28 +964,34 @@ export default function ClassroomPage() {
         setUser(u);
         setToken(accessToken);
         try {
-          const authHeaders = {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          };
-          const [purchaseRes, subRes] = await Promise.all([
-            fetch("/api/classroom/verify-purchase", {
-              method: "POST",
-              headers: authHeaders,
-            }),
-            fetch("/api/classroom/verify-subscription", {
-              method: "POST",
-              headers: authHeaders,
-            }),
-          ]);
-          const { hasPurchased } = await purchaseRes.json();
-          const subData = await subRes.json();
-          setHasPurchased(!!hasPurchased);
-          setHasSubscription(!!subData.hasSubscription);
-          setSubDaysLeft(subData.daysLeft || 0);
+          // 單一往返取回進場所需全部資料（購課/遊戲/學員資料/章節/影片/進度/公告，含裝置上限檢查），
+          // 取代原本 verify×2 → course+progress → profile 的三波瀑布。
+          const r = await fetch(`/api/classroom/bootstrap?player=1&device_id=${getDeviceId()}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || "bootstrap_failed");
+          setHasPurchased(!!d.hasPurchased);
+          setHasSubscription(!!d.hasSubscription);
+          setSubDaysLeft(d.subscription?.daysLeft || 0);
+          setChapters(d.chapters || []);
+          setVideos(d.videos || []);
+          setProgress(d.progress || []);
+          setAnnouncements(d.announcements || []);
+          const vids = d.videos || [];
+          if (vids.length) {
+            const pm = Object.fromEntries((d.progress || []).map(p => [p.video_id, p]));
+            // 來自儀表板的 ?v=<單元id> 優先選中；否則預設第一個未完成、再否則第一支
+            const wantId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("v") : null;
+            setCurrentVideo((wantId && vids.find(v => v.id === wantId)) || vids.find(v => !pm[v.id]?.completed) || vids[0]);
+          }
+          setProfile(d.profile || d.prefill || {});
         } catch {
           setHasPurchased(false);
           setHasSubscription(false);
+          setProfileErr(true); // fail-open：資料載入失敗不把已購課使用者卡在首次引導
+        } finally {
+          setProfileLoaded(true);
         }
       } catch {
         window.location.href = "/classroom/login";
@@ -1050,51 +1005,6 @@ export default function ClassroomPage() {
   /* token 過期策略：token state 只在進頁設一次（不隨刷新更新——否則 course/player/embed
      等以 token 為依賴的 effect 每小時重跑，影片會重載、單元被重選）。所有「晚於進頁」的
      fetch（寫入與切單元後的讀取）一律用 freshToken() 於呼叫當下取最新 token。 */
-
-  /* load real course data */
-  useEffect(() => {
-    if (!hasPurchased || !token) return;
-    async function load() {
-      try {
-        const [cr, pr] = await Promise.all([
-          fetch(`/api/classroom/course?device_id=${getDeviceId()}`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/classroom/progress", { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        const course = await cr.json();
-        const prog   = await pr.json();
-        const vids   = course.videos   || [];
-        const chaps  = course.chapters || [];
-        setChapters(chaps);
-        setVideos(vids);
-        setProgress(prog.progress || []);
-        if (vids.length) {
-          const pm = Object.fromEntries((prog.progress || []).map(p => [p.video_id, p]));
-          // 來自儀表板的 ?v=<單元id> 優先選中；否則預設第一個未完成、再否則第一支
-          const wantId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("v") : null;
-          setCurrentVideo((wantId && vids.find(v => v.id === wantId)) || vids.find(v => !pm[v.id]?.completed) || vids[0]);
-        }
-      } catch {}
-    }
-    load();
-  }, [hasPurchased, token]);
-
-  /* 抓學員資料（首次引導判斷用；核心未填會在下方 gate 顯示 ProfileOnboarding，仿上方 course/progress 抓法）。
-     fetch 本身失敗（如離線）也要 fail-open：profileErr 記錄失敗、profileLoaded 無論成敗都設 true，
-     否則下方 gate 會一直卡在 loading，把已購課使用者鎖死。 */
-  useEffect(() => {
-    if (!hasPurchased || !token) return;
-    (async () => {
-      try {
-        const r = await fetch("/api/classroom/profile", { headers: { Authorization: `Bearer ${token}` } });
-        const d = await r.json().catch(() => ({}));
-        setProfile(d.profile || d.prefill || {});
-      } catch {
-        setProfileErr(true);
-      } finally {
-        setProfileLoaded(true);
-      }
-    })();
-  }, [hasPurchased, token]);
 
   /* Vimeo player time-based progress tracking (every 10s) */
   useEffect(() => {
@@ -1289,7 +1199,7 @@ export default function ClassroomPage() {
 
   // 首次引導：已購課但核心資料未填 → 先完善資料（選配可跳過）；profileErr（fetch 失敗）fail-open 放行進教室，不卡在引導
   if (hasPurchased && profileLoaded && !profileErr && !isProfileCoreComplete(profile)) {
-    return <ProfileOnboarding token={token} initial={profile} onDone={(p) => setProfile(p)} />;
+    return <ProfileOnboarding token={token} initial={profile} onDone={(p) => setProfile(p)} fontFamily={F} />;
   }
 
   const progMap         = Object.fromEntries(progress.map(p => [p.video_id, p]));
@@ -1380,7 +1290,7 @@ export default function ClassroomPage() {
       </header>
 
       {/* Announcements */}
-      <AnnouncementsBanner token={token} />
+      <AnnouncementsBanner items={announcements} />
 
       {/* ── Body ── */}
       <div style={{
