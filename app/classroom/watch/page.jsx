@@ -1120,6 +1120,7 @@ export default function ClassroomPage() {
         play: () => { try { player.play(); } catch {} },
       };
 
+      let lastTick = null; // 上次心跳的播放位置，用來算「實際播放增量」
       interval = setInterval(async () => {
         try {
           const [currentTime, duration] = await Promise.all([
@@ -1127,6 +1128,9 @@ export default function ClassroomPage() {
             player.getDuration(),
           ]);
           if (!duration) return;
+          // 只累計「正向、且不超過心跳間隔」的位移＝實際播放；拖拉/快轉/倒轉都不計入
+          const delta = lastTick == null ? 0 : Math.max(0, Math.min(15, Math.round(currentTime - lastTick)));
+          lastTick = currentTime;
           const tk = await freshToken(token);
           const r = await fetch("/api/classroom/progress", {
             method: "POST",
@@ -1135,6 +1139,7 @@ export default function ClassroomPage() {
               video_id: videoId,
               watched_seconds: Math.floor(currentTime),
               total_seconds: Math.floor(duration),
+              viewed_delta: delta,
             }),
           });
           const { data } = await r.json();
@@ -1170,9 +1175,11 @@ export default function ClassroomPage() {
     if (!currentVideo?.bunny_video_id || !token || !embedSrc) return;
     const videoId = currentVideo.id;
     let interval, cancelled = false, lastSeconds = 0, lastDuration = 0;
+    let pendingViewed = 0; // 心跳間累積的實際播放秒數（拖拉不計）
 
     async function postProgress() {
       if (!lastDuration) return;
+      const delta = pendingViewed; pendingViewed = 0; // 送出本次累積的實際播放秒數
       try {
         const tk = await freshToken(token);
         const r = await fetch("/api/classroom/progress", {
@@ -1182,6 +1189,7 @@ export default function ClassroomPage() {
             video_id: videoId,
             watched_seconds: Math.floor(lastSeconds),
             total_seconds: Math.floor(lastDuration),
+            viewed_delta: delta,
           }),
         });
         const { data } = await r.json();
@@ -1206,7 +1214,13 @@ export default function ClassroomPage() {
           pause: () => { try { player.pause(); } catch {} },
           play: () => { try { player.play(); } catch {} },
         };
-        player.on("timeupdate", (d) => { lastSeconds = d?.seconds || 0; lastDuration = d?.duration || 0; });
+        player.on("timeupdate", (d) => {
+          const sec = d?.seconds || 0;
+          // 只累計正向、小於 2 秒的位移＝正常播放推進；拖拉/快轉的大跳躍不計入
+          const step = sec - lastSeconds;
+          if (step > 0 && step < 2) pendingViewed += step;
+          lastSeconds = sec; lastDuration = d?.duration || 0;
+        });
         player.on("ended", () => { if (lastDuration) { lastSeconds = lastDuration; postProgress(); } });
         interval = setInterval(postProgress, 10000);
       });

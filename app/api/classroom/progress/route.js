@@ -72,17 +72,22 @@ export async function POST(req) {
   // 須已購課才能寫進度（擋非購課者灌進度列）
   if (!(await hasCourseAccessCached(admin, user.email))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const { video_id, watched_seconds = 0, total_seconds = 0 } = await req.json();
+  const { video_id, watched_seconds = 0, total_seconds = 0, viewed_delta = 0 } = await req.json();
   if (!video_id) return NextResponse.json({ error: "video_id_required" }, { status: 400 });
   const t = Math.max(0, Math.floor(Number(total_seconds) || 0));
   const wRaw = Math.max(0, Math.floor(Number(watched_seconds) || 0));
-  const w = t > 0 ? Math.min(wRaw, t) : wRaw; // 夾住 watched≤total
-  const c = t > 0 && w >= Math.floor(t * 0.8); // completed 由伺服器依觀看比例推導（門檻 80%，沿用原產品判定），不信任前端旗標
+  const w = t > 0 ? Math.min(wRaw, t) : wRaw; // watched_seconds＝最遠播放位置（續播用）
+  // viewed_delta＝這次心跳「實際播放」的秒數。夾在 0..15（心跳 10 秒 + 容忍誤差）：
+  // 拖拉進度條、快轉、竄改大數值都無法灌水累計觀看時數。
+  const d = Math.min(15, Math.max(0, Math.floor(Number(viewed_delta) || 0)));
+  // 完成判定改看「累計實際觀看」達 80%（在 RPC 內以 viewed_seconds+delta 計算，避免拖到片尾就算完成）；
+  // 此處的 c 僅作為 RPC 尚未部署時的後備門檻。
+  const c = t > 0 && w >= Math.floor(t * 0.8);
 
   // 原子更新：RPC 內以 GREATEST(watched/total) + (completed OR …) 合併，
   // 避免並發（多分頁/快速心跳）的 read-modify-write 互相覆蓋而遺失進度。
   const rpc = await admin.rpc("upsert_progress", {
-    p_user_id: user.id, p_video_id: video_id, p_watched: w, p_total: t, p_completed: c,
+    p_user_id: user.id, p_video_id: video_id, p_watched: w, p_total: t, p_completed: false, p_viewed_delta: d,
   });
   if (!rpc.error) {
     const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
@@ -93,11 +98,12 @@ export async function POST(req) {
   console.error("[progress] rpc upsert_progress 失敗，退回 read-modify-write:", rpc.error.message);
   const { data: existing } = await admin
     .from("progress")
-    .select("watched_seconds, completed")
+    .select("watched_seconds, viewed_seconds, completed")
     .eq("user_id", user.id)
     .eq("video_id", video_id)
     .maybeSingle();
 
+  const viewed = (existing?.viewed_seconds || 0) + d;
   const { data, error } = await admin
     .from("progress")
     .upsert({
@@ -105,7 +111,8 @@ export async function POST(req) {
       video_id,
       watched_seconds: Math.max(w, existing?.watched_seconds || 0),
       total_seconds: t,
-      completed: existing?.completed || c,
+      viewed_seconds: viewed,
+      completed: existing?.completed || (t > 0 && viewed >= Math.floor(t * 0.8)),
       watched_at: new Date().toISOString(),
     }, { onConflict: "user_id,video_id" })
     .select()

@@ -810,6 +810,26 @@ function MediaPage(){
 }
 
 // ── Students Page ──────────────────────────────────────────────────────────
+// 學員學習進度儲存格：完成度 %（完成單元/已發布單元）＋累計實際觀看時數（viewed_seconds，拖拉不計）
+function ProgressCell({ p }) {
+  const pct = p.percentage || 0;
+  const mins = Math.round((p.viewedSeconds || 0) / 60);
+  const timeLabel = mins >= 60 ? `${Math.floor(mins / 60)} 小時 ${mins % 60} 分` : `${mins} 分`;
+  return (
+    <div style={{minWidth:118}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+        <div style={{flex:1,height:5,background:"#eef2f7",borderRadius:99,overflow:"hidden"}}>
+          <div style={{width:`${Math.min(100,pct)}%`,height:"100%",background:pct>=100?"#16a34a":"#2563eb",borderRadius:99}}/>
+        </div>
+        <span style={{fontSize:12,fontWeight:700,color:"#0f172a",fontVariantNumeric:"tabular-nums"}}>{pct}%</span>
+      </div>
+      <div style={{fontSize:11,color:"#94a3b8"}}>
+        {p.completedCount}/{p.totalVideos} 單元・看了 {timeLabel}
+      </div>
+    </div>
+  );
+}
+
 // 學員管理：實際學員（有 enrollment 課程存取的人，含 concert/WordPress 現場購買者）∪ 體驗名單。
 // 自帶資料來源 /api/admin/students（合併 enrollments + 已付款 orders + course_preview_leads），
 // 不再只讀 course_preview_leads —— 開通課程後現場購買者即可在此出現。
@@ -887,9 +907,9 @@ function StudentsPage({showToast}){
         {loading?<p style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</p>:(
           <div className={styles.tableWrap}>
             <table className={styles.table}>
-              <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>程度</th><th>已填</th><th>建立時間</th><th>操作</th></tr></thead>
+              <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>程度</th><th>學習進度</th><th>已填</th><th>建立時間</th><th>操作</th></tr></thead>
               <tbody>
-                {!filtered.length?<tr><td colSpan={10} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>
+                {!filtered.length?<tr><td colSpan={11} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>
                 :filtered.map(s=>(
                   <tr key={s.id}>
                     <td><div className={styles.studentAvatar}>{s.name[0]?.toUpperCase()}</div></td>
@@ -899,6 +919,7 @@ function StudentsPage({showToast}){
                     <td><span className={styles.courseBadge}>{s.purchasedCount}</span></td>
                     <td><span className={`${styles.pill} ${styles[s.status]||styles.requested}`}>{statusLabel(s.status)}</span></td>
                     <td className={styles.dim}>{levelLabel(s.level)}</td>
+                    <td>{s.purchased&&s.progress?<ProgressCell p={s.progress}/>:<span className={styles.dim}>—</span>}</td>
                     <td className={styles.dim}>{s.hasProfile?"✓":"—"}</td>
                     <td className={styles.dim}>{fmt(s.created_at)}</td>
                     <td>
@@ -938,6 +959,9 @@ function StudentsPage({showToast}){
                 ["電話",detailStudent.phone||"—"],
                 ["已購課程",detailStudent.purchased?(detailStudent.plan_label||"從零開始學鋼琴"):"—"],
                 ["開通狀態",detailStudent.purchased?(detailStudent.enrolled?"已開通":"未開通（待開課）"):"—"],
+                ["學習進度",detailStudent.purchased&&detailStudent.progress
+                  ?`${detailStudent.progress.percentage}%（${detailStudent.progress.completedCount}/${detailStudent.progress.totalVideos} 單元）・累計觀看 ${Math.round((detailStudent.progress.viewedSeconds||0)/60)} 分鐘${detailStudent.progress.lastWatchedAt?`・最後觀看 ${new Date(detailStudent.progress.lastWatchedAt).toLocaleString("zh-TW")}`:""}`
+                  :"—"],
                 ["程度",levelLabel(detailStudent.level)],
                 ["來源",detailStudent.source||"—"],
                 ["建立時間",fmt(detailStudent.created_at)],

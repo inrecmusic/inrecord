@@ -291,19 +291,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS ratings_user_unique ON ratings (user_id) WHERE
 
 -- ────────────────────────────────────────────────────────────────────────
 -- ⑧ 進度原子更新 RPC：取代 route 的 read-modify-write，避免並發互相覆蓋遺失進度。
---    watched/total 取 GREATEST、completed 取 OR；以 UNIQUE(user_id,video_id) 做 upsert。
+--    watched_seconds=最遠播放位置(續播)；viewed_seconds=累計實際播放秒數(拖拉/快轉不計)；
+--    completed 依 viewed_seconds >= 80% 片長自動判定，且一旦完成不退回。search_path 已硬化。
 -- ────────────────────────────────────────────────────────────────────────
+ALTER TABLE progress ADD COLUMN IF NOT EXISTS viewed_seconds INTEGER NOT NULL DEFAULT 0;
+-- 既有資料回填：以最遠播放位置為保守基準（不讓既有完成者退回未完成）
+UPDATE progress SET viewed_seconds = watched_seconds WHERE viewed_seconds = 0 AND watched_seconds > 0;
+-- 舊 5 參數版本需移除，否則與新版並存、可能被呼叫而繞過累計判定
+DROP FUNCTION IF EXISTS public.upsert_progress(UUID, UUID, INTEGER, INTEGER, BOOLEAN);
+
 CREATE OR REPLACE FUNCTION public.upsert_progress(
-  p_user_id UUID, p_video_id UUID, p_watched INTEGER, p_total INTEGER, p_completed BOOLEAN
+  p_user_id UUID, p_video_id UUID, p_watched INTEGER, p_total INTEGER, p_completed BOOLEAN,
+  p_viewed_delta INTEGER DEFAULT 0
 ) RETURNS public.progress
 LANGUAGE sql
+SET search_path = ''
 AS $$
-  INSERT INTO public.progress (user_id, video_id, watched_seconds, total_seconds, completed, watched_at)
-  VALUES (p_user_id, p_video_id, GREATEST(p_watched, 0), GREATEST(p_total, 0), p_completed, NOW())
+  INSERT INTO public.progress (user_id, video_id, watched_seconds, total_seconds, viewed_seconds, completed, watched_at)
+  VALUES (p_user_id, p_video_id, GREATEST(p_watched, 0), GREATEST(p_total, 0), GREATEST(p_viewed_delta, 0), p_completed, NOW())
   ON CONFLICT (user_id, video_id) DO UPDATE SET
     watched_seconds = GREATEST(progress.watched_seconds, EXCLUDED.watched_seconds),
     total_seconds   = GREATEST(progress.total_seconds, EXCLUDED.total_seconds),
-    completed       = progress.completed OR EXCLUDED.completed,
+    viewed_seconds  = progress.viewed_seconds + GREATEST(p_viewed_delta, 0),
+    completed       = progress.completed OR EXCLUDED.completed
+                      OR (GREATEST(p_total,0) > 0
+                          AND progress.viewed_seconds + GREATEST(p_viewed_delta,0) >= FLOOR(GREATEST(p_total,0) * 0.8)),
     watched_at      = NOW()
   RETURNING *;
 $$;
