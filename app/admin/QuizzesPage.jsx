@@ -110,7 +110,8 @@ export default function QuizzesPage({ showToast, courseId }) {
       const cd = await cr.json(); const qd = await qr.json();
       setChapters(cd.data || []); setQuizzes(qd.quizzes || []);
     } catch { showToast?.("❌ 測驗載入失敗，請重新整理頁面"); } // 失敗別靜默顯示「尚無測驗」誤導
-  }, [showToast]);
+    // deps 刻意為空：showToast 為父層每次 render 重建的函式，放進 deps 會讓失敗 toast→重繪→重抓 無限循環
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const chapterTitle = (id) => chapters.find(c => c.id === id)?.title || "（未指定章節）";

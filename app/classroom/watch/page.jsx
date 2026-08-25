@@ -64,7 +64,8 @@ function CommentsSection({ token, video, chapters }) {
       ? `/api/classroom/comments?video_id=${video.id}`
       : "/api/classroom/comments";
     try {
-      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const tk = await freshToken(token);
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${tk}` } });
       const { data } = await r.json();
       setComments(data || []);
     } catch {}
@@ -207,7 +208,8 @@ function AnnouncementsBanner({ token }) {
   useEffect(() => {
     if (!token) { setList([]); return; }
     let cancelled = false;
-    fetch("/api/classroom/announcements", { headers: { Authorization: `Bearer ${token}` } })
+    freshToken(token)
+      .then(tk => fetch("/api/classroom/announcements", { headers: { Authorization: `Bearer ${tk}` } }))
       .then(r => (r.ok ? r.json() : { announcements: [] }))
       .then(d => { if (!cancelled) setList(d.announcements || []); })
       .catch(() => { if (!cancelled) setList([]); });
@@ -284,7 +286,8 @@ function MaterialsSection({ token, video }) {
     if (!token) { setItems([]); return; }
     let cancelled = false;
     const qs = video?.id ? `?video_id=${video.id}` : "";
-    fetch(`/api/classroom/materials${qs}`, { headers: { Authorization: `Bearer ${token}` } })
+    freshToken(token)
+      .then(tk => fetch(`/api/classroom/materials${qs}`, { headers: { Authorization: `Bearer ${tk}` } }))
       .then(r => (r.ok ? r.json() : { materials: [] }))
       .then(d => { if (!cancelled) setItems(d.materials || []); })
       .catch(() => { if (!cancelled) setItems([]); });
@@ -298,7 +301,8 @@ function MaterialsSection({ token, video }) {
     // 避免 await 之後再 window.open 被瀏覽器彈窗攔截。
     const w = typeof window !== "undefined" ? window.open("", "_blank", "noopener,noreferrer") : null;
     try {
-      const r = await fetch(`/api/classroom/materials?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const tk = await freshToken(token);
+      const r = await fetch(`/api/classroom/materials?id=${id}`, { headers: { Authorization: `Bearer ${tk}` } });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.url) { if (w) w.location.href = d.url; else window.location.href = d.url; }
       else { if (w) w.close(); setErr("講義暫時無法下載，請稍後再試"); }
@@ -426,6 +430,13 @@ function AssignmentTab({ video, token }) {
 
   // 元件卸載時釋放預覽 URL
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  // 切換單元時重置：預覽中的檔案/完成畫面屬於前一單元，帶過去會把作業繳到錯的單元
+  useEffect(() => {
+    setPicked(null); setDone(false); setErr("");
+    setPreviewUrl(prev => { if (prev) URL.revokeObjectURL(prev); return ""; });
+    if (inputRef.current) inputRef.current.value = "";
+  }, [video?.id]);
 
   if (!video?.assignment_desc) return (
     <p style={{ color: "#64748b", fontSize: 13.5, textAlign: "center", paddingTop: 32, margin: 0, lineHeight: 1.6 }}>
@@ -570,6 +581,7 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
       try {
         const tk = await freshToken(token); // 取當下最新 token，避免頁面開久後 401 導致誤判「此單元暫無遊戲」
         const r = await fetch(`/api/classroom/games?video_id=${videoId}`, { headers: { Authorization: `Bearer ${tk}` } });
+        if (!r.ok) return; // 失敗不快取、不覆蓋，避免一次 500 把空清單快取成「此單元暫無遊戲」
         const { games } = await r.json();
         const list = games || [];
         if (gameCache) gameCache.current[cacheKey] = list;
@@ -766,7 +778,8 @@ function NotesTab({ token, video, playerCtrl }) {
     vidRef.current = video?.id;
     if (!token || !video?.id) { setNotes([]); return; }
     let cancelled = false;
-    fetch(`/api/classroom/notes?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } })
+    freshToken(token)
+      .then(tk => fetch(`/api/classroom/notes?video_id=${video.id}`, { headers: { Authorization: `Bearer ${tk}` } }))
       .then(r => (r.ok ? r.json() : { notes: [] }))
       .then(d => { if (!cancelled) setNotes(sortNotes(d.notes || [])); })
       .catch(() => { if (!cancelled) setNotes([]); });
@@ -912,121 +925,6 @@ function NotesTab({ token, video, playerCtrl }) {
   );
 }
 
-/* ── QuizTab ─────────────────────────────────────────────────────────────────── */
-function QuizTab({ token, video }) {
-  const [quizzes, setQuizzes] = useState([]);
-  const [active, setActive] = useState(null); // { quiz, questions }
-  const [answers, setAnswers] = useState({});
-  const [result, setResult] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const chapterId = video?.chapter_id;
-
-  useEffect(() => {
-    setActive(null); setResult(null); setAnswers({});
-    if (!token || !chapterId) { setQuizzes([]); return; }
-    let cancelled = false;
-    fetch(`/api/classroom/quizzes?chapter_id=${chapterId}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => (r.ok ? r.json() : { quizzes: [] }))
-      .then(d => { if (!cancelled) setQuizzes(d.quizzes || []); })
-      .catch(() => { if (!cancelled) setQuizzes([]); });
-    return () => { cancelled = true; };
-  }, [token, chapterId]);
-
-  async function openQuiz(id) {
-    setBusy(true); setResult(null); setAnswers({});
-    try {
-      const r = await fetch(`/api/classroom/quiz?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (r.ok) setActive(await r.json());
-    } catch {}
-    setBusy(false);
-  }
-
-  async function submit() {
-    if (!active) return;
-    const ans = active.questions.map((q, i) => (answers[i] ?? -1));
-    setBusy(true);
-    try {
-      const r = await fetch("/api/classroom/quiz-attempt", {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ quiz_id: active.quiz.id, answers: ans }),
-      });
-      if (r.ok) {
-        const rr = await r.json();
-        setResult(rr);
-        // 用計分回應在本地更新該筆徽章（最佳分/是否通過），不重新抓整份清單：省一次往返，
-        // 且函式式更新＋比對 quiz id → 切換章節時 prev 已是新章節、找不到此 id 即不動，無競態。
-        setQuizzes(prev => prev.map(qz => qz.id === active.quiz.id
-          ? { ...qz, best_score: Math.max(Number(qz.best_score) || 0, Number(rr.score) || 0), passed: qz.passed || !!rr.passed }
-          : qz));
-      }
-    } catch {}
-    setBusy(false);
-  }
-
-  if (!video) return <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, padding: "28px 0", fontFamily: F }}>請先選擇課程單元</div>;
-
-  // 作答視圖
-  if (active) {
-    return (
-      <div style={{ fontFamily: F }}>
-        <button onClick={() => { setActive(null); setResult(null); }} style={{ background: "none", border: "none", color: "#2563eb", fontSize: 13, cursor: "pointer", marginBottom: 12, fontFamily: F }}>← 返回測驗列表</button>
-        <h3 style={{ margin: "0 0 14px", fontSize: 16, color: "#0f172a" }}>{active.quiz.title}</h3>
-        {active.questions.map((q, i) => {
-          // 後端只回每題對錯 boolean（不含正解索引），只能對「學員選的那項」上色，無法標出正解在哪。
-          const answeredCorrectly = result?.results?.[i];
-          return (
-            <div key={q.id} style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 6 }}>{i + 1}. {q.question}</div>
-              {(q.options || []).map((o, j) => {
-                const chosen = answers[i] === j;
-                const showCorrect = result && chosen && answeredCorrectly === true;
-                const showWrong = result && chosen && answeredCorrectly === false;
-                return (
-                  <label key={j} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, marginBottom: 4, cursor: result ? "default" : "pointer",
-                    background: showCorrect ? "#dcfce7" : showWrong ? "#fee2e2" : chosen ? "#eff6ff" : "#f8fafc", fontSize: 14, color: "#0f172a" }}>
-                    <input type="radio" name={`q-${q.id}`} disabled={!!result} checked={chosen} onChange={() => setAnswers(a => ({ ...a, [i]: j }))} />
-                    {o}{showCorrect ? "　✔" : showWrong ? "　✘" : ""}
-                  </label>
-                );
-              })}
-            </div>
-          );
-        })}
-        {result ? (
-          <div style={{ padding: "12px 14px", borderRadius: 10, background: result.passed ? "#dcfce7" : "#fef9c3", marginTop: 8 }}>
-            <strong style={{ color: result.passed ? "#166534" : "#854d0e", fontSize: 15 }}>
-              {result.passed ? "🎉 通過！" : "再接再厲"} 得分 {result.score} 分
-            </strong>
-            <button onClick={() => { setResult(null); setAnswers({}); }} style={{ display: "block", marginTop: 10, background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: F }}>重新作答</button>
-          </div>
-        ) : (
-          <button onClick={submit} disabled={busy} style={{ width: "100%", padding: 12, background: busy ? "#94a3b8" : "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }}>{busy ? "計分中…" : "送出答案"}</button>
-        )}
-      </div>
-    );
-  }
-
-  // 列表視圖
-  return (
-    <div style={{ fontFamily: F }}>
-      {quizzes.length === 0 ? (
-        <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "18px 0" }}>此章節尚無測驗</p>
-      ) : (
-        <div style={{ display: "grid", gap: 10 }}>
-          {quizzes.map(q => (
-            <button key={q.id} onClick={() => openQuiz(q.id)} disabled={busy} style={{ textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", cursor: "pointer", fontFamily: F }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{q.title}</span>
-              <span style={{ fontSize: 12, flexShrink: 0, color: q.passed ? "#16a34a" : "#94a3b8", fontWeight: 600 }}>
-                {q.passed ? "✔ 已通過" : q.best_score != null ? `最佳 ${q.best_score} 分` : `及格 ${q.pass_score} 分`}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── ProfileOnboarding ───────────────────────────────────────────────────────── */
 function ProfileOnboarding({ token, initial, onDone }) {
   const [f, setF] = useState({ real_name: "", phone: "", level: "", goal: "", source: "", equipment: "", age_group: "", gender: "", ...initial });
@@ -1040,8 +938,7 @@ function ProfileOnboarding({ token, initial, onDone }) {
     setBusy(true);
     try {
       // 掛太久 access_token 可能過期 → 存檔前取最新 session（supabase 會自動刷新），避免 401
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || token;
+      const authToken = await freshToken(token);
       const body = skipOptional ? { real_name: f.real_name, phone: f.phone, level: f.level } : f;
       const r = await fetch("/api/classroom/profile", { method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify(body) });
@@ -1150,16 +1047,9 @@ export default function ClassroomPage() {
     init();
   }, []);
 
-  /* 保持 access_token 新鮮：Supabase 背景會自動刷新（預設 1h 到期），
-     這裡訂閱刷新事件同步更新 token state，否則播放頁開久後所有寫入
-     （評分／筆記／進度）會用到過期 token 而默默 401 失敗。 */
-  useEffect(() => {
-    if (!supabase) return;
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.access_token) setToken(session.access_token);
-    });
-    return () => sub?.subscription?.unsubscribe?.();
-  }, []);
+  /* token 過期策略：token state 只在進頁設一次（不隨刷新更新——否則 course/player/embed
+     等以 token 為依賴的 effect 每小時重跑，影片會重載、單元被重選）。所有「晚於進頁」的
+     fetch（寫入與切單元後的讀取）一律用 freshToken() 於呼叫當下取最新 token。 */
 
   /* load real course data */
   useEffect(() => {
@@ -1245,7 +1135,6 @@ export default function ClassroomPage() {
               video_id: videoId,
               watched_seconds: Math.floor(currentTime),
               total_seconds: Math.floor(duration),
-              completed: currentTime / duration >= 0.8,
             }),
           });
           const { data } = await r.json();
@@ -1266,9 +1155,10 @@ export default function ClassroomPage() {
     setEmbedSrc("");
     const vid = currentVideo?.id;
     if (!vid || !token || !currentVideo?.bunny_video_id) return;
-    fetch(`/api/classroom/video-embed?video_id=${vid}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    freshToken(token)
+      .then(tk => fetch(`/api/classroom/video-embed?video_id=${vid}`, {
+        headers: { Authorization: `Bearer ${tk}` },
+      }))
       .then(r => (r.ok ? r.json() : null))
       .then(data => { if (data?.src) setEmbedSrc(data.src); })
       .catch(() => {});
@@ -1292,7 +1182,6 @@ export default function ClassroomPage() {
             video_id: videoId,
             watched_seconds: Math.floor(lastSeconds),
             total_seconds: Math.floor(lastDuration),
-            completed: lastSeconds / lastDuration >= 0.8,
           }),
         });
         const { data } = await r.json();

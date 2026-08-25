@@ -10,17 +10,6 @@ export async function GET(req) {
   const g = await requireClassroomAuth(req);
   if (g.res) return g.res;
   const sp = new URL(req.url).searchParams;
-
-  // all=1：跨單元，回本人所有筆記（含 video_id，前端用課程清單標單元）。
-  if (sp.get("all")) {
-    const { data, error } = await g.supabase
-      .from("notes")
-      .select("id, seconds, body, created_at, video_id")
-      .eq("user_id", g.user.id);
-    if (error) return serverError(error);
-    return NextResponse.json({ notes: data || [] });
-  }
-
   const raw = sp.get("video_id");
   const videoId = raw && UUID_RE.test(raw) ? raw : null;
   if (!videoId) return NextResponse.json({ notes: [] });

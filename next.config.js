@@ -9,14 +9,14 @@ const csp = [
   "base-uri 'self'",
   "frame-ancestors 'self'",
   "object-src 'none'",
-  // ⚠️ PAYUNi 正式/測試皆為 *.payuni.com.tw（不是 .com）；form-action 漏放行會讓付款表單被 CSP 擋在「處理中」。
-  "form-action 'self' https://*.payuni.com.tw https://*.payuni.com",
+  // ⚠️ PAYUNi 正式/測試皆為 *.payuni.com.tw；form-action 漏放行會讓付款表單被 CSP 擋在「處理中」。
+  "form-action 'self' https://*.payuni.com.tw",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.mediadelivery.net https://www.googletagmanager.com https://connect.facebook.net https://us.i.posthog.com https://tools.google.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "frame-src 'self' https://iframe.mediadelivery.net https://player.vimeo.com https://*.vimeo.com https://*.payuni.com.tw https://*.payuni.com https://www.instagram.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com.tw https://*.payuni.com https://www.googletagmanager.com",
+  "frame-src 'self' https://iframe.mediadelivery.net https://player.vimeo.com https://*.vimeo.com https://*.payuni.com.tw https://www.instagram.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com.tw https://www.googletagmanager.com",
 ].join("; ");
 
 const securityHeaders = [

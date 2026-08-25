@@ -2117,9 +2117,9 @@ function SubscriptionsPage({ showToast }) {
   async function handleAdd(e) {
     e.preventDefault(); setAddErr("");
     if (adding) return; // 防連點重複新增
-    setAdding(true);
     if (!addForm.email.trim()) { setAddErr("請輸入 Email"); return; }
     if (!addForm.expires_at)   { setAddErr("請選擇到期日"); return; }
+    setAdding(true); // 驗證通過才上鎖（上鎖後所有路徑都會走到 finally 解鎖）
     try {
       const r = await _api("/api/admin/subscriptions", {
         method: "POST",

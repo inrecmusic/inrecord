@@ -4,6 +4,21 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { hasCourseAccess } from "@/lib/course-access";
 
+// 進度心跳每 10 秒一次，購課檢查結果以 email 為 key 快取 60 秒，減半熱路徑 DB 往返
+// （開通/退款後最多延遲 60 秒生效，對進度寫入無實害）。
+const accessCache = new Map(); // email -> { ok, exp }
+async function hasCourseAccessCached(admin, email) {
+  const now = Date.now();
+  const hit = accessCache.get(email);
+  if (hit && hit.exp > now) return hit.ok;
+  const ok = await hasCourseAccess(admin, email);
+  accessCache.set(email, { ok, exp: now + 60_000 });
+  if (accessCache.size > 500) { // 簡單防脹
+    for (const [k, v] of accessCache) { if (v.exp <= now) accessCache.delete(k); }
+  }
+  return ok;
+}
+
 function getUserClient(token) {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -55,14 +70,14 @@ export async function POST(req) {
   const admin = getSupabaseAdmin();
   if (!admin) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
   // 須已購課才能寫進度（擋非購課者灌進度列）
-  if (!(await hasCourseAccess(admin, user.email))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!(await hasCourseAccessCached(admin, user.email))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const { video_id, watched_seconds = 0, total_seconds = 0 } = await req.json();
   if (!video_id) return NextResponse.json({ error: "video_id_required" }, { status: 400 });
   const t = Math.max(0, Math.floor(Number(total_seconds) || 0));
   const wRaw = Math.max(0, Math.floor(Number(watched_seconds) || 0));
   const w = t > 0 ? Math.min(wRaw, t) : wRaw; // 夾住 watched≤total
-  const c = t > 0 && w >= Math.floor(t * 0.9); // completed 由伺服器依觀看比例推導，不信任前端旗標
+  const c = t > 0 && w >= Math.floor(t * 0.8); // completed 由伺服器依觀看比例推導（門檻 80%，沿用原產品判定），不信任前端旗標
 
   // 原子更新：RPC 內以 GREATEST(watched/total) + (completed OR …) 合併，
   // 避免並發（多分頁/快速心跳）的 read-modify-write 互相覆蓋而遺失進度。

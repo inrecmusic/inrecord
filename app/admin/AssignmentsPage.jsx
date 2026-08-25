@@ -72,12 +72,14 @@ export default function AssignmentsPage({ showToast }) {
 
   // proof-uploads 為私有 bucket，公開網址打不開 → 以 admin 簽名網址開啟繳交檔案
   async function viewFile(url) {
+    // 先在點擊的同步脈絡開空白分頁，await 之後導向——否則 Safari/嚴格攔截會擋掉 window.open
+    const w = window.open("", "_blank", "noopener");
     try {
       const r = await api("/api/admin/proof-signed", { method: "POST", body: JSON.stringify({ url }) });
       const d = await r.json().catch(() => ({}));
-      if (r.ok && d.signedUrl) window.open(d.signedUrl, "_blank", "noopener");
-      else showToast("❌ 無法開啟檔案");
-    } catch { showToast("❌ 無法開啟檔案"); }
+      if (r.ok && d.signedUrl) { if (w) w.location.href = d.signedUrl; else window.open(d.signedUrl, "_blank", "noopener"); }
+      else { if (w) w.close(); showToast("❌ 無法開啟檔案"); }
+    } catch { if (w) w.close(); showToast("❌ 無法開啟檔案"); }
   }
 
   async function markReviewed(sub) {
