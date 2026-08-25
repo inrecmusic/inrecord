@@ -292,7 +292,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ratings_user_unique ON ratings (user_id) WHERE
 -- ────────────────────────────────────────────────────────────────────────
 -- ⑧ 進度原子更新 RPC：取代 route 的 read-modify-write，避免並發互相覆蓋遺失進度。
 --    watched_seconds=最遠播放位置(續播)；viewed_seconds=累計實際播放秒數(拖拉/快轉不計)；
---    completed 依 viewed_seconds >= 80% 片長自動判定，且一旦完成不退回。search_path 已硬化。
+--    completed 依 viewed_seconds >= 70% 片長自動判定，且一旦完成不退回。search_path 已硬化。
 -- ────────────────────────────────────────────────────────────────────────
 ALTER TABLE progress ADD COLUMN IF NOT EXISTS viewed_seconds INTEGER NOT NULL DEFAULT 0;
 -- 既有資料回填：以最遠播放位置為保守基準（不讓既有完成者退回未完成）
@@ -315,7 +315,7 @@ AS $$
     viewed_seconds  = progress.viewed_seconds + GREATEST(p_viewed_delta, 0),
     completed       = progress.completed OR EXCLUDED.completed
                       OR (GREATEST(p_total,0) > 0
-                          AND progress.viewed_seconds + GREATEST(p_viewed_delta,0) >= FLOOR(GREATEST(p_total,0) * 0.8)),
+                          AND progress.viewed_seconds + GREATEST(p_viewed_delta,0) >= FLOOR(GREATEST(p_total,0) * 0.7)),
     watched_at      = NOW()
   RETURNING *;
 $$;

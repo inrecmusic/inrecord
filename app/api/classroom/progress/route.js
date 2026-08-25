@@ -80,9 +80,9 @@ export async function POST(req) {
   // viewed_delta＝這次心跳「實際播放」的秒數。夾在 0..15（心跳 10 秒 + 容忍誤差）：
   // 拖拉進度條、快轉、竄改大數值都無法灌水累計觀看時數。
   const d = Math.min(15, Math.max(0, Math.floor(Number(viewed_delta) || 0)));
-  // 完成判定改看「累計實際觀看」達 80%（在 RPC 內以 viewed_seconds+delta 計算，避免拖到片尾就算完成）；
+  // 完成判定改看「累計實際觀看」達 70%（在 RPC 內以 viewed_seconds+delta 計算，避免拖到片尾就算完成）；
   // 此處的 c 僅作為 RPC 尚未部署時的後備門檻。
-  const c = t > 0 && w >= Math.floor(t * 0.8);
+  const c = t > 0 && w >= Math.floor(t * 0.7);
 
   // 原子更新：RPC 內以 GREATEST(watched/total) + (completed OR …) 合併，
   // 避免並發（多分頁/快速心跳）的 read-modify-write 互相覆蓋而遺失進度。
@@ -112,7 +112,7 @@ export async function POST(req) {
       watched_seconds: Math.max(w, existing?.watched_seconds || 0),
       total_seconds: t,
       viewed_seconds: viewed,
-      completed: existing?.completed || (t > 0 && viewed >= Math.floor(t * 0.8)),
+      completed: existing?.completed || (t > 0 && viewed >= Math.floor(t * 0.7)),
       watched_at: new Date().toISOString(),
     }, { onConflict: "user_id,video_id" })
     .select()
