@@ -3,6 +3,8 @@ import { SignJWT } from "jose";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 import { getJwtSecret } from "@/lib/adminAuth";
 import { createHash, timingSafeEqual } from "crypto";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { auditAdminLogin } from "@/lib/admin-login-audit";
 
 // 定值時間比較：先 SHA256 等長化，避免長度洩漏、也避免 timingSafeEqual 對不等長 buffer 拋錯
 function safeEqual(a, b) {
@@ -35,6 +37,7 @@ export async function POST(req) {
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
     }
+    await auditAdminLogin(getSupabaseAdmin(), { actor: email || null, method: "password", req, success: false });
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }
 
@@ -50,5 +53,6 @@ export async function POST(req) {
     .setExpirationTime("24h")
     .sign(secret);
 
+  await auditAdminLogin(getSupabaseAdmin(), { actor: email, method: "password", req, success: true });
   return NextResponse.json({ ok: true, token });
 }

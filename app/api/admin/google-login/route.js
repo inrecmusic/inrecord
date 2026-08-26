@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getJwtSecret } from "@/lib/adminAuth";
+import { auditAdminLogin } from "@/lib/admin-login-audit";
 
 export async function POST(req) {
   const authHeader = req.headers.get("authorization");
@@ -43,5 +44,6 @@ export async function POST(req) {
     .setExpirationTime("24h")
     .sign(secret);
 
+  await auditAdminLogin(supabaseAdmin, { actor: user.email, method: "google", req, success: true });
   return NextResponse.json({ ok: true, token });
 }

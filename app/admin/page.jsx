@@ -3108,16 +3108,19 @@ function AuditLogPage(){
         <div className={styles.tableWrap}>
           {tab==="audit"?(
           <table className={styles.table}>
-            <thead><tr><th>時間</th><th>操作者</th><th>動作</th><th>對象</th><th>細節</th></tr></thead>
+            <thead><tr><th>時間</th><th>操作者</th><th>動作</th><th>IP</th><th>對象</th><th>細節</th></tr></thead>
             <tbody>
-              {loading?<tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
-              :loadErr?<tr><td colSpan={5} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
-              :!rows.length?<tr><td colSpan={5} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>尚無操作紀錄</span><span className={styles.emptySub}>敏感操作後會在此留痕</span></td></tr>
+              {loading?<tr><td colSpan={6} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
+              :loadErr?<tr><td colSpan={6} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
+              :!rows.length?<tr><td colSpan={6} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>尚無操作紀錄</span><span className={styles.emptySub}>敏感操作後會在此留痕</span></td></tr>
               :rows.map(r=>(
                 <tr key={r.id}>
                   <td className={styles.dim} style={{whiteSpace:"nowrap",fontSize:12}}>{fmt(r.created_at)}</td>
                   <td style={{fontSize:13}}>{r.actor_email||"—"}</td>
-                  <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{r.action}</code></td>
+                  <td><code style={{fontSize:11,padding:"2px 6px",borderRadius:4,
+                    background:r.action==="admin.login_failed"?"#fee2e2":r.action==="admin.login"?"#dcfce7":"#f1f5f9",
+                    color:r.action==="admin.login_failed"?"#991b1b":r.action==="admin.login"?"#166534":"inherit"}}>{r.action}</code></td>
+                  <td className={styles.dim} style={{fontSize:11,whiteSpace:"nowrap"}}>{r.ip||"—"}</td>
                   <td className={styles.dim} style={{fontSize:12}}>{r.target_type||""}{r.target_id?`：${r.target_id}`:""}</td>
                   <td className={styles.dim} style={{fontSize:11,maxWidth:300,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={r.meta?JSON.stringify(r.meta):""}>{r.meta?JSON.stringify(r.meta):""}</td>
                 </tr>
@@ -3128,8 +3131,8 @@ function AuditLogPage(){
           <table className={styles.table}>
             <thead><tr><th>時間</th><th>收件人</th><th>主旨</th><th>類型</th><th>狀態</th></tr></thead>
             <tbody>
-              {loading?<tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
-              :loadErr?<tr><td colSpan={5} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
+              {loading?<tr><td colSpan={6} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</td></tr>
+              :loadErr?<tr><td colSpan={6} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
               :!rows.length?<tr><td colSpan={5} className={styles.empty}><span className={styles.emptyIcon}>✉️</span><span className={styles.emptyTitle}>尚無寄信紀錄</span><span className={styles.emptySub}>每封對外信件會在此留痕</span></td></tr>
               :rows.map(r=>(
                 <tr key={r.id}>
