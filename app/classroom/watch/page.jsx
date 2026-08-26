@@ -678,9 +678,13 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
             </div>
           </div>
         ) : isUrlGame ? (
+          /* 外部遊戲頁一律沙箱隔離：不給 allow-same-origin（避免存取本站同源資料）、
+             不給 allow-top-navigation（避免把學員導去外部頁面）。 */
           <iframe
             src={selectedGame.external_url}
             allow="autoplay; fullscreen"
+            sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            referrerPolicy="no-referrer"
             style={{ flex: 1, border: 0, display: "block", width: "100%" }}
             title={selectedGame.title}
           />

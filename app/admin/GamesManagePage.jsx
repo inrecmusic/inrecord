@@ -467,11 +467,13 @@ export default function GamesManagePage({ showToast }) {
                 <button className={styles.iconBtn} onClick={() => setPreviewModal(null)}><X size={18} /></button>
               </div>
             </div>
+            {/* iframe 一律不給 allow-same-origin：與 allow-scripts 併用等同取消沙箱，
+                被預覽頁可存取後台同源資料（含 sessionStorage 的 admin token） */}
             <div style={{ flex: 1, overflow: "hidden" }}>
               {previewModal.game_type === "url" ? (
                 <iframe
                   src={previewModal.external_url}
-                  sandbox="allow-scripts allow-same-origin allow-forms"
+                  sandbox="allow-scripts allow-forms"
                   referrerPolicy="no-referrer"
                   style={{ border: 0, width: "100%", height: "100%" }}
                   title={previewModal.title}
