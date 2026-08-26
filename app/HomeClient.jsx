@@ -21,11 +21,7 @@ import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/track-event";
 import { motion } from "framer-motion";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const POINTS = [
   { n: 1, title: "零基礎也能輕鬆上手" },
@@ -480,16 +476,29 @@ export default function HomeClient({ sale }) {
 
   // Hero 視差入場（桌機）：捲離 hero 時，照片微放大＋下移、內容上移＋淡出（GSAP ScrollTrigger scrub）。
   // 只在 ≥981px 且未要求減少動態時啟用；matchMedia 條件不符自動不掛/revert，useGSAP 於卸載自動清理。
-  useGSAP(() => {
-    const mm = gsap.matchMedia();
-    mm.add("(min-width: 981px) and (prefers-reduced-motion: no-preference)", () => {
-      gsap.timeline({
-        scrollTrigger: { trigger: heroRef.current, start: "top top", end: "bottom top", scrub: true },
-      })
-        .to(heroPhotoRef.current, { yPercent: 6, scale: 1.1, ease: "none" }, 0)
-        .to(heroContentRef.current, { y: -60, opacity: 0.3, ease: "none" }, 0);
-    });
-  }, { scope: heroRef });
+  // GSAP 改為「符合條件才動態載入」：手機與 reduced-motion 完全不下載這包（首頁 JS 大幅瘦身）。
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 981px) and (prefers-reduced-motion: no-preference)");
+    if (!mq.matches) return;
+    let ctx, cancelled = false;
+    (async () => {
+      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
+        import("gsap"),
+        import("gsap/ScrollTrigger"),
+      ]);
+      if (cancelled || !heroRef.current) return;
+      gsap.registerPlugin(ScrollTrigger);
+      ctx = gsap.context(() => {
+        gsap.timeline({
+          scrollTrigger: { trigger: heroRef.current, start: "top top", end: "bottom top", scrub: true },
+        })
+          .to(heroPhotoRef.current, { yPercent: 6, scale: 1.1, ease: "none" }, 0)
+          .to(heroContentRef.current, { y: -60, opacity: 0.3, ease: "none" }, 0);
+      }, heroRef);
+    })();
+    return () => { cancelled = true; ctx?.revert(); };
+  }, []);
 
   // 定價區進入視窗打一次漏斗事件 ViewContent（Meta/GA4）
   useEffect(() => {

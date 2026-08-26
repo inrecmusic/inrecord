@@ -326,3 +326,20 @@ $$;
 --    effective email = grant_email ?? email（見 lib/order-enrolled.js、lib/fulfillment-grant.js）。
 -- ────────────────────────────────────────────────────────────────────────
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS grant_email TEXT;
+
+-- ────────────────────────────────────────────────────────────────────────
+-- 外鍵索引（效能）：無索引的 FK 在 JOIN／級聯刪除時會全表掃描。純加速、不動邏輯。
+-- ────────────────────────────────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS assignments_video_id_idx       ON assignments(video_id);
+CREATE INDEX IF NOT EXISTS comment_replies_comment_id_idx ON comment_replies(comment_id);
+CREATE INDEX IF NOT EXISTS comments_chapter_id_idx        ON comments(chapter_id);
+CREATE INDEX IF NOT EXISTS comments_video_id_idx          ON comments(video_id);
+CREATE INDEX IF NOT EXISTS enrollments_order_id_idx       ON enrollments(order_id);
+CREATE INDEX IF NOT EXISTS games_video_id_idx             ON games(video_id);
+CREATE INDEX IF NOT EXISTS notes_video_id_idx             ON notes(video_id);
+CREATE INDEX IF NOT EXISTS progress_video_id_idx          ON progress(video_id);
+CREATE INDEX IF NOT EXISTS quiz_attempts_quiz_id_idx      ON quiz_attempts(quiz_id);
+CREATE INDEX IF NOT EXISTS rating_replies_rating_id_idx   ON rating_replies(rating_id);
+CREATE INDEX IF NOT EXISTS submissions_assignment_id_idx  ON submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS submissions_video_id_idx       ON submissions(video_id);
+CREATE INDEX IF NOT EXISTS videos_chapter_id_idx          ON videos(chapter_id);
