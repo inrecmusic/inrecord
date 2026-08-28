@@ -17,7 +17,7 @@ export async function GET(req) {
   const videoId = new URL(req.url).searchParams.get("video_id");
   let q = supabase
     .from("materials")
-    .select("id, video_id, title, storage_path, file_size, sort_order, created_at")
+    .select("id, video_id, kind, title, storage_path, file_size, sort_order, created_at")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   q = videoId ? q.eq("video_id", videoId) : q.is("video_id", null);
@@ -42,6 +42,8 @@ export async function POST(req) {
   const file = formData.get("file");
   const title = (formData.get("title") || "").toString().trim();
   const videoId = (formData.get("video_id") || "").toString().trim() || null;
+  // 只認 'score'，其餘（含缺漏、亂填）一律落回 'handout'，與 DB 預設一致
+  const kind = formData.get("kind") === "score" ? "score" : "handout";
 
   if (!file || typeof file === "string") return NextResponse.json({ error: "no_file" }, { status: 400 });
   if (!title) return NextResponse.json({ error: "no_title" }, { status: 400 });
@@ -58,7 +60,7 @@ export async function POST(req) {
 
   const { data, error } = await supabase
     .from("materials")
-    .insert({ video_id: videoId, title, storage_path: path, file_size: buf.length })
+    .insert({ video_id: videoId, kind, title, storage_path: path, file_size: buf.length })
     .select("id")
     .single();
   if (error) {
@@ -69,7 +71,7 @@ export async function POST(req) {
 
   await logAudit(supabase, {
     actor: payload.email, action: "material.create", targetType: "material",
-    targetId: data?.id, meta: { title, video_id: videoId }, req,
+    targetId: data?.id, meta: { title, video_id: videoId, kind }, req,
   });
   return NextResponse.json({ ok: true, id: data?.id });
 }

@@ -39,12 +39,12 @@ export async function GET(req) {
   // 該單元講義（若有 videoId）＋ 全課程通用講義（video_id IS NULL）
   let q = supabase
     .from("materials")
-    .select("id, video_id, title, file_size, sort_order")
+    .select("id, video_id, kind, title, file_size, sort_order")
     .order("sort_order", { ascending: true });
   q = videoId ? q.or(`video_id.eq.${videoId},video_id.is.null`) : q.is("video_id", null);
   const { data, error } = await q;
   if (error) return serverError(error);
 
-  const materials = (data || []).map((m) => ({ id: m.id, title: m.title, file_size: m.file_size, video_id: m.video_id }));
+  const materials = (data || []).map((m) => ({ id: m.id, title: m.title, file_size: m.file_size, video_id: m.video_id, kind: m.kind }));
   return NextResponse.json({ materials });
 }

@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS materials (
 );
 CREATE INDEX IF NOT EXISTS materials_video_id_idx ON materials (video_id);
 
+-- 講義／樂譜分類（2026-08 追加）。既有列預設為講義，行為完全不變；
+-- 上線後在後台把樂譜那幾筆改成 'score' 即可。
+ALTER TABLE materials
+  ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'handout';
+
 ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "service_role_materials" ON materials;
 CREATE POLICY "service_role_materials" ON materials
