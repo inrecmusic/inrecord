@@ -268,6 +268,14 @@ function AnnouncementsBanner({ items }) {
   );
 }
 
+/* 捲到指定區塊並閃一下。切換單元時該區塊要等講義載入才會出現，故短暫重試（上限約 1.4 秒）。 */
+function revealSection(id, tries = 12) {
+  const el = typeof document !== "undefined" ? document.getElementById(id) : null;
+  if (!el) { if (tries > 0) setTimeout(() => revealSection(id, tries - 1), 120); return; }
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.animate?.([{ background: "rgba(37,99,235,0.14)" }, { background: "transparent" }], { duration: 1200 });
+}
+
 /* ── MaterialsSection ─────────────────────────────────────────────────────────── */
 function MaterialsSection({ token, video }) {
   const [items, setItems] = useState([]);
@@ -296,39 +304,54 @@ function MaterialsSection({ token, video }) {
       const r = await fetch(`/api/classroom/materials?id=${id}`, { headers: { Authorization: `Bearer ${tk}` } });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.url) { if (w) w.location.href = d.url; else window.location.href = d.url; }
-      else { if (w) w.close(); setErr("講義暫時無法下載，請稍後再試"); }
-    } catch { if (w) w.close(); setErr("講義暫時無法下載，請稍後再試"); }
+      else { if (w) w.close(); setErr("檔案暫時無法下載，請稍後再試"); }
+    } catch { if (w) w.close(); setErr("檔案暫時無法下載，請稍後再試"); }
     setBusyId(null);
   }
 
   if (!items.length) return null;
 
+  const groups = [
+    { kind: "handout", id: "unit-handouts", label: "📎 講義下載" },
+    { kind: "score",   id: "unit-scores",   label: "🎼 樂譜下載" },
+  ].map(g => ({ ...g, list: items.filter(m => (m.kind === "score" ? "score" : "handout") === g.kind) }))
+   .filter(g => g.list.length);
+
   return (
-    <div style={{ padding: "12px 20px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>📎 講義下載</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {items.map(m => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => openMaterial(m.id)}
-            disabled={busyId === m.id}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 7,
-              fontSize: 13, color: "#1d4ed8",
-              background: "#eff6ff", border: "1px solid #bfdbfe",
-              borderRadius: 8, padding: "7px 12px", fontFamily: F,
-              cursor: busyId === m.id ? "default" : "pointer",
-              opacity: busyId === m.id ? 0.6 : 1,
-            }}
-          >
-            <span style={{ color: "#dc2626", fontWeight: 700 }}>PDF</span>
-            {m.title}{m.video_id ? "" : "（通用）"}
-          </button>
-        ))}
-      </div>
-      {err && <div style={{ fontSize: 12, color: "#b45309", marginTop: 8 }}>{err}</div>}
-    </div>
+    <>
+      {groups.map(g => (
+        <div key={g.id} id={g.id} style={{ padding: "12px 20px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>{g.label}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {g.list.map(m => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => openMaterial(m.id)}
+                disabled={busyId === m.id}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  fontSize: 13, color: "#1d4ed8",
+                  background: "#eff6ff", border: "1px solid #bfdbfe",
+                  borderRadius: 8, padding: "7px 12px", fontFamily: F,
+                  cursor: busyId === m.id ? "default" : "pointer",
+                  opacity: busyId === m.id ? 0.6 : 1,
+                }}
+              >
+                <span style={{ color: "#dc2626", fontWeight: 700 }}>PDF</span>
+                {m.title}{m.video_id ? "" : "（通用）"}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {/* 錯誤訊息只出現一次：兩組共用同一個 err state，放進 map 會重複顯示 */}
+      {err && (
+        <div style={{ padding: "0 20px 12px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.06)", fontSize: 12, color: "#b45309" }}>
+          {err}
+        </div>
+      )}
+    </>
   );
 }
 
