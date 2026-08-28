@@ -415,7 +415,7 @@ git commit -m "後台講義管理加講義／樂譜類型選單"
   - DOM 錨點 id：`unit-handouts`（講義組）、`unit-scores`（樂譜組）
   - 模組層級 helper `revealSection(id)`，供 Task 6 的 icon 點擊呼叫
 
-**不得改動：** `openMaterial()` 的整段邏輯——先同步開空白分頁再 await 簽名 URL 的防彈窗攔截寫法、`freshToken`、錯誤訊息、`busyId` 控制，全部原樣保留。載入 effect 的 `cancelled` 競態保護也原樣保留。
+**不得改動：** `openMaterial()` 的控制流程——先同步開空白分頁再 await 簽名 URL 的防彈窗攔截寫法、`freshToken`、`busyId` 控制、失敗時 `w.close()`，全部原樣保留。載入 effect 的 `cancelled` 競態保護也原樣保留。（唯一允許的改動是 Step 3 的錯誤**文案**，因為同一支現在也服務樂譜。）
 
 - [ ] **Step 1: 加 revealSection helper**
 
@@ -470,9 +470,14 @@ function revealSection(id, tries = 12) {
               </button>
             ))}
           </div>
-          {err && <div style={{ fontSize: 12, color: "#b45309", marginTop: 8 }}>{err}</div>}
         </div>
       ))}
+      {/* 錯誤訊息只出現一次：兩組共用同一個 err state，放進 map 會重複顯示 */}
+      {err && (
+        <div style={{ padding: "0 20px 12px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.06)", fontSize: 12, color: "#b45309" }}>
+          {err}
+        </div>
+      )}
     </>
   );
 ```
