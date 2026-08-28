@@ -90,8 +90,9 @@ export async function GET(req) {
     playerMode
       ? supabase.from("materials").select("video_id, kind").not("video_id", "is", null)
       : Promise.resolve({ data: null, error: null }),
+    // 停用（is_active=false）的遊戲不算，語意對齊 games/route.js 的 `!== false`（true/null 都算啟用）。
     playerMode
-      ? supabase.from("games").select("video_id").not("video_id", "is", null)
+      ? supabase.from("games").select("video_id").not("video_id", "is", null).not("is_active", "is", false)
       : Promise.resolve({ data: null, error: null }),
   ]);
   if (playerMode) {

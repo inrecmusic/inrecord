@@ -1183,8 +1183,8 @@ export default function ClassroomPage() {
     if (isTablet) setDrawerOpen(false);
   }
 
-  // 點 icon＝切到該單元＋直接開對應區塊。必須 stopPropagation，
-  // 否則外層單元列的 onClick 也會跑，剛設好的分頁會被蓋掉。
+  // 點 icon＝切到該單元＋直接開對應區塊。外層單元列現在是純 div（沒掛 onClick），
+  // 這裡的 stopPropagation 目前用不到，純粹防後面有人在外層加 onClick 時踩到。
   function handleIconClick(e, v, ic) {
     e.stopPropagation();
     handleSelect(v);
