@@ -14,6 +14,15 @@ function fmtDur(sec) {
 
 const F = `var(--type-body)`;
 
+// 側欄單元列右側的內容 icon。順序固定：先看的、再練的、最後交的——
+// 位置一致，學員掃第二個單元時不用重新找。key 對應 lib/unit-content.js 的旗標。
+const UNIT_ICONS = [
+  { key: "handout",    emoji: "📎", label: "講義下載", anchor: "unit-handouts" },
+  { key: "score",      emoji: "🎼", label: "樂譜下載", anchor: "unit-scores" },
+  { key: "game",       emoji: "🎮", label: "互動遊戲", tab: "games" },
+  { key: "assignment", emoji: "📝", label: "作業繳交", tab: "assignment" },
+];
+
 // Bunny Stream 影片進度追蹤需要 player.js（Bunny CDN 提供）。注入一次、快取 Promise；
 // 載入失敗就放棄（不擋影片播放）。用 window.playerjs.Player(iframe) 監聽 timeupdate。
 let _playerJsPromise = null;
@@ -958,6 +967,7 @@ export default function ClassroomPage() {
 
   const [chapters, setChapters]           = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [contentFlags, setContentFlags]   = useState({});
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
   const [embedSrc, setEmbedSrc] = useState("");
@@ -1005,6 +1015,7 @@ export default function ClassroomPage() {
           setVideos(d.videos || []);
           setProgress(d.progress || []);
           setAnnouncements(d.announcements || []);
+          setContentFlags(d.contentFlags || {});
           const vids = d.videos || [];
           if (vids.length) {
             const pm = Object.fromEntries((d.progress || []).map(p => [p.video_id, p]));
@@ -1170,6 +1181,15 @@ export default function ClassroomPage() {
   function handleSelect(v) {
     setCurrentVideo(v);
     if (isTablet) setDrawerOpen(false);
+  }
+
+  // 點 icon＝切到該單元＋直接開對應區塊。必須 stopPropagation，
+  // 否則外層單元列的 onClick 也會跑，剛設好的分頁會被蓋掉。
+  function handleIconClick(e, v, ic) {
+    e.stopPropagation();
+    handleSelect(v);
+    if (ic.tab) setTab(ic.tab);
+    else revealSection(ic.anchor);
   }
 
   async function handleLogout() {
@@ -1486,14 +1506,14 @@ export default function ClassroomPage() {
         )}
         <div style={isTablet ? {
           position: "fixed", top: 0, right: 0, bottom: 0,
-          width: "min(330px, 85vw)", zIndex: 50,
+          width: "min(380px, 88vw)", zIndex: 50,
           display: "flex", flexDirection: "column",
           background: "#fff", flexShrink: 0,
           boxShadow: "-8px 0 32px rgba(0,0,0,.18)",
           transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform .28s ease",
         } : {
-          width: 288,
+          width: 360,
           display: "flex", flexDirection: "column",
           background: "#fff", flexShrink: 0,
         }}>
@@ -1559,55 +1579,85 @@ export default function ClassroomPage() {
                       ? Math.min(100, Math.round((pe.watched_seconds / pe.total_seconds) * 100))
                       : 0;
                     const isWatching = !done && watchPct > 0;
+                    const flags      = contentFlags[v.id];
+                    const icons      = flags ? UNIT_ICONS.filter(ic => flags[ic.key]) : [];
+                    const rowBg      = isActive ? "rgba(37,99,235,0.08)" : "transparent";
+                    const icoBg      = isActive ? "rgba(37,99,235,0.12)" : "#f1f5f9";
                     return (
-                      <button key={v.id} onClick={() => handleSelect(v)}
+                      <div key={v.id}
                         style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          width: "100%", padding: "8px 8px 8px 6px",
-                          border: 0, borderRadius: 9, cursor: "pointer",
-                          textAlign: "left", fontFamily: F,
-                          background: isActive ? "rgba(37,99,235,0.08)" : "transparent",
-                          transition: "background .1s",
+                          display: "flex", alignItems: "flex-start",
+                          borderRadius: 9, background: rowBg, transition: "background .1s",
                         }}
                         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
                         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                       >
-                        {/* Status indicator */}
-                        <div style={{
-                          width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                          display: "grid", placeItems: "center",
-                          fontSize: 10.5, fontWeight: 600,
-                          background: isActive ? "#2563eb" : done ? "rgba(22,163,74,0.12)" : isWatching ? "rgba(37,99,235,0.08)" : "#f1f5f9",
-                          color: isActive ? "#fff" : done ? "#16a34a" : isWatching ? "#2563eb" : "#64748b",
-                          border: `1.5px solid ${isActive ? "#2563eb" : done ? "rgba(22,163,74,0.4)" : isWatching ? "rgba(37,99,235,0.3)" : "rgba(0,0,0,0.1)"}`,
-                        }}>
-                          {done && !isActive ? "✓" : idx + 1}
-                        </div>
-
-                        {/* Title + progress */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <button onClick={() => handleSelect(v)}
+                          style={{
+                            display: "flex", alignItems: "flex-start", gap: 10,
+                            flex: 1, minWidth: 0, padding: "8px 2px 8px 6px",
+                            border: 0, borderRadius: 9, background: "none", cursor: "pointer",
+                            textAlign: "left", fontFamily: F,
+                          }}
+                        >
+                          {/* Status indicator */}
                           <div style={{
-                            fontSize: 13, lineHeight: 1.4,
-                            fontWeight: isActive ? 600 : 400,
-                            color: isActive ? "#2563eb" : "#334155",
-                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                            width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                            display: "grid", placeItems: "center",
+                            fontSize: 10.5, fontWeight: 600,
+                            background: isActive ? "#2563eb" : done ? "rgba(22,163,74,0.12)" : isWatching ? "rgba(37,99,235,0.08)" : "#f1f5f9",
+                            color: isActive ? "#fff" : done ? "#16a34a" : isWatching ? "#2563eb" : "#64748b",
+                            border: `1.5px solid ${isActive ? "#2563eb" : done ? "rgba(22,163,74,0.4)" : isWatching ? "rgba(37,99,235,0.3)" : "rgba(0,0,0,0.1)"}`,
                           }}>
-                            {v.title}
+                            {done && !isActive ? "✓" : idx + 1}
                           </div>
-                          {isWatching ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
-                              <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
-                                <div style={{ width: `${watchPct}%`, height: "100%", background: "#2563eb", borderRadius: 2 }} />
+
+                          {/* Title + progress */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: 13, lineHeight: 1.45,
+                              fontWeight: isActive ? 600 : 400,
+                              color: isActive ? "#2563eb" : "#334155",
+                              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                            }}>
+                              {v.title}
+                            </div>
+                            {isWatching ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
+                                <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
+                                  <div style={{ width: `${watchPct}%`, height: "100%", background: "#2563eb", borderRadius: 2 }} />
+                                </div>
+                                <span style={{ fontSize: 10, color: "#2563eb", flexShrink: 0 }}>{watchPct}%</span>
                               </div>
-                              <span style={{ fontSize: 10, color: "#2563eb", flexShrink: 0 }}>{watchPct}%</span>
-                            </div>
-                          ) : v.duration ? (
-                            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
-                              {v.duration}
-                            </div>
-                          ) : null}
-                        </div>
-                      </button>
+                            ) : v.duration ? (
+                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
+                                {v.duration}
+                              </div>
+                            ) : null}
+                          </div>
+                        </button>
+
+                        {/* 內容 icon：只顯示該單元真的有的，沒有就不佔位 */}
+                        {icons.length > 0 && (
+                          <div style={{ display: "flex", gap: 2, flexShrink: 0, padding: "9px 6px 0 0" }}>
+                            {icons.map(ic => (
+                              <button key={ic.key} type="button"
+                                title={ic.label}
+                                aria-label={`${v.title}－${ic.label}`}
+                                onClick={e => handleIconClick(e, v, ic)}
+                                style={{
+                                  width: 24, height: 24, borderRadius: 7, border: 0,
+                                  display: "grid", placeItems: "center",
+                                  fontSize: 12.5, lineHeight: 1, cursor: "pointer",
+                                  background: icoBg, transition: "background .12s",
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = isActive ? "rgba(37,99,235,0.2)" : "#e2e8f0"; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = icoBg; }}
+                              >{ic.emoji}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
