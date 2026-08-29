@@ -277,6 +277,20 @@ function AnnouncementsBanner({ items }) {
   );
 }
 
+/* 取新鮮簽名 URL 並開新分頁下載講義／樂譜。成功回 true。
+   必須在點擊的同步脈絡下先開空白分頁，await 之後再 window.open 會被瀏覽器彈窗攔截。 */
+async function openMaterialById(token, id) {
+  const w = typeof window !== "undefined" ? window.open("", "_blank", "noopener,noreferrer") : null;
+  try {
+    const tk = await freshToken(token);
+    const r = await fetch(`/api/classroom/materials?id=${id}`, { headers: { Authorization: `Bearer ${tk}` } });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.url) { if (w) w.location.href = d.url; else window.location.href = d.url; return true; }
+  } catch {}
+  if (w) w.close();
+  return false;
+}
+
 /* 捲到指定區塊並閃一下。切換單元時該區塊要等講義載入才會出現，故短暫重試（上限約 1.4 秒）。 */
 function revealSection(id, tries = 12) {
   const el = typeof document !== "undefined" ? document.getElementById(id) : null;
@@ -305,16 +319,8 @@ function MaterialsSection({ token, video }) {
   async function openMaterial(id) {
     if (!token || busyId) return;
     setErr(""); setBusyId(id);
-    // 下載當下才向後端要新鮮簽名 URL（僅 5 分鐘有效）。先在點擊的同步脈絡下開空白分頁，
-    // 避免 await 之後再 window.open 被瀏覽器彈窗攔截。
-    const w = typeof window !== "undefined" ? window.open("", "_blank", "noopener,noreferrer") : null;
-    try {
-      const tk = await freshToken(token);
-      const r = await fetch(`/api/classroom/materials?id=${id}`, { headers: { Authorization: `Bearer ${tk}` } });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && d.url) { if (w) w.location.href = d.url; else window.location.href = d.url; }
-      else { if (w) w.close(); setErr("檔案暫時無法下載，請稍後再試"); }
-    } catch { if (w) w.close(); setErr("檔案暫時無法下載，請稍後再試"); }
+    const ok = await openMaterialById(token, id);
+    if (!ok) setErr("檔案暫時無法下載，請稍後再試");
     setBusyId(null);
   }
 
