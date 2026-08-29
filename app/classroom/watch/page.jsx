@@ -1214,6 +1214,7 @@ export default function ClassroomPage() {
   // 手風琴：展開的單元 id。一次只開一個——21 個單元全展開會讓側欄無法掃視。
   // 有影片的單元點了同時切換播放；沒影片的單元只展開（仍可下載講義樂譜）。
   function handleUnitClick(v) {
+    setItemErr("");   // 換單元就清掉上一個單元的下載錯誤，否則會跟著顯示在新展開的面板裡
     setOpenUnitId(prev => (prev === v.id ? null : v.id));
     if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
   }
