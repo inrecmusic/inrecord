@@ -23,6 +23,9 @@ const UNIT_ICONS = [
   { key: "assignment", emoji: "📝", label: "作業繳交", tab: "assignment" },
 ];
 
+// 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
+const COMING_SOON = "預計 9/30 上架";
+
 // Bunny Stream 影片進度追蹤需要 player.js（Bunny CDN 提供）。注入一次、快取 Promise；
 // 載入失敗就放棄（不擋影片播放）。用 window.playerjs.Player(iframe) 監聽 timeupdate。
 let _playerJsPromise = null;
@@ -987,6 +990,8 @@ export default function ClassroomPage() {
   const [contentItems, setContentItems]   = useState({});
   const [contentStats, setContentStats]   = useState(null);
   const [pendingGameId, setPendingGameId] = useState(null);
+  const [openUnitId, setOpenUnitId]       = useState(null);
+  const [itemErr, setItemErr]             = useState("");
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
   const [embedSrc, setEmbedSrc] = useState("");
@@ -1198,18 +1203,30 @@ export default function ClassroomPage() {
     return () => { cancelled = true; playerCtrlRef.current = null; clearInterval(interval); };
   }, [currentVideo?.id, token, embedSrc]);
 
+  // 正在上的單元預設展開（也涵蓋從儀表板帶 ?v= 進來的情況）
+  useEffect(() => { if (currentVideo?.id) setOpenUnitId(currentVideo.id); }, [currentVideo?.id]);
+
   function handleSelect(v) {
     setCurrentVideo(v);
     if (isTablet) setDrawerOpen(false);
   }
 
-  // 點 icon＝切到該單元＋直接開對應區塊。外層單元列現在是純 div（沒掛 onClick），
-  // 這裡的 stopPropagation 目前用不到，純粹防後面有人在外層加 onClick 時踩到。
-  function handleIconClick(e, v, ic) {
+  // 手風琴：展開的單元 id。一次只開一個——21 個單元全展開會讓側欄無法掃視。
+  // 有影片的單元點了同時切換播放；沒影片的單元只展開（仍可下載講義樂譜）。
+  function handleUnitClick(v) {
+    setOpenUnitId(prev => (prev === v.id ? null : v.id));
+    if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
+  }
+
+  // 點展開清單裡的項目：講義樂譜直接下載，遊戲與作業切到對應分頁。
+  async function handleItemClick(e, v, item) {
     e.stopPropagation();
-    handleSelect(v);
-    if (ic.tab) setTab(ic.tab);
-    else revealSection(ic.anchor);
+    if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
+    if (item.kind === "game") { setPendingGameId(item.id); setTab("games"); return; }
+    if (item.kind === "assignment") { setTab("assignment"); return; }
+    setItemErr("");
+    const ok = await openMaterialById(token, item.id);
+    if (!ok) setItemErr("檔案暫時無法下載，請稍後再試");
   }
 
   async function handleLogout() {
@@ -1538,6 +1555,27 @@ export default function ClassroomPage() {
           background: "#fff", flexShrink: 0,
         }}>
 
+          {/* 課程總覽：讓學員一眼看到總量 */}
+          {contentStats && (
+            <div style={{
+              padding: "11px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)",
+              background: "#f8fbff", fontSize: 11.5, color: "#334155", lineHeight: 1.7, flexShrink: 0,
+            }}>
+              本課程共 {[
+                [contentStats.videos, "支影片"],
+                [contentStats.handout, "份講義"],
+                [contentStats.score, "份樂譜"],
+                [contentStats.game, "個互動遊戲"],
+                [contentStats.assignment, "份作業"],
+              ].filter(([n]) => n > 0).map(([n, unit], i) => (
+                <span key={unit}>
+                  {i > 0 && " · "}
+                  <b style={{ color: "#2563eb", fontWeight: 700 }}>{n}</b> {unit}
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* Progress */}
           <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 500, marginBottom: 9 }}>
@@ -1578,7 +1616,6 @@ export default function ClassroomPage() {
             )}
             {chapters.map((c, ci) => {
               const cv = videos.filter(v => v.chapter_id === c.id);
-              if (!cv.length) return null;
               return (
                 <div key={c.id} style={{ marginBottom: 4 }}>
                   {/* Chapter header */}
@@ -1590,6 +1627,12 @@ export default function ClassroomPage() {
                     {c.title}
                   </div>
 
+                  {!cv.length && (
+                    <div style={{ fontSize: 12, color: "#94a3b8", padding: "4px 8px 8px 14px" }}>
+                      單元準備中，{COMING_SOON}
+                    </div>
+                  )}
+
                   {/* Unit buttons */}
                   {cv.map((v, idx) => {
                     const isActive   = v.id === currentVideo?.id;
@@ -1599,32 +1642,39 @@ export default function ClassroomPage() {
                       ? Math.min(100, Math.round((pe.watched_seconds / pe.total_seconds) * 100))
                       : 0;
                     const isWatching = !done && watchPct > 0;
-                    const kinds      = new Set((contentItems[v.id] || []).map(i => i.kind));
-                    const icons      = UNIT_ICONS.filter(ic => kinds.has(ic.key));
-                    const rowBg      = isActive ? "rgba(37,99,235,0.08)" : "transparent";
-                    const icoBg      = isActive ? "rgba(37,99,235,0.12)" : "#f1f5f9";
+                    const items      = contentItems[v.id] || [];
+                    const playable   = !!(v.bunny_video_id || v.vimeo_id);
+                    const isOpen     = openUnitId === v.id;
                     return (
-                      <div key={v.id}
-                        style={{
-                          display: "flex", alignItems: "flex-start",
-                          borderRadius: 9, background: rowBg, transition: "background .1s",
-                        }}
-                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
-                        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
-                      >
-                        <button onClick={() => handleSelect(v)}
+                      <div key={v.id}>
+                        <div
+                          role="button" tabIndex={0}
+                          aria-expanded={items.length ? isOpen : undefined}
+                          onClick={() => handleUnitClick(v)}
+                          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleUnitClick(v); } }}
                           style={{
-                            display: "flex", alignItems: "flex-start", gap: 10,
-                            flex: 1, minWidth: 0, padding: "8px 2px 8px 6px",
-                            border: 0, borderRadius: 9, background: "none", cursor: "pointer",
-                            textAlign: "left", fontFamily: F,
+                            display: "flex", alignItems: "flex-start", gap: 2,
+                            padding: "7px 8px 7px 4px", borderRadius: 9, cursor: "pointer",
+                            background: isActive ? "rgba(37,99,235,0.08)" : "transparent",
+                            transition: "background .1s",
                           }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                         >
+                          {/* 展開指示 */}
+                          <div style={{
+                            width: 14, flexShrink: 0, paddingTop: 5, textAlign: "center",
+                            fontSize: 9, color: isOpen ? "#2563eb" : "#cbd5e1",
+                            transform: isOpen ? "rotate(90deg)" : "none",
+                            transformOrigin: "center 10px", transition: "transform .2s ease, color .12s",
+                            visibility: items.length ? "visible" : "hidden",
+                          }}>▶</div>
+
                           {/* Status indicator */}
                           <div style={{
                             width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
                             display: "grid", placeItems: "center",
-                            fontSize: 10.5, fontWeight: 600,
+                            fontSize: 10.5, fontWeight: 600, margin: "1px 8px 0 2px",
                             background: isActive ? "#2563eb" : done ? "rgba(22,163,74,0.12)" : isWatching ? "rgba(37,99,235,0.08)" : "#f1f5f9",
                             color: isActive ? "#fff" : done ? "#16a34a" : isWatching ? "#2563eb" : "#64748b",
                             border: `1.5px solid ${isActive ? "#2563eb" : done ? "rgba(22,163,74,0.4)" : isWatching ? "rgba(37,99,235,0.3)" : "rgba(0,0,0,0.1)"}`,
@@ -1632,49 +1682,62 @@ export default function ClassroomPage() {
                             {done && !isActive ? "✓" : idx + 1}
                           </div>
 
-                          {/* Title + progress */}
+                          {/* Title + meta */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
                               fontSize: 13, lineHeight: 1.45,
                               fontWeight: isActive ? 600 : 400,
-                              color: isActive ? "#2563eb" : "#334155",
+                              color: isActive ? "#2563eb" : playable ? "#334155" : "#94a3b8",
                               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
                             }}>
                               {v.title}
                             </div>
-                            {isWatching ? (
+                            {!playable ? (
+                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{COMING_SOON}</div>
+                            ) : isWatching ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                                 <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
                                   <div style={{ width: `${watchPct}%`, height: "100%", background: "#2563eb", borderRadius: 2 }} />
                                 </div>
                                 <span style={{ fontSize: 10, color: "#2563eb", flexShrink: 0 }}>{watchPct}%</span>
                               </div>
-                            ) : v.duration ? (
-                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
-                                {v.duration}
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                                {v.duration && <span>{v.duration}</span>}
+                                {items.length > 0 && <span style={{ color: "#b6c0cd" }}>{items.length} 項</span>}
                               </div>
-                            ) : null}
+                            )}
                           </div>
-                        </button>
+                        </div>
 
-                        {/* 內容 icon：只顯示該單元真的有的，沒有就不佔位 */}
-                        {icons.length > 0 && (
-                          <div style={{ display: "flex", gap: 2, flexShrink: 0, padding: "9px 6px 0 0" }}>
-                            {icons.map(ic => (
-                              <button key={ic.key} type="button"
-                                title={ic.label}
-                                aria-label={`${v.title}－${ic.label}`}
-                                onClick={e => handleIconClick(e, v, ic)}
-                                style={{
-                                  width: 24, height: 24, borderRadius: 7, border: 0,
-                                  display: "grid", placeItems: "center",
-                                  fontSize: 12.5, lineHeight: 1, cursor: "pointer",
-                                  background: icoBg, transition: "background .12s",
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = isActive ? "rgba(37,99,235,0.2)" : "#e2e8f0"; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = icoBg; }}
-                              >{ic.emoji}</button>
-                            ))}
+                        {/* 展開內容：該單元的真實項目 */}
+                        {isOpen && items.length > 0 && (
+                          <div style={{ padding: "2px 8px 8px 37px" }}>
+                            {items.map(item => {
+                              const ic = UNIT_ICONS.find(x => x.key === item.kind);
+                              return (
+                                <div key={`${item.kind}-${item.id}`}
+                                  role="button" tabIndex={0}
+                                  aria-label={`${item.title} — ${ic?.label}`}
+                                  onClick={e => handleItemClick(e, v, item)}
+                                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleItemClick(e, v, item); } }}
+                                  style={{
+                                    display: "flex", alignItems: "center", gap: 9,
+                                    padding: "6px 9px", borderRadius: 8, cursor: "pointer",
+                                    fontSize: 12.5, color: "#334155", transition: "background .12s, color .12s",
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(37,99,235,0.07)"; e.currentTarget.style.color = "#2563eb"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#334155"; }}
+                                >
+                                  <span style={{ fontSize: 13, flexShrink: 0 }}>{ic?.emoji}</span>
+                                  <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {item.title}
+                                  </span>
+                                  <span style={{ fontSize: 10, color: "#94a3b8", flexShrink: 0 }}>{ic?.label}</span>
+                                </div>
+                              );
+                            })}
+                            {itemErr && <div style={{ fontSize: 11.5, color: "#b45309", padding: "4px 9px 0" }}>{itemErr}</div>}
                           </div>
                         )}
                       </div>
