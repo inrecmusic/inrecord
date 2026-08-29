@@ -3,7 +3,7 @@ import { requireClassroomAuth } from "@/lib/classroom-auth";
 import { hasCourseAccess } from "@/lib/course-access";
 import { mergePrefill } from "@/lib/student-profile";
 import { enforceDeviceLimit } from "@/lib/game-devices";
-import { buildContentFlags } from "@/lib/unit-content";
+import { buildContentItems, summarizeContent } from "@/lib/unit-content";
 
 // 教室入口一次載入：驗 JWT 一次，之後並行撈 購課 / 遊戲存取 / 學員資料(+預填) /（購課者）章節+影片+進度，
 // 單一往返取代原本 verify-purchase + verify-subscription + course + progress + profile 五支
@@ -88,11 +88,11 @@ export async function GET(req) {
     // 播放頁側欄的內容 icon 用：只撈索引欄位，兩張表都小，成本可忽略。
     // 通用講義（video_id 為 null）不掛單元，先在 DB 濾掉。
     playerMode
-      ? supabase.from("materials").select("video_id, kind").not("video_id", "is", null)
+      ? supabase.from("materials").select("id, video_id, kind, title").not("video_id", "is", null)
       : Promise.resolve({ data: null, error: null }),
     // 停用（is_active=false）的遊戲不算，語意對齊 games/route.js 的 `!== false`（true/null 都算啟用）。
     playerMode
-      ? supabase.from("games").select("video_id").not("video_id", "is", null).not("is_active", "is", false)
+      ? supabase.from("games").select("id, video_id, title").not("video_id", "is", null).not("is_active", "is", false)
       : Promise.resolve({ data: null, error: null }),
   ]);
   if (playerMode) {
@@ -117,14 +117,15 @@ export async function GET(req) {
   out.percentage = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
 
   if (playerMode) {
-    // 讀取失敗不讓側欄壞掉：記 log、旗標退回空物件，icon 不顯示而已（與本檔既有容錯一致）
+    // 讀取失敗不讓側欄壞掉：記 log、明細退回空物件，icon 不顯示而已（與本檔既有容錯一致）
     if (matRes.error) console.error("[bootstrap] materials:", matRes.error.message);
     if (gameRes.error) console.error("[bootstrap] games:", gameRes.error.message);
-    out.contentFlags = buildContentFlags({
+    out.contentItems = buildContentItems({
       materials: matRes.data || [],
       games: gameRes.data || [],
       videos: out.videos,
     });
+    out.contentStats = summarizeContent(out.contentItems, totalCount);
   }
 
   return NextResponse.json(out);
