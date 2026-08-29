@@ -14,13 +14,13 @@ function fmtDur(sec) {
 
 const F = `var(--type-body)`;
 
-// 側欄單元列右側的內容 icon。順序固定：先看的、再練的、最後交的——
-// 位置一致，學員掃第二個單元時不用重新找。key 對應 lib/unit-content.js 的旗標。
+// 側欄展開項的內容類型對應。順序固定：先看的、再練的、最後交的——
+// 位置一致，學員掃第二個單元時不用重新找。key 對應 lib/unit-content.js 的 kind。
 const UNIT_ICONS = [
-  { key: "handout",    emoji: "📎", label: "講義下載", anchor: "unit-handouts" },
-  { key: "score",      emoji: "🎼", label: "樂譜下載", anchor: "unit-scores" },
-  { key: "game",       emoji: "🎮", label: "互動遊戲", tab: "games" },
-  { key: "assignment", emoji: "📝", label: "作業繳交", tab: "assignment" },
+  { key: "handout",    emoji: "📎", label: "講義下載" },
+  { key: "score",      emoji: "🎼", label: "樂譜下載" },
+  { key: "game",       emoji: "🎮", label: "互動遊戲" },
+  { key: "assignment", emoji: "📝", label: "作業繳交" },
 ];
 
 // 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
@@ -292,14 +292,6 @@ async function openMaterialById(token, id) {
   } catch {}
   if (w) w.close();
   return false;
-}
-
-/* 捲到指定區塊並閃一下。切換單元時該區塊要等講義載入才會出現，故短暫重試（上限約 1.4 秒）。 */
-function revealSection(id, tries = 12) {
-  const el = typeof document !== "undefined" ? document.getElementById(id) : null;
-  if (!el) { if (tries > 0) setTimeout(() => revealSection(id, tries - 1), 120); return; }
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-  el.animate?.([{ background: "rgba(37,99,235,0.14)" }, { background: "transparent" }], { duration: 1200 });
 }
 
 /* ── MaterialsSection ─────────────────────────────────────────────────────────── */
@@ -1646,6 +1638,8 @@ export default function ClassroomPage() {
                     const items      = contentItems[v.id] || [];
                     const playable   = !!(v.bunny_video_id || v.vimeo_id);
                     const isOpen     = openUnitId === v.id;
+                    // 沒影片的單元只列可下載項目（遊戲/作業要切分頁、會綁到別的單元）
+                    const visibleItems = playable ? items : items.filter(i => i.kind === "handout" || i.kind === "score");
                     return (
                       <div key={v.id}>
                         <div
@@ -1705,16 +1699,17 @@ export default function ClassroomPage() {
                             ) : (
                               <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
                                 {v.duration && <span>{v.duration}</span>}
-                                {items.length > 0 && <span style={{ color: "#b6c0cd" }}>{items.length} 項</span>}
+                                {visibleItems.length > 0 && <span style={{ color: "#b6c0cd" }}>{visibleItems.length} 項</span>}
                               </div>
                             )}
                           </div>
                         </div>
 
                         {/* 展開內容：該單元的真實項目 */}
-                        {isOpen && items.length > 0 && (
+                        {/* 沒影片的單元只列講義／樂譜（可直接下載）；遊戲與作業要切分頁、會綁到別的單元，先不顯示 */}
+                        {isOpen && visibleItems.length > 0 && (
                           <div style={{ padding: "2px 8px 8px 37px" }}>
-                            {items.map(item => {
+                            {visibleItems.map(item => {
                               const ic = UNIT_ICONS.find(x => x.key === item.kind);
                               return (
                                 <div key={`${item.kind}-${item.id}`}
