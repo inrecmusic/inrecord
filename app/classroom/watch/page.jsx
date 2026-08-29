@@ -586,7 +586,7 @@ function AssignmentTab({ video, token }) {
 }
 
 /* ── GamesTab ────────────────────────────────────────────────────────────────── */
-function GamesTab({ token, hasSubscription, video, gameCache }) {
+function GamesTab({ token, hasSubscription, video, gameCache, pendingGameId, onPendingConsumed }) {
   const [games, setGames]               = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [gameContent, setGameContent]   = useState(null);
@@ -620,6 +620,14 @@ function GamesTab({ token, hasSubscription, video, gameCache }) {
     })();
     return () => { cancelled = true; };
   }, [hasSubscription, token, videoId]);
+
+  // 從側欄點特定遊戲進來：等清單載好再選中，命中就把 pending 消耗掉。
+  useEffect(() => {
+    if (!pendingGameId || !games.length) return;
+    const hit = games.find(g => g.id === pendingGameId);
+    if (hit) setSelectedGame(hit);
+    onPendingConsumed?.();
+  }, [pendingGameId, games]);
 
   useEffect(() => {
     if (!selectedGame) return;
@@ -973,7 +981,9 @@ export default function ClassroomPage() {
 
   const [chapters, setChapters]           = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [contentFlags, setContentFlags]   = useState({});
+  const [contentItems, setContentItems]   = useState({});
+  const [contentStats, setContentStats]   = useState(null);
+  const [pendingGameId, setPendingGameId] = useState(null);
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
   const [embedSrc, setEmbedSrc] = useState("");
@@ -1021,7 +1031,8 @@ export default function ClassroomPage() {
           setVideos(d.videos || []);
           setProgress(d.progress || []);
           setAnnouncements(d.announcements || []);
-          setContentFlags(d.contentFlags || {});
+          setContentItems(d.contentItems || {});
+          setContentStats(d.contentStats || null);
           const vids = d.videos || [];
           if (vids.length) {
             const pm = Object.fromEntries((d.progress || []).map(p => [p.video_id, p]));
@@ -1495,7 +1506,7 @@ export default function ClassroomPage() {
           <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
             {tab === "rating"     && <RatingTab token={token} />}
             {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
-            {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} />}
+            {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} pendingGameId={pendingGameId} onPendingConsumed={() => setPendingGameId(null)} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
           </div>
         </div>
@@ -1585,8 +1596,8 @@ export default function ClassroomPage() {
                       ? Math.min(100, Math.round((pe.watched_seconds / pe.total_seconds) * 100))
                       : 0;
                     const isWatching = !done && watchPct > 0;
-                    const flags      = contentFlags[v.id];
-                    const icons      = flags ? UNIT_ICONS.filter(ic => flags[ic.key]) : [];
+                    const kinds      = new Set((contentItems[v.id] || []).map(i => i.kind));
+                    const icons      = UNIT_ICONS.filter(ic => kinds.has(ic.key));
                     const rowBg      = isActive ? "rgba(37,99,235,0.08)" : "transparent";
                     const icoBg      = isActive ? "rgba(37,99,235,0.12)" : "#f1f5f9";
                     return (
