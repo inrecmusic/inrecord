@@ -621,11 +621,14 @@ function GamesTab({ token, hasSubscription, video, gameCache, pendingGameId, onP
     return () => { cancelled = true; };
   }, [hasSubscription, token, videoId]);
 
-  // 從側欄點特定遊戲進來：等清單載好再選中，命中就把 pending 消耗掉。
+  // 從側欄點特定遊戲進來：等清單載好再選中。
+  // 只有命中才消耗 pending——切換單元的那一輪 games 還是舊單元的清單，
+  // 這時無條件消耗會把 pending 清掉，等新清單載入時就永遠選不到了。
   useEffect(() => {
     if (!pendingGameId || !games.length) return;
     const hit = games.find(g => g.id === pendingGameId);
-    if (hit) setSelectedGame(hit);
+    if (!hit) return;
+    setSelectedGame(hit);
     onPendingConsumed?.();
   }, [pendingGameId, games]);
 

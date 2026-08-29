@@ -433,7 +433,7 @@ git commit -m "抽出 openMaterialById 供側欄共用（純重構）"
 
 **Interfaces:**
 - Consumes: 無
-- Produces: `GamesTab` 新增兩個選用 prop：`pendingGameId`（string | null）與 `onPendingConsumed`（() => void）。清單載入後若 `pendingGameId` 命中其中一支，自動選中並呼叫 `onPendingConsumed()`。
+- Produces: `GamesTab` 新增兩個選用 prop：`pendingGameId`（string | null）與 `onPendingConsumed`（() => void）。清單載入後若 `pendingGameId` 命中其中一支，自動選中並呼叫 `onPendingConsumed()`；**未命中則不消耗 pending**，等後續 `games` 更新再試（切換單元時舊清單仍在，無條件消耗會讓自動選中永遠失效）。
 
 **不得改動：** 既有的 `hasSubscription`／`token`／`videoId` effect 依賴與重置邏輯、`gameCache` 快取鍵、失敗不快取的守則、裝置上限 403 處理、`cancelled` 競態保護。
 
@@ -448,11 +448,14 @@ function GamesTab({ token, hasSubscription, video, gameCache, pendingGameId, onP
 在既有的「載入遊戲清單」effect **之後**（`}, [hasSubscription, token, videoId]);` 那行之後）插入：
 
 ```jsx
-  // 從側欄點特定遊戲進來：等清單載好再選中，命中就把 pending 消耗掉。
+  // 從側欄點特定遊戲進來：等清單載好再選中。
+  // 只有命中才消耗 pending——切換單元的那一輪 games 還是舊單元的清單，
+  // 這時無條件消耗會把 pending 清掉，等新清單載入時就永遠選不到了。
   useEffect(() => {
     if (!pendingGameId || !games.length) return;
     const hit = games.find(g => g.id === pendingGameId);
-    if (hit) setSelectedGame(hit);
+    if (!hit) return;
+    setSelectedGame(hit);
     onPendingConsumed?.();
   }, [pendingGameId, games]);
 ```
