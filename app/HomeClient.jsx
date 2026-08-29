@@ -874,6 +874,11 @@ export default function HomeClient({ sale }) {
                   {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
+                {/* 現場/活動序號兌換入口：serialEntry 模式的 BuyModal 收任何 type=price 序號券 */}
+                <button type="button" onClick={() => startBuy(PLANS[1], { serialEntry: true })}
+                  style={{ background: "none", border: "none", padding: 0, marginTop: 6, display: "block", width: "100%", textAlign: "center", fontSize: 12.5, color: "#566180", textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "inherit" }}>
+                  有序號？點此兌換
+                </button>
               </motion.div>
               ) : (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
