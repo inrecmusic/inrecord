@@ -798,45 +798,34 @@ export default function HomeClient({ sale }) {
               <h2>10 章節 ＋ 2 附錄系統化學習<br/>從基礎到實戰，穩扎穩打</h2>
             </div>
             <div className={styles.moduleList}>
+              {/* 表格式手風琴：左箭頭＋章名、右側單元數；展開後每單元一列（播放 icon＋分隔線） */}
               {MODULES.map(m => (
                 <details key={m.n} className={styles.module}>
-                  <summary className={styles.moduleSummary}>
-                    {/* 章節編號放進藍色膠囊；圓形 36px 塞不下 Ch10，改 auto 寬 pill */}
-                    <div className={`${styles.num} ${m.isAppendix ? styles.numAppendix : ""}`}
-                      style={m.isAppendix ? undefined : { width: "auto", minWidth: 44, padding: "0 13px", borderRadius: 999, fontSize: 14.5, letterSpacing: ".03em", lineHeight: 1 }}>
-                      {m.isAppendix ? "附" : `Ch${m.n}`}
-                    </div>
-                    <h3>{m.isAppendix ? `${m.appendixLabel}：${m.title}` : m.title}</h3>
-                    <span className={styles.chevron}><ChevronDown size={18} strokeWidth={2} /></span>
+                  <summary className={styles.moduleSummary}
+                    style={{ gridTemplateColumns: "18px 1fr auto", alignItems: "center", gap: 14, padding: "18px 20px", background: "#f8fafc" }}>
+                    <span className={styles.chevron} style={{ marginTop: 0, color: "#64748b" }}><ChevronDown size={17} strokeWidth={2.2} /></span>
+                    <h3 style={{ margin: 0, fontSize: 17, lineHeight: 1.5, wordBreak: "keep-all", lineBreak: "strict" }}>
+                      {m.isAppendix ? `${m.appendixLabel}：${m.title}` : `Ch${m.n} ${m.title}`}
+                    </h3>
+                    {m.units?.length > 0 && (
+                      <span style={{ fontSize: 13.5, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>共 {m.units.length} 個單元</span>
+                    )}
                   </summary>
-                  <div className={styles.moduleBody}>
-                    <div>
-                      <p>{m.desc}</p>
-                      {m.units?.length > 0 && (
-                        <ul style={{
-                          listStyle: "none", margin: "12px 0 0", padding: 0,
-                          display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
-                          gap: "6px 18px", fontSize: 14, lineHeight: 1.6,
-                          wordBreak: "keep-all", lineBreak: "strict",
-                        }}>
-                          {m.units.map(u => {
-                            const [no, ...rest] = u.split(" ");
-                            return (
-                              <li key={u} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                                <span style={{ color: "var(--brand, #2563eb)", fontWeight: 700, fontSize: 12.5, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{no}</span>
-                                <span>{rest.join(" ")}</span>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                      {(m.song || m.game) && (
-                        <div className={styles.moduleMetaRow}>
-                          {m.song && <div className={styles.meta}><Music size={14} className={styles.metaIcon} />實戰曲目：{m.song}</div>}
-                          {m.game && <div className={styles.meta}><Bot size={14} className={styles.metaIcon} />遊戲：{m.game}</div>}
-                        </div>
-                      )}
-                    </div>
+                  <div className={styles.moduleBody} style={{ padding: 0 }}>
+                    {m.units?.length > 0 ? m.units.map(u => (
+                      <div key={u} style={{
+                        display: "flex", alignItems: "center", gap: 14,
+                        padding: "16px 20px 16px 24px", borderTop: "1px solid #eef2f6",
+                        fontSize: 15.5, color: "#1e293b", wordBreak: "keep-all", lineBreak: "strict",
+                      }}>
+                        <span style={{ width: 26, height: 20, borderRadius: 5, background: "#eceff3", display: "grid", placeItems: "center", flexShrink: 0, color: "#a6b0bd" }}>
+                          <Play size={10} fill="currentColor" strokeWidth={0} />
+                        </span>
+                        {u}
+                      </div>
+                    )) : (
+                      <p style={{ margin: 0, padding: "16px 20px", borderTop: "1px solid #eef2f6", color: "var(--muted)", fontSize: 15, lineHeight: 1.75 }}>{m.desc}</p>
+                    )}
                   </div>
                 </details>
               ))}

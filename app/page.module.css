@@ -256,7 +256,7 @@
 .numAppendix { background: #999; font-size: 13.5px; }
 .appendixLabel { font-size: 14.5px; font-weight: 500; color: #888; letter-spacing: .02em; }
 .chevron { display: grid; place-items: center; color: #bbb; transition: transform .25s; margin-top: 6px; }
-.module[open] .chevron { transform: rotate(90deg); }
+.module[open] .chevron { transform: rotate(180deg); }
 .moduleBody { padding: 0 20px 24px 90px; }
 .moduleBody p { margin: 0 0 12px; color: var(--muted); font-size: 18px; line-height: 1.75; }
 .moduleDuration { margin: 0 0 16px; font-size: 14.5px !important; color: #999 !important; font-weight: 500; letter-spacing: .02em; }
