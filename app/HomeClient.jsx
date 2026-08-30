@@ -328,7 +328,6 @@ const MODULES = [
   { n: "a2", isAppendix: true, appendixLabel: "附錄二", title: "給初學者的器材選購建議", desc: "不同預算下的電鋼琴、電子琴選購指南，以及實用 App 和軟體推薦，幫助你找到最適合自己的學習工具。", img: "photo-1552422535-c45813c61732" },
 ];
 
-const CH = ["一","二","三","四","五","六","七","八","九","十"];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -805,7 +804,7 @@ export default function HomeClient({ sale }) {
                     <div className={`${styles.num} ${m.isAppendix ? styles.numAppendix : ""}`}>
                       {m.isAppendix ? "附" : m.n}
                     </div>
-                    <h3>{m.isAppendix ? `${m.appendixLabel}：${m.title}` : `第 ${CH[m.n - 1]} 章：${m.title}`}</h3>
+                    <h3>{m.isAppendix ? `${m.appendixLabel}：${m.title}` : `Ch${m.n} ${m.title}`}</h3>
                     <span className={styles.chevron}><ChevronDown size={18} strokeWidth={2} /></span>
                   </summary>
                   <div className={styles.moduleBody}>
