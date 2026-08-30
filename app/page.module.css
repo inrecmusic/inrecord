@@ -249,7 +249,7 @@
 .moduleList { display: grid; gap: 12px; }
 .module { background: white; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; transition: transform .22s, box-shadow .22s; }
 .module:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.moduleSummary { display: grid; grid-template-columns: 54px 1fr 38px; gap: 16px; align-items: start; padding: 22px 20px; cursor: pointer; list-style: none; }
+.moduleSummary { display: grid; grid-template-columns: auto 1fr 38px; gap: 16px; align-items: start; padding: 22px 20px; cursor: pointer; list-style: none; }
 .moduleSummary::-webkit-details-marker { display: none; }
 .moduleSummary h3 { margin: 4px 0 0; font-size: 21.5px; font-weight: 700; line-height: 1.4; }
 .num { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: white; font-weight: 700; font-size: 15.5px; flex-shrink: 0; margin-top: 2px; }
@@ -494,7 +494,7 @@
   .pianoPhoto { min-height: 220px; }
   .instructorPhoto { height: 280px; }
   .instructorGrid { gap: 28px; }
-  .moduleSummary { grid-template-columns: 44px 1fr 28px; gap: 12px; padding: 18px 16px; }
+  .moduleSummary { grid-template-columns: auto 1fr 28px; gap: 12px; padding: 18px 16px; }
   .moduleSummary h3 { font-size: 18px; }
   .num { width: 32px; height: 32px; font-size: 14.5px; }
   .moduleBody { padding: 0 16px 20px; }
