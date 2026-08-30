@@ -801,10 +801,12 @@ export default function HomeClient({ sale }) {
               {MODULES.map(m => (
                 <details key={m.n} className={styles.module}>
                   <summary className={styles.moduleSummary}>
-                    <div className={`${styles.num} ${m.isAppendix ? styles.numAppendix : ""}`}>
-                      {m.isAppendix ? "附" : m.n}
+                    {/* 章節編號放進藍色膠囊；圓形 36px 塞不下 Ch10，改 auto 寬 pill */}
+                    <div className={`${styles.num} ${m.isAppendix ? styles.numAppendix : ""}`}
+                      style={m.isAppendix ? undefined : { width: "auto", minWidth: 36, padding: "0 13px", borderRadius: 999, fontSize: 14.5, letterSpacing: ".03em" }}>
+                      {m.isAppendix ? "附" : `Ch${m.n}`}
                     </div>
-                    <h3>{m.isAppendix ? `${m.appendixLabel}：${m.title}` : `Ch${m.n} ${m.title}`}</h3>
+                    <h3>{m.isAppendix ? `${m.appendixLabel}：${m.title}` : m.title}</h3>
                     <span className={styles.chevron}><ChevronDown size={18} strokeWidth={2} /></span>
                   </summary>
                   <div className={styles.moduleBody}>
