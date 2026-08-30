@@ -2801,6 +2801,55 @@ function PrivacyPage({showToast}){return <DocEditorPage title="隱私權政策" 
 function TermsPage({showToast}){return <DocEditorPage title="服務條款" contentKey="terms" defaultMd={DEFAULT_TERMS_MD} showToast={showToast}/>;}
 
 // 電子報：編輯標題+Markdown 內文 → 群發給「購課學員 / 註冊官網帳號」。逐封寄(A 方案)，碰每日上限即回報。
+// 電子報範本：點選帶入標題與內文再自行修改。文案為正式敬語體，日期／章節等請發送前確認。
+const NEWSLETTER_TEMPLATES=[
+  {name:"開課通知",subject:"【InRecord】開課資訊：課程將於 9/2 起分批上架",body:[
+    "親愛的學員，您好：","",
+    "感謝您購買「從零開始學鋼琴」課程。開課相關資訊整理如下，請您留意：","",
+    "## 課程上架時程",
+    "- **9/2 20:00** — 第一批章節搶先上架，即可開始上課",
+    "- **9/30 前** — 全部章節陸續上架完畢","",
+    "## 首次登入請完成基本資料",
+    "首次進入音樂教室時，系統將引導您填寫一份基本資料。這能協助 InRecord 更了解每一位學員，作為後續課程規劃與開發的參考。過程約一分鐘，感謝您的配合。","",
+    "## 開課前建議",
+    "- 瀏覽 [課程大綱](https://inrecordmusic.com/#curriculum)，了解 10 章 58 個單元的完整規劃",
+    "- 進入教室觀看 *試看：課程 Demo*，預先熟悉播放介面","",
+    "[進入音樂教室](https://inrecordmusic.com/classroom)","",
+    "---","",
+    "若有任何問題，歡迎直接回覆此信，我們將盡快為您處理。","",
+    "**InRecord・音樂刻 敬上**"].join("\n")},
+  {name:"新章節上架",subject:"【InRecord】新章節上架通知",body:[
+    "親愛的學員，您好：","",
+    "以下章節已於今日上架，歡迎進入音樂教室繼續您的學習：","",
+    "## 本次上架內容",
+    "- Ch○ 章節名稱（單元 ○-1 ～ ○-6）","",
+    "後續章節將依時程陸續上架，全部內容預計 **9/30 前** 上架完畢。","",
+    "[前往上課](https://inrecordmusic.com/classroom)","",
+    "---","",
+    "若有任何問題，歡迎直接回覆此信，我們將盡快為您處理。","",
+    "**InRecord・音樂刻 敬上**"].join("\n")},
+  {name:"課程異動公告",subject:"【InRecord】課程服務公告",body:[
+    "親愛的學員，您好：","",
+    "感謝您對 InRecord 的支持，以下事項向您說明：","",
+    "## 公告內容",
+    "（請填寫異動或維護說明，例：系統將於 ○/○ ○○:○○ 進行維護，期間暫停服務約 ○ 小時。）","",
+    "造成不便，敬請見諒。","",
+    "---","",
+    "若有任何問題，歡迎直接回覆此信，我們將盡快為您處理。","",
+    "**InRecord・音樂刻 敬上**"].join("\n")},
+  {name:"一般消息",subject:"【InRecord】最新消息",body:[
+    "親愛的學員，您好：","",
+    "（開頭段落）","",
+    "## 標題一",
+    "（內文）","",
+    "- 條列重點一",
+    "- 條列重點二","",
+    "[按鈕文字](https://inrecordmusic.com)","",
+    "---","",
+    "若有任何問題，歡迎直接回覆此信，我們將盡快為您處理。","",
+    "**InRecord・音樂刻 敬上**"].join("\n")},
+];
+
 function NewsletterPage({showToast}){
   const [subject,setSubject]=useState("");
   const [bodyMd,setBodyMd]=useState("");
@@ -2880,6 +2929,17 @@ function NewsletterPage({showToast}){
       </div>
 
       <div className={styles.panel} style={{marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <span style={{fontSize:13,fontWeight:700,color:"#475569"}}>範本</span>
+          {NEWSLETTER_TEMPLATES.map(t=>(
+            <button key={t.name} type="button" className={styles.btnSmall}
+              onClick={()=>{
+                if((subject.trim()||bodyMd.trim())&&!window.confirm(`套用「${t.name}」範本會覆蓋目前編輯中的標題與內文，確定？`))return;
+                setSubject(t.subject);setBodyMd(t.body);setMode("edit");
+              }}>{t.name}</button>
+          ))}
+          <span style={{fontSize:12,color:"#94a3b8"}}>套用後請確認日期與內容再發送</span>
+        </div>
         <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>標題</label>
         <input className={styles.searchInput} style={{width:"100%",marginBottom:16}} value={subject} onChange={e=>setSubject(e.target.value)} placeholder="例：六月課程最新消息 🎹"/>
         <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>內文（Markdown：# 標題 / **粗體** / - 清單 / --- 分隔線 / [文字](網址)＝連結 / 整行只放連結＝置中按鈕）</label>
