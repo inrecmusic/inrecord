@@ -429,7 +429,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                       onChange={e => { setSerialInput(e.target.value.toUpperCase()); setSerialErr(""); }}
                       onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); applySerial(); } }}
                     />
-                    <button type="button" className={styles.retry} style={{ margin: 0, whiteSpace: "nowrap" }} disabled={serialChecking} onClick={applySerial}>
+                    {/* .retry 的 CSS 是 width:100%（整行按鈕用），在這個 flex 列要改回 auto，輸入框的 flex:1 才吃得到空間 */}
+                    <button type="button" className={styles.retry} style={{ margin: 0, whiteSpace: "nowrap", width: "auto", flexShrink: 0, padding: "11px 20px" }} disabled={serialChecking} onClick={applySerial}>
                       {serialChecking ? "驗證中…" : "套用"}
                     </button>
                   </div>}
