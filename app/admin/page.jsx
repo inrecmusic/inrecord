@@ -471,7 +471,7 @@ function ComposeEmailModal({ open, initialTo = "", onClose, showToast }) {
           <label style={lbl}>主旨
             <input className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} value={subject} onChange={e => setSubject(e.target.value)} placeholder="例如：您的課程訂單尚未完成付款" />
           </label>
-          <label style={lbl}>內文<span style={{ fontWeight: 400, color: "#94a3b8" }}>（Markdown：# 標題、**粗體**、- 清單、--- 分隔線）</span>
+          <label style={lbl}>內文<span style={{ fontWeight: 400, color: "#94a3b8" }}>（Markdown：# 標題、**粗體**、- 清單、--- 分隔線、[文字](網址)＝連結、整行只放連結＝置中按鈕）</span>
             <textarea value={body} onChange={e => setBody(e.target.value)} rows={10} style={{ width: "100%", marginTop: 4, padding: 10, borderRadius: 8, border: "1px solid #e2e8f0", fontFamily: "inherit", fontSize: 14, lineHeight: 1.7, resize: "vertical" }} placeholder={"嗨，\n\n感謝您的支持！我們注意到您的訂單尚未完成付款。\n\n以下是您的付款連結：…\n\n如有任何問題，直接回覆此信即可。"} />
           </label>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -545,7 +545,7 @@ function BulkFollowupModal({ open, recipients = [], onClose, showToast }) {
             <label style={lbl}>主旨
               <input className={styles.searchInput} style={{ width: "100%", marginTop: 4 }} value={subject} onChange={e => setSubject(e.target.value)} placeholder="例如：您的課程訂單尚未完成付款" />
             </label>
-            <label style={lbl}>內文<span style={{ fontWeight: 400, color: "#94a3b8" }}>（Markdown：# 標題、**粗體**、- 清單、--- 分隔線）</span>
+            <label style={lbl}>內文<span style={{ fontWeight: 400, color: "#94a3b8" }}>（Markdown：# 標題、**粗體**、- 清單、--- 分隔線、[文字](網址)＝連結、整行只放連結＝置中按鈕）</span>
               <textarea value={body} onChange={e => setBody(e.target.value)} rows={10} style={{ width: "100%", marginTop: 4, padding: 10, borderRadius: 8, border: "1px solid #e2e8f0", fontFamily: "inherit", fontSize: 14, lineHeight: 1.7, resize: "vertical" }} />
             </label>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -2725,8 +2725,10 @@ function renderMd(text){
   function flush(){if(!listBuf.length)return;out.push(<ul key={key++} style={{margin:"6px 0 14px",paddingLeft:22,display:"grid",gap:5}}>{listBuf}</ul>);listBuf=[];}
   function inline(s){
     const parts=[];
-    s.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g).forEach((p,i)=>{
-      if(p.startsWith("**")&&p.endsWith("**")&&p.length>4)parts.push(<strong key={i}>{p.slice(2,-2)}</strong>);
+    s.split(/(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g).forEach((p,i)=>{
+      const link=p.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      if(link)parts.push(<a key={i} href={link[2]} target="_blank" rel="noreferrer" style={{color:"#2563eb"}}>{link[1]}</a>);
+      else if(p.startsWith("**")&&p.endsWith("**")&&p.length>4)parts.push(<strong key={i}>{p.slice(2,-2)}</strong>);
       else if(p.startsWith("*")&&p.endsWith("*")&&p.length>2)parts.push(<em key={i}>{p.slice(1,-1)}</em>);
       else parts.push(p);
     });
@@ -2740,7 +2742,13 @@ function renderMd(text){
     else if(l.trim()==="---"){flush();out.push(<hr key={key++} style={{border:"none",borderTop:"1px solid #e2e8f0",margin:"16px 0"}}/>);}
     else if(l.startsWith("- ")){listBuf.push(<li key={key++} style={{fontSize:14,color:"#374151",lineHeight:1.75}}>{inline(l.slice(2))}</li>);}
     else if(l.trim()===""){flush();}
-    else{flush();out.push(<p key={key++} style={{fontSize:14,color:"#374151",lineHeight:1.8,margin:"0 0 10px"}}>{inline(l)}</p>);}
+    else{
+      flush();
+      // 整行只有一個連結 → 置中按鈕（與 lib/newsletter.js 實寄樣式一致）
+      const btn=l.trim().match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      if(btn)out.push(<p key={key++} style={{textAlign:"center",margin:"24px 0"}}><a href={btn[2]} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#2563eb",color:"#fff",fontWeight:700,fontSize:15,padding:"13px 32px",borderRadius:999,textDecoration:"none"}}>{btn[1]}</a></p>);
+      else out.push(<p key={key++} style={{fontSize:14,color:"#374151",lineHeight:1.8,margin:"0 0 10px"}}>{inline(l)}</p>);
+    }
   }
   flush();return out;
 }
@@ -2874,7 +2882,7 @@ function NewsletterPage({showToast}){
       <div className={styles.panel} style={{marginBottom:16}}>
         <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>標題</label>
         <input className={styles.searchInput} style={{width:"100%",marginBottom:16}} value={subject} onChange={e=>setSubject(e.target.value)} placeholder="例：六月課程最新消息 🎹"/>
-        <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>內文（Markdown：# 標題 / **粗體** / - 清單 / --- 分隔線）</label>
+        <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>內文（Markdown：# 標題 / **粗體** / - 清單 / --- 分隔線 / [文字](網址)＝連結 / 整行只放連結＝置中按鈕）</label>
         {mode==="edit"
           ?<textarea value={bodyMd} onChange={e=>setBodyMd(e.target.value)} style={{width:"100%",minHeight:360,fontFamily:"'Courier New',Consolas,monospace",fontSize:13,lineHeight:1.75,boxSizing:"border-box",resize:"vertical",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}/>
           :<div style={{maxWidth:760,padding:"4px 0"}}>{renderMd(bodyMd)}</div>}
