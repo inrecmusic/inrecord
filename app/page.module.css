@@ -246,9 +246,10 @@
 .sectionHead small { color: var(--brand); font-weight: 600; display: block; margin-bottom: 8px; letter-spacing: .08em; text-transform: uppercase; font-size: 14.5px; }
 .sectionHead h2 { font-family: var(--type-display); font-weight: 600; text-wrap: balance; font-size: clamp(30px,4vw,46px); line-height: 1.15; letter-spacing: .01em; margin: 0 0 12px; }
 .sectionHead p { text-wrap: balance; max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 20px; }
-.moduleList { display: grid; gap: 12px; }
-.module { background: white; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; transition: transform .22s, box-shadow .22s; }
-.module:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+/* 連續表格式：整份大綱一張表，章節之間以分隔線相連（參考課程平台清單樣式） */
+.moduleList { display: grid; gap: 0; background: white; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+.module { background: white; border-top: 1px solid var(--line); }
+.module:first-child { border-top: none; }
 .moduleSummary { display: grid; grid-template-columns: auto 1fr 38px; gap: 16px; align-items: start; padding: 22px 20px; cursor: pointer; list-style: none; }
 .moduleSummary::-webkit-details-marker { display: none; }
 .moduleSummary h3 { margin: 4px 0 0; font-size: 21.5px; font-weight: 700; line-height: 1.4; }
