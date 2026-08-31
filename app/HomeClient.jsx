@@ -812,18 +812,47 @@ export default function HomeClient({ sale }) {
                     )}
                   </summary>
                   <div className={styles.moduleBody} style={{ padding: 0 }}>
-                    {m.units?.length > 0 ? m.units.map(u => (
-                      <div key={u} style={{
-                        display: "flex", alignItems: "center", gap: 14,
-                        padding: "16px 20px 16px 24px", borderTop: "1px solid #eef2f6",
-                        fontSize: 15.5, color: "#1e293b", wordBreak: "keep-all", lineBreak: "strict",
-                      }}>
-                        <span style={{ width: 26, height: 20, borderRadius: 5, background: "#eceff3", display: "grid", placeItems: "center", flexShrink: 0, color: "#a6b0bd" }}>
-                          <Play size={10} fill="currentColor" strokeWidth={0} />
-                        </span>
-                        {u}
-                      </div>
-                    )) : (
+                    {m.units?.length > 0 ? (
+                      <>
+                        {m.units.map(u => (
+                          <div key={u} style={{
+                            display: "flex", alignItems: "center", gap: 14,
+                            padding: "16px 20px 16px 24px", borderTop: "1px solid #eef2f6",
+                            fontSize: 15.5, color: "#1e293b", wordBreak: "keep-all", lineBreak: "strict",
+                          }}>
+                            <span style={{ width: 26, height: 20, borderRadius: 5, background: "#eceff3", display: "grid", placeItems: "center", flexShrink: 0, color: "#a6b0bd" }}>
+                              <Play size={10} fill="currentColor" strokeWidth={0} />
+                            </span>
+                            {u}
+                          </div>
+                        ))}
+                        {/* 實戰曲目／互動遊戲：同列式呈現，藍色 icon 方塊區隔內容類型 */}
+                        {m.song && (
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 14,
+                            padding: "16px 20px 16px 24px", borderTop: "1px solid #eef2f6",
+                            fontSize: 15, color: "#475569", lineHeight: 1.6, wordBreak: "keep-all", lineBreak: "strict",
+                          }}>
+                            <span style={{ width: 26, height: 20, borderRadius: 5, background: "#e8efff", display: "grid", placeItems: "center", flexShrink: 0, color: "#2563eb" }}>
+                              <Music size={11} strokeWidth={2.2} />
+                            </span>
+                            <span><b style={{ color: "#1e293b" }}>實戰曲目</b>｜{m.song}</span>
+                          </div>
+                        )}
+                        {m.game && (
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 14,
+                            padding: "16px 20px 16px 24px", borderTop: "1px solid #eef2f6",
+                            fontSize: 15, color: "#475569", lineHeight: 1.6, wordBreak: "keep-all", lineBreak: "strict",
+                          }}>
+                            <span style={{ width: 26, height: 20, borderRadius: 5, background: "#e8efff", display: "grid", placeItems: "center", flexShrink: 0, color: "#2563eb" }}>
+                              <Gamepad2 size={12} strokeWidth={2.2} />
+                            </span>
+                            <span><b style={{ color: "#1e293b" }}>互動遊戲</b>｜{m.game}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
                       <p style={{ margin: 0, padding: "16px 20px", borderTop: "1px solid #eef2f6", color: "var(--muted)", fontSize: 15, lineHeight: 1.75 }}>{m.desc}</p>
                     )}
                   </div>
