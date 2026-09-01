@@ -969,7 +969,7 @@ function StudentsPage({showToast}){
                   if(o==="early")return "早鳥搶先看（手動指定）";
                   if(o==="standard")return "9/30 正式上架後開放（手動指定）";
                   const auto=isEarlyAccess({orderTimes:[detailStudent.first_paid_at].filter(Boolean),enrollTimes:[detailStudent.enrolled_at].filter(Boolean)});
-                  return auto?"早鳥搶先看（自動：9/9 前購課）":"9/30 正式上架後開放（自動：9/10 起購課）";
+                  return auto?"早鳥搶先看（自動：9/2 前購課）":"9/30 正式上架後開放（自動：9/2 起購課）";
                 })()],
                 ["程度",levelLabel(detailStudent.level)],
                 ["來源",detailStudent.source||"—"],

@@ -113,7 +113,7 @@ export async function GET(req) {
 
   out.chapters = chapRes.data || [];
   out.videos = vidRes.data || [];
-  // 早鳥搶先看分層：9/30 正式上架前，非早鳥（9/10 起購課）看得到完整大綱與試看單元，
+  // 早鳥搶先看分層：9/30 正式上架前，非早鳥（9/2 起購課）看得到完整大綱與試看單元，
   // 但正課影片的可播欄位被摘掉（側欄自然顯示「預計 9/30 上架」）。兩種模式都做：儀表板要靠下面的
   // playable 旗標挑「繼續上課」，必須反映摘除後的實際可播狀態。
   if (Date.now() < FULL_RELEASE_MS) {
