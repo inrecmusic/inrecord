@@ -957,6 +957,11 @@ export default function HomeClient({ sale }) {
               )}
             </motion.div>
             <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・課程永久有效</p>
+            {/* 消保告知：條款有寫、購買頁也要出現（告知充分性） */}
+            <p style={{ textAlign: "center", fontSize: 12, color: "#94a3b8", margin: "6px 0 0", lineHeight: 1.7, wordBreak: "keep-all", lineBreak: "strict" }}>
+              本課程為數位內容商品，購買前已提供試看；依法不適用七日無條件解除權，
+              退費依「<a href="/terms" style={{ color: "#64748b", textDecoration: "underline", textUnderlineOffset: 2 }}>服務條款</a>」退費政策辦理（預售訂單自 9/30 正式開課日起算）。
+            </p>
           </div>
         </RevealSection>
 
