@@ -116,9 +116,12 @@ export async function GET(req) {
   // 早鳥搶先看分層：9/30 正式上架前，非早鳥（9/10 起購課）看得到完整大綱與試看單元，
   // 但正課影片的可播欄位被摘掉（側欄自然顯示「預計 9/30 上架」）。只在播放頁模式做（儀表板不回可播欄位）。
   if (playerMode && Date.now() < FULL_RELEASE_MS) {
-    const { early } = await resolveEarlyAccess(supabase, user.email);
-    out.earlyAccess = early;
-    out.videos = stripPlayback(out.videos, { early, nowMs: Date.now() });
+    // UI 層：查詢故障時 fail-open（early=true），避免暫時性錯誤把真早鳥誤鎖成 9/30。
+    // 真正的擋播在 video-embed（fail-closed 硬閘門），這裡放行不等於能播未簽發的影片。
+    const { early, error } = await resolveEarlyAccess(supabase, user.email);
+    const effectiveEarly = error ? true : early;
+    out.earlyAccess = effectiveEarly;
+    out.videos = stripPlayback(out.videos, { early: effectiveEarly, nowMs: Date.now() });
   }
   out.progress = progress;
   out.completedCount = completedCount;

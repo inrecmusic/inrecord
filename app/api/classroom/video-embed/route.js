@@ -25,6 +25,7 @@ export async function GET(req) {
 
   // 早鳥搶先看分層：9/30 前非早鳥不簽發正課影片（試看單元不限）。
   // bootstrap 已在 UI 層摘掉可播欄位，這裡是防「直接打 API 帶單元 id」繞過的硬性閘門。
+  // fail-closed：resolveEarlyAccess 查詢故障時回 early=false，寧可暫時擋住也不讓硬閘門失效。
   if (Date.now() < FULL_RELEASE_MS && !isTrialVideo(video)) {
     const { early } = await resolveEarlyAccess(supabase, user.email);
     if (!early) return NextResponse.json({ error: "not_released" }, { status: 403 });
