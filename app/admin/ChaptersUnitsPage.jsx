@@ -141,7 +141,16 @@ export default function ChaptersUnitsPage({ showToast }) {
     setSaving(true);
     try {
       const r = await api(`/api/admin/videos?id=${id}`, { method: "DELETE" });
-      if (!r.ok) throw new Error((await r.json()).error);
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        if (d.error === "video_has_student_data") {
+          const u = d.usage || {};
+          const parts = [["progress", "觀看進度"], ["submissions", "作業"], ["notes", "筆記"], ["comments", "留言"]]
+            .filter(([k]) => u[k] > 0).map(([k, label]) => `${label} ${u[k]} 筆`).join("、");
+          throw new Error(`此單元已有學員資料（${parts}），刪除會一併清空且無法復原；請改用「取消發布」`);
+        }
+        throw new Error(d.error || "刪除失敗");
+      }
       showToast("✅ 單元已刪除"); fetchAll();
     } catch (e) { showToast("❌ " + e.message); }
     finally { setSaving(false); setDeleteVideoId(null); }

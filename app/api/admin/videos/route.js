@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { logAudit } from "@/lib/audit";
+
+// 刪單元前要檢查的學員資料表：video_id 皆為 ON DELETE CASCADE，刪了就一起消失且無法復原。
+// （materials 是後台自己上傳的講義、games.video_id 是 SET NULL，非學員資料故不擋。）
+const STUDENT_DATA_TABLES = ["progress", "submissions", "notes", "comments"];
 
 function getClient() {
   return getSupabaseAdmin();
@@ -73,14 +78,32 @@ export async function PATCH(req) {
 }
 
 export async function DELETE(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const supabase = getClient();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
 
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
+  // 防連鎖資料損失（與 chapters DELETE 的 quizzes 守衛同一原則）：只要有任一學員的
+  // 進度/作業/筆記/留言掛在此單元就擋下（409＋各表筆數），請改「取消發布」而非刪除。
+  const [{ data: video }, ...counts] = await Promise.all([
+    supabase.from("videos").select("title, chapter_id").eq("id", id).maybeSingle(),
+    ...STUDENT_DATA_TABLES.map((t) => supabase.from(t).select("*", { count: "exact", head: true }).eq("video_id", id)),
+  ]);
+  const failed = counts.find((c) => c.error);
+  if (failed) return serverError(failed.error);
+  const usage = Object.fromEntries(STUDENT_DATA_TABLES.map((t, i) => [t, counts[i].count || 0]));
+  if (Object.values(usage).some((n) => n > 0)) {
+    return NextResponse.json({ error: "video_has_student_data", usage }, { status: 409 });
+  }
+
   const { error } = await supabase.from("videos").delete().eq("id", id);
   if (error) return serverError(error);
+  await logAudit(supabase, {
+    actor: payload.email, action: "video.delete", targetType: "video", targetId: id,
+    meta: { title: video?.title ?? null, chapter_id: video?.chapter_id ?? null }, req,
+  });
   return NextResponse.json({ ok: true });
 }

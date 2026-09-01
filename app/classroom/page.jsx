@@ -114,7 +114,8 @@ export default function ClassroomHub() {
 
   /* 衍生資料 */
   const progMap = Object.fromEntries(progress.map(p => [p.video_id, p]));
-  const nextVideo = videos.find(v => !progMap[v.id]?.completed) || videos[0] || null;
+  // 「繼續上課」只指向有影片可播的單元（尚未上傳影片的空單元不算）；全部無可播放則不顯示 CTA
+  const nextVideo = videos.find(v => v.playable && !progMap[v.id]?.completed) || videos.find(v => v.playable) || null;
   const roman = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ","Ⅵ","Ⅶ","Ⅷ","Ⅸ","Ⅹ"];
   const name = (profile && profile.real_name) || user?.email?.split("@")[0] || "同學";
   const dash = 578, offset = Math.round(dash * (1 - Math.min(100, pct) / 100));
@@ -158,7 +159,7 @@ export default function ClassroomHub() {
           {chapters.map((ch, i) => {
             const vs = videos.filter(v => v.chapter_id === ch.id);
             const chDone = vs.filter(v => progMap[v.id]?.completed).length;
-            const firstUndone = vs.find(v => !progMap[v.id]?.completed) || vs[0];
+            const firstUndone = vs.find(v => v.playable && !progMap[v.id]?.completed) || vs.find(v => v.playable) || vs[0];
             const isNow = nextVideo && vs.some(v => v.id === nextVideo.id);
             return (
               <a key={ch.id} className="ch" href={firstUndone ? `/classroom/watch?v=${firstUndone.id}` : "/classroom/watch"}>

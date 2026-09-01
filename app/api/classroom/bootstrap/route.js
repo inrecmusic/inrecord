@@ -78,7 +78,7 @@ export async function GET(req) {
 
   // 購課者：章節 + 影片 + 進度 + 已發布單元總數（播放頁另加公告）。並行。
   // 播放頁需要 bunny_video_id/vimeo_id（判斷播放來源）與作業欄位，故回完整列。
-  const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order";
+  const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, bunny_video_id, vimeo_id";
   const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes] = await Promise.all([
     supabase.from("chapters").select("*").order("sort_order", { ascending: true }),
     supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }),
@@ -114,8 +114,9 @@ export async function GET(req) {
   out.chapters = chapRes.data || [];
   out.videos = vidRes.data || [];
   // 早鳥搶先看分層：9/30 正式上架前，非早鳥（9/10 起購課）看得到完整大綱與試看單元，
-  // 但正課影片的可播欄位被摘掉（側欄自然顯示「預計 9/30 上架」）。只在播放頁模式做（儀表板不回可播欄位）。
-  if (playerMode && Date.now() < FULL_RELEASE_MS) {
+  // 但正課影片的可播欄位被摘掉（側欄自然顯示「預計 9/30 上架」）。兩種模式都做：儀表板要靠下面的
+  // playable 旗標挑「繼續上課」，必須反映摘除後的實際可播狀態。
+  if (Date.now() < FULL_RELEASE_MS) {
     // UI 層：查詢故障時 fail-open（early=true），避免暫時性錯誤把真早鳥誤鎖成 9/30。
     // 真正的擋播在 video-embed（fail-closed 硬閘門），這裡放行不等於能播未簽發的影片。
     const { early, error } = await resolveEarlyAccess(supabase, user.email);
@@ -123,6 +124,11 @@ export async function GET(req) {
     out.earlyAccess = effectiveEarly;
     out.videos = stripPlayback(out.videos, { early: effectiveEarly, nowMs: Date.now() });
   }
+  // playable：有影片來源才算可播放（算在早鳥摘除之後），前端用來挑「繼續上課／預設單元」、
+  // 避開尚未上傳影片的空單元。儀表板模式只給旗標、不外露 bunny_video_id/vimeo_id（維持原本不回來源 id 的邊界）。
+  out.videos = out.videos.map(({ bunny_video_id, vimeo_id, ...v }) => ({
+    ...v, ...(playerMode ? { bunny_video_id, vimeo_id } : {}), playable: !!(bunny_video_id || vimeo_id),
+  }));
   out.progress = progress;
   out.completedCount = completedCount;
   out.totalCount = totalCount;

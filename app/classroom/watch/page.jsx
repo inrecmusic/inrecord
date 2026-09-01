@@ -969,6 +969,7 @@ export default function ClassroomPage() {
   const [user, setUser]                   = useState(null);
   const [token, setToken]                 = useState("");
   const [hasPurchased, setHasPurchased]   = useState(false);
+  const [loadError, setLoadError]         = useState(false); // bootstrap 載入失敗→顯示重試，不誤判未購買
   const [hasSubscription, setHasSubscription] = useState(false);
   const [subDaysLeft, setSubDaysLeft]     = useState(0);
   const [loading, setLoading]             = useState(true);
@@ -1036,14 +1037,15 @@ export default function ClassroomPage() {
           const vids = d.videos || [];
           if (vids.length) {
             const pm = Object.fromEntries((d.progress || []).map(p => [p.video_id, p]));
-            // 來自儀表板的 ?v=<單元id> 優先選中；否則預設第一個未完成、再否則第一支
+            // 來自儀表板的 ?v=<單元id> 優先選中；否則預設第一個「未完成且可播放」、再否則第一支可播放、再否則第一支
+            // （尚未上傳影片的空單元排在前面，不能讓預設落在佔位圖上）
             const wantId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("v") : null;
-            setCurrentVideo((wantId && vids.find(v => v.id === wantId)) || vids.find(v => !pm[v.id]?.completed) || vids[0]);
+            const playable = v => !!(v.bunny_video_id || v.vimeo_id);
+            setCurrentVideo((wantId && vids.find(v => v.id === wantId)) || vids.find(v => playable(v) && !pm[v.id]?.completed) || vids.find(playable) || vids[0]);
           }
           setProfile(d.profile || d.prefill || {});
         } catch {
-          setHasPurchased(false);
-          setHasSubscription(false);
+          setLoadError(true); // 載入失敗≠未購買：顯示重試畫面，不能把已購課學員推到「尚未購買」推銷頁
           setProfileErr(true); // fail-open：資料載入失敗不把已購課使用者卡在首次引導
         } finally {
           setProfileLoaded(true);
@@ -1239,6 +1241,18 @@ export default function ClassroomPage() {
         <p style={{ fontSize: 14, color: "#64748b", margin: 0, fontWeight: 400 }}>載入中…</p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  /* ── Load error ──（與儀表板一致：網路/伺服器問題只提示重試） */
+  if (loadError) return (
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#f1f5f9", color: "#0f172a", textAlign: "center", padding: 32, fontFamily: F }}>
+      <div>
+        <div style={{ fontSize: 40, marginBottom: 14 }}>🎹</div>
+        <h2 style={{ margin: "0 0 10px", fontSize: 22, fontWeight: 700 }}>教室載入時出了點問題</h2>
+        <p style={{ color: "#475569", marginBottom: 24, fontSize: 15 }}>可能是網路或伺服器忙碌，請稍後再試一次。</p>
+        <button onClick={() => window.location.reload()} style={{ padding: "12px 30px", background: "#2563eb", color: "#fff", border: 0, borderRadius: 980, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: F }}>重新整理</button>
+      </div>
     </div>
   );
 
