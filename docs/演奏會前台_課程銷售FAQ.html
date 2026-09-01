@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>演奏會前台｜課程銷售 FAQ</title>
+<style>
+  :root {
+    --blue: #0071e3;
+    --ink: #17395e;
+    --deep: #0b2e55;
+    --muted: #5a7ba6;
+    --hairline: #dbe7f4;
+    --tint: #f4f8fd;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "SF Pro Text", -apple-system, "PingFang TC", "Heiti TC", sans-serif;
+    color: var(--ink);
+    background: #fff;
+    font-size: 12px;
+    line-height: 1.7;
+    word-break: keep-all;
+    line-break: strict;
+  }
+  .page { max-width: 660px; margin: 0 auto; padding: 8px 0 32px; }
+
+  /* ── 封面區 ─────────────────────────── */
+  .eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: .18em;
+    color: var(--blue); text-transform: uppercase; margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 34px; font-weight: 700; letter-spacing: .01em;
+    color: var(--deep); line-height: 1.3; margin-bottom: 8px;
+  }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .meta { font-size: 11px; color: var(--muted); letter-spacing: .05em; margin-bottom: 22px; }
+  .rule { border: 0; border-top: 1px solid var(--hairline); margin: 0 0 26px; }
+
+  /* ── 章節 ───────────────────────────── */
+  section { margin-bottom: 34px; }
+  .sec-head { display: flex; align-items: baseline; gap: 13px; margin-bottom: 14px; break-after: avoid; }
+  .sec-num {
+    font-family: "SF Pro Display", -apple-system, "PingFang TC", sans-serif;
+    font-size: 24px; font-weight: 200; color: var(--blue); letter-spacing: .02em;
+  }
+  h2 { font-size: 19px; font-weight: 600; color: var(--deep); letter-spacing: .01em; }
+  h3 {
+    font-size: 13px; font-weight: 600; color: var(--blue);
+    margin: 18px 0 8px; letter-spacing: .03em; break-after: avoid;
+  }
+  p { margin-bottom: 8px; }
+  strong { font-weight: 600; color: var(--deep); }
+
+  /* ── 規格表 ─────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; }
+  tr { break-inside: avoid; }
+  th, td { text-align: left; padding: 8px 4px; vertical-align: top; border-bottom: 1px solid var(--hairline); }
+  th { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .08em; border-bottom-color: var(--blue); }
+  td.k { width: 96px; color: var(--muted); font-size: 11.5px; }
+  td strong { color: var(--deep); }
+  s { color: var(--muted); text-decoration-color: var(--muted); }
+
+  tr.hot td { background: var(--blue); color: #fff; font-weight: 600; border-bottom: none; }
+  tr.hot td:first-child { border-radius: 10px 0 0 10px; padding-left: 12px; }
+  tr.hot td:last-child { border-radius: 0 10px 10px 0; }
+  tr.hot td s { color: rgba(255,255,255,.75); }
+
+  /* ── 價格英雄區 ─────────────────────── */
+  .price-hero { text-align: center; padding: 22px 0 18px; break-inside: avoid; }
+  .price-hero .tag {
+    font-size: 11px; font-weight: 600; letter-spacing: .18em;
+    color: var(--blue); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .price-hero .num {
+    font-family: "SF Pro Display", -apple-system, "PingFang TC", sans-serif;
+    font-size: 48px; font-weight: 200; color: var(--blue); letter-spacing: -.01em; line-height: 1.15;
+  }
+  .price-hero .was { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .price-hero .note { font-size: 12px; color: var(--ink); margin-top: 8px; }
+
+  /* ── 清單 ───────────────────────────── */
+  ul, ol { margin: 2px 0 8px 2px; list-style: none; }
+  ul li, ol li { position: relative; padding-left: 18px; margin-bottom: 5px; }
+  ul li::before { content: ""; position: absolute; left: 3px; top: .68em; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+  ol { counter-reset: n; }
+  ol li { counter-increment: n; padding-left: 25px; }
+  ol li::before {
+    content: counter(n); position: absolute; left: 0; top: .12em;
+    font-size: 10.5px; font-weight: 600; color: var(--blue);
+    width: 16px; height: 16px; border: 1px solid var(--hairline); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  ol.cols { column-count: 2; column-gap: 28px; }
+  ol.cols li { break-inside: avoid; }
+
+  /* ── callout ────────────────────────── */
+  .callout {
+    background: var(--tint); border-radius: 14px; padding: 13px 18px;
+    margin: 12px 0 4px; font-size: 12px; break-inside: avoid;
+  }
+  .callout .c-label { font-size: 10.5px; font-weight: 600; letter-spacing: .14em; color: var(--blue); text-transform: uppercase; margin-bottom: 3px; }
+
+  /* ── Q&A ────────────────────────────── */
+  .qa { padding: 11px 0; border-bottom: 1px solid var(--hairline); break-inside: avoid; }
+  .qa:last-of-type { border-bottom: none; }
+  .qa .q { font-weight: 600; color: var(--deep); margin-bottom: 2px; }
+  .qa .q .qn { color: var(--blue); font-weight: 700; margin-right: 8px; }
+  .qa .a { color: var(--ink); }
+
+  footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--hairline); font-size: 10.5px; color: var(--muted); }
+
+  @page { size: A4; margin: 16mm 16mm 17mm; }
+  @media print { .page { max-width: none; padding: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 封面 -->
+  <div class="eyebrow">InRecord × Gentle Devil 演奏會</div>
+  <h1>前台課程銷售 FAQ</h1>
+  <p class="subtitle">給演奏會現場前台人員：課程內容、銷售方案與常見問題速查。</p>
+  <p class="meta">最後更新 2026-07-05</p>
+  <hr class="rule">
+
+  <!-- 1 課程內容 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>課程內容</h2></div>
+    <table>
+      <tr><td class="k">課程名稱</td><td>從零開始學鋼琴（Crossoverick Vol.1）— 了解三和弦與基礎伴奏</td></tr>
+      <tr><td class="k">定位</td><td>零基礎流行鋼琴入門課，用<strong>簡易流行歌曲</strong>學和弦與伴奏，不需要任何音樂底子</td></tr>
+      <tr><td class="k">授課老師</td><td><strong>張育瑞 Rick Chang</strong> — 美國伯克利音樂學院（Berklee）碩士，跨界鋼琴家／音樂製作人</td></tr>
+      <tr><td class="k">內容規模</td><td><strong>10 章節＋2 附錄，約 8 小時</strong>；含互動遊戲（音名快閃、和弦辨識家、節奏打點師…）</td></tr>
+      <tr><td class="k">觀看裝置</td><td>電腦／手機／平板，有瀏覽器與網路即可</td></tr>
+      <tr><td class="k">有效期</td><td><strong>一次買斷，永久有效、無限次重複觀看</strong>，沒有月費、沒有訂閱</td></tr>
+    </table>
+
+    <h3>學完可以做到</h3>
+    <ul>
+      <li>認得鋼琴上所有音名（A~G），彈奏全部 <strong>24 個三和弦</strong></li>
+      <li>看懂流行歌的<strong>和弦譜</strong>，用基本伴奏為喜歡的歌配伴奏</li>
+      <li>最後完整彈出一首歌</li>
+    </ul>
+
+    <h3>課程大綱（客人問「教什麼」可以講）</h3>
+    <ol class="cols">
+      <li>踏上黑白鍵的第一步（鍵盤、音名）</li>
+      <li>唱名與音階（Do Re Mi 唱名系統）</li>
+      <li>大三和弦（C、F、G）</li>
+      <li>小三和弦（Am、Em）</li>
+      <li>認識全部 12 個大三和弦</li>
+      <li>認識全部 12 個小三和弦</li>
+      <li>左手基礎伴奏（一）：四四拍全和弦</li>
+      <li>基礎伴奏（二）：分解和弦（Arpeggio）</li>
+      <li>流行音樂萬用和弦公式（卡農進行）</li>
+      <li>你的第一場個人發表會（完整彈一首歌）</li>
+    </ol>
+    <p style="font-size:11.5px; color:var(--muted);">附錄一：如何有效率練琴｜附錄二：初學者器材選購建議</p>
+  </section>
+
+  <!-- 2 銷售方案 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>銷售方案</h2></div>
+
+    <div class="price-hero">
+      <div class="tag">演奏會現場限定價</div>
+      <div class="num">NT$2,500</div>
+      <div class="was">原價 <s>NT$10,800</s></div>
+      <div class="note">買到的是<strong>完整課程包</strong>：10 章節課程＋全部互動遊戲，<strong>一次買斷、永久觀看</strong>。</div>
+    </div>
+
+    <table>
+      <tr><th>通路</th><th>價格</th><th>說明</th></tr>
+      <tr><td>官網定價</td><td><s>$7,999</s>／劃線原價 <s>$10,800</s></td><td>標準售價</td></tr>
+      <tr><td>官網早鳥（第一波 7/8–7/20）</td><td>$4,299</td><td>限時波段價</td></tr>
+      <tr><td>官網早鳥（第二波 7/20–8/6）</td><td>$4,799</td><td>越晚越貴</td></tr>
+      <tr><td>官網早鳥（第三波 8/6–9/4）</td><td>$5,299</td><td>越晚越貴</td></tr>
+      <tr><td>粉絲卡（直接購買）</td><td>$3,999</td><td>需線上操作</td></tr>
+      <tr><td>粉絲卡（憑證優惠，8/6 截止）</td><td>$3,499</td><td>需上傳購買憑證</td></tr>
+      <tr class="hot"><td>演奏會現場限定</td><td>$2,500</td><td>全通路最低！只有現場有</td></tr>
+    </table>
+
+    <div class="callout">
+      <div class="c-label">預購與開通</div>
+      現在買是<strong>超早鳥預購</strong>：第一批課程 <strong>9/2（二）20:00</strong> 上架、<strong>9/30</strong> 全部上完，開課後以 Email 通知開通。<strong>成交務必登記客人 Email（必要）＋電話</strong>，這是開通課程的唯一依據。
+    </div>
+  </section>
+
+  <!-- 3 FAQ -->
+  <section style="break-before: page;">
+    <div class="sec-head"><span class="sec-num">03</span><h2>客人常見問題 Q&amp;A</h2></div>
+
+    <div class="qa"><div class="q"><span class="qn">Q1</span>完全零基礎、沒碰過鋼琴可以上嗎？</div>
+      <div class="a">可以！課程就是從認識鍵盤、音名、坐姿開始，一步步教到和弦與伴奏，不需要任何音樂基礎。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q2</span>什麼時候可以開始上課？</div>
+      <div class="a">9/2 起陸續上架、9/30 全部上完。現在買是超早鳥預購，開課後官方會通知你開通。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q3</span>我要準備鋼琴嗎？</div>
+      <div class="a">有些互動遊戲不用鍵盤就能玩，但建議準備鋼琴、電鋼琴或電子琴來練曲子，效果更好。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q4</span>這門課會教五線譜嗎？</div>
+      <div class="a">重點是鍵盤音名、唱名、三和弦與看和弦譜，讓你快速彈出流行歌伴奏，不是以五線譜為主。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q5</span>買了可以看多久？</div>
+      <div class="a"><strong>永久有效、看幾次都可以</strong>，隨時回來複習。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q6</span>可以用手機或平板看嗎？</div>
+      <div class="a">可以，電腦、手機、平板都能看，有瀏覽器和網路就行。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q7</span>$2,500 買到的是什麼？</div>
+      <div class="a"><strong>完整課程包</strong>：10 章節課程＋全部互動遊戲，永久擁有。這是現場限定價，官網最便宜的早鳥也要 $4,299。</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q8</span>可以退費嗎？</div>
+      <div class="a">官方提供<strong>「7 天內不滿意，全額退費保證」</strong>。（現場成交的退費方式請依現場主管指示）</div></div>
+    <div class="qa"><div class="q"><span class="qn">Q9</span>現場怎麼付款／買了怎麼拿課？</div>
+      <div class="a">現場結帳完成後登記 Email，開課後由 InRecord 通知開通；實際收款與領取方式依現場流程。</div></div>
+  </section>
+
+  <footer>本文件資料來源：InRecord 課程頁與正式資料庫、Concert Shop 商品設定（2026-07-04 實查）。</footer>
+</div>
+</body>
+</html>
