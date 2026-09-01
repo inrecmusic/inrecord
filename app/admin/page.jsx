@@ -2810,7 +2810,9 @@ function renderMd(text){
   }
   for(let i=0;i<lines.length;i++){
     const l=lines[i];
-    if(l.startsWith("# ")){flush();out.push(<h1 key={key++} style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 6px",letterSpacing:"-.03em"}}>{inline(l.slice(2))}</h1>);}
+    const imgM=l.trim().match(/^!\[([^\]]*)\]\((https?:\/\/[^)\s|]+)(?:\|(\d{1,4}))?\)$/);
+    if(imgM){flush();const w=imgM[3]?Math.min(560,Number(imgM[3])):160;out.push(<p key={key++} style={{textAlign:"center",margin:"8px 0 18px"}}><img src={imgM[2]} alt={imgM[1]} style={{width:w,maxWidth:"80%",height:"auto"}}/></p>);}
+    else if(l.startsWith("# ")){flush();out.push(<h1 key={key++} style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 6px",letterSpacing:"-.03em"}}>{inline(l.slice(2))}</h1>);}
     else if(l.startsWith("## ")){flush();out.push(<h2 key={key++} style={{fontSize:16,fontWeight:900,color:"#0f172a",margin:"24px 0 8px",paddingBottom:7,borderBottom:"1px solid #f1f5f9"}}>{inline(l.slice(3))}</h2>);}
     else if(l.startsWith("### ")){flush();out.push(<h3 key={key++} style={{fontSize:14,fontWeight:800,color:"#1e293b",margin:"14px 0 5px"}}>{inline(l.slice(4))}</h3>);}
     else if(l.trim()==="---"){flush();out.push(<hr key={key++} style={{border:"none",borderTop:"1px solid #e2e8f0",margin:"16px 0"}}/>);}
@@ -2878,6 +2880,7 @@ function TermsPage({showToast}){return <DocEditorPage title="服務條款" conte
 // 電子報範本：點選帶入標題與內文再自行修改。文案為正式敬語體，日期／章節等請發送前確認。
 const NEWSLETTER_TEMPLATES=[
   {name:"開課通知",subject:"【InRecord】開課資訊：課程 9/30 正式上架，早鳥可搶先看",body:[
+    "![InRecord](https://inrecordmusic.com/mascot-wave.png|150)","",
     "親愛的學員，您好：","",
     "感謝您購買「從零開始學鋼琴」課程。開課相關資訊整理如下，請您留意：","",
     "## 課程於 9/30 正式上架",
