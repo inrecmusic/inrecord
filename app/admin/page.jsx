@@ -28,6 +28,7 @@ import { LEAD_SOURCES } from "@/lib/admin-leads";
 import { inDateRange } from "@/lib/date-range";
 import { summarizeOrders } from "@/lib/reconciliation";
 import { buildSalesTrend, buildPayDistribution } from "@/lib/dashboard";
+import { isEarlyAccess } from "@/lib/early-access";
 
 
 
@@ -962,6 +963,14 @@ function StudentsPage({showToast}){
                 ["學習進度",detailStudent.purchased&&detailStudent.progress
                   ?`${detailStudent.progress.percentage}%（${detailStudent.progress.completedCount}/${detailStudent.progress.totalVideos} 單元）・累計觀看 ${Math.round((detailStudent.progress.viewedSeconds||0)/60)} 分鐘${detailStudent.progress.lastWatchedAt?`・最後觀看 ${new Date(detailStudent.progress.lastWatchedAt).toLocaleString("zh-TW")}`:""}`
                   :"—"],
+                ["觀看權限",(()=>{
+                  if(!detailStudent.enrolled)return "—（未開通）";
+                  const o=detailStudent.early_override;
+                  if(o==="early")return "早鳥搶先看（手動指定）";
+                  if(o==="standard")return "9/30 正式上架後開放（手動指定）";
+                  const auto=isEarlyAccess({orderTimes:[detailStudent.first_paid_at].filter(Boolean),enrollTimes:[detailStudent.enrolled_at].filter(Boolean)});
+                  return auto?"早鳥搶先看（自動：9/9 前購課）":"9/30 正式上架後開放（自動：9/10 起購課）";
+                })()],
                 ["程度",levelLabel(detailStudent.level)],
                 ["來源",detailStudent.source||"—"],
                 ["建立時間",fmt(detailStudent.created_at)],
@@ -972,6 +981,23 @@ function StudentsPage({showToast}){
                 </div>
               ))}
             </div>
+            {detailStudent.enrolled&&(
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:14,padding:"10px 12px",background:"#f8fafc",borderRadius:10}}>
+                <span style={{fontSize:12.5,fontWeight:700,color:"#475569"}}>調整觀看權限</span>
+                {[["early","設為早鳥"],["standard","設為 9/30 開放"],[null,"恢復自動判斷"]].map(([ov,label])=>(
+                  <button key={label} className={styles.btnSmall} disabled={busy||detailStudent.early_override===ov}
+                    onClick={async()=>{
+                      setBusy(true);
+                      try{
+                        const r=await _api("/api/admin/early-access",{method:"PATCH",body:JSON.stringify({email:detailStudent.email,override:ov})});
+                        if(r.ok){showToast?.("✅ 已更新觀看權限");setDetailStudent(null);await load();}
+                        else{const d=await r.json().catch(()=>({}));showToast?.("❌ 更新失敗："+(d.error||"unknown"));}
+                      }catch(e){showToast?.("❌ 更新失敗："+e.message);}
+                      finally{setBusy(false);}
+                    }}>{label}</button>
+                ))}
+              </div>
+            )}
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
               <button className={styles.btnSmall} onClick={()=>setDetailStudent(null)}>關閉</button>
               {detailStudent.isLead&&!detailStudent.purchased&&<>

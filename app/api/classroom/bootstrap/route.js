@@ -4,6 +4,8 @@ import { hasCourseAccess } from "@/lib/course-access";
 import { mergePrefill } from "@/lib/student-profile";
 import { enforceDeviceLimit } from "@/lib/game-devices";
 import { buildContentItems, summarizeContent } from "@/lib/unit-content";
+import { resolveEarlyAccess } from "@/lib/early-access-server";
+import { stripPlayback, FULL_RELEASE_MS } from "@/lib/early-access";
 
 // 教室入口一次載入：驗 JWT 一次，之後並行撈 購課 / 遊戲存取 / 學員資料(+預填) /（購課者）章節+影片+進度，
 // 單一往返取代原本 verify-purchase + verify-subscription + course + progress + profile 五支
@@ -111,6 +113,13 @@ export async function GET(req) {
 
   out.chapters = chapRes.data || [];
   out.videos = vidRes.data || [];
+  // 早鳥搶先看分層：9/30 正式上架前，非早鳥（9/10 起購課）看得到完整大綱與試看單元，
+  // 但正課影片的可播欄位被摘掉（側欄自然顯示「預計 9/30 上架」）。只在播放頁模式做（儀表板不回可播欄位）。
+  if (playerMode && Date.now() < FULL_RELEASE_MS) {
+    const { early } = await resolveEarlyAccess(supabase, user.email);
+    out.earlyAccess = early;
+    out.videos = stripPlayback(out.videos, { early, nowMs: Date.now() });
+  }
   out.progress = progress;
   out.completedCount = completedCount;
   out.totalCount = totalCount;

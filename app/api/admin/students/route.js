@@ -30,7 +30,7 @@ export async function GET(req) {
   try {
     // 全部走 selectAll 分頁：名單量超過 1000 列時不會被 PostgREST 預設上限截斷
     const [enrollments, orders, leads, profiles] = await Promise.all([
-      selectAll(supabase, "enrollments", q => q.select("email,enrolled_at,course_id")),
+      selectAll(supabase, "enrollments", q => q.select("email,enrolled_at,course_id,early_override")),
       selectAll(supabase, "orders", q => q.select("email,phone,plan,plan_label,source,status,created_at").eq("status", "paid")),
       selectAll(supabase, "course_preview_leads", q => q.select("id,email,source,status,created_at").order("created_at", { ascending: false })),
       selectAll(supabase, "student_profiles", q => q.select("email, real_name, phone, level, source, age_group, gender")),

@@ -345,3 +345,7 @@ CREATE INDEX IF NOT EXISTS rating_replies_rating_id_idx   ON rating_replies(rati
 CREATE INDEX IF NOT EXISTS submissions_assignment_id_idx  ON submissions(assignment_id);
 CREATE INDEX IF NOT EXISTS submissions_video_id_idx       ON submissions(video_id);
 CREATE INDEX IF NOT EXISTS videos_chapter_id_idx          ON videos(chapter_id);
+
+-- 早鳥搶先看分層（2026-09）：9/9 前購課可跟每週上架進度觀看，之後購課 9/30 才開放。
+-- early_override：NULL=依購買時間自動判斷｜'early'=強制早鳥｜'standard'=強制 9/30 開放（後台學員名單可調）。
+ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS early_override TEXT;
