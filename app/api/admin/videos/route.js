@@ -18,7 +18,8 @@ export async function GET(req) {
   if (!supabase) return NextResponse.json({ ok: true, data: [] });
 
   const chapter_id = new URL(req.url).searchParams.get("chapter_id");
-  let query = supabase.from("videos").select("*").order("sort_order", { ascending: true });
+  // created_at 當次要排序：sort_order 同值（排序儲存掉包／新建未排）時順序仍穩定
+  let query = supabase.from("videos").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (chapter_id) query = query.eq("chapter_id", chapter_id);
 
   const { data, error } = await query;

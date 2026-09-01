@@ -81,7 +81,7 @@ export async function GET(req) {
   const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, bunny_video_id, vimeo_id";
   const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes] = await Promise.all([
     supabase.from("chapters").select("*").order("sort_order", { ascending: true }),
-    supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }),
+    supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
     supabase.from("progress").select("video_id, watched_seconds, total_seconds, completed, watched_at").eq("user_id", user.id),
     supabase.from("videos").select("id", { count: "exact", head: true }).eq("published", true),
     playerMode

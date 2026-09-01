@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -96,7 +97,8 @@ export async function PATCH(req) {
 }
 
 export async function DELETE(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
@@ -105,7 +107,9 @@ export async function DELETE(req) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
+  const { data: game } = await supabase.from("games").select("title, video_id").eq("id", id).maybeSingle();
   const { error } = await supabase.from("games").delete().eq("id", id);
   if (error) return serverError(error);
+  await logAudit(supabase, { actor: payload.email, action: "game.delete", targetType: "game", targetId: id, meta: { title: game?.title ?? null, video_id: game?.video_id ?? null }, req });
   return NextResponse.json({ ok: true });
 }

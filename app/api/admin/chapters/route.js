@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req) {
   const payload = await verifyAdminToken(req);
@@ -54,7 +55,9 @@ export async function DELETE(req) {
     .from("quizzes").select("id", { count: "exact", head: true }).eq("chapter_id", id);
   if (qcErr) return serverError(qcErr);
   if (quizCount > 0) return NextResponse.json({ error: "chapter_has_quizzes" }, { status: 409 });
+  const { data: chapter } = await db.from("chapters").select("title").eq("id", id).maybeSingle();
   const { error } = await db.from("chapters").delete().eq("id", id);
   if (error) return serverError(error);
+  await logAudit(db, { actor: payload.email, action: "chapter.delete", targetType: "chapter", targetId: id, meta: { title: chapter?.title ?? null }, req });
   return NextResponse.json({ ok: true });
 }

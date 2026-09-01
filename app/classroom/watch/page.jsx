@@ -1202,6 +1202,9 @@ export default function ClassroomPage() {
 
   function handleSelect(v) {
     setCurrentVideo(v);
+    // 切單元就放棄「等清單載好再自動開遊戲」的待辦（點遊戲 icon 的路徑會在呼叫本函式之後再重設），
+    // 否則跨單元殘留的 pendingGameId 會在之後回到那個單元時突然全螢幕開遊戲。
+    setPendingGameId(null);
     if (isTablet) setDrawerOpen(false);
   }
 

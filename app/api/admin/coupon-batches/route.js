@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { logAudit } from "@/lib/audit";
 import { generateBatchCodes, normalizeManualCodes, MAX_BATCH_QUANTITY } from "@/lib/serial-codes";
 import { validateDateRange } from "@/lib/date-range";
 
@@ -99,7 +100,8 @@ export async function POST(req) {
 
 // DELETE ?id= ：刪批次（CASCADE 連帶刪序號）
 export async function DELETE(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
@@ -107,7 +109,10 @@ export async function DELETE(req) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
+  const { data: batch } = await supabase.from("coupon_batches").select("name").eq("id", id).maybeSingle();
+  const { count: codes } = await supabase.from("coupons").select("id", { count: "exact", head: true }).eq("batch_id", id);
   const { error } = await supabase.from("coupon_batches").delete().eq("id", id);
   if (error) return serverError(error);
+  await logAudit(supabase, { actor: payload.email, action: "coupon_batch.delete", targetType: "coupon_batch", targetId: id, meta: { name: batch?.name ?? null, codes: codes ?? null }, req });
   return NextResponse.json({ ok: true });
 }

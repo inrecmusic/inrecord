@@ -175,7 +175,9 @@ export default function ChaptersUnitsPage({ showToast }) {
     const updated = chapVids.map((v, i) => ({ ...v, sort_order: i }));
     setDragVideoKey({ chapId, idx });
     setVideos(prev => { const rest = prev.filter(v => v.chapter_id !== chapId); return [...rest, ...updated]; });
-    try { updated.forEach(v => api("/api/admin/videos", { method: "PATCH", body: JSON.stringify({ id: v.id, sort_order: v.sort_order }) })); } catch {}
+    Promise.all(updated.map(v => api("/api/admin/videos", { method: "PATCH", body: JSON.stringify({ id: v.id, sort_order: v.sort_order }) })))
+      .then(rs => { if (rs.some(r => !r.ok)) throw new Error("reorder_failed"); })
+      .catch(() => { showToast("❌ 單元排序儲存失敗，已還原"); fetchAll(); }); // 與章節排序一致：失敗回報＋refetch 還原真實順序
   }
 
   const chapVideos = (chapId) => videos.filter(v => v.chapter_id === chapId).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));

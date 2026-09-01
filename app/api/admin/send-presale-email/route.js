@@ -5,6 +5,7 @@ import { verifyAdminToken } from "@/lib/adminAuth";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { fetchPendingLeads } from "@/lib/admin-leads";
+import { logAudit } from "@/lib/audit";
 
 // 後台手動批次寄「預購成功」信給付款名單（WooCommerce + concert-shop）。
 // Body { ids?: string[] }：給 ids 只寄這些；不給則對「全部未寄」。已寄者(presale_email_sent_at 非空)自動跳過。
@@ -52,5 +53,6 @@ export async function POST(req) {
     }
   }
 
+  await logAudit(supabase, { actor: payload.email, action: "presale_email.send", targetType: "orders", meta: { sent, failed, errors: errors.length }, req });
   return NextResponse.json({ ok: true, sent, failed, errors });
 }
