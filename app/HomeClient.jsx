@@ -569,9 +569,6 @@ export default function HomeClient({ sale }) {
   // ⚠️ 末尾 .replace 把日期與時間之間的分隔空白正規化為一般空格：Node(伺服器) 的 ICU 在 zh-TW
   //    會插入 U+2009 細空格、瀏覽器 ICU 用一般空格(U+0020) → 不正規化 → SSR 與 client 文字不符
   //    → React hydration mismatch(#425/#418/#423)。含「時:分」的格式才會中鏢，純 M/D 不受影響。
-  const launchLabel = sale.openAt
-    ? new Date(sale.openAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).replace(/[\u2009\u202f\u00a0]/g, " ")
-    : null;
 
   // 預售期間：教室內容鎖站（見 middleware.js），登入後不顯示「進入教室」死連結
   const presaleMode = !sale.classroomOpen;
@@ -701,9 +698,7 @@ export default function HomeClient({ sale }) {
                   <span className={styles.offerPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
                   <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>
                 </div>
-                {launchLabel && !sale.classroomOpen && (
-                  <div className={styles.offerLaunch}>📅 課程 {launchLabel} 起陸續上架</div>
-                )}
+                <div className={styles.offerLaunch}>📅 9/30 課程正式上架</div>
                 {showFanCountdown && (
                   <div className={styles.offerCountdown}>⏳ 粉絲早鳥價剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
                 )}
