@@ -2653,7 +2653,7 @@ const DEFAULT_PRIVACY_MD =
 
 如對本隱私權政策有任何疑問，請透過以下方式聯繫：
 
-- **Email**：inrecmusic@gmail.com
+- **Email**：support@inrecordmusic.com
 - **Instagram**：@inrecord.music`;
 
 const DEFAULT_TERMS_MD =
@@ -2734,7 +2734,7 @@ InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程
 
 ### 七、退費方式與時程
 
-- 退費申請請來信 inrecmusic@gmail.com，並提供**訂單編號**。
+- 退費申請請來信 support@inrecordmusic.com，並提供**訂單編號**。
 - 退款於受理後 **7 個工作天**內，依原付款方式退還。
 - 退費完成後，您於本課程之觀看權限同時終止。
 
@@ -2789,7 +2789,7 @@ InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程
 
 如對本服務條款有任何疑問：
 
-- **Email**：inrecmusic@gmail.com
+- **Email**：support@inrecordmusic.com
 - **Instagram**：@inrecord.music`;
 
 // ── Markdown renderer ──────────────────────────────────────────────────────
@@ -2915,7 +2915,7 @@ const NEWSLETTER_TEMPLATES=[
     "[填寫學員資料](https://inrecordmusic.com/classroom/account)","",
     "填寫完成後，9/2 晚上 8:00 第一章開放，只要登入購買課程時使用的帳號就可以直接開始觀看。未來每次有新章節上架，我們也會另外寄送通知信，並附上課程連結。","",
     "如果填寫時遇到任何問題，直接回信告訴我們就可以。","",
-    "有任何問題，隨時歡迎來信至 inrecmusic@gmail.com，我們收到後會盡快回覆。","",
+    "有任何問題，隨時歡迎來信至 support@inrecordmusic.com，我們收到後會盡快回覆。","",
     "**9/2 晚上 8:00，第一章見！**"].join("\n")},
   {name:"新章節上架",subject:"【InRecord】新章節上架通知",body:[
     "親愛的學員，您好：","",

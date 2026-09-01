@@ -31,8 +31,8 @@ export default function ContactPage() {
             <ContactItem
               icon={<Mail size={18} color="#2563eb" />}
               label="Email"
-              value="inrecmusic@gmail.com"
-              href="mailto:inrecmusic@gmail.com"
+              value="support@inrecordmusic.com"
+              href="mailto:support@inrecordmusic.com"
             />
             <ContactItem
               icon={<InstagramIcon size={18} />}
@@ -45,7 +45,7 @@ export default function ContactPage() {
 
           <div style={{ marginTop: 32, padding: "20px 24px", background: "#eff6ff", borderRadius: 12, border: "1px solid #bfdbfe" }}>
             <p style={{ margin: 0, fontSize: 13, color: "#1d4ed8", lineHeight: 1.7 }}>
-              <strong>退款申請</strong>請於購買後 7 天內寄信至 <a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb", fontWeight: 700 }}>inrecmusic@gmail.com</a>，並說明購買日期及退款原因。
+              <strong>退款申請</strong>請於購買後 7 天內寄信至 <a href="mailto:support@inrecordmusic.com" style={{ color: "#2563eb", fontWeight: 700 }}>support@inrecordmusic.com</a>，並說明購買日期及退款原因。
             </p>
           </div>
         </div>

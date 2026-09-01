@@ -131,7 +131,7 @@ function DefaultPrivacyContent() {
       <Section title="11. 聯絡我們" last>
         如對本隱私權政策有任何疑問，請透過以下方式聯繫：
         <ul>
-          <li><b>Email</b>：<a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a></li>
+          <li><b>Email</b>：<a href="mailto:support@inrecordmusic.com" style={{ color: "#2563eb" }}>support@inrecordmusic.com</a></li>
           <li><b>Instagram</b>：@inrecord.music</li>
         </ul>
       </Section>

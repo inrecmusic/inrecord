@@ -128,7 +128,7 @@ function DefaultTermsContent() {
 
         <p style={subHead}>七、退費方式與時程</p>
         <ul>
-          <li>退費申請請來信 <a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a>，並提供<b>訂單編號</b>。</li>
+          <li>退費申請請來信 <a href="mailto:support@inrecordmusic.com" style={{ color: "#2563eb" }}>support@inrecordmusic.com</a>，並提供<b>訂單編號</b>。</li>
           <li>退款於受理後 <b>7 個工作天</b>內，依原付款方式退還。</li>
           <li>退費完成後，您於本課程之觀看權限同時終止。</li>
         </ul>
@@ -180,7 +180,7 @@ function DefaultTermsContent() {
       <Section title="10. 聯絡方式" last>
         如對本服務條款有任何疑問：
         <ul>
-          <li><b>Email</b>：<a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a></li>
+          <li><b>Email</b>：<a href="mailto:support@inrecordmusic.com" style={{ color: "#2563eb" }}>support@inrecordmusic.com</a></li>
           <li><b>Instagram</b>：@inrecord.music</li>
         </ul>
       </Section>
