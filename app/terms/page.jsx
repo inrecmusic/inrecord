@@ -47,7 +47,7 @@ function DefaultTermsContent() {
   return (
     <>
       <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>服務條款</h1>
-      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 6 月 23 日</p>
+      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 9 月 1 日</p>
 
       <Section title="1. 服務說明">
         InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程的試看、購買與學習服務。使用本平台服務，即表示您同意遵守本服務條款。
@@ -84,7 +84,22 @@ function DefaultTermsContent() {
           <li>為保障學員權益，本平台仍主動提供下列退費機制。</li>
         </ul>
 
-        <p style={subHead}>三、退費級距</p>
+        <p style={subHead}>三、預售訂單之期間起算</p>
+        <ul>
+          <li>於課程正式開課日前購買者（下稱「預售訂單」），本政策所稱「自購買日起 7 日內」，一律自<b>正式開課日</b>起算，不自實際付款日起算。</li>
+          <li>本課程正式開課日為 <b>2026 年 9 月 30 日</b>。</li>
+          <li>於正式開課日前，學員得隨時申請全額退費，不受觀看比例限制；惟已觀看搶先公開章節者，依第五款退費級距辦理。</li>
+          <li>本平台如變更正式開課日，將以 Email 通知已購課學員，並以變更後之日期重新起算前述期間。</li>
+        </ul>
+
+        <p style={subHead}>四、搶先開放期間之觀看時數</p>
+        <ul>
+          <li>正式開課日前，本平台得提前開放部分章節（下稱「搶先版」）供已購課學員觀看。</li>
+          <li>搶先版係額外提供，<b>其觀看時數不計入退費級距之觀看比例計算</b>。</li>
+          <li>搶先版為尚未完成最終調整之版本，可能存在影音、字幕或系統操作上之瑕疵；本平台將於正式開課日前完成修正。學員於搶先開放期間之回饋，不影響其依本政策所享有之各項權益。</li>
+        </ul>
+
+        <p style={subHead}>五、退費級距</p>
         <p style={{ margin: "0 0 6px" }}><b>（一）全額退費（退還 100%）</b>——符合下列任一情形：</p>
         <ul>
           <li>自購買日起 <b>7 日內，且尚未觀看任何正式付費單元</b>（試看單元不計入）。</li>
@@ -106,19 +121,19 @@ function DefaultTermsContent() {
           </tbody>
         </table>
 
-        <p style={subHead}>四、違約金</p>
+        <p style={subHead}>六、違約金</p>
         <ul>
           <li>因可歸責於您之事由終止契約者，本平台得自應退金額中扣除違約金，<b>違約金上限不超過應退金額之 20%</b>。</li>
         </ul>
 
-        <p style={subHead}>五、退費方式與時程</p>
+        <p style={subHead}>七、退費方式與時程</p>
         <ul>
           <li>退費申請請來信 <a href="mailto:inrecmusic@gmail.com" style={{ color: "#2563eb" }}>inrecmusic@gmail.com</a>，並提供<b>訂單編號</b>。</li>
           <li>退款於受理後 <b>7 個工作天</b>內，依原付款方式退還。</li>
           <li>退費完成後，您於本課程之觀看權限同時終止。</li>
         </ul>
 
-        <p style={subHead}>六、其他</p>
+        <p style={subHead}>八、其他</p>
         <ul>
           <li>已使用且尚未失效之折扣券、點數，依當次活動規則處理。</li>
           <li>透過第三方平台（如 App 內購）購買者，退費依該平台規定辦理。</li>
