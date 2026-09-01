@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/plans";
-import { currentPrice, getSaleSettings, isOnSale } from "@/lib/sale";
+import { currentPrice, getSaleSettings, isOnSale, fanCouponActive, FAN_COUPON_CODE } from "@/lib/sale";
+import { releaseOwnPendingCouponHolds } from "@/lib/coupon-hold";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 import { isOwnProofUrl } from "@/lib/fan-proof";
@@ -73,6 +74,10 @@ export async function POST(req) {
       if (cErr) return NextResponse.json({ error: cErr }, { status: 400 });
       const pErr = couponPlanError(coupon, plan);
       if (pErr) return NextResponse.json({ error: pErr }, { status: 400 });
+      // 粉絲直購券綁 fan_plan 截止（預設 9/9 23:59）：過期或方案停用即拒收，與首頁隱藏粉絲卡同步
+      if (coupon.code === FAN_COUPON_CODE && !fanCouponActive(saleSettings, new Date())) {
+        return NextResponse.json({ error: "coupon_expired" }, { status: 400 });
+      }
     }
 
     // pre_launch：僅在有有效「指定價」券時放行（一般購買未開）
@@ -169,14 +174,21 @@ export async function POST(req) {
     // 限量券原子預扣（CAS）：延到此刻（所有驗證已過、緊接寫單）才扣，之後唯一失敗路徑就是下方 insert，
     // 失敗即釋放；杜絕中途 early-return 漏扣。
     if (coupon && coupon.usage_limit != null) {
-      const prevUsed = coupon.used || 0;
-      const { data: claimed } = await supabase
-        .from("coupons").update({ used: prevUsed + 1 })
-        .eq("code", coupon.code).eq("used", prevUsed).select("id");
-      if (!claimed || claimed.length === 0) {
-        return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
+      // 同一買家用同一張限量券重試（上次到 PayUni 放棄）：先作廢自己仍 pending 的舊單並退回預扣，
+      // 否則會被自己的舊單卡成 coupon_used_up、要等 release-coupons cron 逾時（72h）才解。
+      await releaseOwnPendingCouponHolds(supabase, { email, couponCode: coupon.code });
+      // 以最新 used 做 CAS 預扣（上面可能剛釋放；同一瞬間被別人搶走就重讀再試一次）
+      let claimedOk = false;
+      for (let attempt = 0; attempt < 2 && !claimedOk; attempt++) {
+        const { data: fresh } = await supabase.from("coupons").select("used, usage_limit").eq("code", coupon.code).maybeSingle();
+        const prevUsed = fresh?.used ?? coupon.used ?? 0;
+        if (prevUsed >= (fresh?.usage_limit ?? coupon.usage_limit)) break;
+        const { data: claimed } = await supabase
+          .from("coupons").update({ used: prevUsed + 1 })
+          .eq("code", coupon.code).eq("used", prevUsed).select("id");
+        if (claimed && claimed.length) { couponPrevUsed = prevUsed; claimedOk = true; }
       }
-      couponPrevUsed = prevUsed;
+      if (!claimedOk) return NextResponse.json({ error: "coupon_used_up" }, { status: 400 });
       couponClaimed = true;
     }
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { expirePendingOrderAndRelease } from "@/lib/coupon-hold";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 // 優惠券逾時釋放（Vercel Cron / 手動觸發）
@@ -40,32 +41,10 @@ export async function GET(req) {
   let expired = 0;
   let released = 0;
   for (const o of stale || []) {
-    // 原子標記 expired：只在「仍 pending」時成功，避免與 notify 競態而誤釋放已付款訂單。
-    const { data: claimed } = await supabase
-      .from("orders")
-      .update({ status: "expired", updated_at: new Date().toISOString() })
-      .eq("id", o.id)
-      .eq("status", "pending")
-      .select("id")
-      .maybeSingle();
-    if (!claimed) continue;
-    expired++;
-
-    // 只退回「限量券」的預扣（無限量券當初未在 checkout 預扣）。以 CAS 還原一次。
-    const { data: c } = await supabase
-      .from("coupons")
-      .select("used, usage_limit")
-      .eq("code", o.coupon_code)
-      .maybeSingle();
-    if (c && c.usage_limit != null && (c.used || 0) > 0) {
-      const { data: rel } = await supabase
-        .from("coupons")
-        .update({ used: c.used - 1 })
-        .eq("code", o.coupon_code)
-        .eq("used", c.used)
-        .select("id");
-      if (rel && rel.length) released++;
-    }
+    // CAS 標 expired（仍 pending 才成功，避免與 notify 競態）＋退回限量券預扣；邏輯與 checkout 重試釋放共用
+    const r = await expirePendingOrderAndRelease(supabase, { orderId: o.id, couponCode: o.coupon_code });
+    if (r.expired) expired++;
+    if (r.released) released++;
   }
 
   return NextResponse.json({ ok: true, scanned: stale?.length || 0, expired, released, hours, cutoff });

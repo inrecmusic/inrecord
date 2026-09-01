@@ -577,6 +577,10 @@ export default function HomeClient({ sale }) {
   const buyShort = sale.classroomOpen ? "立即購買" : "立即預購";
   // Hero 優惠卡綁定主推方案（bundle）的波段定價
   const offer = sale.plans[PLANS[1].plan];
+  // 粉絲方案是否仍在賣（後台開關 且 未過截止，salePhase 已合併進 enabled）。
+  // 關閉後 hero 卡／sticky bar／FAQ 一律退回一般課程包的波段定價，不再露出 FAN3999 直購價。
+  const fanOn = !!sale.fanPlan?.enabled;
+  const heroPrice = fanOn ? sale.fanPlan.directPrice : offer.price;
 
   const fanRowStyle = (on) => ({
     display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -693,13 +697,13 @@ export default function HomeClient({ sale }) {
                 </motion.div>
               )}
               <motion.div variants={fadeUp} className={styles.offerCard}>
-                <span className={styles.offerPill}>粉絲限定方案·超早鳥預購</span>
+                <span className={styles.offerPill}>{fanOn ? "粉絲限定方案·超早鳥預購" : offer.isEarlyBird ? `${PLANS[1].label}·限時早鳥` : PLANS[1].label}</span>
                 <div className={styles.offerPriceRow}>
-                  <span className={styles.offerPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
-                  <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>
+                  <span className={styles.offerPrice}>NT${heroPrice.toLocaleString()}</span>
+                  {offer.originalPrice > heroPrice && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
                 </div>
                 <div className={styles.offerLaunch}>📅 9/30 課程正式上架</div>
-                {showFanCountdown && (
+                {fanOn && showFanCountdown && (
                   <div className={styles.offerCountdown}>⏳ 粉絲早鳥價剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
                 )}
                 <div className={styles.offerBtns}>
@@ -897,7 +901,7 @@ export default function HomeClient({ sale }) {
               <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
             </div>
             <motion.div className={styles.plansRow} style={{ gridTemplateColumns: "minmax(0, 360px)" }} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
-              {/* 粉絲限定方案：enabled 控整卡；截止後只關憑證入口、直購仍可。
+              {/* 粉絲限定方案：enabled（後台開關 且 未過 deadline）控整卡；截止後整個方案關、FAN3999 也拒收。
                   停用時 fallback 顯示標準課程包卡，避免方案區整個變空、CTA 捲到空白。 */}
               {sale.fanPlan.enabled ? (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
@@ -973,7 +977,7 @@ export default function HomeClient({ sale }) {
                 ["什麼時候可以上課？",           <>課程於 <b>9/30 正式上架</b>，屆時所有購課學員皆可觀看全部章節。<br/>9/9（含）前購課的早鳥學員，可依上架進度搶先開始上課：<br/>・9/2（20:00 起）— 第一章<br/>・9/9 — 第二章<br/>・9/16 — 第三章<br/>・9/23 — 第四章<br/>・9/30 — 全部章節上架完畢</>],
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
-                ["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`],
+                ...(fanOn ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`]] : []),
                 ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -1007,8 +1011,8 @@ export default function HomeClient({ sale }) {
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>
         <div className={styles.stickyBuyInfo}>
-          <span className={styles.stickyBuyPrice}>NT${sale.fanPlan.directPrice.toLocaleString()}</span>
-          <span className={styles.stickyBuyLabel}>粉絲限定方案</span>
+          <span className={styles.stickyBuyPrice}>NT${heroPrice.toLocaleString()}</span>
+          <span className={styles.stickyBuyLabel}>{fanOn ? "粉絲限定方案" : PLANS[1].label}</span>
         </div>
         <button className={styles.stickyBuyBtn} onClick={scrollToPricing}>
           {buyShort}

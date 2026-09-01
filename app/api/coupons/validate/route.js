@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/plans";
-import { currentPrice, getSaleSettings } from "@/lib/sale";
+import { currentPrice, getSaleSettings, fanCouponActive, FAN_COUPON_CODE } from "@/lib/sale";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 
 // 公開端點：每 IP 每分鐘 30 次，擋優惠碼/序號枚舉（全域，缺 Redis 時記憶體保底）
@@ -40,6 +40,10 @@ export async function POST(req) {
 
     // 基準價走 sale_settings（早鳥/原價），與 checkout 後端一致；前端顯示用，checkout 會再次後端驗證
     const settings = await getSaleSettings();
+    // 粉絲直購券綁 fan_plan 截止，與 checkout 同一規則
+    if (coupon.code === FAN_COUPON_CODE && !fanCouponActive(settings, new Date())) {
+      return NextResponse.json({ valid: false, error: "coupon_expired" }, { status: 200 });
+    }
     const basePrice = currentPrice(plan, settings, new Date());
     const finalPrice = applyCoupon(basePrice, coupon);
     return NextResponse.json({
