@@ -4,6 +4,8 @@
 // CSP（enforcing）：2026-08-22 以 Report-Only 巡查首頁/教室/播放頁皆零違規後，轉為正式阻擋。
 // 放行：Bunny 影片播放器＋player.js、Vimeo legacy、Supabase(含 realtime wss)、PAYUNi 金流、
 // 追蹤碼中心可能載入的 GTM/FB/Google/PostHog、Unsplash 圖。inline 因大量 inline style／Next 內聯腳本而保留。
+// /demo 體驗頁（public/demo/index.html）：Google Fonts＋unpkg 的 smplr（ESM）＋音色檔 smpldsnds.github.io，
+// 2026-09-02 封測發現被 CSP 擋到沒聲音，故一併放行（本站 CSP 已含 unsafe-inline/eval，加這幾個 host 不改變防護等級）。
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -11,12 +13,12 @@ const csp = [
   "object-src 'none'",
   // ⚠️ PAYUNi 正式/測試皆為 *.payuni.com.tw；form-action 漏放行會讓付款表單被 CSP 擋在「處理中」。
   "form-action 'self' https://*.payuni.com.tw",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.mediadelivery.net https://www.googletagmanager.com https://connect.facebook.net https://us.i.posthog.com https://tools.google.com",
-  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.mediadelivery.net https://www.googletagmanager.com https://connect.facebook.net https://us.i.posthog.com https://tools.google.com https://unpkg.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "frame-src 'self' https://iframe.mediadelivery.net https://player.vimeo.com https://*.vimeo.com https://*.payuni.com.tw https://www.instagram.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com.tw https://www.googletagmanager.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com.tw https://www.googletagmanager.com https://unpkg.com https://smpldsnds.github.io",
 ].join("; ");
 
 const securityHeaders = [
