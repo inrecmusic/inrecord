@@ -8,6 +8,7 @@ import {
   contentHash, filterUnsent, countSentToday, claimSend, releaseSend,
 } from "@/lib/newsletter-send";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
+import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
 import { logAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -29,19 +30,20 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
+  // 每位收件人專屬的退訂連結（HMAC 簽章）：內文按鈕＋List-Unsubscribe 標頭；Brevo 範本走 params.unsubscribe_url
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
+  const unsubUrl = (to) => buildUnsubscribeUrl(to, siteUrl);
   let subject, body_md = "", sendOne;
   if (templateId) {
     subject = `[Brevo 範本 #${templateId}]`; // 只作 email_log／稽核標示，實際主旨由 Brevo 範本決定
-    sendOne = (to) => sendNewsletterEmail({ to, subject, templateId });
+    sendOne = (to) => sendNewsletterEmail({ to, subject, templateId, params: { unsubscribe_url: unsubUrl(to) }, unsubscribeUrl: unsubUrl(to) });
   } else {
-    // 讀草稿（寄送以 DB 內容為準）
+    // 讀草稿（寄送以 DB 內容為準）；HTML 逐封渲染（退訂連結因人而異，渲染成本可忽略）
     const { data: nl } = await supabase.from("newsletter").select("subject, body_md").eq("id", "default").maybeSingle();
     subject = (nl?.subject || "").trim();
     body_md = nl?.body_md || "";
     if (!subject || !body_md.trim()) return NextResponse.json({ error: "empty_content" }, { status: 400 });
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
-    const html = renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl });
-    sendOne = (to) => sendNewsletterEmail({ to, subject, html });
+    sendOne = (to) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to) }), unsubscribeUrl: unsubUrl(to) });
   }
 
   // 測試信：只寄管理員自己
