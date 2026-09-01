@@ -2795,8 +2795,10 @@ InRecord（以下簡稱「本平台」）提供零基礎流行鋼琴線上課程
 // ── Markdown renderer ──────────────────────────────────────────────────────
 function renderMd(text){
   const lines=text.split("\n");
-  const out=[];let listBuf=[];let key=0;
+  const out=[];let listBuf=[];let key=0;let tl=null;
   function flush(){if(!listBuf.length)return;out.push(<ul key={key++} style={{margin:"6px 0 14px",paddingLeft:22,display:"grid",gap:5}}>{listBuf}</ul>);listBuf=[];}
+  function tlRow(line){const p=line.split("|").map(s=>s.trim());let sub="",dim=false;p.slice(2).forEach(x=>{if(x.toLowerCase()==="dim")dim=true;else if(x)sub=x;});return{badge:p[0]||"",title:p[1]||"",sub,dim};}
+  function tlCard(rows){return(<div key={key++} style={{background:"#eff4ff",borderRadius:16,padding:"18px 18px 6px",margin:"6px 0 18px"}}>{rows.map((r,ri)=>(<div key={ri} style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}><div style={{flex:"0 0 40px",width:40,height:40,borderRadius:20,background:r.dim?"#cbd5e1":"#2563eb",color:"#fff",fontWeight:800,fontSize:r.badge.length>=4?11:12,display:"flex",alignItems:"center",justifyContent:"center"}}>{r.badge}</div><div><div style={{fontSize:15,fontWeight:800,color:r.dim?"#94a3b8":"#0f172a"}}>{r.title}</div>{r.sub?<div style={{fontSize:12,color:"#64748b",marginTop:2}}>{r.sub}</div>:null}</div></div>))}</div>);}
   function inline(s){
     const parts=[];
     s.split(/(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g).forEach((p,i)=>{
@@ -2810,6 +2812,10 @@ function renderMd(text){
   }
   for(let i=0;i<lines.length;i++){
     const l=lines[i];
+    // :::timeline 區塊、@badge/@subtitle 指令（後者呈現在深色頁首、預覽內文略過）
+    if(tl){if(l.trim()===":::"){out.push(tlCard(tl));tl=null;}else if(l.trim()!=="")tl.push(tlRow(l));continue;}
+    if(l.trim()===":::timeline"){flush();tl=[];continue;}
+    if(/^@(badge|subtitle)\s+/.test(l.trim()))continue;
     const imgM=l.trim().match(/^!\[([^\]]*)\]\((https?:\/\/[^)\s|]+)(?:\|(\d{1,4}))?\)$/);
     if(imgM){flush();const w=imgM[3]?Math.min(560,Number(imgM[3])):160;out.push(<p key={key++} style={{textAlign:"center",margin:"8px 0 18px"}}><img src={imgM[2]} alt={imgM[1]} style={{width:w,maxWidth:"80%",height:"auto"}}/></p>);}
     else if(l.startsWith("# ")){flush();out.push(<h1 key={key++} style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 6px",letterSpacing:"-.03em"}}>{inline(l.slice(2))}</h1>);}
@@ -2826,6 +2832,7 @@ function renderMd(text){
       else out.push(<p key={key++} style={{fontSize:14,color:"#374151",lineHeight:1.8,margin:"0 0 10px"}}>{inline(l)}</p>);
     }
   }
+  if(tl)out.push(tlCard(tl));
   flush();return out;
 }
 
@@ -2879,29 +2886,37 @@ function TermsPage({showToast}){return <DocEditorPage title="服務條款" conte
 // 電子報：編輯標題+Markdown 內文 → 群發給「購課學員 / 註冊官網帳號」。逐封寄(A 方案)，碰每日上限即回報。
 // 電子報範本：點選帶入標題與內文再自行修改。文案為正式敬語體，日期／章節等請發送前確認。
 const NEWSLETTER_TEMPLATES=[
-  {name:"開課通知",subject:"【InRecord】開課資訊：課程 9/30 正式上架，早鳥可搶先看",body:[
-    "![InRecord](https://inrecordmusic.com/mascot-wave.png|150)","",
-    "親愛的學員，您好：","",
-    "感謝您購買「從零開始學鋼琴」課程。開課相關資訊整理如下，請您留意：","",
-    "## 課程於 9/30 正式上架",
-    "課程將於 **9/30** 正式上架，屆時所有購課學員皆可觀看全部章節。","",
-    "## 早鳥搶先看",
-    "**9/9（含）前購課的學員**，可依每週上架進度提前開始上課：",
-    "- **9/2（20:00 起）** — 第一章",
-    "- **9/9** — 第二章",
-    "- **9/16** — 第三章",
-    "- **9/23** — 第四章",
-    "- **9/30** — 全部章節上架完畢","",
-    "## 請先完成學員資料",
-    "為了更了解每一位學員、作為後續課程規劃與活動的參考，開始上課前，麻煩您花約一分鐘填寫基本資料：","",
+  {name:"開課通知（早鳥分層）",subject:"9/30 正式開課・9/2 搶先開放第一章",body:[
+    "@badge 上架公告",
+    "@subtitle 9/2 搶先開放第一章節，給第一批預購的您。","",
+    "![InRecord 吉祥物](https://inrecordmusic.com/mascot-wave.png|120)","",
+    "親愛的預購學員，您好：","",
+    "感謝您在演奏會期間，以超早鳥方案預購張育瑞「從零開始學鋼琴－了解三和弦與基礎伴奏」。除了享有這堂課推出以來的最低優惠，也包含了為您準備的「搶先觀看」專屬權益。","",
+    "## 9/2 起　第一章搶先開放",
+    "作為音樂會預購學員的專屬權益，自 9/2 起，我們會依照課程製作進度，每週為您搶先開放一個新章節，讓您不用等到完整課程全部完成，就能提早開始學習。","",
+    ":::timeline",
+    "9/2 | 第一章　搶先開放 | 晚上 8:00 開放",
+    "9/9 | 第二章　上架",
+    "9/16 | 第三章　上架",
+    "9/23 | 第四章　上架",
+    "9/30 | 完整課程　正式全數開放 | dim",
+    ":::","",
+    "近期課程將展開正式對外宣傳，為避免新學員混淆，官方網站的公開資訊會統一標示為「9/30 完整課程正式上架」。請放心，您專屬的 9/2 搶先觀看權益完全不受影響，其他新學員則會統一自 9/30 起才能開始觀看。","",
+    "## 9/30　完整課程正式上架",
+    "9/30 起，所有課程內容將全數開放。課程購買後可永久觀看，您可以依照自己的學習進度，隨時回來複習。","",
+    "## 關於搶先觀看版本",
+    "9/2～9/29 期間開放的內容，是正式上架前提供給預購學員的專屬搶先版。","",
+    "目前課程正進行最後的字幕校對與網站微調，部分畫面或操作後續仍可能持續更新。我們誠摯邀請第一批加入的您參與這個最終打磨階段；如果您在觀看時發現任何播放異常、字幕錯字，或對教學內容有任何建議，都歡迎直接來信告訴我們。您的回饋，將幫助這堂課在 9/30 正式上架時更加完美。","",
+    "## 開始上課前，請先花一分鐘填寫學員資料",
+    "您的觀看權限在完成預購時就已經設定完畢，不需要另外購買或啟用。在正式開始上課前，想先請您花一分鐘填寫學員資料，這份資料會用於：",
+    "- 寄送新章節上架通知與課程連結",
+    "- 學員專屬活動與後續課程的優先邀請",
+    "- 了解大家的學習狀況，調整後續內容規劃","",
     "[填寫學員資料](https://inrecordmusic.com/classroom/account)","",
-    "## 開課前建議",
-    "- 瀏覽 [課程大綱](https://inrecordmusic.com/#curriculum)，了解 10 章 58 個單元的完整規劃",
-    "- 進入教室觀看 *試看：課程 Demo*，預先熟悉播放介面","",
-    "[進入音樂教室](https://inrecordmusic.com/classroom)","",
-    "---","",
-    "若有任何問題，歡迎直接回覆此信，我們將盡快為您處理。","",
-    "**InRecord・音樂刻 敬上**"].join("\n")},
+    "填寫完成後，9/2 晚上 8:00 第一章開放，只要登入購買課程時使用的帳號就可以直接開始觀看。未來每次有新章節上架，我們也會另外寄送通知信，並附上課程連結。","",
+    "如果填寫時遇到任何問題，直接回信告訴我們就可以。","",
+    "有任何問題，隨時歡迎來信至 inrecmusic@gmail.com，我們收到後會盡快回覆。","",
+    "**9/2 晚上 8:00，第一章見！**"].join("\n")},
   {name:"新章節上架",subject:"【InRecord】新章節上架通知",body:[
     "親愛的學員，您好：","",
     "以下章節已於今日上架，歡迎進入音樂教室繼續您的學習：","",
