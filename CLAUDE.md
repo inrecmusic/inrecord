@@ -238,6 +238,8 @@ AUTO_INVOICE            # =on 才「付款後自動開 Amego 發票」；未設�
 
 > **廣告成效（Phase 2）**：Cron `sync-ad-insights`（每日 5:20）撈 Meta insights → `ad_insights`；後臺「廣告成效」分頁以 `utm_campaign` 對接真實訂單算 ROAS。**guarded on token**：未設 `META_ADS_ACCESS_TOKEN`/`META_AD_ACCOUNT_ID` 前 cron no-op、儀錶板顯示空狀態。⚠️ ROAS join 靠**投放時 ad URL 的 `utm_campaign` = Meta 活動名（正規化 trim+小寫）**——用 slug/id 會全對不上、board 讀虧損；且**廣告帳戶幣別須為 TWD**（與 `orders.amount` 一致）。
 
-> Cron（`vercel.json`）：`release-coupons`（每日 4:00）、`sale-launch-notify`（每日 4:05）、`abandoned-recovery`（每日 5:00，未成交挽回信）。⚠️ 正式站為 **Vercel Hobby 方案，cron 只能每日**（每小時會於部署時被拒）。
+> Cron（`vercel.json`）：`release-coupons`（每日 4:00）、`sale-launch-notify`（每日 4:05）、`abandoned-recovery`（每日 5:00，未成交挽回信）。2026-08 起正式站已升 **Vercel Pro**，cron 不再受「每日一次」限制，可改任意排程。
+
+> **函式區域**：`vercel.json` 的 `regions: ["hnd1"]`（東京）。刻意與 Supabase 的 `ap-northeast-1`（東京）同區——先前預設 `iad1`（美國華盛頓）會讓每次 DB 查詢橫跨太平洋。改動此值前先確認 Supabase 專案區域。
 
 > ⚠️ `supabase-hardening.sql` 是安全收尾：subscriptions 冪等唯一索引 + 關閉 anon 對 `games`/`videos`/`ratings`/`comment_replies`/`rating_replies` 的公開讀。**漏跑這步，光憑公開 anon key 就能直接讀付費 `games.html_content`、`videos.bunny_video_id` 與評論者 `user_email`（PII）。** 全檔冪等可重複執行；跑完用檔內 2b 的 `pg_policies` 查詢確認已無任何 `{public}`／anon 讀取 policy。

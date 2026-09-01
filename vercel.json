@@ -1,6 +1,7 @@
 {
   "cleanUrls": true,
   "framework": "nextjs",
+  "regions": ["hnd1"],
   "crons": [
     { "path": "/api/cron/release-coupons", "schedule": "0 4 * * *" },
     { "path": "/api/cron/sale-launch-notify", "schedule": "5 4 * * *" },

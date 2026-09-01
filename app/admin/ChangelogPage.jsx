@@ -13,7 +13,39 @@ const TAGS = {
   功能:   { bg: "#e2e8f0", fg: "#334155" },
 };
 
+// 訂閱費用（手動維護）。金額異動時直接改這裡。
+// amount：月付填月費、年付填年費、按量填 null（金額不固定，不列入合計）。
+const SUBSCRIPTIONS = [
+  { service: "Vercel",       plan: "Pro",       amount: 20,   cycle: "month", nextCharge: "每月 27 日", note: "團隊 inrecmusic-9815" },
+  { service: "Supabase",     plan: "Pro",       amount: 25,   cycle: "month", nextCharge: "每月 27 日", note: "org Inrecord" },
+  { service: "Bunny Stream", plan: "按量計費",  amount: null, cycle: "usage", nextCharge: "每月結算",   note: "依影片流量，1080p 約 2.5GB/人·時" },
+  { service: "Hostinger",    plan: "網域續約",  amount: null, cycle: "year",  nextCharge: "待確認",     note: "inrecordmusic.com，金額請填入" },
+  { service: "Brevo",        plan: "Free",      amount: 0,    cycle: "free",  nextCharge: "—",          note: "每日 300 封上限，超量才需升級" },
+  { service: "Upstash",      plan: "Free",      amount: 0,    cycle: "free",  nextCharge: "—",          note: "限流用，目前流量免費額度內" },
+];
+
+// 匯率為概估，僅供台幣換算參考。
+const USD_TWD = 32;
+const monthlyFixed = SUBSCRIPTIONS
+  .filter(s => s.cycle === "month" && typeof s.amount === "number")
+  .reduce((sum, s) => sum + s.amount, 0);
+const hasUnknown = SUBSCRIPTIONS.some(s => s.amount === null);
+
+const CYCLE_LABEL = { month: "月付", year: "年付", usage: "按量", free: "免費" };
+
+const usd = n => `US$${n.toLocaleString("en-US")}`;
+const twd = n => `NT$${Math.round(n * USD_TWD).toLocaleString("en-US")}`;
+
+const TH = { padding: "0 10px 8px 0", fontWeight: 600 };
+const TD = { padding: "9px 10px 9px 0", color: "#475569" };
+
 const CHANGELOG = [
+  { date: "2026-08-27", tag: "後台", title: "升級 Pro ＋ 伺服器搬到東京", items: [
+    "Vercel 升級 Pro（解除 Hobby 禁商業營利的條款風險，cron 不再限每日一次）",
+    "Supabase 升級 Pro（連線數與請求額度提升，不再有閒置自動暫停）",
+    "Vercel 函式區域由 iad1（美國華盛頓）改為 hnd1（東京），與 Supabase 同區——台灣學員每次登入／進教室／結帳都少繞一趟太平洋",
+    "本頁新增「訂閱費用」面板，可直接確認下月預計扣款",
+  ]},
   { date: "2026-08-22", tag: "資安", title: "資安加固", items: [
     "清理 8 個第三方套件的安全漏洞（相依套件更新）",
     "上線內容安全政策 CSP（正式阻擋模式，防跨站腳本/資源注入），三頁實測零違規",
@@ -70,6 +102,54 @@ export default function ChangelogPage() {
       <p style={{ margin: "0 0 24px", fontSize: 14, color: "#64748b" }}>
         平台做過的重要更新與修復（僅後台可見）。最新在上。
       </p>
+
+      <div style={{ background: "#fff", border: "1px solid #e5e8ec", borderRadius: 12, padding: "14px 16px", marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>訂閱費用</span>
+          <span style={{ fontSize: 12.5, color: "#94a3b8" }}>每月固定支出</span>
+          <span style={{ marginLeft: "auto", fontSize: 15, fontWeight: 800, color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
+            {usd(monthlyFixed)}<span style={{ fontWeight: 600, color: "#64748b" }}>　≈ {twd(monthlyFixed)}</span>
+          </span>
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 520 }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "#94a3b8", fontSize: 12 }}>
+                <th style={TH}>服務</th><th style={TH}>方案</th>
+                <th style={{ ...TH, textAlign: "right" }}>金額</th>
+                <th style={{ ...TH, textAlign: "right" }}>約台幣</th>
+                <th style={TH}>週期</th><th style={TH}>下次扣款</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SUBSCRIPTIONS.map(s => (
+                <tr key={s.service} style={{ borderTop: "1px solid #f1f5f9" }}>
+                  <td style={{ ...TD, fontWeight: 600, color: "#0f172a" }}>
+                    {s.service}
+                    <div style={{ fontWeight: 400, fontSize: 11.5, color: "#94a3b8", marginTop: 2 }}>{s.note}</div>
+                  </td>
+                  <td style={{ ...TD, verticalAlign: "top" }}>{s.plan}</td>
+                  <td style={{ ...TD, textAlign: "right", fontVariantNumeric: "tabular-nums", verticalAlign: "top" }}>
+                    {s.amount === null ? <span style={{ color: "#b45309" }}>依用量</span> : s.amount === 0 ? "免費" : usd(s.amount)}
+                  </td>
+                  <td style={{ ...TD, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#64748b", verticalAlign: "top" }}>
+                    {typeof s.amount === "number" && s.amount > 0 ? twd(s.amount) : "—"}
+                  </td>
+                  <td style={{ ...TD, verticalAlign: "top" }}>{CYCLE_LABEL[s.cycle]}</td>
+                  <td style={{ ...TD, color: "#64748b", verticalAlign: "top" }}>{s.nextCharge}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p style={{ margin: "12px 0 0", fontSize: 12, color: "#94a3b8", lineHeight: 1.7 }}>
+          台幣為概估（匯率 1 美元 ≈ {USD_TWD} 元），實際以帳單為準。
+          {hasUnknown && " 標「依用量」者金額浮動，未計入每月固定支出。"}
+          <br />金額有異動時，改 <code style={{ fontFamily: "ui-monospace,monospace", fontSize: 11.5 }}>ChangelogPage.jsx</code> 最上方的 <code style={{ fontFamily: "ui-monospace,monospace", fontSize: 11.5 }}>SUBSCRIPTIONS</code> 即可。
+        </p>
+      </div>
 
       <div style={{ position: "relative", paddingLeft: 26 }}>
         <div style={{ position: "absolute", left: 6, top: 6, bottom: 6, width: 2, background: "#e2e8f0" }} />
