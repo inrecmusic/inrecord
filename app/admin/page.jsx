@@ -2959,6 +2959,11 @@ function NewsletterPage({showToast}){
   const [lastSent,setLastSent]=useState(null);
   const [busy,setBusy]=useState("");
   const [result,setResult]=useState(null);
+  // 改用 Brevo 後台範本寄送：>0 時主旨／內容以 Brevo 範本為準，本地標題／內文不寄
+  const [brevoTemplates,setBrevoTemplates]=useState([]);
+  const [brevoTemplateId,setBrevoTemplateId]=useState(0);
+  const useTpl=brevoTemplateId>0;
+  const tplName=brevoTemplates.find(t=>t.id===brevoTemplateId)?.name||`#${brevoTemplateId}`;
   const dirty=subject!==savedSubject||bodyMd!==savedBody;
 
   const load=useCallback(async()=>{
@@ -2968,6 +2973,11 @@ function NewsletterPage({showToast}){
       setSubject(data.subject||"");setBodyMd(data.body_md||"");
       setSavedSubject(data.subject||"");setSavedBody(data.body_md||"");
       if(data.last_sent_at)setLastSent({at:data.last_sent_at,count:data.last_sent_count});
+    }catch{}
+    try{
+      const res=await _api("/api/admin/brevo-templates");
+      const d=await res.json().catch(()=>({}));
+      if(d.ok)setBrevoTemplates(d.data||[]);
     }catch{}
   },[]);
   useEffect(()=>{load();},[load]);
@@ -2983,24 +2993,25 @@ function NewsletterPage({showToast}){
     catch(e){showToast?.("❌ 儲存失敗："+e.message);} finally{setBusy("");}
   }
   async function sendTest(){
-    if(!subject.trim()||!bodyMd.trim()){showToast?.("請先填標題與內文");return;}
+    if(!useTpl&&(!subject.trim()||!bodyMd.trim())){showToast?.("請先填標題與內文");return;}
     setBusy("test");setResult(null);
     try{
-      await persist();
-      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true})});
+      if(!useTpl)await persist();
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true,...(useTpl?{brevoTemplateId}:{})})});
       const d=await res.json();
       if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱"));
       else showToast?.("❌ 測試寄送失敗："+(d.error||"unknown"));
     }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");}
   }
   async function sendAll(){
-    if(!subject.trim()||!bodyMd.trim()){showToast?.("請先填標題與內文");return;}
+    if(!useTpl&&(!subject.trim()||!bodyMd.trim())){showToast?.("請先填標題與內文");return;}
     const label=audience==="buyers"?"購課學員":"註冊官網帳號";
-    if(!window.confirm(`確定把這封電子報「正式群發」給【${label}】嗎？\n寄出後無法收回，建議先用「寄測試給我自己」確認版面。`))return;
+    const what=useTpl?`用 Brevo 範本「${tplName}」`:"把這封電子報";
+    if(!window.confirm(`確定${what}「正式群發」給【${label}】嗎？\n寄出後無法收回，建議先用「寄測試給我自己」確認版面。`))return;
     setBusy("all");setResult(null);
     try{
-      await persist();
-      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({audience})});
+      if(!useTpl)await persist();
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({audience,...(useTpl?{brevoTemplateId}:{})})});
       const d=await res.json();
       if(!d.ok){showToast?.("❌ 群發失敗："+(d.error||"unknown"));}
       else{
@@ -3038,6 +3049,16 @@ function NewsletterPage({showToast}){
               }}>{t.name}</button>
           ))}
           <span style={{fontSize:12,color:"#94a3b8"}}>套用後請確認日期與內容再發送</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <span style={{fontSize:13,fontWeight:700,color:"#475569"}}>Brevo 範本</span>
+          <select className={styles.searchInput} style={{width:"auto",minWidth:280}} value={brevoTemplateId} onChange={e=>setBrevoTemplateId(Number(e.target.value))}>
+            <option value={0}>不使用（寄下方標題／內文）</option>
+            {brevoTemplates.map(t=><option key={t.id} value={t.id}>#{t.id} {t.name}</option>)}
+          </select>
+          {useTpl
+            ?<span style={{fontSize:12,fontWeight:700,color:"#92400e"}}>會以 Brevo 後台「{tplName}」的主旨與內容寄出，下方標題／內文不會寄</span>
+            :<span style={{fontSize:12,color:"#94a3b8"}}>在 Brevo 後台建好的 Transactional 範本會列在這裡</span>}
         </div>
         <label style={{display:"block",fontSize:13,fontWeight:700,color:"#475569",marginBottom:6}}>標題</label>
         <input className={styles.searchInput} style={{width:"100%",marginBottom:16}} value={subject} onChange={e=>setSubject(e.target.value)} placeholder="例：六月課程最新消息 🎹"/>
