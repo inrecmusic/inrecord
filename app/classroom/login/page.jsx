@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { isInAppBrowser } from "@/lib/inapp-browser";
+import { safeNextPath } from "@/lib/safe-redirect";
 import Logo from "@/components/Logo";
 import styles from "./login.module.css";
 
@@ -15,6 +16,18 @@ function GoogleIcon() {
       <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.96L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
     </svg>
   );
+}
+
+// 登入後回跳：?next=<站內路徑>（safeNextPath 擋 open redirect，預設 /classroom）。
+// 用 window.location 讀而非 useSearchParams，避免整頁被迫 client render／Suspense 邊界需求。
+// 例：開課信「填寫學員資料」連結 → /classroom/account 未登入 → 帶 next 來此 → 登入後回帳號頁。
+function getNextPath() {
+  return safeNextPath(typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("next") : null);
+}
+// OAuth／魔法連結要繞 /auth/callback，把 next 一起帶過去（callback 已支援 ?next=）
+function callbackUrl() {
+  const next = getNextPath();
+  return window.location.origin + "/auth/callback" + (next !== "/classroom" ? `?next=${encodeURIComponent(next)}` : "");
 }
 
 export default function ClassroomLoginPage() {
@@ -48,7 +61,7 @@ export default function ClassroomLoginPage() {
     try {
       const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
       if (authErr) throw authErr;
-      router.replace("/classroom");
+      router.replace(getNextPath());
     } catch (err) {
       setError(err.message === "Invalid login credentials" ? "Email 或密碼錯誤" : err.message);
     } finally {
@@ -82,7 +95,7 @@ export default function ClassroomLoginPage() {
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + "/auth/callback",
+        redirectTo: callbackUrl(),
         // 強制每次都顯示「選擇帳號」，不要沿用上次登入的 Google 帳號
         queryParams: { prompt: "select_account" },
       },
@@ -103,7 +116,7 @@ export default function ClassroomLoginPage() {
     try {
       const { error: err } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback" },
+        options: { emailRedirectTo: callbackUrl() },
       });
       if (err) throw err;
       setOtpSent(true);
@@ -127,7 +140,7 @@ export default function ClassroomLoginPage() {
         type: "email",
       });
       if (err) throw err;
-      router.replace("/classroom");
+      router.replace(getNextPath());
     } catch (err) {
       setError("驗證碼錯誤或已過期，請重新取得");
     } finally {

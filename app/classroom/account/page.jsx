@@ -46,12 +46,12 @@ export default function AccountPage() {
       if (!supabase) { setNoConfig(true); setLoading(false); return; }
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { window.location.href = "/classroom/login"; return; }
+        if (!user) { window.location.href = "/classroom/login?next=%2Fclassroom%2Faccount"; return; }
         setEmail(user.email || "");
         setDisplayName(user.user_metadata?.full_name || "");
         setAvatarUrl(user.user_metadata?.avatar_url || user.user_metadata?.picture || "");
         setCurDevice(getDeviceId());
-      } catch { window.location.href = "/classroom/login"; return; }
+      } catch { window.location.href = "/classroom/login?next=%2Fclassroom%2Faccount"; return; }
       finally { setLoading(false); }
     })();
   }, []);
