@@ -72,11 +72,11 @@
 .offerPriceRow { display: flex; align-items: baseline; gap: 14px; margin: 14px 0 16px; }
 .offerPrice { font-family: var(--font-inter), sans-serif; font-size: 46px; font-weight: 800; letter-spacing: -.01em; color: #fff; line-height: 1; }
 .offerWas { font-family: var(--font-inter), sans-serif; font-size: 22px; font-weight: 500; color: rgba(255,255,255,.45); text-decoration: line-through; }
-.offerLaunch { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 14px;
+.offerLaunch { display: flex; align-items: center; gap: 7px; margin: 0 0 8px;
   color: var(--gold-hi); font-size: 16px; font-weight: 600; letter-spacing: .01em;
   word-break: keep-all; line-break: strict; }
-/* 早鳥倒數：上架日下方一行金色（跳動時間用 mono）*/
-.offerCountdown { display: inline-flex; align-items: center; gap: 8px; margin: -6px 0 14px;
+/* 早鳥倒數：上架日下方獨立一行金色（跳動時間用 mono）*/
+.offerCountdown { display: flex; align-items: center; gap: 8px; margin: 0 0 14px;
   color: var(--gold); font-size: 16px; font-weight: 600; word-break: keep-all; line-break: strict; }
 .offerCountdown strong { font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-weight: 800;
   letter-spacing: .02em; font-variant-numeric: tabular-nums; color: var(--gold-hi); }
