@@ -1174,14 +1174,17 @@ function OrdersPage({showToast}){
   const [refunding,setRefunding]=useState(false);
   const downloadRef=useRef(null);
   const [tablePage,setTablePage]=useState(1);
+  // 自動開票關閉時（發票人工另外開）不顯示「發票待補開」告警；開票失敗／寄信失敗照舊。
+  const [autoInvoice,setAutoInvoice]=useState(false);
   const PER=20;
 
   const loadOrders=useCallback(async()=>{
     try{
       const res=await _api("/api/admin/orders");
       if(!res.ok)throw new Error("fetch_failed");
-      const{data}=await res.json();
+      const{data,autoInvoice}=await res.json();
       setRows(data||[]);
+      setAutoInvoice(!!autoInvoice);
     }catch{
       setRows([]);
       showToast?.("載入訂單失敗，顯示空白列表");
@@ -1253,10 +1256,10 @@ function OrdersPage({showToast}){
     invoiceNo:o.invoice_no||"",
     invoiceError:o.invoice_error||"",
     emailError:o.email_error||"",
-    needInvoice:(o.status==="paid" && !o.invoice_no && !LEAD_SOURCES.includes(o.source)), // 已付款但未開票（待補開）；外部來源由各站自行開票，不列告警
+    needInvoice:(autoInvoice && o.status==="paid" && !o.invoice_no && !LEAD_SOURCES.includes(o.source)), // 已付款但未開票（待補開）；自動開票關閉或外部來源時不列告警
     proofUrl:o.proof_url||null,
     fanReview:o.fan_review||null,
-  })),[rows]);
+  })),[rows,autoInvoice]);
 
   const [sel,setSel]=useState(()=>new Set());
   const [granting,setGranting]=useState(false);
