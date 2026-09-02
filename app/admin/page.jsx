@@ -2930,6 +2930,7 @@ const NEWSLETTER_TEMPLATES=[
     "影片旁的單元清單可切換章節與單元；影片下方還有學員留言、課程評價、作業繳交、互動遊戲與筆記，歡迎多多使用。","",
     "![播放頁功能介紹](https://inrecordmusic.com/guide/step-4-watch.png|500)","",
     "如果填寫時遇到任何問題，直接回信告訴我們就可以。","",
+    "**小提醒**：把 support@inrecordmusic.com 加入通訊錄，之後的新章節上架通知才不會被信箱歸進促銷或垃圾信件夾。","",
     "有任何問題，隨時歡迎來信至 support@inrecordmusic.com，我們收到後會盡快回覆。","",
     "**9/2 晚上 8:00，第一章見！**"].join("\n")},
   {name:"新章節上架",subject:"【InRecord】新章節上架通知",body:[
