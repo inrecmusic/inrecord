@@ -173,7 +173,7 @@ export default function ClassroomHub() {
 
         <div className="grid2">
           <div className="tile">
-            <h4>AI 練功房</h4>
+            <h4>練功房</h4>
             <p>{hasSubscription ? "用互動遊戲練音感與節奏，把剛學的變成反射動作。" : "課程包附贈的互動練習，升級即可解鎖。"}</p>
             <a className="link" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "進入練功房 →" : "了解課程包 →"}</a>
           </div>
@@ -185,8 +185,9 @@ export default function ClassroomHub() {
         </div>
       </div>
 
-      {/* 真實鋼琴鍵：白鍵等寬，黑鍵依八度落在 C#/D#/F#/G#/A#（白鍵 index%7 ∈ {0,1,3,4,5}）*/}
-      <div className="keys" aria-hidden="true">{Array.from({ length: 21 }).map((_, i) => <i key={i} className={[0, 1, 3, 4, 5].includes(i % 7) ? "bk" : ""} />)}</div>
+      {/* 真實鋼琴鍵：52 個白鍵＝完整 88 鍵鋼琴；黑鍵依八度落在 C#/D#/F#/G#/A#（白鍵 index%7 ∈ {0,1,3,4,5}）。
+          窄螢幕只顯示前 3 個八度（見 media query），避免每鍵細到看不出是鍵盤。*/}
+      <div className="keys" aria-hidden="true">{Array.from({ length: 52 }).map((_, i) => <i key={i} className={[0, 1, 3, 4, 5].includes(i % 7) ? "bk" : ""} />)}</div>
       <button className="signout" onClick={handleLogout}>登出</button>
     </div>
   );
@@ -207,7 +208,7 @@ const HUB_CSS = `
   --av-a:#e8c583; --av-b:#b8894a; --av-ink:#2a1e0a;
   --tgl-bg:rgba(255,255,255,.07); --tgl-line:rgba(255,255,255,.2); --tgl-ink:#e8c583;
   --serif:"Songti TC","Noto Serif TC",Georgia,serif;
-  min-height:100vh; position:relative; overflow-x:hidden; padding-bottom:80px;
+  min-height:100vh; position:relative; overflow-x:hidden; padding-bottom:112px;
   color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",sans-serif;
   background:radial-gradient(120% 90% at 82% -10%,var(--bg1) 0%,var(--bg2) 46%,var(--bg3) 100%);
   transition:background .5s ease,color .35s ease;
@@ -279,11 +280,12 @@ const HUB_CSS = `
 .hub .tile h4{font-family:var(--serif); font-size:19px; margin-bottom:6px; color:var(--ink)}
 .hub .tile p{color:var(--ink-soft); font-size:13.5px; line-height:1.65}
 .hub .tile .link{color:var(--gold); font-weight:600; font-size:13.5px; margin-top:14px; display:inline-block}
-.hub .keys{position:absolute; bottom:0; left:0; right:0; height:58px; display:flex; opacity:.96; pointer-events:none; overflow:hidden}
+.hub .keys{position:absolute; bottom:0; left:0; right:0; height:88px; display:flex; opacity:.96; pointer-events:none; overflow:hidden}
 .hub .keys i{position:relative; flex:1; background:#fbfbfb; border-right:1px solid #bcbcbc; box-shadow:inset 0 -3px 4px -3px rgba(0,0,0,.25)}
-.hub .keys i.bk::after{content:""; position:absolute; top:0; right:-30%; width:60%; height:62%; z-index:2; background:linear-gradient(#2b2b2b,#0a0a0a); border-radius:0 0 3px 3px; box-shadow:0 2px 2px rgba(0,0,0,.4)}
+.hub .keys i.bk::after{content:""; position:absolute; top:0; right:-29%; width:58%; height:63%; z-index:2; background:linear-gradient(#2b2b2b,#0a0a0a); border-radius:0 0 2px 2px; box-shadow:0 2px 2px rgba(0,0,0,.4)}
 .hub .signout{position:fixed; bottom:16px; right:16px; z-index:5; background:var(--tgl-bg); border:1px solid var(--tgl-line); color:var(--ink-soft); font-size:12px; padding:7px 14px; border-radius:100px; cursor:pointer; font-family:inherit}
 .hub .signout:hover{color:var(--ink)}
 @media (prefers-reduced-motion:reduce){ .hub *{transition:none!important} }
-@media(max-width:760px){ .hub .hero{grid-template-columns:1fr} .hub .grid2{grid-template-columns:1fr} .hub nav .r a{display:none} .hub .ring{margin-top:8px} }
+@media(max-width:760px){ .hub .hero{grid-template-columns:1fr} .hub .grid2{grid-template-columns:1fr} .hub nav .r a{display:none} .hub .ring{margin-top:8px}
+  .hub{padding-bottom:88px} .hub .keys{height:64px} .hub .keys i{flex:0 0 calc(100%/21)} }
 `;
