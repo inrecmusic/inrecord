@@ -1236,9 +1236,6 @@ export default function ClassroomPage() {
     return () => { cancelled = true; playerCtrlRef.current = null; clearInterval(interval); };
   }, [currentVideo?.id, token, embedSrc]);
 
-  // 正在上的單元預設展開（也涵蓋從儀表板帶 ?v= 進來的情況）
-  useEffect(() => { if (currentVideo?.id) setOpenUnitId(currentVideo.id); }, [currentVideo?.id]);
-
   function handleSelect(v) {
     setCurrentVideo(v);
     // 切單元就放棄「等清單載好再自動開遊戲」的待辦（點遊戲 icon 的路徑會在呼叫本函式之後再重設），
