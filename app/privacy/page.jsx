@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import MarkdownContent from "@/components/MarkdownContent";
+import { DEFAULT_PRIVACY_MD } from "@/lib/legal-docs";
 
 export const metadata = { title: "隱私權政策 | InRecord" };
 export const revalidate = 300;
 
-// 後台「隱私權政策」若有編輯（site_content），前台顯示該內容；否則用下方程式內預設（fallback）。
+// 隱私權政策單一來源：後台存過（site_content）顯示 DB 版，沒存過用 lib/legal-docs 的共用預設 —— 
+// 後台編輯器吃的是同一份，所以前台與後台永遠一致（見 lib/legal-docs.js）。
 async function getOverride(key) {
   try {
     const sb = getSupabaseAdmin();
@@ -16,7 +18,7 @@ async function getOverride(key) {
 }
 
 export default async function PrivacyPage() {
-  const md = await getOverride("privacy");
+  const md = (await getOverride("privacy")) || DEFAULT_PRIVACY_MD;
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "40px 20px 80px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -27,7 +29,7 @@ export default async function PrivacyPage() {
         </Link>
 
         <div className="content-card" style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 24px rgba(15,23,42,.07)" }}>
-          {md ? <MarkdownContent md={md} /> : <DefaultPrivacyContent />}
+          <MarkdownContent md={md} />
         </div>
 
         <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#94a3b8" }}>
@@ -35,115 +37,6 @@ export default async function PrivacyPage() {
           <Link href="/terms" style={{ color: "#64748b" }}>服務條款</Link>
         </p>
       </div>
-    </div>
-  );
-}
-
-function DefaultPrivacyContent() {
-  return (
-    <>
-      <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>隱私權政策</h1>
-      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 9 月 1 日</p>
-
-      <Section title="1. 適用範圍">
-        本隱私權政策適用於 InRecord（以下簡稱「本平台」）所提供之線上鋼琴課程服務，包括課程試看、購買、學習及相關客服互動。使用本平台即表示您同意本政策之內容。
-      </Section>
-
-      <Section title="2. 蒐集的個人資料">
-        當您使用本平台服務時，我們可能蒐集以下資料：
-        <ul>
-          <li><b>Email 地址</b>：您購買課程或註冊學員帳號時主動提供。</li>
-          <li><b>購買資訊</b>：透過 Payuni 統一金流處理，本平台不儲存完整信用卡號碼。</li>
-          <li><b>使用紀錄</b>：課程頁瀏覽行為與影片觀看紀錄（用於改善課程體驗）。</li>
-          <li><b>裝置資訊</b>：瀏覽器類型、作業系統、IP 位址（僅用於系統安全與統計）。</li>
-          <li><b>學員基本資料</b>：您在「學員資料」頁填寫的真實姓名、手機、鋼琴程度，以及選填的學習目標、認識管道、練習器材、年齡層、性別。用於課務聯繫、教學安排、帳號協助與去識別化之營運統計。</li>
-        </ul>
-      </Section>
-
-      <Section title="3. 資料使用目的">
-        蒐集的個人資料將用於以下用途：
-        <ul>
-          <li>寄送課程開通通知及相關學習資訊。</li>
-          <li>處理課程購買訂單與開立收據。</li>
-          <li>提供售後客服與技術支援。</li>
-          <li>發送重要課程更新或促銷通知（可隨時退訂）。</li>
-          <li>改善課程內容與平台使用體驗。</li>
-        </ul>
-      </Section>
-
-      <Section title="4. 資料分享與第三方服務">
-        本平台使用以下第三方服務處理部分資料：
-        <ul>
-          <li><b>Payuni 統一金流</b>：金流支付處理，受 Payuni 隱私權政策保護。</li>
-          <li><b>Brevo</b>：交易與課程通知郵件寄送。</li>
-          <li><b>Supabase</b>：PostgreSQL 資料庫儲存，採用業界標準加密。</li>
-        </ul>
-        本平台亦使用第三方廣告與分析追蹤技術，詳見第 6 條「廣告與分析追蹤」。
-        本平台不會將您的個人資料出售、出租或以任何形式交換給第三方商業機構。
-      </Section>
-
-      <Section title="5. Cookie 與追蹤技術">
-        本平台使用 Cookie 及類似技術以：
-        <ul>
-          <li>維持您的登入狀態與課程存取權限。</li>
-          <li>記住您的偏好設定，提供順暢的學習體驗。</li>
-        </ul>
-        您可透過瀏覽器設定拒絕或刪除 Cookie，但部分功能可能因此受限。
-      </Section>
-
-      <Section title="6. 廣告與分析追蹤">
-        本平台使用 Meta Pixel、Google（Google Analytics 4、Google Ads）與 LINE Tag 等第三方追蹤技術，透過 Cookie 蒐集匿名的瀏覽與轉換資料，用於衡量廣告成效與再行銷。您可透過以下方式停用：
-        <ul>
-          <li><b>Meta</b>：帳號設定 → 廣告偏好；或安裝 Meta Pixel 相關瀏覽器封鎖工具。</li>
-          <li><b>Google</b>：造訪「我的廣告中心」；或安裝 Google Analytics 停用外掛（<a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>tools.google.com/dlpage/gaoptout</a>）。</li>
-          <li><b>LINE</b>：LINE 應用程式設定 → 隱私設定 → 提供使用資料。</li>
-        </ul>
-        您也可於瀏覽器設定封鎖第三方 Cookie。停用後仍可正常使用本平台，但我們將無法據以衡量廣告成效。
-      </Section>
-
-      <Section title="7. 資料保存期限">
-        <ul>
-          <li>購買訂單資料：依電商交易法規保存 <b>5 年</b>。</li>
-          <li>您可隨時要求提前刪除個人資料（詳見第 8 條）。</li>
-        </ul>
-      </Section>
-
-      <Section title="8. 您的權利">
-        依據個人資料保護法，您享有以下權利：
-        <ul>
-          <li><b>查詢或閱覽</b>您的個人資料。</li>
-          <li><b>請求複製</b>您的個人資料。</li>
-          <li><b>請求補充或更正</b>不正確的個人資料。</li>
-          <li><b>請求刪除</b>您的個人資料。</li>
-          <li><b>請求停止蒐集、處理或使用</b>您的個人資料。</li>
-        </ul>
-        如需行使上述權利，請透過 Email 聯絡我們，我們將於 <b>7 個工作天內</b>回覆處理。
-      </Section>
-
-      <Section title="9. 未成年人保護">
-        本平台服務適用年齡為 13 歲以上。若您未滿 13 歲，請勿提供個人資料，並請由家長或監護人代為操作。
-      </Section>
-
-      <Section title="10. 隱私權政策異動">
-        本平台保留隨時修改本政策之權利。重大異動時，將透過 Email 或網站公告通知您。繼續使用本服務即表示您同意修訂後的政策。
-      </Section>
-
-      <Section title="11. 聯絡我們" last>
-        如對本隱私權政策有任何疑問，請透過以下方式聯繫：
-        <ul>
-          <li><b>Email</b>：<a href="mailto:support@inrecordmusic.com" style={{ color: "#2563eb" }}>support@inrecordmusic.com</a></li>
-          <li><b>Instagram</b>：@inrecord.music</li>
-        </ul>
-      </Section>
-    </>
-  );
-}
-
-function Section({ title, children, last }) {
-  return (
-    <div style={{ marginBottom: last ? 0 : 28 }}>
-      <h2 style={{ fontSize: 15, fontWeight: 900, color: "#0f172a", margin: "0 0 10px", paddingBottom: 8, borderBottom: "1px solid #f1f5f9" }}>{title}</h2>
-      <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.8 }}>{children}</div>
     </div>
   );
 }
