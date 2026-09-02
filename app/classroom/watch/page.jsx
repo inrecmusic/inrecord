@@ -25,6 +25,9 @@ const UNIT_ICONS = [
 
 // 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
 const COMING_SOON = "預計 9/30 上架";
+// 課綱規劃的互動遊戲總數（首頁課程大綱 8 章共 9 款）。遊戲陸續上傳期間，側欄總覽先照課綱顯示；
+// 實際上傳數超過時顯示實際數。全部上傳完（≥9）後此常數自然失效。
+const PLANNED_GAMES = 9;
 
 // Bunny Stream 影片進度追蹤需要 player.js（Bunny CDN 提供）。注入一次、快取 Promise；
 // 載入失敗就放棄（不擋影片播放）。用 window.playerjs.Player(iframe) 監聽 timeupdate。
@@ -1575,7 +1578,7 @@ export default function ClassroomPage() {
                 [contentStats.videos, "支影片"],
                 [contentStats.handout, "份講義"],
                 [contentStats.score, "份樂譜"],
-                [contentStats.game, "個互動遊戲"],
+                [Math.max(contentStats.game, PLANNED_GAMES), "個互動遊戲"],
                 [contentStats.assignment, "份作業"],
               ].filter(([n]) => n > 0).map(([n, unit], i) => (
                 <span key={unit}>
