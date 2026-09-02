@@ -843,6 +843,8 @@ function StudentsPage({showToast}){
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState("");
   const [showUnfilledOnly,setShowUnfilledOnly]=useState(false);
+  // 預設只列真實付費學員（paid）；取消勾選才看得到測試帳號／體驗名單等未付款者
+  const [showPaidOnly,setShowPaidOnly]=useState(true);
   const [detailStudent,setDetailStudent]=useState(null);
   const [busy,setBusy]=useState(false);
   const dlRef=useRef(null);
@@ -874,7 +876,7 @@ function StudentsPage({showToast}){
   function exportCsv(){
     if(!dlRef.current)return;
     const head=["Email","電話","方案","來源","狀態","已購課","建立時間"];
-    const rows=[head,...display.map(s=>[s.email,s.phone||"",s.plan_label||"",s.source||"",statusLabel(s.status),s.purchased?"是":"否",s.created_at||""])];
+    const rows=[head,...filtered.map(s=>[s.email,s.phone||"",s.plan_label||"",s.source||"",statusLabel(s.status),s.purchased?"是":"否",s.created_at||""])];
     const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
     dlRef.current.href=url;dlRef.current.download="inrecord_students.csv";dlRef.current.click();
@@ -883,10 +885,10 @@ function StudentsPage({showToast}){
 
   const now=new Date();
   const thisMonth=students.filter(s=>{const d=new Date(s.created_at||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  const purchased=students.filter(s=>s.purchased);
+  const purchased=students.filter(s=>s.paid);
 
   const display=useMemo(()=>students.map(s=>({...s,name:(s.email?.split("@")[0])||"—",purchasedCount:s.purchased?1:0})),[students]);
-  const filtered=display.filter(s=>!search||s.email?.toLowerCase().includes(search.toLowerCase())||s.name?.toLowerCase().includes(search.toLowerCase())).filter(s=>!showUnfilledOnly||!s.hasProfile);
+  const filtered=display.filter(s=>!search||s.email?.toLowerCase().includes(search.toLowerCase())||s.name?.toLowerCase().includes(search.toLowerCase())).filter(s=>!showUnfilledOnly||!s.hasProfile).filter(s=>!showPaidOnly||s.paid);
 
   return(
     <div>
@@ -907,6 +909,8 @@ function StudentsPage({showToast}){
           <input className={styles.searchInput} placeholder="搜尋學員姓名、Email…" value={search} onChange={e=>setSearch(e.target.value)}/>
           <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap"}}>
             <input type="checkbox" checked={showUnfilledOnly} onChange={e=>setShowUnfilledOnly(e.target.checked)}/> 只看未填資料</label>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap"}}>
+            <input type="checkbox" checked={showPaidOnly} onChange={e=>setShowPaidOnly(e.target.checked)}/> 只看已付款</label>
           <span className={styles.dim}>共 {filtered.length} 位</span>
         </div>
         {loading?<p style={{textAlign:"center",padding:32,color:"#94a3b8"}}>載入中…</p>:(
