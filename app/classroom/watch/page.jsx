@@ -25,10 +25,14 @@ const UNIT_ICONS = [
 
 // 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
 const COMING_SOON = "預計 9/30 上架";
-// 個別單元的預計上架日（優先於 COMING_SOON）；key = 單元標題開頭編號。
+// 各章的預計上架日（章號 → 文案）；章號取自章節標題開頭的 ChN。
+const CHAPTER_COMING_SOON = { 2: "預計 9/9 上架", 3: "預計 9/16 上架", 4: "預計 9/23 上架" };
+// 個別單元的預計上架日（優先於章、章優先於 COMING_SOON）；key = 單元標題開頭編號。
 // 影片實際掛上去後這一列就不會顯示了（只有 !playable 才印），所以上架後不必回來刪。
 const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/5 上架", "1-5": "預計 9/5 上架" };
-function comingSoonFor(title) { return UNIT_COMING_SOON[unitNo(title)] || COMING_SOON; }
+function comingSoonFor(title, chNum) {
+  return UNIT_COMING_SOON[unitNo(title)] || CHAPTER_COMING_SOON[chNum] || COMING_SOON;
+}
 
 // 課綱規劃中、尚未上傳的互動遊戲：灰色不可點，hover 顯示預計上架。
 // 接在對應單元下方（見 PLANNED_CHAPTER_GAMES.after），故縮排與單元的子項目一致。
@@ -1682,7 +1686,7 @@ export default function ClassroomPage() {
 
                   {!cv.length && (
                     <div style={{ fontSize: 12, color: "#94a3b8", padding: "4px 8px 8px 14px" }}>
-                      單元準備中，{COMING_SOON}
+                      單元準備中，{CHAPTER_COMING_SOON[chNum] || COMING_SOON}
                     </div>
                   )}
 
@@ -1705,7 +1709,7 @@ export default function ClassroomPage() {
                       <div key={v.id}>
                         <div className="unit-row"
                           role="button" tabIndex={0}
-                          title={!playable ? comingSoonFor(v.title) : undefined}
+                          title={!playable ? comingSoonFor(v.title, chNum) : undefined}
                           onClick={() => handleUnitClick(v)}
                           onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleUnitClick(v); } }}
                           style={{
@@ -1743,7 +1747,7 @@ export default function ClassroomPage() {
                               {v.title}
                             </div>
                             {!playable ? (
-                              <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{comingSoonFor(v.title)}</div>
+                              <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{comingSoonFor(v.title, chNum)}</div>
                             ) : isWatching ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                                 <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
