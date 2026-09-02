@@ -2739,7 +2739,7 @@ function NewsletterPage({showToast}){
   const [brevoTemplates,setBrevoTemplates]=useState([]);
   const [brevoTemplateId,setBrevoTemplateId]=useState(0);
   const [testTo,setTestTo]=useState(""); // 測試收件人（逗號/空白分隔，可多個；留空＝ADMIN_EMAIL）
-  const [quota,setQuota]=useState(null); // 今日 Brevo 寄件額度（免費 300/天，統計日 UTC＝台灣早上 8 點重置）
+  const [quota,setQuota]=useState(null); // Brevo 寄件額度；期間依方案而定（免費＝每日、付費＝計費週期），見 lib/brevo-quota.js
   const refreshQuota=useCallback(async()=>{
     try{const r=await _api("/api/admin/brevo-quota");const d=await r.json().catch(()=>({}));if(d.ok)setQuota(d);}catch{}
   },[]);
@@ -2801,7 +2801,7 @@ function NewsletterPage({showToast}){
       else{
         setResult(d);
         if(d.total===0)showToast?.("名單為空，沒有寄出");
-        else if(d.limitHit)showToast?.(`⚠️ 已寄 ${d.sent} 封，剩 ${d.total-d.sent} 封未寄（碰到每日上限）`);
+        else if(d.limitHit)showToast?.(`⚠️ 已寄 ${d.sent} 封，剩 ${d.total-d.sent} 封未寄（碰到單日安全閥）`);
         else showToast?.(`✅ 群發完成：成功 ${d.sent}/${d.total}${d.failed?`，失敗 ${d.failed}`:""}`);
         await load();
       }
@@ -2855,10 +2855,14 @@ function NewsletterPage({showToast}){
       <div className={styles.panel}>
         <div style={{display:"flex",alignItems:"baseline",gap:12,flexWrap:"wrap",margin:"0 0 12px"}}>
           <h3 style={{margin:0}}>群發</h3>
-          {quota&&quota.limit!=null&&(
-            <span style={{fontSize:12.5,color:quota.remaining<=30?"#dc2626":quota.remaining<=100?"#b45309":"#64748b"}}>
-              今日 Brevo 額度剩 <b style={{fontVariantNumeric:"tabular-nums"}}>{quota.remaining}</b>／{quota.limit} 封
-              <span style={{color:"#94a3b8"}}>（已寄 {quota.used}，含登入驗證信；台灣早上 8 點重置）</span>
+          {quota&&quota.ok&&(
+            <span style={{fontSize:12.5,color:quota.remaining==null?"#64748b":quota.remaining<=30?"#dc2626":quota.remaining<=100?"#b45309":"#64748b"}}>
+              {quota.limit!=null
+                ? <>{quota.daily?"今日":"本期"} Brevo 額度剩 <b style={{fontVariantNumeric:"tabular-nums"}}>{quota.remaining}</b>／{quota.limit} 封</>
+                : <>{quota.daily?"今日":"本期"} Brevo 已寄 <b style={{fontVariantNumeric:"tabular-nums"}}>{quota.used}</b> 封</>}
+              <span style={{color:"#94a3b8"}}>
+                （{quota.limit!=null&&`已寄 ${quota.used}，`}含登入驗證信；{quota.daily?"台灣早上 8 點重置":`自 ${quota.periodStart} 起算`}）
+              </span>
             </span>
           )}
         </div>
@@ -2873,7 +2877,7 @@ function NewsletterPage({showToast}){
         </div>
         {lastSent&&<p className={styles.dim} style={{fontSize:12,marginTop:12}}>上次寄送：{fmt(lastSent.at)}（{lastSent.count} 封）</p>}
         {result&&<div style={{marginTop:12,fontSize:13,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
-          本次：對象 {result.total} 人 · 成功 {result.sent} · 失敗 {result.failed}{result.limitHit?` · ⚠️ 碰每日上限，剩 ${result.total-result.sent} 未寄`:""}
+          本次：對象 {result.total} 人 · 成功 {result.sent} · 失敗 {result.failed}{result.limitHit?` · ⚠️ 碰單日安全閥，剩 ${result.total-result.sent} 未寄`:""}
         </div>}
       </div>
     </div>

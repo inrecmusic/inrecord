@@ -14,7 +14,10 @@ import { logAudit } from "@/lib/audit";
 export const runtime = "nodejs";
 export const maxDuration = 300; // 群發逐封寄，給足執行時間
 
-const DAILY_LIMIT = Number(process.env.NEWSLETTER_DAILY_LIMIT || 300);
+// 單次群發的安全閥。免費方案時代這個 300 就是 Brevo 的每日硬限；2026-09 升上付費方案後
+// 已無每日上限，硬限改成「每個計費週期」——再拿 300 當上限只會把正常群發攔腰砍斷。
+// 這裡保留它作為手滑防護（一天最多寄這麼多封），要調整用 NEWSLETTER_DAILY_LIMIT 覆寫。
+const DAILY_LIMIT = Number(process.env.NEWSLETTER_DAILY_LIMIT || 5000);
 
 // 群發電子報。Body { audience: 'buyers'|'registered', test?: boolean, brevoTemplateId?: number }。
 // test=true 只寄給 ADMIN_EMAIL；否則撈該對象名單逐封寄、碰每日上限即停並回報。

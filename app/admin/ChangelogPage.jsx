@@ -20,7 +20,8 @@ const SUBSCRIPTIONS = [
   { service: "Supabase",     plan: "Pro",       amount: 25,   cycle: "month", nextCharge: "每月 27 日", note: "org Inrecord" },
   { service: "Bunny Stream", plan: "按量計費",  amount: null, cycle: "usage", nextCharge: "每月結算",   note: "依影片流量，1080p 約 2.5GB/人·時" },
   { service: "Hostinger",    plan: "網域續約",  amount: null, cycle: "year",  nextCharge: "待確認",     note: "inrecordmusic.com，金額請填入" },
-  { service: "Brevo",        plan: "Free",      amount: 0,    cycle: "free",  nextCharge: "—",          note: "每日 300 封上限，超量才需升級" },
+  // amount 以美元計並乘匯率合計，Brevo 收台幣 NT$71/月 → 填 null 不入合計，金額寫在 note 免得幣別混算
+  { service: "Brevo",        plan: "Starter",   amount: null, cycle: "month", nextCharge: "每月 2 日",  note: "NT$71/月・5,000 封/月、無每日上限（2026-09-02 由 Free 升級）" },
   { service: "Upstash",      plan: "Free",      amount: 0,    cycle: "free",  nextCharge: "—",          note: "限流用，目前流量免費額度內" },
 ];
 
