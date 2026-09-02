@@ -1,0 +1,84 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; color: #0f172a;
+         word-break: keep-all; line-break: strict; -webkit-print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 15mm 16mm 13mm; position: relative; page-break-after: always; background: #fff; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+  /* Header */
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6mm; }
+  .top img { height: 8mm; }
+  .kicker { font-size: 8.5pt; font-weight: 700; letter-spacing: .22em; color: #2563eb; }
+  .hero { display: flex; align-items: center; gap: 8mm; border-bottom: 2px solid #0f172a; padding-bottom: 5mm; margin-bottom: 6mm; }
+  .hero .t { flex: 1; }
+  h1 { font-family: "Songti TC", "Noto Serif TC", serif; font-size: 23pt; font-weight: 700; letter-spacing: .02em; }
+  .sub { margin-top: 2.5mm; font-size: 10.5pt; color: #475569; line-height: 1.7; }
+  .mascot { width: 26mm; flex-shrink: 0; }
+  /* Steps */
+  .step { margin-bottom: 5mm; }
+  .step-head { display: flex; align-items: center; gap: 4mm; margin-bottom: 3mm; }
+  .num { width: 8.5mm; height: 8.5mm; border-radius: 50%; background: #2563eb; color: #fff; display: grid; place-items: center;
+         font-size: 12pt; font-weight: 800; flex-shrink: 0; }
+  .step-title { font-family: "Songti TC", "Noto Serif TC", serif; font-size: 14.5pt; font-weight: 700; }
+  .step-desc { font-size: 9.5pt; color: #475569; line-height: 1.75; margin: 0 0 3mm 12.5mm; }
+  .step-desc b { color: #0f172a; }
+  .shot { display: block; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 3mm; box-shadow: 0 2mm 6mm rgba(15,23,42,.08); }
+  /* Footer */
+  .foot { position: absolute; left: 16mm; right: 16mm; bottom: 10mm; border-top: 1px solid #e2e8f0; padding-top: 4mm;
+          display: flex; justify-content: space-between; align-items: center; font-size: 8pt; color: #94a3b8; }
+  .foot b { color: #64748b; font-weight: 700; }
+  .pageno { color: #cbd5e1; }
+  .endnote { display: flex; align-items: center; gap: 6mm; background: #f6f9ff; border: 1px solid #dbe7ff; border-radius: 4mm; padding: 4mm 7mm; margin-top: 1mm; }
+  .endnote .txt { font-size: 10pt; line-height: 1.8; color: #334155; }
+  .endnote .txt b { color: #2563eb; }
+</style></head><body>
+
+<div class="page">
+  <div class="top"><img src="file:///Users/zhoubolong/code/inrecord/public/logo-wordmark.png" alt="InRecord"><span class="kicker">CLASSROOM GUIDE</span></div>
+  <div class="hero">
+    <div class="t">
+      <h1>音樂教室・上課指南</h1>
+      <p class="sub">從登入到開始上課，跟著梅勒弟四個步驟就完成。<br>使用<b style="color:#0f172a">購買課程時的 Email</b>，不需要另外註冊。</p>
+    </div>
+    <img class="mascot" src="file:///Users/zhoubolong/code/inrecord/public/mascot-wave.png" alt="梅勒弟">
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="num">1</div><div class="step-title">用購買時的 Email 登入</div></div>
+    <p class="step-desc">前往 <b>inrecordmusic.com/classroom/login</b>，點「Email 連結登入（免密碼）」，輸入購買時的 Email，收信後點連結或輸入驗證碼即可；第一次登入系統會自動建立帳號。</p>
+    <img class="shot" src="file:///Users/zhoubolong/code/inrecord/public/guide/step-1-login.png" style="height:82mm">
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="num">2</div><div class="step-title">花一分鐘填寫學員資料</div></div>
+    <p class="step-desc">第一次進教室會先看到這份表單，填完「姓名、手機、鋼琴程度」三格必填就能開始上課，其餘可以之後再補。</p>
+    <img class="shot" src="file:///Users/zhoubolong/code/inrecord/public/guide/step-2-profile.png" style="height:60mm">
+  </div>
+
+  <div class="foot"><span><b>InRecord 音樂刻</b>｜玩轉音樂的每一課</span><span class="pageno">1 / 2</span></div>
+</div>
+
+<div class="page">
+  <div class="top"><img src="file:///Users/zhoubolong/code/inrecord/public/logo-wordmark.png" alt="InRecord"><span class="kicker">CLASSROOM GUIDE</span></div>
+
+  <div class="step">
+    <div class="step-head"><div class="num">3</div><div class="step-title">進入音樂教室</div></div>
+    <p class="step-desc">儀表板會記住你的學習進度，點「<b>繼續上課</b>」就能接著上次的地方繼續；下方也能直接挑選章節。</p>
+    <img class="shot" src="file:///Users/zhoubolong/code/inrecord/public/guide/step-3-dashboard.png" style="width:142mm">
+  </div>
+
+  <div class="step">
+    <div class="step-head"><div class="num">4</div><div class="step-title">觀看課程影片</div></div>
+    <p class="step-desc">影片旁的單元清單可切換章節與單元；影片下方還有<b>學員留言、課程評價、作業繳交、互動遊戲、筆記</b>，歡迎多多使用。</p>
+    <img class="shot" src="file:///Users/zhoubolong/code/inrecord/public/guide/step-4-watch.png" style="width:142mm">
+  </div>
+
+  <div class="endnote">
+    <img src="file:///Users/zhoubolong/code/inrecord/public/mascot-wave.png" style="width:16mm">
+    <div class="txt">遇到任何問題（登入不了、畫面怪怪的、有建議想說），直接來信 <b>support@inrecordmusic.com</b>，我們收到後會盡快回覆。<br>祝上課愉快，我們教室見！</div>
+  </div>
+
+  <div class="foot"><span>官網 inrecordmusic.com　·　Email support@inrecordmusic.com　·　Instagram @inrecord.music</span><span class="pageno">2 / 2</span></div>
+</div>
+</body></html>
