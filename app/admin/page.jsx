@@ -2964,6 +2964,10 @@ function NewsletterPage({showToast}){
   const [brevoTemplates,setBrevoTemplates]=useState([]);
   const [brevoTemplateId,setBrevoTemplateId]=useState(0);
   const [testTo,setTestTo]=useState(""); // 測試收件人（逗號/空白分隔，可多個；留空＝ADMIN_EMAIL）
+  const [quota,setQuota]=useState(null); // 今日 Brevo 寄件額度（免費 300/天，統計日 UTC＝台灣早上 8 點重置）
+  const refreshQuota=useCallback(async()=>{
+    try{const r=await _api("/api/admin/brevo-quota");const d=await r.json().catch(()=>({}));if(d.ok)setQuota(d);}catch{}
+  },[]);
   const useTpl=brevoTemplateId>0;
   const tplName=brevoTemplates.find(t=>t.id===brevoTemplateId)?.name||`#${brevoTemplateId}`;
   const dirty=subject!==savedSubject||bodyMd!==savedBody;
@@ -2981,7 +2985,8 @@ function NewsletterPage({showToast}){
       const d=await res.json().catch(()=>({}));
       if(d.ok)setBrevoTemplates(d.data||[]);
     }catch{}
-  },[]);
+    refreshQuota();
+  },[refreshQuota]);
   useEffect(()=>{load();},[load]);
 
   async function persist(){
@@ -3005,7 +3010,7 @@ function NewsletterPage({showToast}){
       if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱")+(d.unsubscribed?.length?`（${d.unsubscribed.length} 位已退訂，略過）`:""));
       else if(d.test&&d.sent!=null)showToast?.(`⚠️ 測試信 ${d.failed} 封失敗（成功 ${d.sent}：${d.to||"—"}）`);
       else showToast?.("❌ 測試寄送失敗："+(d.error||"unknown"));
-    }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");}
+    }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");refreshQuota();}
   }
   async function sendAll(){
     if(!useTpl&&(!subject.trim()||!bodyMd.trim())){showToast?.("請先填標題與內文");return;}
@@ -3025,7 +3030,7 @@ function NewsletterPage({showToast}){
         else showToast?.(`✅ 群發完成：成功 ${d.sent}/${d.total}${d.failed?`，失敗 ${d.failed}`:""}`);
         await load();
       }
-    }catch(e){showToast?.("❌ 群發失敗："+e.message);} finally{setBusy("");}
+    }catch(e){showToast?.("❌ 群發失敗："+e.message);} finally{setBusy("");refreshQuota();}
   }
 
   return(
@@ -3073,7 +3078,15 @@ function NewsletterPage({showToast}){
       </div>
 
       <div className={styles.panel}>
-        <h3 style={{margin:"0 0 12px"}}>群發</h3>
+        <div style={{display:"flex",alignItems:"baseline",gap:12,flexWrap:"wrap",margin:"0 0 12px"}}>
+          <h3 style={{margin:0}}>群發</h3>
+          {quota&&quota.limit!=null&&(
+            <span style={{fontSize:12.5,color:quota.remaining<=30?"#dc2626":quota.remaining<=100?"#b45309":"#64748b"}}>
+              今日 Brevo 額度剩 <b style={{fontVariantNumeric:"tabular-nums"}}>{quota.remaining}</b>／{quota.limit} 封
+              <span style={{color:"#94a3b8"}}>（已寄 {quota.used}，含登入驗證信；台灣早上 8 點重置）</span>
+            </span>
+          )}
+        </div>
         <div style={{display:"flex",gap:18,flexWrap:"wrap",marginBottom:14}}>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="buyers"} onChange={()=>setAudience("buyers")}/> 🎓 購課學員</label>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="registered"} onChange={()=>setAudience("registered")}/> 👤 註冊官網帳號</label>
