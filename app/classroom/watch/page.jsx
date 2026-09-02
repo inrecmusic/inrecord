@@ -1023,7 +1023,6 @@ export default function ClassroomPage() {
   const [contentItems, setContentItems]   = useState({});
   const [contentStats, setContentStats]   = useState(null);
   const [pendingGameId, setPendingGameId] = useState(null);
-  const [openUnitId, setOpenUnitId]       = useState(null);
   const [itemErr, setItemErr]             = useState("");
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
@@ -1252,7 +1251,6 @@ export default function ClassroomPage() {
   // 有影片的單元點了同時切換播放；沒影片的單元只展開（仍可下載講義樂譜）。
   function handleUnitClick(v) {
     setItemErr("");   // 換單元就清掉上一個單元的下載錯誤，否則會跟著顯示在新展開的面板裡
-    setOpenUnitId(prev => (prev === v.id ? null : v.id));
     if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
   }
 
@@ -1702,7 +1700,6 @@ export default function ClassroomPage() {
                     const isWatching = !done && watchPct > 0;
                     const items      = contentItems[v.id] || [];
                     const playable   = !!(v.bunny_video_id || v.vimeo_id);
-                    const isOpen     = openUnitId === v.id;
                     // 沒影片的單元只列可下載項目（遊戲/作業要切分頁、會綁到別的單元）
                     const visibleItems = playable ? items : items.filter(i => i.kind === "handout" || i.kind === "score");
                     // 規劃中的互動遊戲：接在對應單元下方（灰色列）
@@ -1711,7 +1708,6 @@ export default function ClassroomPage() {
                       <div key={v.id}>
                         <div className="unit-row"
                           role="button" tabIndex={0}
-                          aria-expanded={items.length ? isOpen : undefined}
                           title={!playable ? comingSoonFor(v.title) : undefined}
                           onClick={() => handleUnitClick(v)}
                           onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleUnitClick(v); } }}
@@ -1724,14 +1720,8 @@ export default function ClassroomPage() {
                           onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
                           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                         >
-                          {/* 展開指示 */}
-                          <div style={{
-                            width: 14, flexShrink: 0, paddingTop: 5, textAlign: "center",
-                            fontSize: 9, color: isOpen ? "#2563eb" : "#cbd5e1",
-                            transform: isOpen ? "rotate(90deg)" : "none",
-                            transformOrigin: "center 10px", transition: "transform .2s ease, color .12s",
-                            visibility: items.length ? "visible" : "hidden",
-                          }}>▶</div>
+                          {/* 不折疊：子項目一律顯示，這裡只留與原本相同寬度的留白維持縮排對齊 */}
+                          <div style={{ width: 14, flexShrink: 0 }} />
 
                           {/* Status indicator */}
                           <div style={{
@@ -1775,7 +1765,7 @@ export default function ClassroomPage() {
 
                         {/* 展開內容：該單元的真實項目 */}
                         {/* 沒影片的單元只列講義／樂譜（可直接下載）；遊戲與作業要切分頁、會綁到別的單元，先不顯示 */}
-                        {isOpen && visibleItems.length > 0 && (
+                        {visibleItems.length > 0 && (
                           <div style={{ padding: "2px 8px 8px 37px" }}>
                             {visibleItems.map(item => {
                               const ic = UNIT_ICONS.find(x => x.key === item.kind);
