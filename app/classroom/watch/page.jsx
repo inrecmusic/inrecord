@@ -1619,6 +1619,8 @@ export default function ClassroomPage() {
             overflowX: isTablet ? "auto" : "hidden",
             padding: isTablet ? "6px 10px 10px" : "6px 10px 32px",
           }}>
+            {/* 未上架單元的「預計 9/30 上架」只在滑鼠懸停該列時顯示（列表平時保持乾淨；觸控裝置以列色灰階區分） */}
+            <style>{`.unit-row .cs-hint{display:none}.unit-row:hover .cs-hint{display:block}`}</style>
             {chapters.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 16px" }}>
                 <p style={{ color: "#64748b", fontSize: 13, margin: 0, lineHeight: 1.6 }}>課程尚未上架</p>
@@ -1659,9 +1661,10 @@ export default function ClassroomPage() {
                     const visibleItems = playable ? items : items.filter(i => i.kind === "handout" || i.kind === "score");
                     return (
                       <div key={v.id}>
-                        <div
+                        <div className="unit-row"
                           role="button" tabIndex={0}
                           aria-expanded={items.length ? isOpen : undefined}
+                          title={!playable ? COMING_SOON : undefined}
                           onClick={() => handleUnitClick(v)}
                           onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleUnitClick(v); } }}
                           style={{
@@ -1705,7 +1708,7 @@ export default function ClassroomPage() {
                               {v.title}
                             </div>
                             {!playable ? (
-                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{COMING_SOON}</div>
+                              <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{COMING_SOON}</div>
                             ) : isWatching ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                                 <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
