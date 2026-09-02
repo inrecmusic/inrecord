@@ -2647,7 +2647,8 @@ function DocEditorPage({title,contentKey,defaultMd,showToast}){
 function PrivacyPage({showToast}){return <DocEditorPage title="隱私權政策" contentKey="privacy" defaultMd={DEFAULT_PRIVACY_MD} showToast={showToast}/>;}
 function TermsPage({showToast}){return <DocEditorPage title="服務條款" contentKey="terms" defaultMd={DEFAULT_TERMS_MD} showToast={showToast}/>;}
 
-// 電子報：編輯標題+Markdown 內文 → 群發給「購課學員 / 註冊官網帳號」。逐封寄(A 方案)，碰每日上限即回報。
+// 電子報：編輯標題+Markdown 內文 → 群發給「已付款／已開通學員 / 註冊官網帳號」。逐封寄(A 方案)，碰上限即回報。
+// 「已付款」對象＝已付款訂單 ∪ enrollments（見 lib/newsletter-send.js），付了錢但還沒開通的人也收得到。
 // 電子報範本：點選帶入標題與內文再自行修改。文案為正式敬語體，日期／章節等請發送前確認。
 const NEWSLETTER_TEMPLATES=[
   {name:"開課通知（早鳥分層）",subject:"9/30 正式開課・9/2 搶先開放第一章",body:[
@@ -2788,7 +2789,7 @@ function NewsletterPage({showToast}){
   }
   async function sendAll(){
     if(!useTpl&&(!subject.trim()||!bodyMd.trim())){showToast?.("請先填標題與內文");return;}
-    const label=audience==="buyers"?"購課學員":"註冊官網帳號";
+    const label=audience==="buyers"?"已付款／已開通學員":"註冊官網帳號";
     const what=useTpl?`用 Brevo 範本「${tplName}」`:"把這封電子報";
     if(!window.confirm(`確定${what}「正式群發」給【${label}】嗎？\n寄出後無法收回，建議先用「寄測試給我自己」確認版面。`))return;
     setBusy("all");setResult(null);
@@ -2862,7 +2863,7 @@ function NewsletterPage({showToast}){
           )}
         </div>
         <div style={{display:"flex",gap:18,flexWrap:"wrap",marginBottom:14}}>
-          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="buyers"} onChange={()=>setAudience("buyers")}/> 🎓 購課學員</label>
+          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="buyers"} onChange={()=>setAudience("buyers")}/> 🎓 已付款／已開通學員</label>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="registered"} onChange={()=>setAudience("registered")}/> 👤 註冊官網帳號</label>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
