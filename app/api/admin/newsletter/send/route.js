@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
-import { renderNewsletterHtml } from "@/lib/newsletter";
+import { renderNewsletterHtml, dedupeEmails } from "@/lib/newsletter";
 import {
   gatherAudienceEmails, sendNewsletterBatch,
   contentHash, filterUnsent, countSentToday, claimSend, releaseSend,
@@ -24,7 +24,7 @@ export async function POST(req) {
   const payload = await verifyAdminToken(req);
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { audience, test, brevoTemplateId } = await req.json().catch(() => ({}));
+  const { audience, test, brevoTemplateId, testEmails } = await req.json().catch(() => ({}));
   const templateId = Number.isInteger(brevoTemplateId) && brevoTemplateId > 0 ? brevoTemplateId : null;
 
   const supabase = getSupabaseAdmin();
@@ -46,12 +46,24 @@ export async function POST(req) {
     sendOne = (to) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to) }), unsubscribeUrl: unsubUrl(to) });
   }
 
-  // 測試信：只寄管理員自己
+  // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己
   if (test) {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!adminEmail) return NextResponse.json({ error: "no_admin_email" }, { status: 400 });
-    const r = await sendOne(adminEmail);
-    return NextResponse.json({ ok: !!r.success, test: true, to: adminEmail, templateId, error: r.error });
+    const emails = dedupeEmails(Array.isArray(testEmails) ? testEmails : []).slice(0, 10);
+    if (!emails.length) {
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (!adminEmail) return NextResponse.json({ error: "no_admin_email" }, { status: 400 });
+      emails.push(adminEmail);
+    }
+    const results = [];
+    for (const to of emails) {
+      const r = await sendOne(to);
+      results.push({ to, ok: !!r.success, ...(r.error ? { error: r.error } : {}) });
+    }
+    const okList = results.filter((x) => x.ok);
+    return NextResponse.json({
+      ok: okList.length === results.length && results.length > 0, test: true, templateId,
+      to: okList.map((x) => x.to).join("、"), sent: okList.length, failed: results.length - okList.length, results,
+    });
   }
 
   // 正式群發

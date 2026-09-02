@@ -2963,6 +2963,7 @@ function NewsletterPage({showToast}){
   // 改用 Brevo 後台範本寄送：>0 時主旨／內容以 Brevo 範本為準，本地標題／內文不寄
   const [brevoTemplates,setBrevoTemplates]=useState([]);
   const [brevoTemplateId,setBrevoTemplateId]=useState(0);
+  const [testTo,setTestTo]=useState(""); // 測試收件人（逗號/空白分隔，可多個；留空＝ADMIN_EMAIL）
   const useTpl=brevoTemplateId>0;
   const tplName=brevoTemplates.find(t=>t.id===brevoTemplateId)?.name||`#${brevoTemplateId}`;
   const dirty=subject!==savedSubject||bodyMd!==savedBody;
@@ -2998,9 +2999,11 @@ function NewsletterPage({showToast}){
     setBusy("test");setResult(null);
     try{
       if(!useTpl)await persist();
-      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true,...(useTpl?{brevoTemplateId}:{})})});
+      const list=testTo.split(/[\s,;、]+/).filter(Boolean);
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true,...(list.length?{testEmails:list}:{}),...(useTpl?{brevoTemplateId}:{})})});
       const d=await res.json();
       if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱"));
+      else if(d.test&&d.sent!=null)showToast?.(`⚠️ 測試信 ${d.failed} 封失敗（成功 ${d.sent}：${d.to||"—"}）`);
       else showToast?.("❌ 測試寄送失敗："+(d.error||"unknown"));
     }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");}
   }
@@ -3076,7 +3079,8 @@ function NewsletterPage({showToast}){
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="registered"} onChange={()=>setAudience("registered")}/> 👤 註冊官網帳號</label>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <button className={styles.btnSmall} disabled={!!busy} onClick={sendTest}>{busy==="test"?"寄送中…":"寄測試給我自己"}</button>
+          <input className={styles.searchInput} style={{width:300}} value={testTo} onChange={e=>setTestTo(e.target.value)} placeholder="測試收件人，逗號分隔可多個（留空＝寄給我自己）"/>
+          <button className={styles.btnSmall} disabled={!!busy} onClick={sendTest}>{busy==="test"?"寄送中…":testTo.trim()?"寄測試":"寄測試給我自己"}</button>
           <button className={styles.btnPrimary} disabled={!!busy} onClick={sendAll}>{busy==="all"?"群發中…":"正式群發"}</button>
         </div>
         {lastSent&&<p className={styles.dim} style={{fontSize:12,marginTop:12}}>上次寄送：{fmt(lastSent.at)}（{lastSent.count} 封）</p>}
