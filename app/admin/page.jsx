@@ -3002,7 +3002,7 @@ function NewsletterPage({showToast}){
       const list=testTo.split(/[\s,;、]+/).filter(Boolean);
       const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true,...(list.length?{testEmails:list}:{}),...(useTpl?{brevoTemplateId}:{})})});
       const d=await res.json();
-      if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱"));
+      if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱")+(d.unsubscribed?.length?`（${d.unsubscribed.length} 位已退訂，略過）`:""));
       else if(d.test&&d.sent!=null)showToast?.(`⚠️ 測試信 ${d.failed} 封失敗（成功 ${d.sent}：${d.to||"—"}）`);
       else showToast?.("❌ 測試寄送失敗："+(d.error||"unknown"));
     }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");}

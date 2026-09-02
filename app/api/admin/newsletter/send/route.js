@@ -8,7 +8,7 @@ import {
   contentHash, filterUnsent, countSentToday, claimSend, releaseSend,
 } from "@/lib/newsletter-send";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
-import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
+import { buildUnsubscribeUrl, excludeUnsubscribed } from "@/lib/unsubscribe";
 import { logAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -46,23 +46,33 @@ export async function POST(req) {
     sendOne = (to) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to) }), unsubscribeUrl: unsubUrl(to) });
   }
 
-  // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己
+  // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己。
+  // 已退訂者一樣跳過（退訂承諾不因「測試」破例）並回報；刻意不寫 newsletter_sends——
+  // 記進去會讓正式群發誤跳過同 email 的真學員；每日總量由 Brevo 硬上限把關（402/429 會回報失敗）。
   if (test) {
-    const emails = dedupeEmails(Array.isArray(testEmails) ? testEmails : []).slice(0, 10);
+    const requested = dedupeEmails(Array.isArray(testEmails) ? testEmails : []).slice(0, 10);
+    let emails = requested;
     if (!emails.length) {
       const adminEmail = process.env.ADMIN_EMAIL;
       if (!adminEmail) return NextResponse.json({ error: "no_admin_email" }, { status: 400 });
-      emails.push(adminEmail);
+      emails = [adminEmail];
     }
+    const allowed = await excludeUnsubscribed(supabase, emails);
+    const unsubscribed = emails.filter((e) => !allowed.includes(e));
     const results = [];
-    for (const to of emails) {
+    for (const to of allowed) {
       const r = await sendOne(to);
       results.push({ to, ok: !!r.success, ...(r.error ? { error: r.error } : {}) });
     }
     const okList = results.filter((x) => x.ok);
+    await logAudit(supabase, {
+      actor: payload.email, action: "newsletter.send_test", targetType: "newsletter",
+      meta: { templateId, requested: emails, sent: okList.length, failed: results.length - okList.length, unsubscribed }, req,
+    });
     return NextResponse.json({
       ok: okList.length === results.length && results.length > 0, test: true, templateId,
-      to: okList.map((x) => x.to).join("、"), sent: okList.length, failed: results.length - okList.length, results,
+      to: okList.map((x) => x.to).join("、"), sent: okList.length, failed: results.length - okList.length,
+      unsubscribed, results,
     });
   }
 
