@@ -43,7 +43,7 @@ function DefaultPrivacyContent() {
   return (
     <>
       <h1 style={{ fontFamily: "var(--type-display)", fontSize: 30, fontWeight: 400, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-.02em" }}>隱私權政策</h1>
-      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 6 月 21 日</p>
+      <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 32px" }}>InRecord｜音樂刻 ／ 最後更新：2026 年 9 月 1 日</p>
 
       <Section title="1. 適用範圍">
         本隱私權政策適用於 InRecord（以下簡稱「本平台」）所提供之線上鋼琴課程服務，包括課程試看、購買、學習及相關客服互動。使用本平台即表示您同意本政策之內容。

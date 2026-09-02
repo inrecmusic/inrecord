@@ -2555,7 +2555,7 @@ function IntegrationPage({showToast}){
 const DEFAULT_PRIVACY_MD =
 `# 隱私權政策
 
-InRecord｜音樂刻 ／ 最後更新：2026 年 6 月 21 日
+InRecord｜音樂刻 ／ 最後更新：2026 年 9 月 1 日
 
 ---
 
