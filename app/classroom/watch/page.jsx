@@ -25,15 +25,42 @@ const UNIT_ICONS = [
 
 // 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
 const COMING_SOON = "預計 9/30 上架";
+
+// 課綱規劃中、尚未上傳的互動遊戲：灰色不可點，hover 顯示預計上架。
+// 接在對應單元下方（見 PLANNED_CHAPTER_GAMES.after），故縮排與單元的子項目一致。
+function PlannedGameRow({ name }) {
+  return (
+    <div className="unit-row" title={COMING_SOON} style={{
+      display: "flex", alignItems: "flex-start", gap: 8,
+      padding: "7px 8px 7px 20px", borderRadius: 9,
+    }}>
+      <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1, opacity: .75 }}>🎮</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, lineHeight: 1.45, color: "#94a3b8" }}>{name}</div>
+        <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>互動遊戲 · {COMING_SOON}</div>
+      </div>
+    </div>
+  );
+}
 // 課綱規劃的互動遊戲總數（首頁課程大綱 8 章共 9 款）。遊戲陸續上傳期間，側欄總覽先照課綱顯示；
 // 實際上傳數超過時顯示實際數。全部上傳完（≥9）後此常數自然失效。
 const PLANNED_GAMES = 9;
 // 課綱規劃的各章互動遊戲名稱（依章節標題 ChN 對應）。上傳後：該章任一單元掛了同名遊戲，
 // 對應的規劃列就自動消失（比對用 includes，容忍上傳時加副標）。
+// after = 接在哪個單元之後（比對單元標題開頭的編號，如 "1-2"）。該單元尚未上架時退回章節最後一列。
 const PLANNED_CHAPTER_GAMES = {
-  1: ["Do 給你找"], 2: ["音名快閃", "唱名階梯"], 4: ["節奏打點師"], 6: ["和弦辨識家"],
-  7: ["情緒調色盤"], 8: ["分解和弦連連看"], 9: ["和弦神預測"], 10: ["自由創作坊"],
+  1:  [{ name: "Do 給你找",       after: "1-2" }],
+  2:  [{ name: "音名快閃",        after: "2-1" }, { name: "唱名階梯", after: "2-2" }],
+  4:  [{ name: "節奏打點師",      after: "4-5" }],
+  6:  [{ name: "和弦辨識家",      after: "6-4" }],
+  7:  [{ name: "情緒調色盤",      after: "7-1" }],
+  8:  [{ name: "分解和弦連連看",  after: "8-4" }],
+  9:  [{ name: "和弦神預測",      after: "9-3" }],
+  10: [{ name: "自由創作坊",      after: "10-6" }],
 };
+
+// 單元標題開頭的編號："1-2 尋找起始音 Do" → "1-2"
+function unitNo(title) { return String(title || "").trim().split(/\s+/)[0]; }
 
 // Bunny Stream 影片進度追蹤需要 player.js（Bunny CDN 提供）。注入一次、快取 Promise；
 // 載入失敗就放棄（不擋影片播放）。用 window.playerjs.Player(iframe) 監聽 timeupdate。
@@ -1640,7 +1667,9 @@ export default function ClassroomPage() {
               // 課綱規劃、尚未上傳的互動遊戲（灰色預顯示；上傳同名遊戲後自動不列）
               const chNum = Number((c.title.match(/^Ch(\d+)/i) || [])[1]);
               const uploadedGameTitles = cv.flatMap(v => (contentItems[v.id] || []).filter(i => i.kind === "game").map(i => i.title || ""));
-              const plannedGames = (PLANNED_CHAPTER_GAMES[chNum] || []).filter(name => !uploadedGameTitles.some(t => t.includes(name)));
+              const plannedGames = (PLANNED_CHAPTER_GAMES[chNum] || []).filter(g => !uploadedGameTitles.some(t => t.includes(g.name)));
+              // 對得上單元的接在該單元下方；對不上的（單元還沒上架）仍放章節最後
+              const plannedTail = plannedGames.filter(g => !cv.some(v => unitNo(v.title) === g.after));
               return (
                 <div key={c.id} style={{ marginBottom: 4 }}>
                   {/* Chapter header */}
@@ -1672,6 +1701,8 @@ export default function ClassroomPage() {
                     const isOpen     = openUnitId === v.id;
                     // 沒影片的單元只列可下載項目（遊戲/作業要切分頁、會綁到別的單元）
                     const visibleItems = playable ? items : items.filter(i => i.kind === "handout" || i.kind === "score");
+                    // 規劃中的互動遊戲：接在對應單元下方（灰色列）
+                    const unitPlanned = plannedGames.filter(g => g.after === unitNo(v.title));
                     return (
                       <div key={v.id}>
                         <div className="unit-row"
@@ -1769,23 +1800,14 @@ export default function ClassroomPage() {
                             {itemErr && <div style={{ fontSize: 11.5, color: "#b45309", padding: "4px 9px 0" }}>{itemErr}</div>}
                           </div>
                         )}
+
+                        {unitPlanned.map(g => <PlannedGameRow key={g.name} name={g.name} />)}
                       </div>
                     );
                   })}
 
-                  {/* 課綱規劃中的互動遊戲：名稱先上、灰色不可點，hover 顯示預計上架 */}
-                  {plannedGames.map(name => (
-                    <div key={name} className="unit-row" title={COMING_SOON} style={{
-                      display: "flex", alignItems: "flex-start", gap: 8,
-                      padding: "7px 8px 7px 20px", borderRadius: 9,
-                    }}>
-                      <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1, opacity: .75 }}>🎮</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, lineHeight: 1.45, color: "#94a3b8" }}>{name}</div>
-                        <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>互動遊戲 · {COMING_SOON}</div>
-                      </div>
-                    </div>
-                  ))}
+                  {/* 對不上單元的規劃遊戲（該單元尚未上架）才留在章節最後 */}
+                  {plannedTail.map(g => <PlannedGameRow key={g.name} name={g.name} />)}
                 </div>
               );
             })}
