@@ -26,6 +26,7 @@ import ChangelogPage from "./ChangelogPage";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
+import { countPaidBuyers } from "@/lib/admin-students";
 import { inDateRange } from "@/lib/date-range";
 import { summarizeOrders } from "@/lib/reconciliation";
 import { buildSalesTrend, buildPayDistribution } from "@/lib/dashboard";
@@ -249,7 +250,7 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
 }
 
 // ── Courses Page ───────────────────────────────────────────────────────────
-function CoursesPage({leads, onManage, showToast}){
+function CoursesPage({orders, onManage, showToast}){
   const [search,setSearch]=useState("");
   const [courses,setCourses]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -259,7 +260,9 @@ function CoursesPage({leads, onManage, showToast}){
   const [form,setForm]=useState({title:"",desc:"",price:"",status:"published"});
   const [formErr,setFormErr]=useState("");
 
-  const purchased=leads.filter(l=>l.purchased||l.status==="purchased").length;
+  // 已購人數＝確實付款的人頭數（orders status=paid、email 去重）；
+  // 舊版讀名單的人工標記，且 leads 在課程頁根本不會撈 → 永遠顯示 0。
+  const purchased=useMemo(()=>countPaidBuyers(orders),[orders]);
 
   const fetchCourses=useCallback(async()=>{
     setLoading(true);
@@ -3276,7 +3279,7 @@ export default function AdminPage(){
           {page==="dashboard"   &&<DashboardPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
           {page==="courses"     &&(selectedCourse
             ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
-            : <CoursesPage leads={leads} onManage={c=>{setSelectedCourse(c);}} showToast={showToast}/>
+            : <CoursesPage orders={orders} onManage={c=>{setSelectedCourse(c);}} showToast={showToast}/>
           )}
           {page==="messages"    &&<MessagesPage showToast={showToast}/>}
           {page==="media"       &&<MediaPage/>}
