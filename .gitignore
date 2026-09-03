@@ -22,3 +22,6 @@ Thumbs.db
 
 # Visual brainstorming companion
 .superpowers/
+
+# 本機隔離工作區
+.worktrees/
