@@ -10,7 +10,7 @@ export async function POST(req) {
   const payload = await verifyAdminToken(req);
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { id } = await req.json();
+  const { id, manual } = await req.json();
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
   const supabase = getSupabaseAdmin();
@@ -18,22 +18,24 @@ export async function POST(req) {
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, email, grant_email, plan, status, payuni_trade_no")
+    .select("id, email, grant_email, plan, status, payuni_trade_no, amount")
     .eq("id", id)
     .single();
 
   if (error || !order) return NextResponse.json({ error: "order_not_found", detail: "找不到此訂單" }, { status: 404 });
   if (order.status === "refunded") return NextResponse.json({ error: "already_refunded", detail: "此訂單已退款，請勿重複操作" }, { status: 400 });
   if (order.status !== "paid")     return NextResponse.json({ error: "not_paid", detail: `訂單狀態為「${order.status}」，僅「已付款」訂單可退款` }, { status: 400 });
-  if (!order.payuni_trade_no)      return NextResponse.json({ error: "missing_trade_no", detail: "此訂單沒有 PAYUNi 交易序號（可能非線上付款或付款未完成），無法線上退款" }, { status: 400 });
+  if (!manual && !order.payuni_trade_no) return NextResponse.json({ error: "missing_trade_no", detail: "此訂單沒有 PAYUNi 交易序號（可能非線上付款或付款未完成），無法線上退款" }, { status: 400 });
 
-  // 自動判斷：先嘗試「請退款」(trade/close CloseType=2)；
+  // manual：已在 PAYUNi 商店後台退完款，這裡只做訂單標記＋撤銷存取，不再呼叫 PAYUNi。
+  // 否則先「請退款」(trade/close CloseType=2；TradeAmt 依官方文件為請退款必填，漏送會回 CLOSE02010)；
   // 若該筆尚未請款（仍為授權狀態，close 會失敗），改用「取消授權」(trade/cancel)。
-  let result = await payuniTrade("trade/close", {
+  let method = manual ? "manual" : "refund";
+  let result = manual ? { success: true } : await payuniTrade("trade/close", {
     TradeNo:   order.payuni_trade_no,
     CloseType: "2",
+    TradeAmt:  String(order.amount),
   });
-  let method = "refund"; // 請退款
 
   if (!result.success) {
     const cancel = await payuniTrade("trade/cancel", { TradeNo: order.payuni_trade_no });
@@ -49,27 +51,13 @@ export async function POST(req) {
         closeStatus: result.status, closeMsg, closeData: result.data,
         cancelStatus: cancel.status, cancelMsg, cancelData: cancel.data,
       });
-      // 常見情境：信用卡「當日交易尚未結算(撥款)」→ 請退款無可退金額、取消授權也查無請款。
-      // 這不是系統錯誤，是金流結算時序：需隔日結算後才能線上退，或走 PAYUNi 商店後台。
-      // PAYUNi 兩種常見拒絕：
-      //  (a) 已請款但尚未撥款結算 → close 回「未有請退款金額」、cancel 回「已存在請款成功紀錄」
-      //      這是金流撥款週期造成，非系統錯誤，須待撥款後或走 PAYUNi 後台。
-      //  (b) 尚未請款（仍授權中）→ close 無金額可退、cancel 查無請款。
-      const alreadyCaptured = /已存在請款成功紀錄|已請款/.test(cancelMsg);
-      const noRefundable = /未有請退款金額|尚未請款|未請款|無.*請款金額/.test(closeMsg);
-      const friendly = alreadyCaptured && noRefundable
-        ? "此筆已請款、但尚未完成撥款結算，PAYUNi 暫時不接受線上退款。請待撥款完成後再試，或直接至 PAYUNi 商店後台辦理退款（最快）。"
-        : noRefundable || /查無符合請款|查無請款|查無.*請款/.test(cancelMsg)
-        ? "此筆交易尚未完成結算，暫時無法線上退款。請於隔日（結算後）再操作一次，或至 PAYUNi 商店後台直接處理。"
-        : "PAYUNi 退款未成功。可稍後再試，或至 PAYUNi 商店後台直接退款；仍有問題請聯繫 PAYUNi 客服。";
-      const notSettled = alreadyCaptured || noRefundable;
+      // 直接回 PAYUNi 原始錯誤碼＋訊息（對照 docs.payuni.com.tw 錯誤代碼表），不再猜測情境。
+      // CLOSE01007＝商店退款功能受限（商店層級權限），要找 PAYUNi 開通。
+      const hint = result.status === "CLOSE01007"
+        ? "商店的 API 退款權限受限，請洽 PAYUNi 客服開通；或先至 PAYUNi 商店後台退款，再回此處按「已在 PAYUNi 退款 → 標記」。"
+        : "可至 PAYUNi 商店後台直接退款，再回此處按「已在 PAYUNi 退款 → 標記」。";
       return NextResponse.json(
-        {
-          error: "refund_failed",
-          reason: notSettled ? "not_settled" : "gateway_error",
-          detail: friendly,
-          gateway_detail: `PAYUNi 回應：${closeMsg}／${cancelMsg}`, // 技術細節附註，供進階排查
-        },
+        { error: "refund_failed", detail: `PAYUNi 拒絕退款：${result.status} ${closeMsg}（取消授權：${cancel.status} ${cancelMsg}）。${hint}` },
         { status: 502 }
       );
     }

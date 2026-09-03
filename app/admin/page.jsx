@@ -1224,14 +1224,18 @@ function OrdersPage({showToast}){
     finally{setResending(null);}
   }
 
-  async function refundOrder(realId){
+  // manual=true：款項已在 PAYUNi 商店後台退完，只標記訂單＋撤銷存取（不再向 PAYUNi 發動退款）
+  async function refundOrder(realId, manual=false){
     if(!realId||refunding)return;
-    if(!window.confirm("確定要對此訂單申請退款嗎？\n\n・退款成功後將同步撤銷該學員的課程／遊戲存取，且無法復原。\n・信用卡「當日交易」可能因銀行尚未結算而無法立即線上退款；此時請隔日再試，或至 PAYUNi 商店後台直接處理。"))return;
+    const msg=manual
+      ?"確定要把此訂單標記為「已退款」嗎？\n\n・請先確認款項已在 PAYUNi 商店後台退款完成，這裡不會再向 PAYUNi 發動退款。\n・標記後將同步撤銷該學員的課程／遊戲存取，且無法復原。"
+      :"確定要對此訂單申請退款嗎？\n\n・會向 PAYUNi 發動線上全額退款。\n・退款成功後將同步撤銷該學員的課程／遊戲存取，且無法復原。";
+    if(!window.confirm(msg))return;
     setRefunding(true);
     try{
-      const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId})});
+      const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId,manual})});
       const d=await res.json();
-      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);showToast?.("✅ "+(d.method==="cancel"?"已取消授權（未請款）":"退款成功")+"，存取已撤銷");}
+      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);const label=d.method==="manual"?"已標記退款":d.method==="cancel"?"已取消授權（未請款）":"退款成功";showToast?.("✅ "+label+(d.detail?"："+d.detail:"，存取已撤銷"));}
       else showToast?.("❌ 退款失敗："+(d.detail||d.error||"unknown"));
     }catch(e){showToast?.("❌ 退款失敗："+e.message);}
     finally{setRefunding(false);}
@@ -1574,7 +1578,10 @@ function OrdersPage({showToast}){
             <div className={styles.modalActions}>
               <button className={styles.btnSmall} onClick={()=>setDetailOrder(null)}>關閉</button>
               <button className={styles.btnSmall} onClick={()=>{setComposeTo(detailOrder.email||"");setComposeOpen(true);}}>✉️ 寄信給客人</button>
-              {detailOrder.status==="paid"&&detailOrder.realId&&<button className={`${styles.btnSmall} ${styles.btnDanger}`} disabled={refunding} onClick={()=>refundOrder(detailOrder.realId)}>{refunding?"退款中…":"申請退款"}</button>}
+              {detailOrder.status==="paid"&&detailOrder.realId&&<>
+                <button className={`${styles.btnSmall} ${styles.btnDanger}`} disabled={refunding} onClick={()=>refundOrder(detailOrder.realId)}>{refunding?"退款中…":"申請退款"}</button>
+                <button className={styles.btnSmall} disabled={refunding} onClick={()=>refundOrder(detailOrder.realId,true)} title="款項已在 PAYUNi 商店後台退款完成時使用：只標記訂單並撤銷存取，不會再向 PAYUNi 發動退款">已在 PAYUNi 退款 → 標記</button>
+              </>}
             </div>
           </div>
         </div>
