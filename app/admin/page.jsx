@@ -23,6 +23,7 @@ import TrackingSettingsPage from "./TrackingSettingsPage";
 import AdsPerformancePage from "./AdsPerformancePage";
 import AnnouncementsPage from "./AnnouncementsPage";
 import ChangelogPage from "./ChangelogPage";
+import { excludeManual } from "@/lib/order-stats";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
@@ -191,7 +192,7 @@ function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,s
       <div className={styles.welcomeHead}><h1>歡迎回來，管理員</h1><p>這是您的課程平台營運概況</p></div>
       <div className={styles.statsGrid}>
         <StatCard label="本月營收" value={fmtTWD(monthRev)} sub="本月累計營收" icon={DollarSign} color="#f59e0b"/>
-        <StatCard label="本月訂單" value={paidM.length} sub="本月已完成訂單數" icon={ShoppingCart} color="#2563eb"/>
+        <StatCard label="本月訂單" value={excludeManual(paidM).length} sub="本月已完成訂單數（不含手動開通）" icon={ShoppingCart} color="#2563eb"/>
         <StatCard label="總營收"   value={fmtTWD(totalRev)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
         <StatCard label="總學員數" value={leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
         <StatCard label="Demo 開啟率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
@@ -1375,7 +1376,7 @@ function OrdersPage({showToast}){
       </div>
       <div className={styles.statsGrid4}>
         <StatCard label="總營收" value={`NT$ ${totalRev.toLocaleString()}`} sub="所有已付款" icon={DollarSign} color="#16a34a"/>
-        <StatCard label="已付款訂單" value={paid.length} sub="筆" icon={CheckCircle2} color="#2563eb"/>
+        <StatCard label="已付款訂單" value={excludeManual(paid).length} sub="筆（不含手動開通）" icon={CheckCircle2} color="#2563eb"/>
         <StatCard label="待處理訂單" value={pending.length} sub="筆待確認" icon={CreditCard} color="#f59e0b"/>
         <StatCard label="已退款訂單" value={refunded.length} sub="筆" icon={BarChart2} color="#dc2626"/>
       </div>
