@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { pickBanner } from "@/lib/announcements-view";
+import { useAnnouncements, AnnouncementsBell, AnnouncementsStrip, AnnouncementsDrawer, ImportantDialog } from "@/components/Announcements";
 import { formatSeconds, sortNotes } from "@/lib/notes-format";
 import { isProfileCoreComplete } from "@/lib/student-profile";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
@@ -246,81 +246,6 @@ function CommentsSection({ token, video, chapters }) {
         </div>
       </div>
     </div>
-  );
-}
-
-/* ── AnnouncementsBanner ───────────────────────────────────────────────────────── */
-const DISMISS_KEY = "inrec_dismissed_announcement";
-
-function AnnouncementsBanner({ items }) {
-  const [list, setList] = useState([]);
-  const [dismissedId, setDismissedId] = useState(null);
-  const [showAll, setShowAll] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") setDismissedId(localStorage.getItem(DISMISS_KEY));
-  }, []);
-
-  useEffect(() => { setList(items || []); }, [items]); // 公告由 bootstrap 一併帶回，不另外請求
-
-  const banner = pickBanner(list, dismissedId);
-
-  function dismiss() {
-    if (banner && typeof window !== "undefined") {
-      localStorage.setItem(DISMISS_KEY, banner.id);
-      setDismissedId(banner.id);
-    }
-  }
-
-  if (!list.length) return null;
-
-  return (
-    <>
-      {banner && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "10px 20px", background: "#eff6ff",
-          borderBottom: "1px solid #bfdbfe", fontFamily: F,
-        }}>
-          <span style={{ fontSize: 16 }}>📢</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e3a8a" }}>{banner.title}</span>
-            <span style={{ fontSize: 13, color: "#1d4ed8", marginLeft: 8 }}>
-              {banner.body.length > 60 ? banner.body.slice(0, 60) + "…" : banner.body}
-            </span>
-          </div>
-          <button onClick={() => setShowAll(true)} style={{ background: "none", border: "none", color: "#1d4ed8", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, flexShrink: 0 }}>全部公告</button>
-          <button onClick={dismiss} aria-label="關閉公告" style={{ background: "none", border: "none", color: "#64748b", fontSize: 18, lineHeight: 1, cursor: "pointer", flexShrink: 0 }}>×</button>
-        </div>
-      )}
-      {!banner && (
-        <div style={{ padding: "6px 20px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontFamily: F }}>
-          <button onClick={() => setShowAll(true)} style={{ background: "none", border: "none", color: "#1d4ed8", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F }}>📢 查看公告（{list.length}）</button>
-        </div>
-      )}
-
-      {showAll && (
-        <div onClick={() => setShowAll(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, maxWidth: 480, width: "100%", maxHeight: "80vh", overflow: "auto", padding: "22px 24px", fontFamily: F }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 17, color: "#0f172a" }}>📢 課程公告</h3>
-              <button onClick={() => setShowAll(false)} aria-label="關閉" style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#64748b" }}>×</button>
-            </div>
-            <div style={{ display: "grid", gap: 14 }}>
-              {list.map(a => (
-                <div key={a.id} style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {a.pinned && <span style={{ fontSize: 11, color: "#2563eb", fontWeight: 700 }}>置頂</span>}
-                    <strong style={{ fontSize: 14, color: "#0f172a" }}>{a.title}</strong>
-                  </div>
-                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "#475569", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{a.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
   );
 }
 
@@ -1024,6 +949,7 @@ export default function ClassroomPage() {
 
   const [chapters, setChapters]           = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const ann = useAnnouncements(announcements); // 鈴鐺／提示條／抽屜／重要卡片共用狀態
   const [contentItems, setContentItems]   = useState({});
   const [contentStats, setContentStats]   = useState(null);
   const [pendingGameId, setPendingGameId] = useState(null);
@@ -1382,6 +1308,7 @@ export default function ClassroomPage() {
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
+          <AnnouncementsBell ann={ann} />
 
           {/* 所有在賣方案(bundle)皆含遊戲、遊戲不再單賣 → 已購課者必有遊戲存取，
               僅顯示「已開通」徽章；移除會導到重買整包的「購買遊戲」死按鈕。 */}
@@ -1423,7 +1350,9 @@ export default function ClassroomPage() {
       </header>
 
       {/* Announcements */}
-      <AnnouncementsBanner items={announcements} />
+      <AnnouncementsStrip ann={ann} />
+      <AnnouncementsDrawer ann={ann} />
+      <ImportantDialog ann={ann} />
 
       {/* ── Body ── */}
       <div style={{

@@ -85,7 +85,7 @@ export async function GET(req) {
     supabase.from("progress").select("video_id, watched_seconds, total_seconds, completed, watched_at").eq("user_id", user.id),
     supabase.from("videos").select("id", { count: "exact", head: true }).eq("published", true),
     playerMode
-      ? supabase.from("announcements").select("id, title, body, pinned, created_at").eq("published", true)
+      ? supabase.from("announcements").select("id, title, body, pinned, important, created_at").eq("published", true)
       : Promise.resolve({ data: null, error: null }),
     // 播放頁側欄的內容 icon 用：只撈索引欄位，兩張表都小，成本可忽略。
     // 通用講義（video_id 為 null）不掛單元，先在 DB 濾掉。

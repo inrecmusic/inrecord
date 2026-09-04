@@ -12,7 +12,7 @@ export async function GET(req) {
 
   const { data, error } = await supabase
     .from("announcements")
-    .select("id, title, body, pinned, published, created_at, updated_at")
+    .select("id, title, body, pinned, important, published, created_at, updated_at")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) return serverError(error);
@@ -35,6 +35,7 @@ export async function POST(req) {
     title,
     body: text,
     pinned: body.pinned === true,
+    important: body.important === true, // 進教室先彈出、需按「知道了」
     published: body.published === true,
   };
   const { data, error } = await supabase.from("announcements").insert(row).select("id").single();
@@ -61,6 +62,7 @@ export async function PATCH(req) {
   if (typeof body.title === "string") allowed.title = body.title.trim();
   if (typeof body.body === "string") allowed.body = body.body.trim();
   if (typeof body.pinned === "boolean") allowed.pinned = body.pinned;
+  if (typeof body.important === "boolean") allowed.important = body.important;
   if (typeof body.published === "boolean") allowed.published = body.published;
   if (Object.keys(allowed).length === 0) return NextResponse.json({ error: "no_fields" }, { status: 400 });
 

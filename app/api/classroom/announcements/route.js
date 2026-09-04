@@ -10,10 +10,10 @@ export async function GET(req) {
 
   const { data, error } = await supabase
     .from("announcements")
-    .select("id, title, body, pinned, published, created_at")
+    .select("id, title, body, pinned, important, published, created_at")
     .eq("published", true);
   if (error) return serverError(error);
 
-  const sorted = sortAnnouncements(data || []).map(({ id, title, body, pinned, created_at }) => ({ id, title, body, pinned, created_at }));
+  const sorted = sortAnnouncements(data || []).map(({ id, title, body, pinned, important, created_at }) => ({ id, title, body, pinned, important: !!important, created_at }));
   return NextResponse.json({ announcements: sorted });
 }

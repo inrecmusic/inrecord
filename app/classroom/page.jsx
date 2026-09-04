@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useAnnouncements, HubAnnouncements, ImportantDialog } from "@/components/Announcements";
 import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete } from "@/lib/student-profile";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
@@ -17,6 +18,8 @@ export default function ClassroomHub() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileErr, setProfileErr]       = useState(false);
   const [loadError, setLoadError]         = useState(false); // bootstrap 載入失敗→顯示重試，不誤判未購買
+  const [announcements, setAnnouncements] = useState([]);
+  const ann = useAnnouncements(announcements); // 最新公告區＋重要卡片
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
   const [progress, setProgress]           = useState([]);
@@ -50,6 +53,7 @@ export default function ClassroomHub() {
           setDone(d.completedCount || 0);
           setTotal(d.totalCount || (d.videos || []).length);
           setProfile(d.profile || d.prefill || {});
+          setAnnouncements(d.announcements || []);
         } catch {
           setLoadError(true); // 網路/逾時失敗→重試，別誤判未購買
         } finally {
@@ -125,6 +129,7 @@ export default function ClassroomHub() {
     <div className="hub" data-theme={theme || undefined}>
       <style>{HUB_CSS}</style>
       <div className="glow" aria-hidden="true" />
+      <ImportantDialog ann={ann} variant="hub" />
 
       <nav>
         <a href="/classroom" aria-label="InRecord"><img src={effectiveDark ? "/logo-wordmark-white.png" : "/logo-wordmark.png"} alt="InRecord" style={{ height: 22, width: "auto", display: "block" }} /></a>
@@ -153,6 +158,7 @@ export default function ClassroomHub() {
           </div>
         </div>
 
+        <HubAnnouncements ann={ann} />
         <div className="sect-t">課程章節</div>
         <div className="chapters">
           {chapters.length === 0 && <div className="empty">課程單元即將上線 🎼</div>}
@@ -285,6 +291,26 @@ const HUB_CSS = `
 .hub .keys i.bk::after{content:""; position:absolute; top:0; right:-29%; width:58%; height:63%; z-index:2; background:linear-gradient(#2b2b2b,#0a0a0a); border-radius:0 0 2px 2px; box-shadow:0 2px 2px rgba(0,0,0,.4)}
 .hub .signout{position:fixed; bottom:16px; right:16px; z-index:5; background:var(--tgl-bg); border:1px solid var(--tgl-line); color:var(--ink-soft); font-size:12px; padding:7px 14px; border-radius:100px; cursor:pointer; font-family:inherit}
 .hub .signout:hover{color:var(--ink)}
+/* 最新公告（components/Announcements HubAnnouncements） */
+.hub .sect-t .more{font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; font-size:13px; color:var(--gold); font-weight:600; background:none; border:0; cursor:pointer; order:3; padding:0}
+.hub .notices{display:flex; flex-direction:column; gap:10px; margin-bottom:40px}
+.hub .nt{display:grid; grid-template-columns:52px 1fr auto; gap:16px; align-items:start; padding:14px 18px; background:var(--card); border:1px solid var(--line-soft); border-radius:14px; text-align:left; color:inherit; font:inherit; cursor:pointer; width:100%; transition:.2s}
+.hub .nt:hover,.hub .nt.pinned{border-color:var(--gold-line)}
+.hub .nt .d{font-family:var(--serif); color:var(--gold); line-height:1.05; text-align:center}
+.hub .nt .d b{display:block; font-size:22px; font-weight:600}
+.hub .nt .d small{display:block; font-size:11px; letter-spacing:.06em; color:var(--ink-faint); margin-top:3px; font-family:-apple-system,"PingFang TC",sans-serif}
+.hub .nt .body{min-width:0}
+.hub .nt .ttl{font-weight:600; font-size:15px; color:var(--ink); display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.hub .nt .ex{color:var(--ink-soft); font-size:13.5px; line-height:1.7; margin-top:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.hub .nt .ex p{margin:0}
+.hub .ann-md{color:var(--ink-soft); font-size:13.5px; line-height:1.75; margin-top:6px}
+.hub .ann-md p{margin:0 0 8px} .hub .ann-md p:last-child{margin-bottom:0} .hub .ann-md ul{margin:4px 0 8px 18px; padding:0}
+.hub .ann-md a{color:var(--gold); text-decoration:underline; text-underline-offset:3px; word-break:break-all} .hub .ann-md strong{color:var(--ink)}
+.hub .tag{font-size:11px; font-weight:700; letter-spacing:.04em; padding:2px 8px; border-radius:100px; border:1px solid var(--gold-line); color:var(--gold)}
+.hub .tag.imp{background:var(--gold); color:var(--cta-ink); border-color:transparent}
+.hub .dot{width:8px; height:8px; border-radius:50%; background:var(--gold); box-shadow:0 0 0 3px var(--glow); display:inline-block}
+.hub .nt .go{font-size:12.5px; color:var(--ink-faint); white-space:nowrap; margin-top:4px}
+@media(max-width:760px){ .hub .nt{grid-template-columns:44px 1fr} .hub .nt .go{display:none} }
 @media (prefers-reduced-motion:reduce){ .hub *{transition:none!important} }
 @media(max-width:760px){ .hub .hero{grid-template-columns:1fr} .hub .grid2{grid-template-columns:1fr} .hub nav .r a{display:none} .hub .ring{margin-top:8px}
   .hub{padding-bottom:88px} .hub .keys{height:64px} .hub .keys i{flex:0 0 calc(100%/21)} }
