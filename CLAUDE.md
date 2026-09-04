@@ -152,7 +152,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 
 ### 影片防盜保護（Bunny）
 
-- 課程影片 embed URL 由 `/api/classroom/video-embed` 伺服器端簽發 Bunny Embed View Token（`SHA256_HEX(BUNNY_TOKEN_KEY + bunny_video_id + expires)`，預設 3h 到期），簽發前驗 Supabase JWT + enrollment。`lib/bunny.js` 為純函式（有測試）。缺 `BUNNY_TOKEN_KEY` 時回未簽 URL（平滑切換）。Vimeo legacy 維持未簽。
+- 課程影片 embed URL 由 `/api/classroom/video-embed` 伺服器端簽發 Bunny Embed View Token（`SHA256_HEX(BUNNY_TOKEN_KEY + bunny_video_id + expires)`，預設 3h 到期），簽發前驗 Supabase JWT + enrollment。`lib/bunny.js` 為純函式（有測試）。缺 `BUNNY_TOKEN_KEY` 時回未簽 URL（平滑切換）。Vimeo legacy 維持未簽。**字幕預設開啟**：embed 參數 `captions=<語言代碼>`（`lib/bunny.js` 的 `DEFAULT_CAPTIONS`，現為 `CT`＝後台上傳的「繁體中文 (CT)」），代碼要對到影片實際上傳的字幕語言，對不到就不會顯示。
 - 👤 上線需於 Bunny 後台開啟該函式庫 **Token Authentication** 並設定 **Allowed Referrers** 為正式網域。
 
 ## 主要 API 路由
