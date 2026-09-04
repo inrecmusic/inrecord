@@ -23,7 +23,7 @@ import TrackingSettingsPage from "./TrackingSettingsPage";
 import AdsPerformancePage from "./AdsPerformancePage";
 import AnnouncementsPage from "./AnnouncementsPage";
 import ChangelogPage from "./ChangelogPage";
-import { excludeManual } from "@/lib/order-stats";
+import { excludeManual, paidOrderCount } from "@/lib/order-stats";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
@@ -3226,7 +3226,8 @@ export default function AdminPage(){
   useEffect(()=>{if(authed)fetchOrders();},[authed,page,fetchOrders]);
 
   const purchasedCount=leads.filter(l=>l.purchased||l.status==="purchased").length;
-  const failedInvoiceCount=orders.filter(o=>o.status==="paid"&&!o.invoice_no).length; // 已付款待補開發票
+  // 側欄「訂單管理」徽章＝已付款訂單數（不含手動開通），與訂單頁「已付款訂單」卡同一個數字
+  const failedInvoiceCount=paidOrderCount(orders);
 
   useEffect(()=>{
     if(!authed)return;
