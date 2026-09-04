@@ -3,12 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./admin.module.css";
 import { GripVertical, X, Check, ChevronDown, ChevronRight, Video } from "lucide-react";
 import MaterialsManager from "./MaterialsManager";
-
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-function api(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
+import { adminFetch as api } from "@/lib/admin-client";
 
 export default function ChaptersUnitsPage({ showToast }) {
   const [chapters, setChapters] = useState([]);

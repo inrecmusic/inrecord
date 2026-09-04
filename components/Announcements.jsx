@@ -10,8 +10,8 @@ import { readAnnouncementState, writeSeen, writeAck, writeStripDismissed } from 
 const F = "var(--type-body)";
 const WD = "日一二三四五六";
 const asDate = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? null : d; };
-export const fmtDate = (iso) => { const d = asDate(iso); return d ? `${d.getMonth() + 1}/${d.getDate()}` : ""; };
-export const fmtWd = (iso) => { const d = asDate(iso); return d ? WD[d.getDay()] : ""; };
+const fmtDate = (iso) => { const d = asDate(iso); return d ? `${d.getMonth() + 1}/${d.getDate()}` : ""; };
+const fmtWd = (iso) => { const d = asDate(iso); return d ? WD[d.getDay()] : ""; };
 const firstLine = (s) => String(s ?? "").split(/\r?\n/).find((l) => l.trim()) || "";
 
 // 內容 HTML 已由 announcementHtml 跳脫（只允許受限 Markdown 與 http(s) 連結）

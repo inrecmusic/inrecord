@@ -1,10 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-async function adminFetch(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
+import { adminFetch } from "@/lib/admin-client";
 
 // ── Format helpers (mirror mockup's nf/kf helpers, defensive against null/undefined/NaN) ──
 const nf = (n) => Math.round(Number(n) || 0).toLocaleString("en-US");

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { History } from "lucide-react";
+import { adminFetch } from "@/lib/admin-client";
 
 // 系統更新記錄（後台內部）。新增更新：在最上方插一筆即可。
 // tag 對應顏色見 TAGS。
@@ -98,8 +99,7 @@ export default function ChangelogPage() {
   // Bunny 即時用量（本月至今費用／流量／餘額）；抓不到就維持「依用量」並附原因
   const [bunny, setBunny] = useState(null);
   useEffect(() => {
-    const token = sessionStorage.getItem("inrecord_admin_token") || "";
-    fetch("/api/admin/bunny-usage", { headers: { Authorization: `Bearer ${token}` } })
+    adminFetch("/api/admin/bunny-usage")
       .then(r => r.json())
       .then(d => setBunny(d.ok ? d : { error: d.error || "unknown" }))
       .catch(() => setBunny({ error: "unreachable" }));

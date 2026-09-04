@@ -24,6 +24,7 @@ import AdsPerformancePage from "./AdsPerformancePage";
 import AnnouncementsPage from "./AnnouncementsPage";
 import ChangelogPage from "./ChangelogPage";
 import { excludeManual, paidOrderCount } from "@/lib/order-stats";
+import { adminToken as _pw, ADMIN_TOKEN_KEY } from "@/lib/admin-client";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
@@ -393,7 +394,6 @@ function CoursesPage({orders, onManage, showToast}){
 }
 
 // ── Messages Page ──────────────────────────────────────────────────────────
-const _pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
 // 後台任一 API 回 401（token 過期/失效）時觸發：由 AdminPage 註冊，清 token＋跳回登入頁並提示，
 // 取代散落各動作處籠統的「更新失敗」。
 let _onUnauthorized = null;
@@ -3153,7 +3153,7 @@ function AuditLogPage(){
 }
 
 // ── Main AdminPage ─────────────────────────────────────────────────────────
-const TOKEN_KEY = "inrecord_admin_token";
+const TOKEN_KEY = ADMIN_TOKEN_KEY;
 const getToken = () => (typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null);
 
 export default function AdminPage(){

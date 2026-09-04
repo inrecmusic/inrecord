@@ -219,10 +219,25 @@ ADMIN_PASSWORD
 AMEGO_APP_KEY
 AMEGO_IDENTIFIER
 AMEGO_API_URL
-BREVO_LIST_ID
-# Upstash Redis（限流；Vercel Marketplace 整合自動注入 KV_ 命名，缺則退回記憶體限流）
+AMEGO_TRACK_API_CODE           # Amego 發票追蹤 API code（選填）
+BREVO_REPLY_TO                 # 信件 Reply-To（未設＝support@inrecordmusic.com）
+NEWSLETTER_DAILY_LIMIT         # 電子報單日上限（未設＝5000，Brevo Starter）
+# Upstash Redis（限流；Vercel Marketplace 整合自動注入 KV_ 命名，缺則退回記憶體限流；亦相容 UPSTASH_REDIS_REST_URL/TOKEN）
 KV_REST_API_URL
 KV_REST_API_TOKEN
+# 教室影片（Bunny Stream）
+NEXT_PUBLIC_BUNNY_LIBRARY_ID   # Bunny Stream 影片庫 ID（embed URL 用）
+BUNNY_API_KEY                  # Bunny 影片庫 API key（BUNNY_ACCOUNT_API_KEY 未設時的退路，打不了 billing）
+PRESALE_BYPASS_TOKEN           # 鎖站期間 ?preview=<token> 進教室（後台預覽用）
+# 外部成交進名單（WooCommerce／Concert Shop webhook）
+WOOCOMMERCE_WEBHOOK_SECRET
+WOOCOMMERCE_COURSE_PRODUCT_IDS # 課程商品 ID 對應（格式見 lib/woocommerce.js）
+CONCERT_WEBHOOK_SECRET
+CONCERT_COURSE_PRODUCT_IDS
+# 未成交挽回信（cron abandoned-recovery）
+RECOVERY_AFTER_HOURS           # 下單後幾小時未付才寄（預設 6）
+RECOVERY_MAX_HOURS             # 超過幾小時就不寄（預設 48）
+AUTO_LAUNCH_NOTIFY             # =on 才由 cron 自動寄開課通知；未設＝只能後台手動按（fail-safe）
 NEXT_PUBLIC_WORDPRESS_BUY_URL   # /demo 體驗頁 CTA → WordPress 預購頁；未設則 CTA 顯示「即將開放」停用
 # 廣告成效儀錶板（Phase 2）——未設則 cron no-op、儀錶板空狀態（不影響站台）
 META_ADS_ACCESS_TOKEN   # Meta System User 長效 token（ads_read）

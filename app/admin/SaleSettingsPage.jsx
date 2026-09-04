@@ -1,10 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-async function adminFetch(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
+import { adminFetch } from "@/lib/admin-client";
 
 // course 單賣已下架，只剩課程包（bundle）需設定價格
 const PLANS = [

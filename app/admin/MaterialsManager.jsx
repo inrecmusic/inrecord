@@ -2,8 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { X } from "lucide-react";
 import styles from "./admin.module.css";
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
+import { adminToken as pw } from "@/lib/admin-client";
 
 export default function MaterialsManager({ videoId, title, onClose, showToast }) {
   const [items, setItems] = useState([]);

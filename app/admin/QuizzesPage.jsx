@@ -2,11 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import styles from "./admin.module.css";
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-function api(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
+import { adminFetch as api } from "@/lib/admin-client";
 
 function QuestionEditor({ quizId, showToast, onChange }) {
   const [questions, setQuestions] = useState([]);

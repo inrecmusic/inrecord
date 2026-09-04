@@ -3,11 +3,7 @@ import { useEffect, useState } from "react";
 import { Pin } from "lucide-react";
 import styles from "./admin.module.css";
 import { announcementHtml } from "@/lib/announcement-md";
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-function api(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
+import { adminFetch as api } from "@/lib/admin-client";
 
 const EMPTY = { title: "", body: "", pinned: false, important: false, published: true };
 

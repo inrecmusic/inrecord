@@ -2,11 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./admin.module.css";
 import { X, Maximize2, Globe, Code2 } from "lucide-react";
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-function api(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
+import { adminFetch as api } from "@/lib/admin-client";
 
 const EMPTY_FORM = {
   title: "", description: "", chapter_id: "", video_id: "",

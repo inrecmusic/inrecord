@@ -2,14 +2,9 @@
 import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import styles from "./admin.module.css";
 import { Star } from "lucide-react";
+import { adminFetch as api } from "@/lib/admin-client";
 
 const PER_PAGE = 20;
-
-const pw = () => (typeof window !== "undefined" ? sessionStorage.getItem("inrecord_admin_token") : "");
-
-function api(path, opts = {}) {
-  return fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${pw()}`, ...(opts.headers || {}) } });
-}
 
 function Stars({ rating, size = 14 }) {
   return (
