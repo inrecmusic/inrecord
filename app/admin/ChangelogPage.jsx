@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { History } from "lucide-react";
 
 // 系統更新記錄（後台內部）。新增更新：在最上方插一筆即可。
@@ -94,6 +95,15 @@ const CHANGELOG = [
 ];
 
 export default function ChangelogPage() {
+  // Bunny 即時用量（本月至今費用／流量／餘額）；抓不到就維持「依用量」並附原因
+  const [bunny, setBunny] = useState(null);
+  useEffect(() => {
+    const token = sessionStorage.getItem("inrecord_admin_token") || "";
+    fetch("/api/admin/bunny-usage", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setBunny(d.ok ? d : { error: d.error || "unknown" }))
+      .catch(() => setBunny({ error: "unreachable" }));
+  }, []);
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 4px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -124,23 +134,33 @@ export default function ChangelogPage() {
               </tr>
             </thead>
             <tbody>
-              {SUBSCRIPTIONS.map(s => (
+              {SUBSCRIPTIONS.map(s => {
+                const live = s.service === "Bunny Stream" && bunny?.ok ? bunny : null;
+                const bunnyErr = s.service === "Bunny Stream" && bunny?.error;
+                return (
                 <tr key={s.service} style={{ borderTop: "1px solid #f1f5f9" }}>
                   <td style={{ ...TD, fontWeight: 600, color: "#0f172a" }}>
                     {s.service}
-                    <div style={{ fontWeight: 400, fontSize: 11.5, color: "#94a3b8", marginTop: 2 }}>{s.note}</div>
+                    <div style={{ fontWeight: 400, fontSize: 11.5, color: "#94a3b8", marginTop: 2 }}>
+                      {live
+                        ? `本月流量 ${live.bandwidthGB} GB · 帳戶餘額 US$${live.balance.toFixed(2)} · 更新 ${new Date(live.fetchedAt).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`
+                        : bunnyErr ? `${s.note} · Bunny 資料暫時抓不到（${bunnyErr}）` : s.note}
+                    </div>
                   </td>
                   <td style={{ ...TD, verticalAlign: "top" }}>{s.plan}</td>
                   <td style={{ ...TD, textAlign: "right", fontVariantNumeric: "tabular-nums", verticalAlign: "top" }}>
-                    {s.amount === null ? <span style={{ color: "#b45309" }}>依用量</span> : s.amount === 0 ? "免費" : usd(s.amount)}
+                    {live
+                      ? <>US${live.thisMonthCharges.toFixed(2)}<div style={{ fontWeight: 400, fontSize: 11, color: "#94a3b8" }}>本月至今</div></>
+                      : s.amount === null ? <span style={{ color: "#b45309" }}>依用量</span> : s.amount === 0 ? "免費" : usd(s.amount)}
                   </td>
                   <td style={{ ...TD, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#64748b", verticalAlign: "top" }}>
-                    {typeof s.amount === "number" && s.amount > 0 ? twd(s.amount) : "—"}
+                    {live ? twd(live.thisMonthCharges) : typeof s.amount === "number" && s.amount > 0 ? twd(s.amount) : "—"}
                   </td>
                   <td style={{ ...TD, verticalAlign: "top" }}>{CYCLE_LABEL[s.cycle]}</td>
                   <td style={{ ...TD, color: "#64748b", verticalAlign: "top" }}>{s.nextCharge}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

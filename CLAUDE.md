@@ -171,6 +171,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 | `/api/admin/refund` | POST | 退款（trade/close → fallback trade/cancel）+ 撤銷存取 |
 | `/api/admin/issue-invoice` | POST | 後台手動開立發票（Amego） |
 | `/api/admin/resend-email` | POST | 後台補寄開課確認信（Brevo） |
+| `/api/admin/bunny-usage` | GET | 後台訂閱費用面板：Bunny 本月費用／流量／餘額（`lib/bunny-usage.js` 整理，伺服器快取 10 分） |
 | `/api/admin/courses` | GET/POST/PATCH/DELETE | 後台課程 CRUD |
 | `/api/admin/coupons` | GET/POST/PATCH/DELETE | 後台優惠券 CRUD |
 | `/api/admin/sale-settings` | GET/PATCH | 後台銷售設定（open_at / list_price / waves[] / lock_override）|
@@ -208,6 +209,7 @@ BREVO_SENDER_EMAIL
 BREVO_SENDER_NAME
 NEXT_PUBLIC_SITE_URL
 BUNNY_TOKEN_KEY
+BUNNY_ACCOUNT_API_KEY   # Bunny「帳號」層級 API key（後台訂閱費用面板即時抓 billing）；未設則退回 BUNNY_API_KEY（影片庫 key 會 401）
 CRON_SECRET
 COUPON_RELEASE_AFTER_HOURS   # 優惠券逾時釋放閾值(小時)，預設 72；須 > PayUni ATM/超商付款期限
 JWT_SECRET
