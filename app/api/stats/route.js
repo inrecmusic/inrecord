@@ -15,7 +15,7 @@ export async function GET(req) {
   if (!db) return NextResponse.json({ ok: false, error: "db not configured" }, { status: 500 });
 
   const [{ count: purchases, error: e1 }, { data: ratingRows, error: e2 }] = await Promise.all([
-    db.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid"),
+    db.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid").or("source.is.null,source.neq.manual"), // 手動開通單不算購買人數；舊單 source 為 NULL 照算
     db.from("ratings").select("score"),
   ]);
 
