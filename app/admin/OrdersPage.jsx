@@ -37,7 +37,7 @@ export function ManualGrantCard({reload,showToast}){
         showToast?.("❌ 失敗："+(d.error||"unknown")+(d.detail?`（${d.detail}）`:""));
       }else{
         const parts=[];
-        if(doGrant) parts.push(d.alreadyGranted?"⚠️ 此 Email 已開通過（未重複建立）":"✅ 已開通課程存取");
+        if(doGrant) parts.push(d.granted?"✅ 已開通課程存取":d.alreadyGranted?"⚠️ 此 Email 已開通過（未重複建立）":"⚠️ 未開通（請到「紀錄」查看原因）");
         if(sendEmail) parts.push(d.emailSent?"✅ 通知信已寄出":"❌ 通知信寄送失敗"+(d.emailError?`（${d.emailError}）`:""));
         showToast?.(parts.join("；"));
         setEmail("");setPhone("");setName("");setPlan("bundle");setDoGrant(true);setSendEmail(true);

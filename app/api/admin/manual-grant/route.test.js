@@ -51,6 +51,22 @@ describe("POST /api/admin/manual-grant（後台手動開通）", () => {
     expect(sb.calls.some((c) => sb.has(c, "insert"))).toBe(false);
   });
 
+  it("有舊的 manual 單、但 enrollment 已被撤銷（例如標記退款後）→ 要能重新開通，不能當成重複請求", async () => {
+    const sb = makeDb({ dupOrder: { id: "old", presale_email_sent_at: null, email_error: null } }); // 沒有 dupEnrollment
+    getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ email: "a@x.com", plan: "bundle", grant: true, sendEmail: false }))).json();
+    expect(body).toMatchObject({ ok: true, granted: true, alreadyGranted: false });
+    expect(grantAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("只寄信模式（grant=false）：已有 manual 單就不重複寄，維持去重", async () => {
+    const sb = makeDb({ dupOrder: { id: "old", presale_email_sent_at: "2026-09-01T00:00:00Z", email_error: null } });
+    getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ email: "a@x.com", plan: "bundle", grant: false, sendEmail: true }))).json();
+    expect(body).toMatchObject({ ok: true, duplicate: true, emailSent: true });
+    expect(sendPurchaseEmail).not.toHaveBeenCalled();
+  });
+
   it("新 email 開通 → 建 source=manual、amount 0、status=paid 的訂單，再 grantAccess；不勾寄信就不寄", async () => {
     const sb = makeDb();
     getSupabaseAdmin.mockReturnValue(sb);

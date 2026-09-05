@@ -26,14 +26,17 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
-  // 防重複／防併發：先讀該 email 是否已有對應 manual 單、或已開通(enrollment)。
-  // 已有就視為重複請求（雙擊/併發/重試）——不重複建單、不重複開通、不重複寄信，直接回既有結果。
+  // 防重複／防併發：先讀該 email 是否已開通(enrollment)、或已有 manual 單。
+  // 開通模式：只看 enrollment ——「有舊 manual 單但 enrollment 已被撤」（例如標記退款後）必須能重新開通，
+  //   不能被舊單擋成假成功（2026-09-05 inrecmusic 測試帳號就是這樣卡住的）。
+  // 只寄信模式：有 manual 單就視為重複，不重複寄信（雙擊/併發/重試）。
   const [{ data: dupOrder }, { data: dupEnrollment }] = await Promise.all([
     supabase.from("orders").select("id, presale_email_sent_at, email_error")
       .eq("email", email).eq("source", "manual").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("enrollments").select("id").eq("email", email).eq("course_id", COURSE_ID).maybeSingle(),
   ]);
-  if (dupOrder || dupEnrollment) {
+  const duplicate = !!dupEnrollment || (!grant && !!dupOrder);
+  if (duplicate) {
     await logAudit(supabase, { actor: payload.email, action: "course.manual_grant", targetType: "email", targetId: email, meta: { plan, grant, sendEmail, duplicate: true }, req });
     return NextResponse.json({
       ok: true,
