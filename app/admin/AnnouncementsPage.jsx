@@ -23,6 +23,7 @@ export default function AnnouncementsPage({ showToast }) {
     } catch { showToast("❌ 載入失敗"); setItems([]); }
     setLoading(false);
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load／showToast 只在掛載或篩選變更時執行；showToast 是父層傳入的通知函式，不參與資料流
   useEffect(() => { load(); }, []);
 
   function resetForm() { setForm(EMPTY); setEditingId(null); }

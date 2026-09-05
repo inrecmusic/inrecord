@@ -125,6 +125,7 @@ function CommentsSection({ token, video, chapters }) {
       const { data } = await r.json();
       setComments(data || []);
     } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [token, video?.id, filter]);
 
   useEffect(() => { load(); }, [load]);
@@ -583,6 +584,7 @@ function GamesTab({ token, hasSubscription, video, gameCache, pendingGameId, onP
       finally { if (!cancelled) setListLoading(false); }
     })();
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [hasSubscription, token, videoId]);
 
   // 從側欄點特定遊戲進來：等清單載好再選中。
@@ -594,6 +596,7 @@ function GamesTab({ token, hasSubscription, video, gameCache, pendingGameId, onP
     if (!hit) return;
     setSelectedGame(hit);
     onPendingConsumed?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [pendingGameId, games]);
 
   useEffect(() => {
@@ -630,6 +633,7 @@ function GamesTab({ token, hasSubscription, video, gameCache, pendingGameId, onP
       .catch(() => { if (!cancelled) setGameContent(null); })
       .finally(() => { if (!cancelled) setGameLoading(false); });
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [selectedGame, token]);
 
   if (!hasSubscription) {
@@ -1089,6 +1093,7 @@ export default function ClassroomPage() {
 
     setup();
     return () => { cancelled = true; playerCtrlRef.current = null; clearInterval(interval); player?.destroy(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [currentVideo?.id, token]);
 
   // Bunny 影片：切換時向後端索取帶 token 的簽名 embed URL（Vimeo 不走此路徑）
@@ -1103,6 +1108,7 @@ export default function ClassroomPage() {
       .then(r => (r.ok ? r.json() : null))
       .then(data => { if (data?.src) setEmbedSrc(data.src); })
       .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [currentVideo?.id, token]);
 
   /* Bunny player time-based progress tracking (player.js, 每 10 秒) — 比照 Vimeo。
@@ -1164,6 +1170,7 @@ export default function ClassroomPage() {
 
     setup();
     return () => { cancelled = true; playerCtrlRef.current = null; clearInterval(interval); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
   }, [currentVideo?.id, token, embedSrc]);
 
   function handleSelect(v) {

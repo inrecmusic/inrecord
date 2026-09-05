@@ -498,6 +498,7 @@ function BulkFollowupModal({ open, recipients = [], onClose, showToast }) {
   const [result, setResult] = useState(null);
   useEffect(() => {
     if (open) { setSubject(FOLLOWUP?.subject || ""); setBody(FOLLOWUP?.body || ""); setBusy(false); setResult(null); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 開啟時以當下範本重設欄位，不隨範本物件變動重跑
   }, [open]);
   function applyTemplate(id) { const t = EMAIL_TEMPLATES.find(x => x.id === id); if (t && t.id) { setSubject(t.subject); setBody(t.body); } }
   if (!open) return null;
@@ -2146,6 +2147,7 @@ function SubscriptionsPage({ showToast }) {
     if (filter === "active")  return subs.filter(isLive);
     if (filter === "expired") return subs.filter(s => !isLive(s));
     return subs;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- isLive 依 now 計算，now 已在依賴中
   }, [subs, filter, now]);
 
   const activeCount = subs.filter(isLive).length;

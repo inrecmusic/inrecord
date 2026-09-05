@@ -44,6 +44,7 @@ export default function AssignmentsPage({ showToast }) {
       setCounts(c || {});
     } catch { showToast("❌ 載入失敗"); setVideos([]); }
     finally { setLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load／showToast 只在掛載或篩選變更時執行；showToast 是父層傳入的通知函式，不參與資料流
   }, []);
 
   useEffect(() => { fetchVideos(); }, [fetchVideos]);

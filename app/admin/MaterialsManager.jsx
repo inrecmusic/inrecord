@@ -24,7 +24,8 @@ export default function MaterialsManager({ videoId, title, onClose, showToast })
     } catch { showToast("❌ 載入失敗"); setItems([]); }
     setLoading(false);
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [videoId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load／showToast 只在掛載或篩選變更時執行；showToast 是父層傳入的通知函式，不參與資料流
+  useEffect(() => { load(); }, [videoId]);
 
   async function upload(e) {
     e.preventDefault();

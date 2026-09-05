@@ -52,6 +52,7 @@ export default function CourseRatingsPage({ showToast }) {
       setTotal(t || 0);
     } catch { showToast("❌ 載入失敗"); setRatings([]); setTotal(0); }
     finally { setLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load／showToast 只在掛載或篩選變更時執行；showToast 是父層傳入的通知函式，不參與資料流
   }, [page, statusFilter]);
 
   useEffect(() => { fetchRatings(); }, [fetchRatings]);
