@@ -133,8 +133,8 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 
 ### 遊戲存取驗證
 
-1. classroom 登入後呼叫 `/api/classroom/verify-purchase`（課程）與 `/api/classroom/verify-subscription`（遊戲存取）。
-2. `verify-subscription` 查 subscriptions 表，找最近一筆 `status='active'` 且 `expires_at > now()`，回傳 `{ hasSubscription, expiresAt, planType, daysLeft }`（永久存取 daysLeft 會很大，前端顯示「已開通」）。
+1. classroom 登入後呼叫 `/api/classroom/bootstrap` 一次取回購課／遊戲存取／學員資料／章節／影片／進度／公告（舊的 `verify`／`verify-purchase`／`verify-subscription`／`submissions` 端點已於 2026-09 移除）。
+2. 遊戲存取判定：查 subscriptions 表，最近一筆 `status='active'` 且 `expires_at > now()`（永久存取 expires_at=2999-12-31，前端顯示「已開通」）。
 
 ### 遊戲防盜保護
 
@@ -160,8 +160,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 
 | 路徑 | 方法 | 說明 |
 |------|------|------|
-| `/api/classroom/verify-purchase` | POST | 驗證課程購買 |
-| `/api/classroom/verify-subscription` | POST | 驗證遊戲存取 |
+| `/api/classroom/bootstrap` | GET | 進教室一次取回購課／遊戲存取／學員資料／章節／影片／進度／公告（取代舊 verify-*） |
 | `/api/classroom/games` | GET | 遊戲清單/內容（需有效遊戲存取） |
 | `/api/classroom/video-embed` | GET | 驗購買後簽發 Bunny 安全 embed URL（token+expires） |
 | `/api/payuni/checkout` | POST | 方案付款（course/bundle，支援 couponCode；game 已下架） |
