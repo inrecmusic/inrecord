@@ -5,14 +5,13 @@ import { useAnnouncements, AnnouncementsBell, AnnouncementsStrip, AnnouncementsD
 import { formatSeconds, sortNotes } from "@/lib/notes-format";
 import { isProfileCoreComplete } from "@/lib/student-profile";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
-import NotesTab from "../../../components/classroom/NotesTab";
-import GamesTab from "../../../components/classroom/GamesTab";
-import AssignmentTab from "../../../components/classroom/AssignmentTab";
-import RatingTab from "../../../components/classroom/RatingTab";
-import CommentsSection from "../../../components/classroom/CommentsSection";
-import MaterialsSection from "../../../components/classroom/MaterialsSection";
-import { freshToken, openMaterialById, F } from "../../../components/classroom/shared";
-import { getDeviceId } from "../../../components/classroom/shared";
+import NotesTab from "@/components/classroom/NotesTab";
+import GamesTab from "@/components/classroom/GamesTab";
+import AssignmentTab from "@/components/classroom/AssignmentTab";
+import RatingTab from "@/components/classroom/RatingTab";
+import CommentsSection from "@/components/classroom/CommentsSection";
+import MaterialsSection from "@/components/classroom/MaterialsSection";
+import { freshToken, openMaterialById, getDeviceId, F } from "@/components/classroom/shared";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
