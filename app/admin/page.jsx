@@ -2918,7 +2918,9 @@ const COURSE_TABS = [
   { id:"unitcomments", label:"單元評論",       icon:MessageSquare },
   { id:"ratings",      label:"課程評價",       icon:Star },
   { id:"games",        label:"互動遊戲",        icon:Gamepad2 },
-  { id:"quizzes",      label:"測驗管理",       icon:ListChecks },
+  // 測驗管理：學員端 UI 尚未做（播放頁沒有測驗、bootstrap 不帶測驗），先藏起入口避免以為已上線；
+  // API（/api/classroom/quiz*、/api/admin/quizzes）與資料表保留，要開放時把這行放回來即可。
+  // { id:"quizzes",      label:"測驗管理",       icon:ListChecks },
 ];
 
 function CourseDetailPage({ course, onBack, showToast, unreadUnitComments, onUnreadChange }) {
