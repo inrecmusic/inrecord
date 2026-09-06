@@ -12,6 +12,7 @@ import RatingTab from "@/components/classroom/RatingTab";
 import CommentsSection from "@/components/classroom/CommentsSection";
 import MaterialsSection from "@/components/classroom/MaterialsSection";
 import { freshToken, openMaterialById, getDeviceId, F } from "@/components/classroom/shared";
+import { comingSoonLabel } from "@/lib/coming-soon";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
@@ -34,9 +35,10 @@ const COMING_SOON = "預計 9/30 上架";
 const CHAPTER_COMING_SOON = { 2: "預計 9/9 上架", 3: "預計 9/16 上架", 4: "預計 9/23 上架" };
 // 個別單元的預計上架日（優先於章、章優先於 COMING_SOON）；key = 單元標題開頭編號。
 // 影片實際掛上去後這一列就不會顯示了（只有 !playable 才印），所以上架後不必回來刪。
-const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/5 上架", "1-5": "預計 9/5 上架" };
+const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/7 上架", "1-5": "預計 9/7 上架" };
 function comingSoonFor(title, chNum) {
-  return UNIT_COMING_SOON[unitNo(title)] || CHAPTER_COMING_SOON[chNum] || COMING_SOON;
+  // 日期一過（台灣時間）影片還沒掛上 → comingSoonLabel 會改顯示「即將上架」
+  return comingSoonLabel(UNIT_COMING_SOON[unitNo(title)] || CHAPTER_COMING_SOON[chNum] || COMING_SOON);
 }
 
 // 課綱規劃中、尚未上傳的互動遊戲：灰色不可點，hover 顯示預計上架。
@@ -778,7 +780,7 @@ export default function ClassroomPage() {
 
                   {!cv.length && (
                     <div style={{ fontSize: 12, color: "#94a3b8", padding: "4px 8px 8px 14px" }}>
-                      單元準備中，{CHAPTER_COMING_SOON[chNum] || COMING_SOON}
+                      單元準備中，{comingSoonLabel(CHAPTER_COMING_SOON[chNum] || COMING_SOON)}
                     </div>
                   )}
 

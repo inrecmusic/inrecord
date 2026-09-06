@@ -6,6 +6,10 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, cleanup, waitFor } from "@testing-library/react";
 
+// 「預計 M/D 上架」日期一過會自動變「即將上架」（lib/coming-soon.js，另有單元測試）。
+// 這支 smoke test 釘的是「各章／單元用哪個文案」，不想隨真實日期漂移 → 把日期保險絲換成原樣回傳。
+vi.mock("@/lib/coming-soon", () => ({ comingSoonLabel: (s) => s }));
+
 vi.mock("@/lib/supabase", () => ({
   supabase: {
     auth: {
