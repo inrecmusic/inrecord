@@ -5,11 +5,13 @@ import styles from "./LeadPopup.module.css";
 
 // 進站彈窗（只掛首頁）：停留 delayMs 或捲到 scrollRatio 才出現。關掉 7 天內不再彈；已留過信箱（DONE_KEY）或已登入不彈。
 // 規則抽成 shouldShowPopup 純函式方便測試；storage 可注入（預設 localStorage，讀寫都 try/catch）。
+// 網址帶 ?lead=1 → 無視記號、立刻顯示（後台／設計檢查用；一般訪客不會帶）。
 export const DISMISS_KEY = "ir_lead_dismissed_at";
 export const DONE_KEY = "ir_lead_done";
 const DISMISS_DAYS = 7;
 
-export function shouldShowPopup({ loggedIn, storage, now = Date.now() }) {
+export function shouldShowPopup({ loggedIn, storage, now = Date.now(), force = false }) {
+  if (force) return true;
   if (loggedIn) return false;
   try {
     if (storage?.getItem(DONE_KEY)) return false;
@@ -20,6 +22,7 @@ export function shouldShowPopup({ loggedIn, storage, now = Date.now() }) {
 }
 
 function safeStorage() { try { return window.localStorage; } catch { return null; } }
+function forcedByQuery() { try { return new URLSearchParams(window.location.search).get("lead") === "1"; } catch { return false; } }
 
 export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, scrollRatio = 0.5 }) {
   const [open, setOpen] = useState(false);
@@ -27,7 +30,8 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
   const store = storage || safeStorage();
 
   useEffect(() => {
-    if (fired || !shouldShowPopup({ loggedIn, storage: store })) return;
+    const force = forcedByQuery();
+    if (fired || !shouldShowPopup({ loggedIn, storage: store, force })) return;
     let timer = null;
     const cleanup = () => { if (timer) clearTimeout(timer); window.removeEventListener("scroll", onScroll); };
     const show = () => { cleanup(); setFired(true); setOpen(true); };
@@ -35,7 +39,7 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
       const max = document.documentElement.scrollHeight - window.innerHeight;
       if (max > 0 && window.scrollY >= max * scrollRatio) show();
     }
-    timer = setTimeout(show, delayMs);
+    timer = setTimeout(show, force ? 0 : delayMs);
     window.addEventListener("scroll", onScroll, { passive: true });
     return cleanup;
   }, [loggedIn, store, delayMs, scrollRatio, fired]);

@@ -20,6 +20,10 @@ describe("shouldShowPopup（純規則）", () => {
     const s = mem(); s.setItem(DONE_KEY, "1");
     expect(shouldShowPopup({ loggedIn: false, storage: s, now })).toBe(false);
   });
+  it("force（網址 ?lead=1）→ 無視已登入／已留過／關過，一律顯示", () => {
+    const s = mem(); s.setItem(DONE_KEY, "1"); s.setItem(DISMISS_KEY, String(now));
+    expect(shouldShowPopup({ loggedIn: true, storage: s, now, force: true })).toBe(true);
+  });
   it("7 天內關過不彈；超過 7 天再彈；storage 壞掉照彈", () => {
     const s = mem(); s.setItem(DISMISS_KEY, String(now - 6 * 86400e3));
     expect(shouldShowPopup({ loggedIn: false, storage: s, now })).toBe(false);
