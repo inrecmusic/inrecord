@@ -11,7 +11,8 @@ export default function MarkdownContent({ md }) {
         .legal-md h2{font-size:16px;font-weight:800;color:#0f172a;margin:24px 0 8px;padding-bottom:7px;border-bottom:1px solid #f1f5f9}
         .legal-md h3{font-size:14px;font-weight:800;color:#1e293b;margin:14px 0 5px}
         .legal-md p{font-size:14px;color:#475569;line-height:1.85;margin:0 0 10px}
-        .legal-md ul{margin:6px 0 14px;padding-left:22px;display:grid;gap:5px}
+        .legal-md ul,.legal-md ol{margin:6px 0 14px;padding-left:22px;display:grid;gap:5px}
+        .legal-md ol li::marker{color:#0f172a;font-weight:700}
         .legal-md li{font-size:14px;color:#475569;line-height:1.75}
         .legal-md strong{color:#0f172a}
         .legal-md hr{border:none;border-top:1px solid #e2e8f0;margin:16px 0}
