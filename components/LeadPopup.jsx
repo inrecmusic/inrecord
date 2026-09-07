@@ -74,7 +74,7 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
         <div className={styles.right}>
           <p className={styles.h}>留下 Email，試看影片連結馬上寄給你</p>
           <p className={styles.desc}>新章節上架與優惠也會通知你，隨時可以取消。</p>
-          <LeadForm layout="stack" cta="寄試看影片給我" onDone={onDone} />
+          <LeadForm layout="stack" cta="寄試看影片給我" onDone={onDone} align="center" />
           <button type="button" className={styles.skip} onClick={close}>先逛逛，晚點再說</button>
         </div>
       </div>

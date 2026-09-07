@@ -46,6 +46,9 @@
 .consent input { flex: none; margin: 3px 0 0; accent-color: var(--brand); }
 .consent span { word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
 .consent a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+/* align="center"（彈窗用）：同意文字與提示置中 */
+.center .consent { justify-content: center; text-align: center; }
+.center .msg { text-align: center; }
 .dark .consent { color: rgba(255, 255, 255, .7); }
 .dark .consent a { color: #a9c6ff; }
 .msg { margin: 0; color: #b45309; font-size: 14px; }

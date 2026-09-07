@@ -9,7 +9,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // 共用表單：首頁深色橫幅與進站彈窗都用它。勾選同意才能送 → POST /api/newsletter/subscribe
 // → 進 Brevo 名單並寄「免費試看」信。成功後原地換成完成訊息並送 Lead 事件（Meta／GA4 可拿「名單」當廣告優化目標）。
 // layout: "row"（輸入框＋按鈕同列）｜"stack"（直排，彈窗用）；dark：深底配色。
-export function LeadForm({ layout = "row", dark = false, cta = "寄試看給我", onDone }) {
+export function LeadForm({ layout = "row", dark = false, cta = "寄試看給我", onDone, align = "left" }) {
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -49,7 +49,7 @@ export function LeadForm({ layout = "row", dark = false, cta = "寄試看給我"
     );
   }
   return (
-    <form className={`${styles.form} ${layout === "stack" ? styles.stack : styles.row} ${dark ? styles.dark : ""}`} onSubmit={submit} noValidate>
+    <form className={`${styles.form} ${layout === "stack" ? styles.stack : styles.row} ${dark ? styles.dark : ""} ${align === "center" ? styles.center : ""}`} onSubmit={submit} noValidate>
       <div className={styles.fields}>
         <input className={styles.input} type="email" inputMode="email" autoComplete="email" aria-label="Email"
           placeholder="你的 Email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
