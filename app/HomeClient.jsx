@@ -17,6 +17,7 @@ import Logo from "@/components/Logo";
 import BuyModal from "@/components/BuyModal";
 import PointCarousel from "@/components/PointCarousel";
 import LeadCapture from "@/components/LeadCapture";
+import LeadPopup from "@/components/LeadPopup";
 import InstructorBioCarousel from "@/components/InstructorBioCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
@@ -641,6 +642,8 @@ export default function HomeClient({ sale }) {
       )}
 
       <main id="top">
+        {/* 進站彈窗：停留 6 秒或捲到一半才出現；已登入學員、已留過信箱、7 天內關過都不彈 */}
+        <LeadPopup loggedIn={!!user} />
         {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
           <div ref={heroPhotoRef} className={styles.heroPhoto} aria-hidden="true" />
@@ -995,22 +998,8 @@ export default function HomeClient({ sale }) {
           </div>
         </RevealSection>
 
-        {/* 留信箱：給看完 FAQ 還沒決定的人（淺色卡片，與下方深色 CTA 區隔） */}
+        {/* 留信箱（深色橫幅，取代原「現在開始」CTA）：給看完還沒決定的人，留 Email 換免費試看；購買入口由底部黏性購買列與方案區承接 */}
         <LeadCapture />
-
-        {/* CTA */}
-        <RevealSection className={styles.ctaSection}>
-          <div className={styles.container}>
-            <div className={styles.cta}>
-              <span className={styles.ctaEyebrow}>START NOW</span>
-              <h2>現在開始，<span>彈出你的<wbr />第一首流行歌曲</span></h2>
-              <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
-              <button className={`${styles.btnPrimary} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
-                {buyShort}課程
-              </button>
-            </div>
-          </div>
-        </RevealSection>
       </main>
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>

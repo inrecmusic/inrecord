@@ -3,8 +3,9 @@ import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
+import { TRIAL_CONTENT_KEY, isValidBunnyVideoId } from "@/lib/trial";
 
-const KEYS = ["privacy", "terms"];
+const KEYS = ["privacy", "terms", TRIAL_CONTENT_KEY]; // trial_video_id＝免費試看影片的 Bunny ID（純 ID、非 Markdown）
 
 // 站內可編輯內容（隱私權政策/服務條款）。GET 回所有；PATCH { key, body_md } 寫單筆。
 export async function GET(req) {
@@ -27,6 +28,7 @@ export async function PATCH(req) {
   const { key, body_md } = await req.json().catch(() => ({}));
   if (!KEYS.includes(key)) return NextResponse.json({ error: "invalid_key" }, { status: 400 });
   if (typeof body_md !== "string") return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+  if (key === TRIAL_CONTENT_KEY && !isValidBunnyVideoId(body_md.trim())) return NextResponse.json({ error: "invalid_body" }, { status: 400 });
 
   const { error } = await supabase.from("site_content")
     .upsert({ key, body_md, updated_at: new Date().toISOString() }, { onConflict: "key" });

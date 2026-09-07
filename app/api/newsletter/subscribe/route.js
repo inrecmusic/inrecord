@@ -3,9 +3,12 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { addLeadContact } from "@/lib/brevo-contacts";
 import { normalizeEmail } from "@/lib/unsubscribe";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+import { sendNewsletterEmail } from "@/lib/brevo-email";
+import { buildTrialEmail } from "@/lib/trial";
 
 // 公開端點：首頁「留下 Email」→ 加進 Brevo 潛客清單。單次同意：勾選（consent=true）才收，送出即進名單。
 // 名單只存 Brevo（BREVO_LIST_ID）；屬性記來源／同意時間／UTM 來源，之後看得出哪個廣告帶來多少名單。
+// 進名單後立刻寄「免費試看」信（Email 專屬簽章連結 → /trial）；信寄失敗不影響已進名單，回 trialSent=false 讓前端提示。
 const limiter = createDistributedLimiter({ limit: 10, windowMs: 60_000, prefix: "rl:subscribe" });
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UTM_ATTRS = { utm_source: "UTM_SOURCE", utm_medium: "UTM_MEDIUM", utm_campaign: "UTM_CAMPAIGN" };
@@ -38,5 +41,9 @@ export async function POST(req) {
   } catch (e) {
     console.error("[subscribe] unsubscribe cleanup failed:", e?.message || e);
   }
-  return NextResponse.json({ ok: true });
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
+  const { subject, html } = buildTrialEmail({ email, siteUrl });
+  const mail = await sendNewsletterEmail({ to: email, subject, html, kind: "trial" });
+  if (!mail.success) console.error("[subscribe] trial email failed:", mail.error);
+  return NextResponse.json({ ok: true, trialSent: mail.success === true });
 }

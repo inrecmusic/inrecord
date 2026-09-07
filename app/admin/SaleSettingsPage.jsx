@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import TrialVideoPanel from "./TrialVideoPanel";
 import { adminFetch } from "@/lib/admin-client";
 
 // course 單賣已下架，只剩課程包（bundle）需設定價格
@@ -182,6 +183,7 @@ export default function SaleSettingsPage({ showToast }) {
           {s.launch_notified_at ? `已於 ${new Date(s.launch_notified_at).toLocaleString("zh-TW")} 寄送` : "尚未寄送"}
         </span>
       </div>
+      <TrialVideoPanel showToast={showToast} />
     </div>
   );
 }
