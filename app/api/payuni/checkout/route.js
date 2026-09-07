@@ -8,6 +8,7 @@ import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
 import { MOBILE_CARRIER_TYPE, isValidTaxId, isValidMobileBarcode } from "@/lib/invoice-fields";
 import { isOwnProofUrl } from "@/lib/fan-proof";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+import { readTermsVersion } from "@/lib/terms-version";
 
 // 公開下單端點限流：擋洗 pending 單、灌爆 Amego/稅務查詢、當優惠券預言機、燒序號庫存。
 const checkoutLimiter = createDistributedLimiter({ limit: 10, windowMs: 60_000, prefix: "rl:checkout" });
@@ -53,6 +54,8 @@ export async function POST(req) {
     }
     const { plan, email, proofUrl } = body;
     const attribution = body.attribution || null;
+    // 結帳二次確認：前端要先勾「我已閱讀並同意服務條款及退費政策」並在摘要頁按「確認購買」才會帶 agreeTerms
+    if (body.agreeTerms !== true) return NextResponse.json({ error: "terms_required" }, { status: 400 });
 
     // 1) 方案合法性 + 價格/品名一律由後端決定
     const catalog = PLAN_CATALOG[plan];
@@ -192,6 +195,7 @@ export async function POST(req) {
       couponClaimed = true;
     }
 
+    const termsVersion = await readTermsVersion(supabase);
     const { error } = await supabase.from("orders").insert({
       plan,
       plan_label:   label || plan,
@@ -207,6 +211,9 @@ export async function POST(req) {
       coupon_code:  couponCode || null,
       attribution,
       capi_data,
+      // 契約成立依據：同意當下的條款版本（後端自己讀，不信前端）與時間
+      terms_version:   termsVersion,
+      terms_agreed_at: new Date().toISOString(),
       ...(isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL) ? { proof_url: proofUrl, fan_review: "pending" } : {}),
     });
     if (error) {

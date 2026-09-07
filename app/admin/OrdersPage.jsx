@@ -248,6 +248,8 @@ export default function OrdersPage({showToast}){
     time:fmt(o.created_at||o.updated_at),
     createdRaw:o.created_at||o.updated_at, // 原始時間，供日期篩選（顯示用 time 已在地化，不可拿來 new Date）
     invoiceNo:o.invoice_no||"",
+    termsVersion:o.terms_version||"",
+    termsAgreedAt:o.terms_agreed_at||null,
     invoiceError:o.invoice_error||"",
     emailError:o.email_error||"",
     needInvoice:(autoInvoice && o.status==="paid" && !o.invoice_no && !LEAD_SOURCES.includes(o.source)), // 已付款但未開票（待補開）；自動開票關閉或外部來源時不列告警
@@ -526,6 +528,7 @@ export default function OrdersPage({showToast}){
                 ["課程",detailOrder.course],
                 ["金額",<strong key="a">NT$ {detailOrder.amount.toLocaleString()}</strong>],
                 ["付款方式",detailOrder.method],
+                ["條款同意",detailOrder.termsVersion?`版本 ${detailOrder.termsVersion}・${fmt(detailOrder.termsAgreedAt)}`:<span key="tv" className={styles.dim}>—（此單早於二次確認上線）</span>],
                 ["狀態",<OrderStatusPill key="s" status={detailOrder.status}/>],
                 ["發票號碼",detailOrder.invoiceNo
                   ? <code key="inv" style={{fontSize:11,background:"#ecfdf5",color:"#047857",padding:"2px 6px",borderRadius:4,fontWeight:700}}>{detailOrder.invoiceNo}</code>

@@ -1,12 +1,15 @@
 import HomeClient from "./HomeClient";
 import { getSaleSettings, salePhase } from "@/lib/sale";
 import { isFanProofOpen } from "@/lib/fan-proof";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { readTermsVersion } from "@/lib/terms-version";
 
 export const revalidate = 60;
 
 export default async function Page() {
   const now = new Date();
   const settings = await getSaleSettings();
+  const termsVersion = await readTermsVersion(getSupabaseAdmin()); // 購買視窗第二步顯示的條款版本（寫單時後端會再讀一次）
   const phase = salePhase(settings, now);
 
   const sale = {
@@ -68,7 +71,7 @@ export default async function Page() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([courseLd, orgLd]).replace(/</g, "\\u003c") }} />
-      <HomeClient sale={sale} />
+      <HomeClient sale={sale} termsVersion={termsVersion} />
     </>
   );
 }

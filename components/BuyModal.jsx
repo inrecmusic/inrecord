@@ -5,6 +5,7 @@ import { MOBILE_BARCODE_RE, TAX_ID_RE, MOBILE_CARRIER_TYPE, isValidTaxId } from 
 import { supabase } from "@/lib/supabase";
 import { readAttributionCookie, readFbCookies } from "@/lib/attribution";
 import { trackEvent } from "@/lib/track-event";
+import { buildOrderSummary } from "@/lib/terms-version";
 
 const COUPON_ERRORS = {
   coupon_not_found:   "查無此優惠碼",
@@ -17,6 +18,7 @@ const COUPON_ERRORS = {
 
 // checkout 失敗時對使用者顯示的友善文案（不洩露系統設定細節）
 const CHECKOUT_ERRORS = {
+  terms_required:       "請先勾選同意服務條款及退費政策。",
   invalid_plan:         "方案資料有誤，請重新整理後再試。",
   invalid_email:        "Email 格式不正確，請確認登入帳號。",
   amount_too_low:       "金額異常，請重新整理後再試。",
@@ -55,8 +57,11 @@ async function compressProofImage(file, maxDim = 1600, quality = 0.85) {
   } catch { return file; }
 }
 
-export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, serialEntry = false, fanProofPrice = 3699, fanDirectPrice = 3999 }) {
+export default function BuyModal({ open, onClose, plan, email, pricing, onSale = true, fanProof = false, autoCoupon = null, serialEntry = false, fanProofPrice = 3699, fanDirectPrice = 3999, termsVersion = null }) {
   const [loading, setLoading]         = useState(false);
+  // 結帳二次確認（主管機關網路締約範本）：第一步勾同意 → 第二步確認摘要 → 才前往付款
+  const [agree, setAgree]             = useState(false);
+  const [step, setStep]               = useState(1);      // 1 方案／發票｜2 確認訂單
   const [error, setError]             = useState("");
   const [invoiceType, setInvoiceType] = useState("email"); // email | mobile | company
   const [carrierId, setCarrierId]     = useState("");       // 手機條碼
@@ -140,6 +145,9 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     finally { setSerialChecking(false); }
   }
 
+  // 關閉再開回到第一步（已勾的同意保留）
+  useEffect(() => { if (!open) setStep(1); }, [open]);
+
   if (!open || !plan) return null;
 
   // 早鳥/原價：由首頁 sale 設定傳入（pricing）；未傳入時退回方案靜態價。
@@ -152,6 +160,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   const fanProofPending = fanProof && !couponApplied && !proofUrl;
   // 序號購買尚未輸入有效序號：先顯示預期粉絲價（$3,999），引導輸入序號；套券後改顯示實際價。
   const serialPending = serialEntry && !couponApplied;
+  // 主按鈕停用條件（兩步共用）
+  const blocked = loading || verifying || couponPending || fanProofPending || serialPending || (!onSale && couponApplied?.type !== "price");
 
   async function applyCouponCode() {
     const code = couponInput.trim().toUpperCase();
@@ -271,6 +281,16 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     }
   }
 
+  // 第一步 → 第二步：做跟送單一樣的發票欄位檢查，但不送單
+  async function goSummary() {
+    if (!email) { window.location.href = "/classroom/login"; return; }
+    const invalid = validateInvoice();
+    if (invalid) { setError("⚠️ " + invalid); return; }
+    const ok = await verifyInvoiceField();
+    if (!ok) return;
+    setError(""); setStep(2);
+  }
+
   async function handleCheckout() {
     if (!email) { window.location.href = "/classroom/login"; return; }
 
@@ -297,7 +317,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
       const res = await fetch("/api/payuni/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, couponCode: couponApplied?.code || undefined, proofUrl: proofUrl || undefined, attribution: readAttributionCookie() || undefined, capiClient: readFbCookies(), ...invoiceFields }),
+        body: JSON.stringify({ plan: plan.plan, price: basePrice, label: plan.label, email, agreeTerms: agree === true, termsVersion: termsVersion || undefined, couponCode: couponApplied?.code || undefined, proofUrl: proofUrl || undefined, attribution: readAttributionCookie() || undefined, capiClient: readFbCookies(), ...invoiceFields }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "checkout_failed");
@@ -327,6 +347,23 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
         <button className={styles.close} onClick={onClose}>×</button>
 
         <div className={styles.sheetBody}>
+          {step === 2 ? (
+            <>
+              <h2>確認訂單</h2>
+              <p className={styles.sub}>請確認以下內容，按「確認購買」後前往 PAYUNi 付款。</p>
+              <dl className={styles.summary}>
+                {buildOrderSummary({
+                  planLabel: plan.label, amount: couponApplied?.finalPrice ?? basePrice, couponCode: couponApplied?.code,
+                  invoiceType, carrierId: carrierId.trim().toUpperCase(), taxId: taxId.trim(), companyName: companyName.trim(), termsVersion,
+                }).map(([k, v]) => (
+                  <div key={k} className={styles.summaryRow}><dt>{k}</dt><dd>{v}</dd></div>
+                ))}
+              </dl>
+              <p className={styles.summaryNote}>
+                退費依<a href="/terms" target="_blank" rel="noopener noreferrer">服務條款</a>第 4 條退費政策辦理。按下「確認購買」即表示您同意以上內容，契約於此時成立。
+              </p>
+            </>
+          ) : (<>
           <h2>確認購買方案</h2>
           <p className={styles.sub}>從零開始學鋼琴</p>
 
@@ -514,17 +551,30 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
           </div>
 
           {verifyError && <p className={styles.couponErr} style={{ color: "#dc2626" }}>{verifyError}</p>}
+          </>)}
         </div>
 
         <div className={styles.sheetFooter}>
-          <button className={styles.proceed} onClick={handleCheckout}
-            disabled={loading || verifying || couponPending || fanProofPending || serialPending || (!onSale && couponApplied?.type !== "price")}>
-            {loading ? "處理中…" : verifying ? "驗證中…" : couponPending ? "確認優惠中…" : fanProofPending ? "請先上傳憑證" : serialPending ? "請先輸入序號" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : "前往付款 →"}
-          </button>
+          {step === 1 && (
+            <label className={styles.consent}>
+              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} aria-label="我已閱讀並同意服務條款及退費政策" />
+              <span>我已閱讀並同意<a href="/terms" target="_blank" rel="noopener noreferrer">服務條款</a>及<a href="/terms" target="_blank" rel="noopener noreferrer">退費政策</a></span>
+            </label>
+          )}
+          {step === 1 ? (
+            <button className={styles.proceed} onClick={goSummary} disabled={blocked || !agree}>
+              {loading ? "處理中…" : verifying ? "驗證中…" : couponPending ? "確認優惠中…" : fanProofPending ? "請先上傳憑證" : serialPending ? "請先輸入序號" : (!onSale && couponApplied?.type !== "price") ? "即將開賣" : !agree ? "請先勾選同意條款" : "下一步 →"}
+            </button>
+          ) : (
+            <>
+              <button className={styles.proceed} onClick={handleCheckout} disabled={blocked}>{loading ? "處理中…" : "確認購買，前往付款 →"}</button>
+              <button type="button" className={styles.retry} onClick={() => { setError(""); setStep(1); }} disabled={loading}>返回修改</button>
+            </>
+          )}
           {error && (
             <>
               <div className={styles.errorBox}>{error}</div>
-              <button className={styles.retry} onClick={() => { setError(""); handleCheckout(); }}
+              <button className={styles.retry} onClick={() => { setError(""); (step === 2 ? handleCheckout : goSummary)(); }}
                 disabled={loading || verifying}>重新嘗試</button>
             </>
           )}

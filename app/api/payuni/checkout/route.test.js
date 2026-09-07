@@ -20,7 +20,8 @@ import { isOnSale } from "@/lib/sale";
 import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
 
 const KEY = "k".repeat(32), IV = "i".repeat(16);
-const req = (body) => new Request("http://x/api/payuni/checkout", { method: "POST", body: JSON.stringify(body), headers: { "user-agent": "vitest" } });
+// 預設帶 agreeTerms:true（結帳二次確認：沒同意條款的請求另有測試）
+const req = (body) => new Request("http://x/api/payuni/checkout", { method: "POST", body: JSON.stringify({ agreeTerms: true, ...body }), headers: { "user-agent": "vitest" } });
 
 // state：coupon（select * 回的券）、claim（限量券 CAS 是否搶到）、insertError（寫單失敗）
 function makeDb(state = {}) {
@@ -60,6 +61,14 @@ describe("POST /api/payuni/checkout（下單）", () => {
     expect(sb.calls.some((c) => c.table === "orders")).toBe(false);
   });
 
+  it("沒有勾同意條款（agreeTerms≠true）→ 400 terms_required，不建單", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    const res = await POST(req({ plan: "bundle", email: "a@x.com", agreeTerms: false }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("terms_required");
+    expect(sb.calls.some((c) => c.table === "orders" && sb.has(c, "insert"))).toBe(false);
+  });
+
   it("方案不合法／Email 不合法 → 400", async () => {
     getSupabaseAdmin.mockReturnValue(makeDb());
     expect(await (await POST(req({ plan: "game", email: "a@x.com" }))).json()).toEqual({ error: "invalid_plan" });
@@ -81,6 +90,9 @@ describe("POST /api/payuni/checkout（下單）", () => {
     const ins = sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert"));
     expect(sb.arg(ins, "insert")).toMatchObject({ plan: "bundle", amount: 3999, status: "pending", email: "a@x.com", currency: "twd" });
     expect(sb.arg(ins, "insert").mer_trade_no).toMatch(/^INREC\d+$/);
+    // 結帳二次確認：訂單記下同意的條款版本（後端自己讀，不信前端）與時間
+    expect(sb.arg(ins, "insert").terms_version).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(sb.arg(ins, "insert").terms_agreed_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("寫單失敗 → 500，且不吐出可付款的欄位（避免付了錢 DB 查無此單）", async () => {

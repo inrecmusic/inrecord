@@ -404,7 +404,7 @@ function StatItem({ value, suffix, en, label, decimals = 0 }) {
   );
 }
 
-export default function HomeClient({ sale }) {
+export default function HomeClient({ sale, termsVersion = null }) {
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1038,7 +1038,7 @@ export default function HomeClient({ sale }) {
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} serialEntry={fanSerialEntry} fanProofPrice={sale.fanPlan.proofPrice} fanDirectPrice={sale.fanPlan.directPrice} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} serialEntry={fanSerialEntry} fanProofPrice={sale.fanPlan.proofPrice} fanDirectPrice={sale.fanPlan.directPrice} termsVersion={termsVersion} />
     </>
   );
 }
