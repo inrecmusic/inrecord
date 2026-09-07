@@ -70,13 +70,15 @@ export default function LeadCapture() {
     <section className={styles.section} id="subscribe" aria-labelledby="lead-title">
       <div className={styles.container}>
         <div className={styles.band}>
+          <div className={styles.pic}>
+            <img className={styles.mascot} src="/mascot-piano-v2.png" alt="" width="260" height="260" loading="lazy" />
+          </div>
           <div>
             <span className={styles.eyebrow}>Free Lesson</span>
             <h2 id="lead-title" className={styles.title}>免費試看課程影片，<span>再決定要不要開始</span></h2>
             <p className={styles.desc}>留下 Email，試看影片連結馬上寄到你的信箱。<br />新章節上架與限時優惠也會第一時間通知，隨時可以取消。</p>
             <LeadForm layout="row" dark />
           </div>
-          <img className={styles.mascot} src="/mascot-piano-v2.png" alt="" width="200" height="200" loading="lazy" />
         </div>
       </div>
     </section>
