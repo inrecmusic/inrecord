@@ -69,7 +69,7 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
             <span className={styles.eyebrow}>Free Lesson</span>
             <h2 id="lead-popup-title" className={styles.title}>免費試看<br />課程影片</h2>
           </div>
-          <img className={styles.mascot} src="/mascot-piano-v2.png" alt="" width="150" height="150" />
+          <img className={styles.mascot} src="/mascot-grand-v1.png" alt="" width="150" height="150" />
         </div>
         <div className={styles.right}>
           <p className={styles.h}>留下 Email，試看影片連結馬上寄給你</p>

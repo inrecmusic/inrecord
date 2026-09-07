@@ -71,7 +71,7 @@ export default function LeadCapture() {
       <div className={styles.container}>
         <div className={styles.band}>
           <div className={styles.pic}>
-            <img className={styles.mascot} src="/mascot-piano-v2.png" alt="" width="260" height="260" loading="lazy" />
+            <img className={styles.mascot} src="/mascot-grand-v1.png" alt="" width="260" height="260" loading="lazy" />
           </div>
           <div>
             <span className={styles.eyebrow}>Free Lesson</span>
