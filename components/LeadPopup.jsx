@@ -63,13 +63,13 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
         <div className={styles.left}>
           <div>
             <span className={styles.eyebrow}>Free Lesson</span>
-            <h2 id="lead-popup-title" className={styles.title}>免費看<br />一堂完整課</h2>
+            <h2 id="lead-popup-title" className={styles.title}>免費試看<br />課程影片</h2>
           </div>
           <img className={styles.mascot} src="/mascot-piano-v2.png" alt="" width="150" height="150" />
         </div>
         <div className={styles.right}>
-          <p className={styles.h}>留下 Email，試看連結馬上寄給你</p>
-          <p className={styles.desc}>之後新章節上架或有優惠也會第一時間通知，隨時可以取消。</p>
+          <p className={styles.h}>留下 Email，試看影片連結馬上寄給你</p>
+          <p className={styles.desc}>新章節上架與優惠也會通知你，隨時可以取消。</p>
           <LeadForm layout="stack" cta="寄試看影片給我" onDone={onDone} />
           <button type="button" className={styles.skip} onClick={close}>先逛逛，晚點再說</button>
         </div>

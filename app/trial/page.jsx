@@ -45,11 +45,11 @@ export default async function TrialPage({ searchParams }) {
         {valid ? (
           <>
             <span style={eyebrow}>Free Lesson</span>
-            <h1 style={h1}>免費試看：從零開始學鋼琴</h1>
-            <p style={p}>這是一堂完整的課程影片，跟正式課程一模一樣。看完如果想開始學，下面有目前的方案與優惠。</p>
+            <h1 style={h1}>免費試看課程影片</h1>
+            <p style={p}>《從零開始學鋼琴》的教學實錄，跟正式課程同一套內容。看完如果想開始學，下面有目前的方案與優惠。</p>
             {src ? (
               <div style={videoBox}>
-                <iframe src={src} title="免費試看課" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+                <iframe src={src} title="免費試看課程影片" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
               </div>
             ) : (

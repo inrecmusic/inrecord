@@ -65,7 +65,7 @@ describe("LeadForm（共用表單）", () => {
 describe("LeadCapture（首頁深色橫幅）", () => {
   it("渲染標題、表單與同意勾選", () => {
     render(<LeadCapture />);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/免費看一堂/);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/免費試看課程影片/);
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByRole("checkbox")).toBeTruthy();
   });
