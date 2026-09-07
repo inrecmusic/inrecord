@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyUnsubscribeToken, recordUnsubscribe } from "@/lib/unsubscribe";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
+import { removeLeadContact } from "@/lib/brevo-contacts";
 
 // 公開端點：退訂電子報。憑 email＋HMAC 簽章（信中專屬連結）才有效，拿不到簽章就不能幫別人退訂。
 // 兩種呼叫：① /unsubscribe 頁的確認表單（form POST 含 confirm=1）→ 303 回頁面顯示結果；
@@ -37,6 +38,13 @@ export async function POST(req) {
   } catch (e) {
     console.error("[unsubscribe]", e?.message || e);
     return isForm ? back("error=server") : NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
+  }
+  // 同步移出 Brevo 潛客清單（之後從 Brevo 後台寄 Campaign 也不會寄到他）。純 best-effort，失敗不影響退訂結果。
+  try {
+    const r = await removeLeadContact(email);
+    if (!r.ok && r.error !== "missing_brevo_config") console.warn("[unsubscribe] brevo remove failed:", r.error);
+  } catch (e) {
+    console.warn("[unsubscribe] brevo remove threw:", e?.message || e);
   }
   return isForm ? back("done=1") : NextResponse.json({ ok: true });
 }

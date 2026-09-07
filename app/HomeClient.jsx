@@ -16,6 +16,7 @@ import {
 import Logo from "@/components/Logo";
 import BuyModal from "@/components/BuyModal";
 import PointCarousel from "@/components/PointCarousel";
+import LeadCapture from "@/components/LeadCapture";
 import InstructorBioCarousel from "@/components/InstructorBioCarousel";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
@@ -993,6 +994,9 @@ export default function HomeClient({ sale }) {
             </div>
           </div>
         </RevealSection>
+
+        {/* 留信箱：給看完 FAQ 還沒決定的人（淺色卡片，與下方深色 CTA 區隔） */}
+        <LeadCapture />
 
         {/* CTA */}
         <RevealSection className={styles.ctaSection}>

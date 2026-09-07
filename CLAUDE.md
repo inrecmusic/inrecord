@@ -47,6 +47,7 @@ checkout 以 `isOnSale`（= `state !== 'pre_launch'`）擋開賣前購買。後�
 - **購買信件**文案（「預購」vs「購買」）由 `sendPurchaseEmail({ ..., presale })` 依 `isClassroomOpen` 切換。
 - **早鳥搶先看分層**（`lib/early-access.js`）：`EARLY_CUTOFF_MS`＝2026-09-02 00:00（台灣）之前付款／開通者為早鳥（音樂會預購），9/30（`FULL_RELEASE_MS`）前可看已上架章節；9/2 起購課者到 9/30 才開放正課影片（bootstrap 摘掉可播欄位、video-embed fail-closed 硬閘門；試看單元不受限）。例外用 `enrollments.early_override`（'early'|'standard'）。⚠️ 純手動開通且無 9/2 前訂單紀錄者會被判非早鳥，需設 override。
 - **電子報退訂**：每封群發信帶 email 專屬 HMAC 連結（`lib/unsubscribe.js`）→ `/unsubscribe` 確認頁 → `POST /api/newsletter/unsubscribe` 寫 `newsletter_unsubscribes`；`gatherAudienceEmails` 排除；信件帶 `List-Unsubscribe` 標頭。只擋電子報，Auth／購課信不受影響。電子報亦可改用 Brevo 後台範本寄（後台下拉，`templateId`＋`params.unsubscribe_url`）。
+- **首頁留信箱／潛客名單**（2026-09）：首頁 FAQ 之後的 `components/LeadCapture.jsx`（勾選同意才能送）→ `POST /api/newsletter/subscribe` → `lib/brevo-contacts.js` 加進 Brevo 清單 `BREVO_LIST_ID`（屬性 SOURCE／CONSENT_AT／UTM_*，Brevo 缺屬性會自動去屬性重試）並送 Lead 事件。名單只存 Brevo、不建表。後台電子報第三個對象「潛客名單」＝清單全部聯絡人 − 已購買（buyers）− 已退訂；學員按退訂連結時同步從 Brevo 清單移除（best-effort）。
 - **開課通知**：`lib/sale.js` 的 `runLaunchNotify` 對 `orders.status='paid'` 的買家去重後寄出開課信，以 `launch_notified_at` CAS 冪等防重送；後台「立即寄送開課通知」鈕（`/api/admin/send-launch-notify`）與每日 cron（`/api/cron/sale-launch-notify`）均呼叫此函式。
 
 ## 架構決策（重要）
@@ -186,7 +187,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 |------|------|------|
 | `/api/invoice/validate` | 20 次/分 · IP | 擋手機條碼/統編枚舉；**並先做格式預檢**（不符就不外呼 Amego/g0v）|
 | `/api/coupons/validate` | 30 次/分 · IP | 擋優惠碼/序號枚舉 |
-| `/api/brevo/subscribe` | 5 次/分 · IP | 擋訂閱濫發/信箱轟炸 |
+| `/api/newsletter/subscribe` | 10 次/分 · IP | 首頁「留下 Email」→ Brevo 潛客清單；擋訂閱濫發/信箱轟炸 |
 | `/api/admin/login` | 5 次**失敗**/15 分 · IP | 後台登入暴力破解；**只計失敗、成功不扣額** |
 
 - **payuni `notify`/`return` 刻意不限流**（PAYUNi 回呼，已有 HashInfo 驗章），限流會擋掉付款通知。
@@ -207,6 +208,7 @@ PAYUNI_API_URL
 BREVO_API_KEY
 BREVO_SENDER_EMAIL
 BREVO_SENDER_NAME
+BREVO_LIST_ID                  # Brevo「官網潛客」聯絡人清單 ID（首頁留信箱寫入／後台電子報「潛客名單」／退訂同步移除）；未設＝留信箱回 503
 NEXT_PUBLIC_SITE_URL
 BUNNY_TOKEN_KEY
 BUNNY_ACCOUNT_API_KEY   # Bunny「帳號」層級 API key（後台訂閱費用面板即時抓 billing）；未設則退回 BUNNY_API_KEY（影片庫 key 會 401）

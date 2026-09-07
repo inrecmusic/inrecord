@@ -146,7 +146,7 @@ export default function NewsletterPage({showToast}){
   }
   async function sendAll(){
     if(!useTpl&&(!subject.trim()||!bodyMd.trim())){showToast?.("請先填標題與內文");return;}
-    const label=audience==="buyers"?"已付款／已開通學員":"註冊官網帳號";
+    const label=audience==="buyers"?"已付款／已開通學員":audience==="leads"?"潛客名單（Brevo）":"註冊官網帳號";
     const what=useTpl?`用 Brevo 範本「${tplName}」`:"把這封電子報";
     if(!window.confirm(`確定${what}「正式群發」給【${label}】嗎？\n寄出後無法收回，建議先用「寄測試給我自己」確認版面。`))return;
     setBusy("all");setResult(null);
@@ -226,6 +226,7 @@ export default function NewsletterPage({showToast}){
         <div style={{display:"flex",gap:18,flexWrap:"wrap",marginBottom:14}}>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="buyers"} onChange={()=>setAudience("buyers")}/> 🎓 已付款／已開通學員</label>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="registered"} onChange={()=>setAudience("registered")}/> 👤 註冊官網帳號</label>
+          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}} title="首頁留信箱進 Brevo 清單的人，自動排除已購買與已退訂者"><input type="radio" name="aud" checked={audience==="leads"} onChange={()=>setAudience("leads")}/> 📬 潛客名單（還沒購買）</label>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <input className={styles.searchInput} style={{width:300}} value={testTo} onChange={e=>setTestTo(e.target.value)} placeholder="測試收件人，逗號分隔可多個（留空＝寄給我自己）"/>

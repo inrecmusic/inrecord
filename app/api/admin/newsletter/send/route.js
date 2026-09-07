@@ -19,7 +19,7 @@ export const maxDuration = 300; // 群發逐封寄，給足執行時間
 // 這裡保留它作為手滑防護（一天最多寄這麼多封），要調整用 NEWSLETTER_DAILY_LIMIT 覆寫。
 const DAILY_LIMIT = Number(process.env.NEWSLETTER_DAILY_LIMIT || 5000);
 
-// 群發電子報。Body { audience: 'buyers'|'registered', test?: boolean, brevoTemplateId?: number }。
+// 群發電子報。Body { audience: 'buyers'|'registered'|'leads', test?: boolean, brevoTemplateId?: number }。
 // test=true 只寄給 ADMIN_EMAIL；否則撈該對象名單逐封寄、碰每日上限即停並回報。
 // brevoTemplateId：改用 Brevo 後台的 transactional 範本（主旨／內容以 Brevo 為準、不讀本地草稿），
 // 去重指紋改為 brevo-template:<id>（同一範本對同一人只寄一次；範本改版想重寄要換新範本 id）。
@@ -80,7 +80,7 @@ export async function POST(req) {
   }
 
   // 正式群發
-  if (audience !== "buyers" && audience !== "registered") {
+  if (!["buyers", "registered", "leads"].includes(audience)) {
     return NextResponse.json({ error: "bad_audience" }, { status: 400 });
   }
 

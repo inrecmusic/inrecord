@@ -64,6 +64,7 @@
   - [ ] `BREVO_API_KEY`
   - [ ] `BREVO_SENDER_EMAIL`（寄件人，需為 Brevo 已驗證的寄件網域/地址）
   - [ ] `BREVO_SENDER_NAME`（可選，預設 `InRecord`）
+  - [ ] `BREVO_LIST_ID`（首頁「留下 Email」寫入的 Brevo 聯絡人清單 ID；後台電子報「潛客名單」與退訂同步也用它。沒設＝留信箱回 503、潛客對象不可用）
 - [ ] 若有新增/修改 → `npx vercel --prod` 重新部署
 - [ ] 驗證（擇一）：
   - 後台「訂單管理 → 待處理告警」面板對某筆失敗訂單按「補寄開課信」，確認流程可走
