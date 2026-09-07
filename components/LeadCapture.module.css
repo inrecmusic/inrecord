@@ -47,7 +47,8 @@
 .consent span { word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
 .consent a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
 /* align="center"（彈窗用）：同意文字與提示置中 */
-.center .consent { justify-content: center; text-align: center; }
+.center .consent { display: inline-flex; justify-self: center; justify-content: center; text-align: center; }
+.center .consent span { max-width: 22em; }
 .center .msg { text-align: center; }
 .dark .consent { color: rgba(255, 255, 255, .7); }
 .dark .consent a { color: #a9c6ff; }
