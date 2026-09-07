@@ -30,9 +30,9 @@ const UNIT_ICONS = [
 ];
 
 // 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
-const COMING_SOON = "預計 9/30 上架";
+const COMING_SOON = "預計 10/31 上架"; // 正式開課日（Ch6～Ch10、附錄）
 // 各章的預計上架日（章號 → 文案）；章號取自章節標題開頭的 ChN。
-const CHAPTER_COMING_SOON = { 2: "預計 9/9 上架", 3: "預計 9/16 上架", 4: "預計 9/23 上架" };
+const CHAPTER_COMING_SOON = { 2: "預計 9/30 上架", 3: "預計 9/30 上架", 4: "預計 9/30 上架", 5: "預計 9/30 上架" }; // 第一批
 // 個別單元的預計上架日（優先於章、章優先於 COMING_SOON）；key = 單元標題開頭編號。
 // 影片實際掛上去後這一列就不會顯示了（只有 !playable 才印），所以上架後不必回來刪。
 const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/7 上架", "1-5": "預計 9/7 上架" };
@@ -752,7 +752,7 @@ export default function ClassroomPage() {
             overflowX: isTablet ? "auto" : "hidden",
             padding: isTablet ? "6px 10px 10px" : "6px 10px 32px",
           }}>
-            {/* 未上架單元的「預計 9/30 上架」只在滑鼠懸停該列時顯示（列表平時保持乾淨；觸控裝置以列色灰階區分） */}
+            {/* 未上架單元的「預計 ○/○ 上架」只在滑鼠懸停該列時顯示（列表平時保持乾淨；觸控裝置以列色灰階區分） */}
             <style>{`.unit-row .cs-hint{display:none}.unit-row:hover .cs-hint{display:block}`}</style>
             {chapters.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 16px" }}>

@@ -87,9 +87,8 @@ describe("播放頁", () => {
     await waitFor(() => expect(container.textContent).toContain("1-1 認識鍵盤"));
     const text = container.textContent;
     expect(text).toContain("預計 9/3 上架");   // 1-3：單元層覆寫
-    expect(text).toContain("預計 9/9 上架");   // 第二章
-    expect(text).toContain("預計 9/16 上架");  // 第三章
-    expect(text).toContain("預計 9/23 上架");  // 第四章
-    expect(text).toContain("預計 9/30 上架");  // 第五章之後：完整課程全數上架
+    expect(text).toContain("預計 9/30 上架");  // 第一批：Ch2～Ch5
+    expect(text).not.toContain("預計 9/9 上架"); // 舊的每週一章時程已取消
+    expect(text).toContain("預計 10/31 上架"); // 第二批：Ch6 之後與附錄，正式開課日
   });
 });

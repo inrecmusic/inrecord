@@ -706,7 +706,7 @@ export default function HomeClient({ sale }) {
                   <span className={styles.offerPrice}>NT${heroPrice.toLocaleString()}</span>
                   {offer.originalPrice > heroPrice && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
                 </div>
-                <div className={styles.offerLaunch}>📅 9/30 課程正式上架</div>
+                <div className={styles.offerLaunch}>📅 10/31 課程正式上架</div>
                 {fanOn && showFanCountdown && (
                   <div className={styles.offerCountdown}>⏳ 粉絲早鳥價剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
                 )}
@@ -963,7 +963,7 @@ export default function HomeClient({ sale }) {
             {/* 消保告知：條款有寫、購買頁也要出現（告知充分性） */}
             <p style={{ textAlign: "center", fontSize: 12, color: "#94a3b8", margin: "6px 0 0", lineHeight: 1.7, wordBreak: "keep-all", lineBreak: "strict" }}>
               本課程為數位內容商品，購買前已提供試看；依法不適用七日無條件解除權，
-              退費依「<a href="/terms" style={{ color: "#64748b", textDecoration: "underline", textUnderlineOffset: 2 }}>服務條款</a>」退費政策辦理（預售訂單自 9/30 正式開課日起算）。
+              退費依「<a href="/terms" style={{ color: "#64748b", textDecoration: "underline", textUnderlineOffset: 2 }}>服務條款</a>」退費政策辦理（預售訂單自 10/31 正式開課日起算）。
             </p>
           </div>
         </RevealSection>
@@ -978,7 +978,7 @@ export default function HomeClient({ sale }) {
             <div className={styles.faq}>
               {[
                 ["完全零基礎可以上嗎？",         "可以。課程從鍵盤佈局、音名、唱名與基本坐姿開始，循序漸進進入三和弦與伴奏，不需要任何音樂基礎。"],
-                ["什麼時候可以上課？",           <>課程於 <b>9/30 正式上架</b>，屆時所有購課學員皆可觀看全部章節。<br/>音樂會期間預購的早鳥學員，已於 9/2 起依製作進度每週搶先觀看一個章節，最後一章同樣於 9/30 開放。</>],
+                ["什麼時候可以上課？",           <>課程分兩批上架：<b>9/30</b> 開放第一章到第五章，<b>10/31</b> 全部章節上架完成，也就是正式開課日。購課後隨時可以登入教室，每批章節上架時會寄信通知。<br/>音樂會期間預購的早鳥學員，已於 9/2 起搶先觀看已上架的章節。</>],
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
                 ...(fanOn ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`]] : []),
