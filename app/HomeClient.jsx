@@ -708,7 +708,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 </div>
                 <div className={styles.offerLaunch}>📅 10/31 課程正式上架</div>
                 {fanOn && showFanCountdown && (
-                  <div className={styles.offerCountdown}>⏳ 粉絲早鳥價剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
+                  <div className={styles.offerCountdown}>⏳ 粉絲最後優惠剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
                 )}
                 <div className={styles.offerBtns}>
                   <button className={styles.btnPrimary} onClick={scrollToPricing}>{buyShort}</button>
