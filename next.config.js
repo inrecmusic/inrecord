@@ -14,7 +14,7 @@ const csp = [
   // ⚠️ PAYUNi 正式/測試皆為 *.payuni.com.tw；form-action 漏放行會讓付款表單被 CSP 擋在「處理中」。
   "form-action 'self' https://*.payuni.com.tw",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.mediadelivery.net https://www.googletagmanager.com https://connect.facebook.net https://us.i.posthog.com https://tools.google.com https://unpkg.com https://accounts.google.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "frame-src 'self' https://iframe.mediadelivery.net https://player.vimeo.com https://*.vimeo.com https://*.payuni.com.tw https://www.instagram.com https://accounts.google.com",
