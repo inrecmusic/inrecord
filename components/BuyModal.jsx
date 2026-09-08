@@ -360,7 +360,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
                 ))}
               </dl>
               <p className={styles.summaryNote}>
-                退費依<a href="/terms" target="_blank" rel="noopener noreferrer">服務條款</a>第 4 條退費政策辦理。按下「確認購買」即表示您同意以上內容，契約於此時成立。
+                退費依<a href="/terms" target="_blank" rel="noopener noreferrer">服務條款</a>第 4 條退費政策辦理。<br />
+                按下「確認購買」即表示您同意以上內容，契約於此時成立。
               </p>
             </>
           ) : (<>

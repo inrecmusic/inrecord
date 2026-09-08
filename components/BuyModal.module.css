@@ -200,10 +200,10 @@
 .consent input { flex: none; margin: 3px 0 0; accent-color: #2563eb; }
 .consent span { word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
 .consent a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
-.summary { margin: 0 0 14px; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; display: grid; }
-.summaryRow { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 11px 14px; border-top: 1px solid #f1f5f9; }
+.summary { margin: 4px 0 20px; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; display: grid; }
+.summaryRow { display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: start; padding: 14px 18px; border-top: 1px solid #f1f5f9; }
 .summaryRow:first-child { border-top: 0; }
-.summaryRow dt { margin: 0; color: #64748b; font-size: 13px; font-weight: 600; }
-.summaryRow dd { margin: 0; color: #0f172a; font-size: 14px; font-weight: 600; word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
-.summaryNote { margin: 0; color: #64748b; font-size: 12.5px; line-height: 1.7; word-break: keep-all; line-break: strict; }
+.summaryRow dt { margin: 0; color: #64748b; font-size: 13px; font-weight: 600; line-height: 1.7; }
+.summaryRow dd { margin: 0; color: #0f172a; font-size: 14px; font-weight: 600; line-height: 1.7; word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
+.summaryNote { margin: 0; padding: 0 0 10px; color: #64748b; font-size: 12.5px; line-height: 1.85; text-align: center; word-break: keep-all; line-break: strict; }
 .summaryNote a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
