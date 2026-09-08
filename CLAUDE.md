@@ -200,6 +200,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 ```
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_GOOGLE_CLIENT_ID   # Google OAuth Web Client ID（公開值，與 Supabase Google provider 相同）；有設＝登入頁用自家 Google 按鈕（GIS＋signInWithIdToken，帳戶選擇頁顯示 InRecord），未設＝原本 Supabase OAuth 跳轉
 SUPABASE_SERVICE_ROLE_KEY
 PAYUNI_MERCHANT_ID
 PAYUNI_HASH_KEY
