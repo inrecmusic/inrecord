@@ -145,8 +145,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     finally { setSerialChecking(false); }
   }
 
-  // 關閉再開回到第一步（已勾的同意保留）
-  useEffect(() => { if (!open) setStep(1); }, [open]);
+  // 關閉視窗或換方案：回到第一步，同意勾選也清回未勾（同意必須每次由消費者主動打勾，不可預設或沿用）
+  useEffect(() => { setStep(1); setAgree(false); }, [open, plan?.plan]);
 
   if (!open || !plan) return null;
 
