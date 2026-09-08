@@ -10,9 +10,9 @@ import {
   ArrowUpRight, Tag, CreditCard, GraduationCap, Music,
   CheckCircle2, BarChart2, Play, Video, X,
   Filter, Percent, List, ClipboardList, Star, MessageSquare, Gamepad2,
-  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity, BarChart3, History
-} from "lucide-react";
+  AlertTriangle, CalendarClock, Mail, Search, Megaphone, ListChecks, Activity, BarChart3, History, Sparkles } from "lucide-react";
 import ChaptersUnitsPage from "./ChaptersUnitsPage";
+import OpsAssistantPage from "./OpsAssistantPage";
 import AssignmentsPage from "./AssignmentsPage";
 import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
@@ -74,6 +74,7 @@ const NAV_GROUPS = [
     { id:"privacy",     label:"隱私權政策", icon:Shield },
     { id:"terms",       label:"服務條款",   icon:FileText },
     { id:"newsletter",  label:"電子報",     icon:Mail },
+    { id:"ops",         label:"營運助理",   icon:Sparkles },
     { id:"announcements", label:"公告",    icon:Megaphone },
     { id:"changelog",   label:"更新記錄",  icon:History },
   ]},
@@ -239,6 +240,7 @@ export default function AdminPage(){
           {page==="privacy"     &&<PrivacyPage showToast={showToast}/>}
           {page==="terms"       &&<TermsPage showToast={showToast}/>}
           {page==="newsletter"  &&<NewsletterPage showToast={showToast}/>}
+          {page==="ops"         &&<OpsAssistantPage showToast={showToast} onNavigate={setPage}/>}
           {page==="announcements" &&<AnnouncementsPage showToast={showToast}/>}
           {page==="changelog"     &&<ChangelogPage/>}
         </div>
