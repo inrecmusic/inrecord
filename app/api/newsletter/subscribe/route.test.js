@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: () => async () => ({ allowed: globalThis.__rlAllowed !== false }), clientIp: () => "1.1.1.1" }));
 vi.mock("@/lib/brevo-contacts", () => ({ addLeadContact: vi.fn() }));
@@ -13,7 +13,15 @@ import { sendNewsletterEmail } from "@/lib/brevo-email";
 const post = (body) => POST(new Request("http://x/api/newsletter/subscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
 
 describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
-  beforeEach(() => { vi.clearAllMocks(); globalThis.__rlAllowed = true; getSupabaseAdmin.mockReturnValue(null); sendNewsletterEmail.mockResolvedValue({ success: true }); process.env.SUPABASE_SERVICE_ROLE_KEY = "s"; });
+  beforeEach(() => { vi.clearAllMocks(); globalThis.__rlAllowed = true; getSupabaseAdmin.mockReturnValue(null); sendNewsletterEmail.mockResolvedValue({ success: true }); process.env.SUPABASE_SERVICE_ROLE_KEY = "s"; vi.stubEnv("LEAD_CAPTURE", "on"); });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("LEAD_CAPTURE 未設 → 503 not_available，不打 Brevo", async () => {
+    vi.stubEnv("LEAD_CAPTURE", "");
+    const r = await post({ email: "a@x.com", consent: true });
+    expect(r.status).toBe(503);
+    expect(addLeadContact).not.toHaveBeenCalled();
+  });
 
   it("email 格式錯 → 400 invalid_email，不打 Brevo", async () => {
     const r = await post({ email: "nope", consent: true });

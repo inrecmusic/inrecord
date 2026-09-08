@@ -14,6 +14,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UTM_ATTRS = { utm_source: "UTM_SOURCE", utm_medium: "UTM_MEDIUM", utm_campaign: "UTM_CAMPAIGN" };
 
 export async function POST(req) {
+  // fail-safe 開關：LEAD_CAPTURE 未設＝功能未開放（首頁不顯示表單；直接打 API 也拒絕）
+  if (process.env.LEAD_CAPTURE !== "on") return NextResponse.json({ ok: false, error: "not_available" }, { status: 503 });
   const rl = await limiter(clientIp(req));
   if (!rl.allowed) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
 

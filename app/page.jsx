@@ -9,7 +9,8 @@ export const revalidate = 60;
 export default async function Page() {
   const now = new Date();
   const settings = await getSaleSettings();
-  const termsVersion = await readTermsVersion(getSupabaseAdmin()); // 購買視窗第二步顯示的條款版本（寫單時後端會再讀一次）
+  const termsVersion = await readTermsVersion(getSupabaseAdmin());
+  const leadCapture = process.env.LEAD_CAPTURE === "on"; // 留信箱換免費試看（fail-safe：未設＝關，首頁顯示原本的 CTA 卡片、不彈窗） // 購買視窗第二步顯示的條款版本（寫單時後端會再讀一次）
   const phase = salePhase(settings, now);
 
   const sale = {
@@ -71,7 +72,7 @@ export default async function Page() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([courseLd, orgLd]).replace(/</g, "\\u003c") }} />
-      <HomeClient sale={sale} termsVersion={termsVersion} />
+      <HomeClient sale={sale} termsVersion={termsVersion} leadCapture={leadCapture} />
     </>
   );
 }

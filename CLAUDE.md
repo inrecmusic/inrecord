@@ -251,6 +251,7 @@ META_CAPI_TEST_CODE     # 選填，Events Manager「測試事件」驗證期間�
 # 履約 fail-safe 開關（2026-08，皆預設關；未設＝不自動、改人工）——設 on 才恢復自動
 AUTO_GRANT_ACCESS       # =on 才「付款即自動開通課程」；未設＝不開通、後台付款名單手動開通（只 payuni）
 AUTO_INVOICE            # =on 才「付款後自動開 Amego 發票」；未設＝發票人工開立
+LEAD_CAPTURE            # =on 才開「留信箱換免費試看」（首頁橫幅＋進站彈窗＋/api/newsletter/subscribe＋/trial）；未設＝首頁顯示原 CTA 卡片、API 回 503。試看影片上傳後再開
 ```
 
 ## 部署需執行的 SQL

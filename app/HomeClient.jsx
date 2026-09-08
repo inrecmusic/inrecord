@@ -404,7 +404,7 @@ function StatItem({ value, suffix, en, label, decimals = 0 }) {
   );
 }
 
-export default function HomeClient({ sale, termsVersion = null }) {
+export default function HomeClient({ sale, termsVersion = null, leadCapture = false }) {
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -642,8 +642,8 @@ export default function HomeClient({ sale, termsVersion = null }) {
       )}
 
       <main id="top">
-        {/* 進站彈窗：停留 6 秒或捲到一半才出現；已登入學員、已留過信箱、7 天內關過都不彈 */}
-        <LeadPopup loggedIn={!!user} />
+        {/* 進站彈窗（LEAD_CAPTURE=on 才掛）：停留 6 秒或捲到一半才出現；已登入學員、已留過信箱、7 天內關過都不彈 */}
+        {leadCapture && <LeadPopup loggedIn={!!user} />}
         {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
           <div ref={heroPhotoRef} className={styles.heroPhoto} aria-hidden="true" />
@@ -998,8 +998,21 @@ export default function HomeClient({ sale, termsVersion = null }) {
           </div>
         </RevealSection>
 
-        {/* 留信箱（深色橫幅，取代原「現在開始」CTA）：給看完還沒決定的人，留 Email 換免費試看；購買入口由底部黏性購買列與方案區承接 */}
-        <LeadCapture />
+        {/* LEAD_CAPTURE=on：留信箱換免費試看（深色橫幅，取代 CTA）；未開：原本的「現在開始」CTA 卡片 */}
+        {leadCapture ? <LeadCapture /> : (
+          <RevealSection className={styles.ctaSection}>
+            <div className={styles.container}>
+              <div className={styles.cta}>
+                <span className={styles.ctaEyebrow}>START NOW</span>
+                <h2>現在開始，<span>彈出你的<wbr />第一首流行歌曲</span></h2>
+                <p>從零基礎開始，透過系統化課程與互動遊戲，建立真正彈得出來的鋼琴能力。</p>
+                <button className={`${styles.btnPrimary} ${styles.btnPulse}`} onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>
+                  {buyShort}課程
+                </button>
+              </div>
+            </div>
+          </RevealSection>
+        )}
       </main>
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>

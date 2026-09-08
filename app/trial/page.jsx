@@ -32,7 +32,8 @@ const card = { maxWidth: 520, margin: "40px auto 0", background: "#fff", color: 
 export default async function TrialPage({ searchParams }) {
   const e = String(searchParams?.e || "");
   const t = String(searchParams?.t || "");
-  const valid = verifyTrialToken(e, t);
+  const enabled = process.env.LEAD_CAPTURE === "on";
+  const valid = enabled && verifyTrialToken(e, t);
   const videoId = valid ? await readTrialVideoId() : "";
   const src = videoId
     ? signBunnyEmbedUrl(videoId, { libraryId: process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID, tokenKey: process.env.BUNNY_TOKEN_KEY })
@@ -62,6 +63,12 @@ export default async function TrialPage({ searchParams }) {
               <a href="/" style={{ color: "#94a3b8", fontSize: 14, textDecoration: "none" }}>回官網首頁</a>
             </div>
           </>
+        ) : !enabled ? (
+          <div style={card}>
+            <span style={{ ...eyebrow, color: "#2563eb" }}>Free Lesson</span>
+            <h1 style={{ ...h1, fontSize: 24, color: "#0f172a" }}>免費試看即將開放</h1>
+            <p style={{ ...p, color: "#64748b", fontSize: 15, marginBottom: 0 }}>試看影片準備中，開放後會在官網公告。</p>
+          </div>
         ) : (
           <div style={card}>
             <span style={{ ...eyebrow, color: "#2563eb" }}>Free Lesson</span>
