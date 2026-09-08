@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { isInAppBrowser } from "@/lib/inapp-browser";
 import { safeNextPath } from "@/lib/safe-redirect";
 import Logo from "@/components/Logo";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 import styles from "./login.module.css";
 
 function GoogleIcon() {
@@ -44,6 +45,10 @@ export default function ClassroomLoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  // 自家頁面 Google 登入（GIS）：有 client id 才啟用；GIS 不可用或驗證失敗 → 退回原本的網頁版 OAuth 按鈕
+  const gisClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  const [gisState, setGisState] = useState("loading"); // loading | ready | unavailable
+  const useGis = !!gisClientId && gisState !== "unavailable";
 
   // 偵測 App 內建瀏覽器：Google OAuth 會被擋，預設改走 Email 驗證碼
   useEffect(() => {
@@ -104,6 +109,22 @@ export default function ClassroomLoginPage() {
       setError(err.message);
       setGoogleLoading(false);
     }
+  }
+
+  // GIS 選完帳戶：把 Google ID token＋原始 nonce 交給 Supabase 建立登入（帳戶選擇頁因此顯示 InRecord 而非 supabase.co）
+  async function handleGoogleCredential({ credential, nonce }) {
+    if (!supabase) { setError("系統設定錯誤，請聯繫管理員"); return; }
+    setGoogleLoading(true);
+    setError("");
+    const { error: err } = await supabase.auth.signInWithIdToken({ provider: "google", token: credential, nonce });
+    if (err) {
+      console.error("[login] signInWithIdToken", err.message);
+      setError("Google 登入暫時無法使用，請改用下方「Google 網頁登入」或 Email 登入。");
+      setGisState("unavailable");
+      setGoogleLoading(false);
+      return;
+    }
+    router.push(getNextPath());
   }
 
   // 寄送 Email 驗證碼（同時也會寄登入連結，兩者擇一皆可登入）
@@ -172,15 +193,19 @@ export default function ClassroomLoginPage() {
         {/* Google 登入：App 內建瀏覽器會被 Google 擋，故在 in-app 時隱藏 */}
         {!inApp && (
           <>
-            <button
-              type="button"
-              className={styles.oauthBtn}
-              onClick={handleGoogle}
-              disabled={googleLoading || loading}
-            >
-              <GoogleIcon />
-              {googleLoading ? "跳轉中…" : "使用 Google 登入"}
-            </button>
+            {useGis ? (
+              <GoogleSignInButton clientId={gisClientId} onCredential={handleGoogleCredential} onStateChange={setGisState} />
+            ) : (
+              <button
+                type="button"
+                className={styles.oauthBtn}
+                onClick={handleGoogle}
+                disabled={googleLoading || loading}
+              >
+                <GoogleIcon />
+                {googleLoading ? "跳轉中…" : gisClientId ? "使用 Google 網頁登入" : "使用 Google 登入"}
+              </button>
+            )}
             <div className={styles.divider}>
               {mode === "otp" ? "或使用 Email 連結" : "或使用 Email 登入"}
             </div>
