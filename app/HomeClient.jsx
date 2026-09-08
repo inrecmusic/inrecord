@@ -277,7 +277,7 @@ const PLANS = [
     label: "鋼琴自學全課程",
     pillLabel: "從零學起",
     price: 3800,
-    desc: "10 章節完整課程，一次買斷、永久觀看。",
+    desc: "10 章節完整課程，一次買斷、隨時回看。",
     features: ["10 章節系統化課程", "10 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
     cta: "購買課程",
   },
@@ -286,7 +286,7 @@ const PLANS = [
     label: "學琴全攻略",
     pillLabel: "最超值全配",
     price: 3999,
-    features: ["完整 10 章節課程", "課程時數 8 小時", "全部互動遊戲永久使用", "10 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
+    features: ["完整 10 章節課程", "課程時數 8 小時", "全部互動遊戲買斷使用", "10 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
     featured: true,
     ribbon: "最推薦",
     cta: "購買課程包",
@@ -902,7 +902,7 @@ export default function HomeClient({ sale, termsVersion = null }) {
             <div className={styles.sectionHead}>
               <small>課程方案</small>
               <h2>選擇最適合你的方案</h2>
-              <p>一次購買，永久擁有。課程與遊戲皆為買斷制，無訂閱、無月費。</p>
+              <p>一次買斷，無訂閱、無月費。課程與遊戲在平台營運期間隨時回看，並保證自正式開課日起至少 3 年。</p>
             </div>
             <motion.div className={styles.plansRow} style={{ gridTemplateColumns: "minmax(0, 360px)" }} variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}>
               {/* 粉絲限定方案：enabled（後台開關 且 未過 deadline）控整卡；截止後整個方案關、FAN3999 也拒收。
@@ -959,7 +959,7 @@ export default function HomeClient({ sale, termsVersion = null }) {
               </motion.div>
               )}
             </motion.div>
-            <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・課程永久有效</p>
+            <p className={styles.buySecurity}>🔒 透過 PAYUNi 安全金流付款・一次買斷，保證至少 3 年觀看</p>
             {/* 消保告知：條款有寫、購買頁也要出現（告知充分性） */}
             <p style={{ textAlign: "center", fontSize: 12, color: "#94a3b8", margin: "6px 0 0", lineHeight: 1.7, wordBreak: "keep-all", lineBreak: "strict" }}>
               本課程為數位內容商品，購買前已提供試看；依法不適用七日無條件解除權，
@@ -981,8 +981,8 @@ export default function HomeClient({ sale, termsVersion = null }) {
                 ["什麼時候可以上課？",           <>課程分兩批上架：<b>9/30</b> 開放第一章到第五章，<b>10/31</b> 全部章節上架完成，也就是正式開課日。購課後隨時可以登入教室，每批章節上架時會寄信通知。<br/>音樂會期間預購的早鳥學員，已於 9/2 起搶先觀看已上架的章節。</>],
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
-                ...(fanOn ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷、永久擁有完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`]] : []),
-                ["課程有效期多久？",             "課程購買後永久有效，無觀看次數限制。只要平台持續運營，你隨時都可以回來複習。"],
+                ...(fanOn ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷，包含完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`]] : []),
+                ["課程有效期多久？",             "課程購買後在平台營運期間都可以觀看，無觀看次數限制，並保證自正式開課日起至少 3 年。若日後須停止服務，會提前 90 天以 Email 通知你。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
               ].map(([q, a]) => (

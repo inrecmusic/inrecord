@@ -558,8 +558,8 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
         <div className={styles.sheetFooter}>
           {step === 1 && (
             <label className={styles.consent}>
-              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} aria-label="我已閱讀並同意服務條款及退費政策" />
-              <span>我已閱讀並同意<a href="/terms" target="_blank" rel="noopener noreferrer">服務條款</a>及<a href="/terms" target="_blank" rel="noopener noreferrer">退費政策</a></span>
+              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} aria-label="我已充分審閱並同意服務條款及退費政策" />
+              <span>我已充分審閱並同意<a href="/terms" target="_blank" rel="noopener noreferrer">服務條款</a>及<a href="/terms" target="_blank" rel="noopener noreferrer">退費政策</a></span>
             </label>
           )}
           {step === 1 ? (
