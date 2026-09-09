@@ -19,8 +19,11 @@ export default function GoogleSignInButton({ clientId, onCredential, onStateChan
     const n = nonceRef.current || (await generateNonce());
     nonceRef.current = n;
     initialized.current = true;
+    // 按鈕寬度跟著容器走（手機容器不到 320px 時 GIS iframe 會被切掉右邊），最小 200、最大 width
+    const boxW = Math.floor(ref.current.getBoundingClientRect?.().width || 0);
+    const btnW = boxW > 0 ? Math.max(200, Math.min(width, boxW)) : width;
     initGoogleButton(google, ref.current, {
-      clientId, hashedNonce: n.hashedNonce, width,
+      clientId, hashedNonce: n.hashedNonce, width: btnW,
       onCredential: (credential) => onCredential({ credential, nonce: n.nonce }),
     });
     onStateChange?.("ready");
@@ -29,7 +32,7 @@ export default function GoogleSignInButton({ clientId, onCredential, onStateChan
   return (
     <>
       <Script src={GIS_SCRIPT_SRC} strategy="afterInteractive" onReady={init} onError={() => onStateChange?.("unavailable")} />
-      <div ref={ref} data-testid="gis-button" style={{ display: "flex", justifyContent: "center", minHeight: 44 }} />
+      <div ref={ref} data-testid="gis-button" style={{ display: "flex", justifyContent: "center", minHeight: 44, width: "100%", overflow: "hidden" }} />
     </>
   );
 }

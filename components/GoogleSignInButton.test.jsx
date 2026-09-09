@@ -35,6 +35,17 @@ describe("GoogleSignInButton", () => {
     expect(arg.nonce).not.toBe(opts.nonce);
   });
 
+  it("容器比 320 窄時（手機）按鈕寬度跟著容器縮，避免右邊被切", async () => {
+    const orig = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = () => ({ width: 280, height: 44, top: 0, left: 0, right: 280, bottom: 44 });
+    const initialize = vi.fn(); const renderButton = vi.fn();
+    window.google = { accounts: { id: { initialize, renderButton } } };
+    render(<GoogleSignInButton clientId="cid" onCredential={vi.fn()} onStateChange={vi.fn()} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalled());
+    expect(renderButton.mock.calls[0][1].width).toBe(280);
+    HTMLElement.prototype.getBoundingClientRect = orig;
+  });
+
   it("腳本載入失敗 → 回報 unavailable，不初始化", async () => {
     globalThis.__scriptFails = true;
     const onStateChange = vi.fn();
