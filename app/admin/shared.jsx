@@ -42,7 +42,7 @@ export function ProofImage({ url }) {
 export const EMAIL_TEMPLATES = [
   { id: "", name: "— 套用範本 —", subject: "", body: "" },
   { id: "followup", name: "追單（未完成付款）", subject: "您的課程訂單尚未完成付款 🎹",
-    body: "嗨，\n\n感謝您選擇 InRecord！我們注意到您的課程訂單尚未完成付款。\n\n名額有限，完成付款即可保留您的優惠價與課程權益：\n\n- **付款連結**：（請貼上付款連結）\n- 若已完成付款請忽略本信。\n\n如有任何問題，直接回覆此信即可，我們很樂意協助 🙌" },
+    body: "@badge 訂單提醒\n@subtitle 你的課程只差一步就能開始。\n\n![InRecord 吉祥物](https://inrecordmusic.com/mascot-grand-v1.png|150)\n\n嗨，你好：\n\n你先前在 InRecord 選了課程方案，付款還沒有完成。回到官網選同一個方案再結帳一次就好。\n\n## 完成購買後你會得到\n- 10 章節完整課程影片，一次買斷，營運期間持續觀看，並保證至少 3 年\n- 每一章搭配互動遊戲與跟練單元\n- 完整樂譜下載、作業繳交與老師回覆\n\n[回去完成購買](https://inrecordmusic.com/?utm_source=email&utm_medium=email&utm_campaign=followup#pricing)\n\n若你已經完成購買，或不想再收到這封提醒，回信告訴我們就好。\n\n**InRecord・音樂刻 敬上**" },
   { id: "welcome", name: "歡迎 / 開通通知", subject: "歡迎加入 InRecord！課程已為您開通 🎹",
     body: "嗨，\n\n歡迎加入 InRecord，您的課程已開通！\n\n- **登入方式**：請用本次購買的 Email 登入教室\n- 課程連結：https://inrecordmusic.com/classroom\n\n祝學習愉快，有任何問題隨時回覆此信 🙌" },
   { id: "refund", name: "退款通知", subject: "您的 InRecord 退款已處理",
