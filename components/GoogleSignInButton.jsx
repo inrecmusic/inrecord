@@ -32,7 +32,7 @@ export default function GoogleSignInButton({ clientId, onCredential, onStateChan
   return (
     <>
       <Script src={GIS_SCRIPT_SRC} strategy="afterInteractive" onReady={init} onError={() => onStateChange?.("unavailable")} />
-      <div ref={ref} data-testid="gis-button" style={{ display: "flex", justifyContent: "center", minHeight: 44, width: "100%", overflow: "hidden" }} />
+      <div ref={ref} className="gisButtonBox" data-testid="gis-button" style={{ display: "flex", justifyContent: "center", minHeight: 44, width: "100%", overflow: "hidden" }} />
     </>
   );
 }

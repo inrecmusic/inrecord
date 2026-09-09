@@ -154,6 +154,8 @@ html, body { overflow-x: clip; }
 
 /* 媒體不爆寬（img 已有 max-width，補齊 video/iframe/table）*/
 video, iframe, table { max-width: 100%; }
+/* Google 登入按鈕（GIS）的 iframe 本身比按鈕寬 20px（左右各 10px 陰影、margin -10px），套上面的 max-width 會被壓回容器寬→按鈕右緣被切掉 10px */
+.gisButtonBox iframe { max-width: none; }
 
 /* 觸控回饋：移除點擊藍底 */
 a, button, summary, [role="button"] { -webkit-tap-highlight-color: transparent; }
