@@ -122,6 +122,11 @@ export default function ClassroomPage() {
   const [progress, setProgress]           = useState([]);
   const [tab, setTab]                     = useState("rating");
 
+  // 作業分頁只在該單元有作業時存在；切到沒作業的單元時退回評價分頁，避免面板空白
+  useEffect(() => {
+    if (tab === "assignment" && !currentVideo?.assignment_desc?.trim()) setTab("rating");
+  }, [tab, currentVideo]);
+
   const gameCacheRef                      = useRef({});
   const playerCtrlRef = useRef(null); // { getSeconds, seek, pause, play }
   const [isTablet, setIsTablet]           = useState(false);
@@ -647,7 +652,8 @@ export default function ClassroomPage() {
           }}>
             {[
               { id: "rating",     label: "課程評價" },
-              { id: "assignment", label: "作業繳交" },
+              // 作業繳交：只有該單元真的設了作業說明才出現（後台填了就自動顯示）
+              ...(currentVideo?.assignment_desc?.trim() ? [{ id: "assignment", label: "作業繳交" }] : []),
               { id: "games",      label: "互動遊戲" },
               { id: "notes",      label: "筆記" },
             ].map(t => (
@@ -668,7 +674,7 @@ export default function ClassroomPage() {
           {/* Tab content */}
           <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
             {tab === "rating"     && <RatingTab token={token} />}
-            {tab === "assignment" && <AssignmentTab video={currentVideo} token={token} />}
+            {tab === "assignment" && currentVideo?.assignment_desc?.trim() && <AssignmentTab video={currentVideo} token={token} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} pendingGameId={pendingGameId} onPendingConsumed={() => setPendingGameId(null)} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
           </div>
