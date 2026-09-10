@@ -16,15 +16,21 @@ export async function GET(req) {
 
   const [{ count: purchases, error: e1 }, { data: ratingRows, error: e2 }] = await Promise.all([
     db.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid").or("source.is.null,source.neq.manual"), // 手動開通單不算購買人數；舊單 source 為 NULL 照算
-    db.from("ratings").select("score"),
+    db.from("ratings").select("score,user_email").eq("hidden", false), // 後台隱藏的惡意評價不列入首頁平均
   ]);
 
   if (e1 || e2) return NextResponse.json({ ok: false, error: "query failed" }, { status: 500 });
 
-  const rating =
-    ratingRows && ratingRows.length > 0
-      ? ratingRows.reduce((sum, r) => sum + r.score, 0) / ratingRows.length
-      : null;
+  // 排除自家／管理員帳號自評（大小寫不敏感）；user_email 為空的評價照算
+  const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  const scores = (ratingRows || [])
+    .filter((r) => !adminEmail || String(r.user_email || "").trim().toLowerCase() !== adminEmail)
+    .map((r) => Number(r.score))
+    .filter(Number.isFinite);
 
-  return NextResponse.json({ ok: true, purchases: purchases ?? 0, rating });
+  const ratingCount = scores.length;
+  const rating = ratingCount > 0 ? scores.reduce((sum, s) => sum + s, 0) / ratingCount : null;
+
+  // ratingCount 交給前端判斷樣本數夠不夠（少於 3 筆不顯示星等，避免不實廣告）
+  return NextResponse.json({ ok: true, purchases: purchases ?? 0, rating, ratingCount });
 }

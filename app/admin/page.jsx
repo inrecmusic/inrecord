@@ -83,6 +83,8 @@ const NAV_GROUPS = [
 // ── Messages Page ──────────────────────────────────────────────────────────
 
 // ── Main AdminPage ─────────────────────────────────────────────────────────
+const LEADS_PER_PAGE = 200;   // /api/admin/leads 每頁上限
+const LEADS_MAX_PAGES = 25;   // 逐頁抓取的安全上限（= 5000 筆）
 const TOKEN_KEY = ADMIN_TOKEN_KEY;
 const getToken = () => (typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null);
 
@@ -97,7 +99,10 @@ export default function AdminPage(){
   const [selectedCourse,setSelectedCourse]=useState(null);
   const [navOpen,setNavOpen]=useState(false);
   const [leads,setLeads]=useState([]);
+  const [leadsTotal,setLeadsTotal]=useState(0);
+  const [leadsErr,setLeadsErr]=useState("");
   const [orders,setOrders]=useState([]);
+  const [ordersErr,setOrdersErr]=useState("");
   const [loading,setLoading]=useState(false);
   const [toast,setToast]=useState("");
   const [trendFilter,setTrendFilter]=useState("month");
@@ -139,18 +144,41 @@ export default function AdminPage(){
   function doLogout(){sessionStorage.removeItem(TOKEN_KEY);setAuthed(false);setEmailInput("");setPwInput("");}
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(""),2400);}
 
+  // 潛客名單：/api/admin/leads 有分頁（預設每頁 50），不帶 per_page 會讓「總學員數」與
+  // 「Demo 開啟率」永遠封頂在 50。這裡逐頁抓完並改用伺服器回傳的 total 當總數。
   const fetchLeads=useCallback(async()=>{
-    setLoading(true);
-    try{const res=await fetch("/api/admin/leads",{headers:{Authorization:`Bearer ${getToken()}`}});if(!res.ok)throw new Error((await res.json()).error||"fetch_failed");const{data}=await res.json();setLeads(data||[]);}
-    catch{const raw=localStorage.getItem("inrecord_course_preview_leads");try{setLeads(JSON.parse(raw||"[]"));}catch{setLeads([]);}}
+    setLoading(true);setLeadsErr("");
+    try{
+      const all=[];let total=0;
+      for(let p=1;p<=LEADS_MAX_PAGES;p++){
+        const res=await fetch(`/api/admin/leads?page=${p}&per_page=${LEADS_PER_PAGE}`,{headers:{Authorization:`Bearer ${getToken()}`}});
+        const d=await res.json().catch(()=>({}));
+        if(!res.ok)throw new Error(d.error||`載入失敗（HTTP ${res.status}）`);
+        const rows=d.data||[];
+        all.push(...rows);
+        total=Number.isFinite(d.total)?d.total:all.length;
+        if(!rows.length||all.length>=total)break;
+      }
+      setLeads(all);setLeadsTotal(total);
+    }
+    // 載入失敗保留前次資料並顯示錯誤，不要用空陣列冒充「真的沒名單」
+    catch(e){setLeadsErr(e.message||"載入失敗");}
     finally{setLoading(false);}
   },[]);
 
   useEffect(()=>{if(authed&&["dashboard","students","orders","messages","analytics"].includes(page))fetchLeads();},[authed,page,fetchLeads]);
 
   const fetchOrders=useCallback(async()=>{
-    try{const res=await fetch("/api/admin/orders",{headers:{Authorization:`Bearer ${getToken()}`}});if(!res.ok)throw new Error("fetch_failed");const{data}=await res.json();setOrders(data||[]);}
-    catch{setOrders([]);}
+    setOrdersErr("");
+    try{
+      const res=await fetch("/api/admin/orders",{headers:{Authorization:`Bearer ${getToken()}`}});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok)throw new Error(d.error||`載入失敗（HTTP ${res.status}）`);
+      setOrders(d.data||[]);
+    }
+    // 訂單載入失敗若清成空陣列，營收／訂單數／銷售趨勢會整片歸零、看起來像「真的沒生意」。
+    // 保留前次資料並顯示錯誤橫幅。
+    catch(e){setOrdersErr(e.message||"載入失敗");}
   },[]);
 
   useEffect(()=>{if(authed)fetchOrders();},[authed,page,fetchOrders]);
@@ -165,7 +193,7 @@ export default function AdminPage(){
       .then(r=>r.json()).then(d=>{ if(d.unread!=null) setUnreadUnitComments(d.unread); }).catch(()=>{});
   },[authed,page]);
 
-  function getBadge(key){if(key==="leads")return leads.length||null;if(key==="orders")return failedInvoiceCount||null;if(key==="messages")return unreadUnitComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
+  function getBadge(key){if(key==="leads")return (leadsTotal||leads.length)||null;if(key==="orders")return failedInvoiceCount||null;if(key==="messages")return unreadUnitComments||null;if(key==="courses")return unreadUnitComments||null;return null;}
 
   if(!authChecked)return(
     <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f1f5f9"}}>
@@ -219,7 +247,13 @@ export default function AdminPage(){
           </div>
         </div>
         <div className={styles.content}>
-          {page==="dashboard"   &&<DashboardPage leads={leads} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
+          {(ordersErr||leadsErr)&&(
+            <div role="alert" style={{margin:"0 0 14px",padding:"10px 14px",borderRadius:10,background:"#fef2f2",border:"1px solid #fecaca",color:"#991b1b",fontSize:13,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",wordBreak:"keep-all",lineBreak:"strict"}}>
+              <span>⚠️ {ordersErr?`訂單資料載入失敗：${ordersErr}`:""}{ordersErr&&leadsErr?"；":""}{leadsErr?`潛客名單載入失敗：${leadsErr}`:""}　畫面上的數字可能不是最新的。</span>
+              <button className={styles.btnSmall} onClick={()=>{if(ordersErr)fetchOrders();if(leadsErr)fetchLeads();}}>重試</button>
+            </div>
+          )}
+          {page==="dashboard"   &&<DashboardPage leads={leads} leadsTotal={leadsTotal} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
           {page==="courses"     &&(selectedCourse
             ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
             : <CoursesPage orders={orders} onManage={c=>{setSelectedCourse(c);}} showToast={showToast}/>

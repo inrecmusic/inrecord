@@ -6,27 +6,36 @@ import styles from "./InstructorBioCarousel.module.css";
 
 const SWIPE_THRESHOLD = 50; // px dragged before a slide change commits
 
+// 進場用；待命中的段落直接歸位（不需要動畫）
+const GLIDE = { duration: 0.28, ease: "easeOut" };
+const INSTANT = { duration: 0 };
+
+/** 環狀待命位置：下一段停右邊（往前翻時從右滑入）、上一段停左邊。 */
+function restingX(i, index, count) {
+  const rel = (((i - index) % count) + count) % count;
+  return rel <= count / 2 ? 28 : -28;
+}
+
 /**
  * Manual (no autoplay) carousel for the instructor bio paragraphs — one
  * paragraph per slide. Switched by horizontal swipe / drag (finger on mobile,
  * mouse on desktop), dot tabs, or arrow keys. No side button, so the text gets
  * the full column width. Autoplay is omitted on purpose (reading content).
  *
- * Each slide is keyed by index and re-mounts on change (fades/slides in) — no
- * AnimatePresence/exit bookkeeping (its mode="wait"+drag combo previously left
- * the next slide unmounted). `slides` is an array of nodes.
+ * 三段簡歷全部留在 DOM（初始 HTML 就有完整文字，搜尋引擎／讀螢幕軟體讀得到），
+ * 非當前段以 hidden（display:none）隱藏：不佔版面高度（維持原本只由當前段撐高）、
+ * 也不會被 Tab 聚焦。`slides` is an array of nodes.
  */
 export default function InstructorBioCarousel({ slides }) {
-  // [activeIndex, direction] — direction sets the enter x offset sign.
-  const [[index, dir], setState] = useState([0, 0]);
+  const [index, setIndex] = useState(0);
   const count = slides?.length || 0;
 
   const go = useCallback(
-    (next, direction) => setState([(next + count) % count, direction]),
+    (to) => setIndex(((to % count) + count) % count),
     [count]
   );
-  const next = useCallback(() => go(index + 1, 1), [go, index]);
-  const prev = useCallback(() => go(index - 1, -1), [go, index]);
+  const next = useCallback(() => go(index + 1), [go, index]);
+  const prev = useCallback(() => go(index - 1), [go, index]);
 
   if (!count) return null; // empty-data guard, after hooks (hooks-rule safe)
 
@@ -43,22 +52,34 @@ export default function InstructorBioCarousel({ slides }) {
       }}
     >
       <div className={styles.viewport}>
-        <motion.div
-          key={index}
-          className={styles.slide}
-          initial={{ opacity: 0, x: dir >= 0 ? 28 : -28 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.28, ease: "easeOut" }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.18}
-          onDragEnd={(_, info) => {
-            if (info.offset.x < -SWIPE_THRESHOLD) next();
-            else if (info.offset.x > SWIPE_THRESHOLD) prev();
-          }}
-        >
-          {slides[index]}
-        </motion.div>
+        {slides.map((s, i) => {
+          const active = i === index;
+          return (
+            <motion.div
+              key={i}
+              className={styles.slide}
+              hidden={!active}
+              aria-hidden={!active}
+              inert={active ? undefined : ""}
+              initial={false}
+              animate={
+                active
+                  ? { opacity: 1, x: 0 }
+                  : { opacity: 0, x: restingX(i, index, count) }
+              }
+              transition={active ? GLIDE : INSTANT}
+              drag={active ? "x" : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.18}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -SWIPE_THRESHOLD) next();
+                else if (info.offset.x > SWIPE_THRESHOLD) prev();
+              }}
+            >
+              {s}
+            </motion.div>
+          );
+        })}
       </div>
 
       {count > 1 && (
@@ -71,7 +92,7 @@ export default function InstructorBioCarousel({ slides }) {
               aria-selected={i === index}
               aria-label={`第 ${i + 1} 段`}
               className={`${styles.dot} ${i === index ? styles.dotActive : ""}`}
-              onClick={() => go(i, i > index ? 1 : -1)}
+              onClick={() => go(i)}
             />
           ))}
         </div>

@@ -3,7 +3,13 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import MarkdownContent from "@/components/MarkdownContent";
 import { DEFAULT_PRIVACY_MD } from "@/lib/legal-docs";
 
-export const metadata = { title: "隱私權政策 | InRecord" };
+// canonical 要各自宣告：root layout 的 canonical 是 "/"，子頁不覆寫就會全部自稱首頁副本，
+// sitemap 送去索引也不會被收錄。description 同理，不覆寫就會沿用首頁那句。
+export const metadata = {
+  title: "隱私權政策 | InRecord",
+  description: "InRecord 如何蒐集、使用與保護你的個人資料：蒐集項目、使用目的、第三方服務、Cookie 與廣告追蹤，以及你可以行使的權利。",
+  alternates: { canonical: "/privacy" },
+};
 export const revalidate = 300;
 
 // 隱私權政策單一來源：後台存過（site_content）顯示 DB 版，沒存過用 lib/legal-docs 的共用預設 —— 

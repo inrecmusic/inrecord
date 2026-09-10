@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS notes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS notes_user_video_idx ON notes (user_id, video_id, seconds);
+CREATE INDEX IF NOT EXISTS notes_video_id_idx ON notes (video_id);          -- FK 索引（原本誤放在 supabase-deploy.sql，該檔跑的時候 notes 還沒建）
 
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "service_role_notes" ON notes;
@@ -107,6 +108,7 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS quiz_attempts_user_quiz_idx ON quiz_attempts (user_id, quiz_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS quiz_attempts_quiz_id_idx ON quiz_attempts (quiz_id);   -- FK 索引（同上，由 supabase-deploy.sql 移來）
 
 ALTER TABLE quizzes        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;

@@ -25,9 +25,18 @@ export async function POST(req) {
   const ip = clientIp(req);
   const { email, password } = await req.json();
 
+  // 防呆（同 getJwtSecret 的做法）：ADMIN_EMAIL／ADMIN_PASSWORD 缺漏時，
+  // 舊寫法退回空字串比空字串，會讓「空帳號空密碼」通過驗證，故一律拒絕登入。
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    console.error("[admin login] ADMIN_EMAIL / ADMIN_PASSWORD 未設定，拒絕登入");
+    return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+  }
+
   const okCred =
-    safeEqual(email || "", process.env.ADMIN_EMAIL || "") &&
-    safeEqual(password || "", process.env.ADMIN_PASSWORD || "");
+    safeEqual(email || "", adminEmail) &&
+    safeEqual(password || "", adminPassword);
   if (!okCred) {
     // 失敗才計次；超過上限回 429
     const rl = await limiter(ip);

@@ -33,11 +33,16 @@ function notifyReq(params, { badHash = false } = {}) {
 const PAID = { MerTradeNo: "INREC1", TradeNo: "UNI1", TradeStatus: "1", TradeAmt: "3999", PaymentType: "CREDIT" };
 const ORDER = { id: "o1", email: "a@x.com", grant_email: null, plan: "bundle", plan_label: "課程包", amount: 3999, coupon_code: null, fulfilled_at: null, invoice_no: null, attribution: null, capi_data: null };
 
-// state：prior（先讀到的訂單）、priorError、order（update→paid 命中的列；null＝未命中/已退款）、claimed（fulfilled_at CAS）
+// state：prior（先讀到的訂單）、priorError、order（update→paid 命中的列；null＝未命中/已退款）、claimed（fulfilled_at CAS）、
+//        coupon（優惠券現況）、couponClaim=false（計次 CAS 一直撞到）
 function makeDb(state = {}) {
   return makeSupabaseMock((table, ops) => {
     const has = (m) => ops.some((o) => o.m === m);
     const upd = ops.find((o) => o.m === "update")?.args[0];
+    if (table === "coupons") {
+      if (has("update")) return { data: state.couponClaim === false ? [] : [{ id: "c1" }], error: null };
+      return { data: state.coupon || null, error: null };
+    }
     if (table !== "orders") return { data: null, error: null };
     if (has("maybeSingle") && !has("update")) return { data: state.prior === undefined ? { status: "pending", amount: 3999 } : state.prior, error: state.priorError || null };
     if (upd && "status" in upd) return { data: state.order === undefined ? ORDER : state.order, error: null };
@@ -107,6 +112,33 @@ describe("POST /api/payuni/notify（付款背景通知）", () => {
     const res = await POST(notifyReq(PAID));
     expect(await res.text()).toBe("SUCCESS");
     expect(sendPurchaseEmail).not.toHaveBeenCalled();
+  });
+
+  it("無限量券計次用 CAS（帶 used 條件），不是先讀後寫", async () => {
+    sb = makeDb({ order: { ...ORDER, coupon_code: "SAVE10" }, coupon: { used: 7, usage_limit: null } });
+    getSupabaseAdmin.mockReturnValue(sb);
+    await POST(notifyReq(PAID));
+    const cas = sb.calls.find((c) => c.table === "coupons" && sb.has(c, "update"));
+    expect(sb.arg(cas, "update")).toEqual({ used: 8 });
+    expect(cas.ops.some((o) => o.m === "eq" && o.args[0] === "used" && o.args[1] === 7)).toBe(true);
+  });
+
+  it("限量券未逾時釋放 → 不重複累計（已在 checkout 預扣）", async () => {
+    sb = makeDb({ order: { ...ORDER, coupon_code: "SERIAL1" }, coupon: { used: 1, usage_limit: 1 } });
+    getSupabaseAdmin.mockReturnValue(sb);
+    await POST(notifyReq(PAID));
+    expect(sb.calls.some((c) => c.table === "coupons" && sb.has(c, "update"))).toBe(false);
+  });
+
+  it("計次 CAS 一直撞到 → 記 log 但仍回 SUCCESS（不可讓 PAYUNi 重送）", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sb = makeDb({ order: { ...ORDER, coupon_code: "SAVE10" }, coupon: { used: 7, usage_limit: null }, couponClaim: false });
+    getSupabaseAdmin.mockReturnValue(sb);
+    const res = await POST(notifyReq(PAID));
+    expect(await res.text()).toBe("SUCCESS");
+    expect(sb.calls.filter((c) => c.table === "coupons" && sb.has(c, "update")).length).toBe(3); // 重試上限
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining("優惠券計次 CAS"), "SAVE10", "INREC1");
+    spy.mockRestore();
   });
 
   it("已退款訂單（update 未命中）→ 不開通、不寄信、回 SUCCESS", async () => {

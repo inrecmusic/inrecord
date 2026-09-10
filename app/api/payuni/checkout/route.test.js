@@ -43,6 +43,7 @@ describe("POST /api/payuni/checkout（下單）", () => {
     isOnSale.mockReturnValue(true);
     vi.stubEnv("PAYUNI_MERCHANT_ID", "U000"); vi.stubEnv("PAYUNI_HASH_KEY", KEY); vi.stubEnv("PAYUNI_HASH_IV", IV);
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://inrecordmusic.com");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -112,6 +113,45 @@ describe("POST /api/payuni/checkout（下單）", () => {
     expect(sb.arg(ins, "insert")).toMatchObject({ amount: 1, coupon_code: "TEST1" });
     const cas = sb.calls.find((c) => c.table === "coupons" && sb.has(c, "update"));
     expect(sb.arg(cas, "update")).toEqual({ used: 1 });
+  });
+
+  it("Email 一律小寫寫入訂單（大小寫不一致會讓買家進不了教室）", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    await POST(req({ plan: "bundle", email: "  Alan.Chou@Example.COM  ".trim() }));
+    const ins = sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert"));
+    expect(sb.arg(ins, "insert").email).toBe("alan.chou@example.com");
+  });
+
+  it("憑證券（FAN-）沒帶憑證圖 → 400 proof_required、不建單（不得繞過後台審核）", async () => {
+    const coupon = { code: "FAN-ABCD2345", type: "price", value: 3699, status: "active", usage_limit: 1, used: 0, plan: "bundle" };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const res = await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN-ABCD2345" }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "proof_required" });
+    expect(sb.calls.some((c) => c.table === "orders" && sb.has(c, "insert"))).toBe(false);
+    // 外部網址一樣不算（只收我們自己 storage 的 proof-uploads）
+    const res2 = await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN-ABCD2345", proofUrl: "https://evil.com/x.png" }));
+    expect(await res2.json()).toEqual({ error: "proof_required" });
+  });
+
+  it("憑證券（FAN-）帶自家憑證圖 → 建單並標成 fan_review pending", async () => {
+    const coupon = { code: "FAN-ABCD2345", type: "price", value: 3699, status: "active", usage_limit: 1, used: 0, plan: "bundle" };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const proofUrl = "https://proj.supabase.co/storage/v1/object/public/proof-uploads/proofs/abc.jpg";
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN-ABCD2345", proofUrl }))).json();
+    expect(body.fields).toBeTruthy();
+    const ins = sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert"));
+    expect(sb.arg(ins, "insert")).toMatchObject({ amount: 3699, coupon_code: "FAN-ABCD2345", proof_url: proofUrl, fan_review: "pending" });
+  });
+
+  it("粉絲直購券 FAN3999（無連字號）不受憑證規則影響", async () => {
+    const coupon = { code: "FAN3999", type: "price", value: 3999, status: "active", usage_limit: null, used: 0, plan: "bundle" };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN3999" }))).json();
+    expect(body.fields).toBeTruthy();
+    const ins = sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert"));
+    expect(sb.arg(ins, "insert")).toMatchObject({ amount: 3999, coupon_code: "FAN3999" });
+    expect(sb.arg(ins, "insert").fan_review).toBeUndefined();
   });
 
   it("限量券被搶完（CAS 沒搶到）→ 400 coupon_used_up、不建單", async () => {

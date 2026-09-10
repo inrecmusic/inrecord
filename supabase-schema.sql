@@ -1,5 +1,9 @@
 -- ════════════════════════════════════════════════════════
 -- InRecord 課程平台 Supabase Schema
+--
+-- ⚠️ 執行順序：要在 supabase-schema-music.sql 之後（本檔的 games 參照 chapters／videos）。
+--    完整順序見 CLAUDE.md「部署需執行的 SQL」與 docs/preview-db/build-schema.sh。
+--
 -- 在 Supabase Dashboard → SQL Editor 執行此檔案
 -- ════════════════════════════════════════════════════════
 

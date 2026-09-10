@@ -5,6 +5,7 @@ import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
 import { generateBatchCodes, normalizeManualCodes, MAX_BATCH_QUANTITY } from "@/lib/serial-codes";
 import { validateDateRange } from "@/lib/date-range";
+import { selectAll } from "@/lib/supabase-paginate";
 
 // GET：批次清單 + 每批 total / used 統計
 export async function GET(req) {
@@ -16,9 +17,13 @@ export async function GET(req) {
     .from("coupon_batches").select("*").order("created_at", { ascending: false });
   if (error) return serverError(error);
 
-  const { data: codes } = await supabase.from("coupons").select("batch_id, used").not("batch_id", "is", null);
+  // 分頁撈：序號總量破千後會被 PostgREST 預設 1000 列上限截斷，批次的 total／used 統計會少算
+  let codes;
+  try {
+    codes = await selectAll(supabase, "coupons", (q) => q.select("batch_id, used").not("batch_id", "is", null));
+  } catch (e) { return serverError(e); }
   const stats = {};
-  for (const c of codes || []) {
+  for (const c of codes) {
     const s = stats[c.batch_id] || (stats[c.batch_id] = { total: 0, used: 0 });
     s.total += 1;
     if ((c.used || 0) > 0) s.used += 1;
@@ -60,8 +65,12 @@ export async function POST(req) {
     const quantity = Math.round(Number(body.quantity));
     if (!Number.isFinite(quantity) || quantity <= 0) return NextResponse.json({ error: "invalid_quantity" }, { status: 400 });
     if (quantity > MAX_BATCH_QUANTITY) return NextResponse.json({ error: "too_many_codes" }, { status: 400 });
-    const { data: all } = await supabase.from("coupons").select("code");
-    const existing = new Set((all || []).map((c) => c.code));
+    // 避碰集合必須是「全部」既有碼：被 1000 列上限截斷會漏看既有碼，產出重複碼、insert 撞唯一鍵整批失敗
+    let all;
+    try {
+      all = await selectAll(supabase, "coupons", (q) => q.select("code"));
+    } catch (e) { return serverError(e); }
+    const existing = new Set(all.map((c) => c.code));
     try {
       wantCodes = generateBatchCodes({ prefix: prefix || "", quantity, existing });
     } catch (e) {

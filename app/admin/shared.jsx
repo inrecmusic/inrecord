@@ -3,7 +3,7 @@ import styles from "./admin.module.css";
 import { ArrowUpRight, X, TrendingUp, CreditCard } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { adminFetch as _api } from "@/lib/admin-client";
-import { buildSalesTrend, buildPayDistribution } from "@/lib/dashboard";
+import { buildSalesTrend, buildPayDistribution, payLabel } from "@/lib/dashboard";
 
 // ── Stat Card ──────────────────────────────────────────────────────────────
 export function StatCard({label,value,sub,icon:Icon,growth,color="#2563eb"}){
@@ -132,7 +132,9 @@ export function BulkFollowupModal({ open, recipients = [], onClose, showToast })
       const d = await res.json().catch(() => ({}));
       if (!res.ok || d.ok === false) { showToast?.("❌ 批次寄送失敗：" + (d.error || "unknown")); setBusy(false); return; }
       setResult(d);
-      showToast?.(`✅ 已寄出 ${d.sent}/${d.total}${d.failed?.length ? `，失敗 ${d.failed.length}` : ""}`);
+      // skipped＝同樣主旨內文已寄過而跳過；unsubscribed＝已退訂未寄。兩者都不是失敗，但不顯示的話
+      // 管理員會看到「已寄出 0/50」而以為系統壞了。
+      showToast?.(`✅ 已寄出 ${d.sent}/${d.total}${d.skipped ? `，已寄過跳過 ${d.skipped}` : ""}${d.unsubscribed ? `，已退訂 ${d.unsubscribed}` : ""}${d.failed?.length ? `，失敗 ${d.failed.length}` : ""}`);
     } catch (e) { showToast?.("❌ 批次寄送失敗：" + e.message); }
     finally { setBusy(false); }
   }
@@ -147,7 +149,7 @@ export function BulkFollowupModal({ open, recipients = [], onClose, showToast })
         </div>
         {result ? (
           <div style={{ display: "grid", gap: 12 }}>
-            <div style={{ fontSize: 14, color: "#374151" }}>已寄出 <b style={{ color: "#16a34a" }}>{result.sent}</b> / {result.total} 封{result.failed?.length ? <>，失敗 <b style={{ color: "#dc2626" }}>{result.failed.length}</b></> : null}。</div>
+            <div style={{ fontSize: 14, color: "#374151" }}>已寄出 <b style={{ color: "#16a34a" }}>{result.sent}</b> / {result.total} 封{result.skipped ? <>，已寄過跳過 <b style={{ color: "#0891b2" }}>{result.skipped}</b></> : null}{result.unsubscribed ? <>，已退訂 <b style={{ color: "#64748b" }}>{result.unsubscribed}</b></> : null}{result.failed?.length ? <>，失敗 <b style={{ color: "#dc2626" }}>{result.failed.length}</b></> : null}。</div>
             {result.failed?.length ? (
               <div style={{ maxHeight: 160, overflow: "auto", fontSize: 12, color: "#dc2626", background: "#fef2f2", borderRadius: 8, padding: 10 }}>
                 {result.failed.map((f, i) => <div key={i}>{f.to}：{f.error}</div>)}
@@ -197,8 +199,29 @@ export function levelLabel(l){return{none:"沒碰過",little:"摸過一點",some
 
 export function genderLabel(v){return{male:"男",female:"女",other:"其他",prefer_not:"不願透露"}[v]||"—";}
 
-// PayUni PaymentType 數字→中文（比照 lib/dashboard.js PAY_TYPE_LABELS）；未知原樣顯示、空值—
-export function payTypeLabel(v){return{"1":"信用卡","2":"ATM轉帳","3":"超商代碼",Credit:"信用卡",ATM:"ATM轉帳",CVS:"超商代碼"}[v]||v||"—";}
+// 付款方式標籤一律走 lib/dashboard.js 的 payLabel（與對帳彙整／付款分布同一份對照表），
+// 不再自己維護第二份表——先前這裡缺 "6"／WEBATM／CVSCOM／BARCODE，同一頁上下會出現不同寫法。
+// 傳整筆訂單時，沒有 pay_type 會退回來源標籤（音樂會現場等）；只傳 pay_type 值時空值仍顯示「—」。
+export function payTypeLabel(v){
+  if(v&&typeof v==="object")return payLabel(v);
+  if(v===null||v===undefined||v==="")return "—";
+  return payLabel({pay_type:v});
+}
+
+// 留言／評論統計：清單 API 已分頁（每頁 20），只算當頁會嚴重低估「未回覆」。
+// 這裡向伺服器取全量數字——comments.status 只有 pending／replied 兩種，故已回覆＝全部 − 未回覆。
+export async function fetchCommentStats(){
+  const [rAll,rPending]=await Promise.all([
+    _api("/api/admin/unit-comments?page=1&per_page=1"),
+    _api("/api/admin/unit-comments?count=true"),
+  ]);
+  const dAll=await rAll.json().catch(()=>({}));
+  const dPending=await rPending.json().catch(()=>({}));
+  if(!rAll.ok||!rPending.ok)throw new Error(dAll.error||dPending.error||"載入統計失敗");
+  const total=Number(dAll.total)||0;
+  const pending=Number(dPending.unread)||0;
+  return {total,pending,replied:Math.max(0,total-pending)};
+}
 
 // ── Markdown default content ───────────────────────────────────────────────
 // ── Markdown renderer ──────────────────────────────────────────────────────

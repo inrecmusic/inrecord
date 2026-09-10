@@ -332,19 +332,28 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS grant_email TEXT;
 -- ────────────────────────────────────────────────────────────────────────
 -- 外鍵索引（效能）：無索引的 FK 在 JOIN／級聯刪除時會全表掃描。純加速、不動邏輯。
 -- ────────────────────────────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS assignments_video_id_idx       ON assignments(video_id);
+-- ⚠️ 這裡只能放「跑到本檔時已經建好的表」：assignments 表不存在（全 repo 沒有 DDL、程式也沒用到），
+--    其索引已移除；notes／quiz_attempts 在 supabase-classroom-features.sql 才建，索引也移到該檔。
+--    IF NOT EXISTS 只保護索引名稱，表不存在照樣 ERROR → 整份交易 rollback → 後面的 grant_email、
+--    newsletter_sends、email_log、upsert_progress、newsletter_unsubscribes 全部不會建立。
 CREATE INDEX IF NOT EXISTS comment_replies_comment_id_idx ON comment_replies(comment_id);
 CREATE INDEX IF NOT EXISTS comments_chapter_id_idx        ON comments(chapter_id);
 CREATE INDEX IF NOT EXISTS comments_video_id_idx          ON comments(video_id);
 CREATE INDEX IF NOT EXISTS enrollments_order_id_idx       ON enrollments(order_id);
 CREATE INDEX IF NOT EXISTS games_video_id_idx             ON games(video_id);
-CREATE INDEX IF NOT EXISTS notes_video_id_idx             ON notes(video_id);
 CREATE INDEX IF NOT EXISTS progress_video_id_idx          ON progress(video_id);
-CREATE INDEX IF NOT EXISTS quiz_attempts_quiz_id_idx      ON quiz_attempts(quiz_id);
 CREATE INDEX IF NOT EXISTS rating_replies_rating_id_idx   ON rating_replies(rating_id);
-CREATE INDEX IF NOT EXISTS submissions_assignment_id_idx  ON submissions(assignment_id);
 CREATE INDEX IF NOT EXISTS submissions_video_id_idx       ON submissions(video_id);
 CREATE INDEX IF NOT EXISTS videos_chapter_id_idx          ON videos(chapter_id);
+
+-- orders 常用查詢索引（2026-09）：orders 是全站被查最多的表，原本只有 PK 與 mer_trade_no UNIQUE，
+-- 後台清單／對帳／挽回信／開通名單都得全表掃描。純加速、不動邏輯，可重複執行。
+-- （source 區辨度低、查詢又多是 or(source.is.null,...)，加索引沒有效益，故不建。）
+CREATE INDEX IF NOT EXISTS orders_created_at_idx      ON orders (created_at DESC);
+CREATE INDEX IF NOT EXISTS orders_status_created_idx  ON orders (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS orders_email_idx           ON orders (email);
+CREATE INDEX IF NOT EXISTS orders_grant_email_idx     ON orders (grant_email) WHERE grant_email IS NOT NULL;
+CREATE INDEX IF NOT EXISTS orders_coupon_code_idx     ON orders (coupon_code) WHERE coupon_code IS NOT NULL;
 
 -- 早鳥搶先看分層（2026-09）：9/9 前購課可跟每週上架進度觀看，之後購課 9/30 才開放。
 -- early_override：NULL=依購買時間自動判斷｜'early'=強制早鳥｜'standard'=強制 9/30 開放（後台學員名單可調）。

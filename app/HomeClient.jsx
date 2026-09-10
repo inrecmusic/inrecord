@@ -584,6 +584,9 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   const fanOn = !!sale.fanPlan?.enabled;
   const heroPrice = fanOn ? sale.fanPlan.directPrice : offer.price;
 
+  // 星等社會證明：評價少於 3 則就不顯示平均（樣本太少、易被當成不實廣告）；達標才連同樣本數一起講
+  const showRating = !!stats && stats.rating != null && stats.ratingCount >= 3;
+
   const fanRowStyle = (on) => ({
     display: "flex", justifyContent: "space-between", alignItems: "center",
     border: `1.5px solid ${on ? "#2563eb" : "#bcd4f5"}`, background: on ? "#eef4ff" : "transparent",
@@ -671,7 +674,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
                   <StatItem value={stats ? stats.purchases : null}                              suffix="+" en="members"  label="學員加入學習" />
-                  <StatItem value={stats && stats.rating != null ? Number(stats.rating) : null} suffix=""  en="rating"   label="學員平均評分" decimals={1} />
+                  <StatItem value={showRating ? Number(stats.rating) : null}                     suffix=""  en="rating"   label="學員平均評分" decimals={1} />
                 </div>
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
@@ -688,11 +691,12 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
               <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
               <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
               <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、能追蹤成效，看見進步。</motion.p>
-              {stats && (stats.rating != null || stats.purchases > 0) && (
+              {stats && (showRating || stats.purchases > 0) && (
                 <motion.div variants={fadeUp} className={styles.heroProof}>
-                  {stats.rating != null && (
+                  {showRating && (
                     <span className={styles.heroProofRating}>
-                      <Star size={15} fill="currentColor" strokeWidth={0} />{Number(stats.rating).toFixed(1)}
+                      <Star size={15} fill="currentColor" strokeWidth={0} />
+                      <span>{Number(stats.rating).toFixed(1)}<span style={{ fontWeight: 500, opacity: .75 }}>（{stats.ratingCount} 則評價）</span></span>
                     </span>
                   )}
                   {stats.purchases > 0 && (

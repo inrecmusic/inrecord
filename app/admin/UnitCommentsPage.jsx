@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import styles from "./admin.module.css";
 import { adminFetch as api } from "@/lib/admin-client";
+import { fetchCommentStats } from "./shared";
 
 const PER_PAGE = 20;
 
@@ -21,8 +22,11 @@ function Pagination({ page, total, perPage, onChange }) {
 
 export default function UnitCommentsPage({ showToast, onUnreadChange }) {
   const [comments, setComments] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(0);          // 目前篩選條件下的總筆數（分頁用）
+  const [stats, setStats] = useState({ total: 0, pending: 0, replied: 0 }); // 全站統計（伺服器算）
+  const [statsErr, setStatsErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadErr, setLoadErr] = useState("");
   const [videos, setVideos] = useState([]);
   const [chapters, setChapters] = useState([]);
 
@@ -37,21 +41,37 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
   const [deleting, setDeleting] = useState(false);
 
   const fetchComments = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setLoadErr("");
     try {
       const params = new URLSearchParams({ page, per_page: PER_PAGE });
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (videoFilter !== "all") params.set("video_id", videoFilter);
       const r = await api(`/api/admin/unit-comments?${params}`);
-      const { data, total: t } = await r.json();
-      setComments(data || []);
-      setTotal(t || 0);
-      const unread = (data || []).filter(c => c.status === "pending").length;
-      onUnreadChange?.(unread);
-    } catch { showToast("❌ 載入失敗"); setComments([]); setTotal(0); }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `載入失敗（HTTP ${r.status}）`);
+      setComments(d.data || []);
+      setTotal(d.total || 0);
+    }
+    // 載入失敗保留前次資料，不要用空清單冒充「暫無留言」
+    catch (e) { setLoadErr(e.message || "載入失敗"); showToast("❌ 載入失敗"); }
     finally { setLoading(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- load／showToast 只在掛載或篩選變更時執行；showToast 是父層傳入的通知函式，不參與資料流
-  }, [page, statusFilter, videoFilter, onUnreadChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- showToast 是父層傳入的通知函式，不參與資料流
+  }, [page, statusFilter, videoFilter]);
+
+  // 統計與側欄未讀徽章一律用伺服器全量數字：清單每頁只有 20 筆，
+  // 舊寫法把「當頁的 pending 數」回寫給父層，一進這頁側欄未讀就被改小。
+  const loadStats = useCallback(async () => {
+    try {
+      const s = await fetchCommentStats();
+      setStats(s);
+      setStatsErr("");
+      onUnreadChange?.(s.pending);
+    } catch (e) {
+      // 吞掉錯誤會讓三張卡停在 0、側欄徽章維持舊值，管理員以為沒有待回覆留言
+      setStatsErr(e?.message || "統計載入失敗");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onUnreadChange 由父層每次 render 重建，列進相依會讓統計反覆重抓
+  }, []);
 
   const fetchMeta = useCallback(async () => {
     try {
@@ -64,6 +84,7 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
 
   useEffect(() => { fetchMeta(); }, [fetchMeta]);
   useEffect(() => { fetchComments(); }, [fetchComments]);
+  useEffect(() => { loadStats(); }, [loadStats]);
 
   async function submitReply(commentId) {
     if (!replyText.trim()) return;
@@ -76,7 +97,7 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
       if (!r.ok) throw new Error((await r.json()).error);
       showToast("✅ 回覆已送出");
       setReplyingId(null); setReplyText("");
-      fetchComments();
+      fetchComments(); loadStats();
     } catch (e) { showToast("❌ " + e.message); }
     finally { setReplying(false); }
   }
@@ -87,7 +108,7 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
       const r = await api(`/api/admin/unit-comments?id=${deleteId}`, { method: "DELETE" });
       if (!r.ok) throw new Error((await r.json()).error);
       showToast("✅ 留言已刪除");
-      setDeleteId(null); fetchComments();
+      setDeleteId(null); fetchComments(); loadStats();
     } catch (e) { showToast("❌ " + e.message); }
     finally { setDeleting(false); }
   }
@@ -97,8 +118,6 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
     setReplyingId(c.id); setReplyText("");
   }
 
-  const pendingCount = useMemo(() => comments.filter(c => c.status === "pending").length, [comments]);
-  const repliedCount = useMemo(() => comments.filter(c => c.status === "replied").length, [comments]);
   const videoName = id => videos.find(v => v.id === id)?.title || id;
 
   return (
@@ -108,7 +127,8 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
       </div>
 
       <div className={styles.statsGrid4} style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        {[["全部留言", total, "則"], ["待回覆", pendingCount, "則待處理"], ["已回覆", repliedCount, "則"]].map(([l, v, s]) => (
+      {statsErr ? <div style={{ margin: "0 0 12px", padding: "8px 12px", borderRadius: 8, background: "#fef2f2", color: "#b91c1c", fontSize: 13 }}>⚠️ {statsErr}　<button className={styles.btnSmall} onClick={loadStats}>重試</button></div> : null}
+        {[["全部留言", statsErr ? "—" : stats.total, "則"], ["待回覆", statsErr ? "—" : stats.pending, "則待處理"], ["已回覆", statsErr ? "—" : stats.replied, "則"]].map(([l, v, s]) => (
           <div key={l} className={styles.statCard}>
             <div className={styles.statHead}><span className={styles.statLabel}>{l}</span></div>
             <strong className={styles.statValue}>{v}</strong>
@@ -123,7 +143,7 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
             {[["all", "全部"], ["pending", "待回覆"], ["replied", "已回覆"]].map(([key, label]) => (
               <button key={key} className={`${styles.tab} ${statusFilter === key ? styles.tabActive : ""}`} onClick={() => { setStatusFilter(key); setPage(1); }}>
                 {label}
-                {key === "pending" && pendingCount > 0 && <span className={styles.tabBadge}>{pendingCount}</span>}
+                {key === "pending" && !statsErr && stats.pending > 0 && <span className={styles.tabBadge}>{stats.pending}</span>}
               </button>
             ))}
           </div>
@@ -141,7 +161,10 @@ export default function UnitCommentsPage({ showToast, onUnreadChange }) {
             <thead><tr><th>學員</th><th>所屬單元</th><th>留言內容</th><th>時間</th><th>狀態</th><th>操作</th></tr></thead>
             <tbody>
               {loading ? <tr><td colSpan={6} className={styles.empty}>載入中…</td></tr>
-                : !comments.length ? <tr><td colSpan={6} className={styles.empty}>暫無留言</td></tr>
+                /* 沒有列可顯示時才區分「載入失敗」與「真的沒留言」 */
+                : !comments.length ? (loadErr
+                  ? <tr><td colSpan={6} style={{ textAlign: "center", padding: 28, color: "#dc2626" }}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={() => { fetchComments(); loadStats(); }}>重試</button></td></tr>
+                  : <tr><td colSpan={6} className={styles.empty}>暫無留言</td></tr>)
                 : comments.map(c => (
                   <Fragment key={c.id}>
                     <tr className={replyingId === c.id ? styles.commentRowActive : ""}>
