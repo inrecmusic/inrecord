@@ -85,11 +85,18 @@ export async function POST(req) {
     // order_id 會被最新一筆覆蓋，故不能靠 order_id 判斷／刪除。改為：先查該 email 名下是否還有
     // 其他有效訂單（其他 paid 的 course/bundle），有則保留存取；沒有才用真正的 key（email+course_id）撤。
     const email = effectiveEmail(order); // 與 grantAccess 開通時一致
-    const { data: paidOrders, error: othersErr } = await supabase
-      .from("orders")
-      .select("id, email, grant_email")
-      .eq("status", "paid")
-      .in("plan", ["course", "bundle"]);
+    // 只撈「這個 email 名下」的有效訂單：原本撈全部 paid 單再用 JS 比對，訂單破千後會被
+    // PostgREST 預設 1000 列上限靜默截斷 → 誤判成「沒有其他有效訂單」，把該學員還付過錢的課程存取一起撤掉。
+    // 不用字串組 .or()（email 帶 , ( ) 會破壞語法），拆成 grant_email / email 兩查詢再合併（同 lib/early-access-server.js）。
+    const paidCourse = (q) => q.select("id, email, grant_email").eq("status", "paid").in("plan", ["course", "bundle"]);
+    const [byGrant, byEmail] = email
+      ? await Promise.all([
+          paidCourse(supabase.from("orders")).eq("grant_email", email),
+          paidCourse(supabase.from("orders")).eq("email", email).is("grant_email", null),
+        ])
+      : [{ data: [], error: null }, { data: [], error: null }];
+    const othersErr = byGrant.error || byEmail.error;
+    const paidOrders = [...(byGrant.data || []), ...(byEmail.data || [])];
     if (othersErr) {
       console.error("[refund] enrollments_check:", othersErr.message); revokeFailed.push("enrollments_check");
     } else if (hasOtherPaidCourseAccess(order, paidOrders)) {

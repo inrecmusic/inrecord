@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import TrialVideoPanel from "./TrialVideoPanel";
 import { adminFetch } from "@/lib/admin-client";
 
@@ -22,18 +22,37 @@ function fromLocalInput(v) { return v ? new Date(v).toISOString() : null; }
 export default function SaleSettingsPage({ showToast }) {
   const [s, setS] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [launching, setLaunching] = useState(false);
 
-  useEffect(() => {
-    adminFetch("/api/admin/sale-settings")
-      .then((r) => r.json())
-      .then((d) => setS(d.data || EMPTY_SETTINGS))
-      .catch(() => { setS(EMPTY_SETTINGS); showToast?.("載入銷售設定失敗，顯示空白表單"); })
-      .finally(() => setLoading(false));
-  }, []); // eslint-disable-line
+  // 載入一定要檢查 r.ok：後端回 500/503 時 d.data 是 undefined，舊寫法會靜默套用空白表單，
+  // 管理員一按「儲存」就把 open_at（教室立刻鎖站）／waves（前台售價失效）／粉絲方案價整組清掉。
+  const load = useCallback(async () => {
+    setLoading(true); setLoadErr("");
+    try {
+      const r = await adminFetch("/api/admin/sale-settings");
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `載入失敗（HTTP ${r.status}）`);
+      setS(d.data || EMPTY_SETTINGS); // 成功但沒有資料列＝新環境尚未設定，空白表單是正常起點
+    } catch (e) {
+      setS(null); setLoadErr(e.message || "載入失敗");
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
-  if (loading || !s) return <div style={{ padding: 24 }}>載入中…</div>;
+  if (loading) return <div style={{ padding: 24 }}>載入中…</div>;
+
+  // 載入未成功就不渲染表單（也就沒有儲存按鈕），避免把空白值覆蓋回正式設定
+  if (loadErr || !s) return (
+    <div style={{ padding: 24, maxWidth: 640, wordBreak: "keep-all", lineBreak: "strict" }}>
+      <h2 style={{ marginTop: 0 }}>銷售設定</h2>
+      <p style={{ color: "#dc2626" }}>⚠️ 載入失敗：{loadErr || "沒有取得設定資料"}</p>
+      <p style={{ fontSize: 13, color: "#64748b" }}>為避免把空白設定覆蓋掉正式售價與開課日，這裡先不顯示表單。請重試，若持續失敗請檢查後端。</p>
+      <button onClick={load} style={{ border: "1px solid #cbd5e1", background: "#f8fafc", borderRadius: 8, padding: "8px 16px", cursor: "pointer" }}>重試</button>
+      <TrialVideoPanel showToast={showToast} />
+    </div>
+  );
 
   const fp = s.fan_plan || {};
   const fanEnabled = typeof fp.enabled === "boolean" ? fp.enabled : true;

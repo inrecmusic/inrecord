@@ -69,7 +69,9 @@
   background: linear-gradient(95deg, var(--gold-hi), var(--gold-mid) 55%, var(--gold-deep)); color: #3a2a08;
   font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-size: 14.5px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase; padding: 7px 16px; border-radius: 999px; }
-.offerPriceRow { display: flex; align-items: baseline; gap: 14px; margin: 14px 0 16px; }
+/* 價格列：窄機（≤390px）放不下「NT$3,999 + 刪除線原價」時讓原價換到下一行，
+   避免原價被卡片／視窗切掉；主價字級不變，寬度夠的機型仍維持同一行。 */
+.offerPriceRow { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 14px; row-gap: 4px; margin: 14px 0 16px; }
 .offerPrice { font-family: var(--font-inter), sans-serif; font-size: 46px; font-weight: 800; letter-spacing: -.01em; color: #fff; line-height: 1; }
 .offerWas { font-family: var(--font-inter), sans-serif; font-size: 22px; font-weight: 500; color: rgba(255,255,255,.45); text-decoration: line-through; }
 .offerLaunch { display: flex; align-items: center; gap: 7px; margin: 0 0 8px;
@@ -386,7 +388,7 @@
   .heroLead { font-size: 18px; line-height: 1.6; margin-bottom: 22px; }
   .heroSeries { font-size: 15.5px; gap: 10px; }       /* 窄機：CROSSOVERICK 系列標縮小 */
   .heroSeries::before { width: 28px; }
-  .offerPriceRow { gap: 10px; }
+  .offerPriceRow { column-gap: 10px; }   /* 換行時的行距沿用上面的 row-gap */
   .offerPrice { font-size: 36px; }                  /* 窄機：價格縮小，避免右側劃線價 $10,800 溢出卡片 */
   .offerWas { font-size: 20px; }
   .offerBtns { flex-direction: column; }            /* 窄機：兩顆 CTA 直向堆疊全寬，避免擠壓換行 */

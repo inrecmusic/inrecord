@@ -183,11 +183,22 @@ export async function POST(req) {
             //   - 無限量券：checkout 未預扣，此處補記已付使用數（純統計）。
             //   - 例外：若訂單曾逾時釋放(wasExpired)，限量券的預扣已被退回 →
             //           這裡補回一次，避免「釋放後付款」造成重複折抵。
+            //   計次一律用樂觀鎖 CAS（`UPDATE … WHERE used=<讀到值>`，與 checkout 預扣同一套）：
+            //   先讀後寫在並發／PAYUNi 重送時會 lost update，wasExpired 那條路徑少扣一次就會超發限量名額。
             if (order.coupon_code) {
-              const { data: c } = await supabase.from("coupons").select("used, usage_limit").eq("code", order.coupon_code).single();
-              if (c && (c.usage_limit == null || wasExpired)) {
-                await supabase.from("coupons").update({ used: (c.used || 0) + 1 }).eq("code", order.coupon_code);
+              let counted = false;
+              for (let attempt = 0; attempt < 3 && !counted; attempt++) {
+                const { data: c } = await supabase.from("coupons").select("used, usage_limit").eq("code", order.coupon_code).maybeSingle();
+                // 查無此券、或限量券已在 checkout 預扣過（且此單未曾逾時釋放）→ 本來就不用加
+                if (!c || !(c.usage_limit == null || wasExpired)) { counted = true; break; }
+                const prevUsed = c.used || 0;
+                const { data: bumped } = await supabase
+                  .from("coupons").update({ used: prevUsed + 1 })
+                  .eq("code", order.coupon_code).eq("used", prevUsed).select("id");
+                counted = !!(bumped && bumped.length);
               }
+              // 重試仍撞到 → 只記 log。notify 一律回 200（回非 200 會讓 PAYUNi 一直重送），計次差異由後台對帳處理。
+              if (!counted) console.error("[payuni notify] 優惠券計次 CAS 連續失敗", order.coupon_code, params.MerTradeNo);
             }
 
             // 寄送購買成功開課確認信（Brevo transactional）— 失敗不中斷

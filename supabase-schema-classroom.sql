@@ -1,6 +1,17 @@
 -- ════════════════════════════════════════════════════════
 -- InRecord 音樂教室 Classroom Schema
--- 執行前請先執行 supabase-schema-music.sql（建立 chapters/videos）
+--
+-- ⚠️⚠️⚠️ 危險：本檔含 DROP TABLE ... CASCADE（unit_comments／ratings／submissions）。
+--        對「有資料的資料庫」重跑會刪光學員留言、課程評價、作業繳交，且救不回來。
+--        本檔只給全新環境建置用，**不是 idempotent、不可對正式庫重跑**。
+--        只想補後來新增的欄位／索引，請改跑 supabase-deploy.sql 那類冪等檔。
+--
+-- 執行順序：一定要在 supabase-schema-music.sql 之後。
+--   ① music 先建 chapters／videos，本檔的 comments／submissions／progress 都參照它們；
+--   ② music 那份 ratings（欄位叫 rating、沒有 user_id）與 submissions（沒有 user_id）是舊版，
+--      由本檔 DROP 掉重建成程式實際在用的版本（ratings.score／user_id）。
+--      順序顛倒＝留下舊版 ratings，評價功能整組壞。
+--
 -- 在 Supabase Dashboard → SQL Editor 執行此檔案
 -- ════════════════════════════════════════════════════════
 
@@ -53,12 +64,25 @@ CREATE TABLE IF NOT EXISTS comment_replies (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- music 檔已建過同名表（外鍵指向舊的 unit_comments），上面 DROP unit_comments CASCADE 會把那條外鍵拿掉，
+-- 而 CREATE TABLE IF NOT EXISTS 不會重建 → 表會變成沒有外鍵。lib/comments.js 的巢狀查詢
+-- comments→comment_replies 是 PostgREST 靠外鍵推導的，缺外鍵會直接查不到關聯，所以這裡補回來（冪等）。
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.comment_replies'::regclass AND contype = 'f') THEN
+    ALTER TABLE comment_replies ADD CONSTRAINT comment_replies_comment_id_fkey
+      FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 ALTER TABLE comment_replies ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "service_role_comment_replies" ON comment_replies;
 CREATE POLICY "service_role_comment_replies" ON comment_replies
   USING (auth.role() = 'service_role');
 
--- 所有人可讀回覆（前台顯示）
+-- 所有人可讀回覆（前台顯示）。DROP 是因為 music 檔已建過同名 policy，重名會 ERROR 讓整份 rollback。
+DROP POLICY IF EXISTS "public_read_comment_replies" ON comment_replies;
 CREATE POLICY "public_read_comment_replies" ON comment_replies
   FOR SELECT USING (TRUE);
 
@@ -107,11 +131,24 @@ CREATE TABLE IF NOT EXISTS rating_replies (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 同 comment_replies：上面 DROP ratings CASCADE 會拿掉 music 檔那張表的外鍵，表本身留著不會重建。
+-- 後台 ratings→rating_replies 的巢狀查詢要靠外鍵，這裡補回來（冪等）。
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.rating_replies'::regclass AND contype = 'f') THEN
+    ALTER TABLE rating_replies ADD CONSTRAINT rating_replies_rating_id_fkey
+      FOREIGN KEY (rating_id) REFERENCES ratings(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 ALTER TABLE rating_replies ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "service_role_rating_replies" ON rating_replies;
 CREATE POLICY "service_role_rating_replies" ON rating_replies
   USING (auth.role() = 'service_role');
 
+-- DROP 是因為 music 檔已建過同名 policy（重名會 ERROR）
+DROP POLICY IF EXISTS "public_read_rating_replies" ON rating_replies;
 CREATE POLICY "public_read_rating_replies" ON rating_replies
   FOR SELECT USING (TRUE);
 

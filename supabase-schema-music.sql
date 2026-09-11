@@ -1,5 +1,15 @@
 -- ════════════════════════════════════════════════════════
 -- InRecord 音樂教室擴充 Schema
+--
+-- 執行順序：全新環境的「第一份」。chapters／videos 是全站的地基——
+-- supabase-schema.sql 的 games、supabase-schema-classroom.sql 的 comments／submissions／progress
+-- 都參照它們，先跑別份會直接 ERROR、整份交易 rollback。
+--
+-- ⚠️ 本檔的 submissions／unit_comments／comment_replies／ratings 是**舊版**定義，
+--    由後面的 supabase-schema-classroom.sql DROP 掉重建成程式實際使用的版本
+--    （ratings.score／user_id、submissions.user_id、comments 取代 unit_comments）。
+--    所以 classroom 一定要排在本檔之後。
+--
 -- 在 Supabase Dashboard → SQL Editor 執行此檔案
 -- ════════════════════════════════════════════════════════
 

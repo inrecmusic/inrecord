@@ -52,7 +52,7 @@ export async function POST(req) {
       const configured = !!(process.env.PAYUNI_MERCHANT_ID && process.env.PAYUNI_HASH_KEY && process.env.PAYUNI_HASH_IV);
       return NextResponse.json(configured ? { ok: true } : { error: "missing_payuni_config" }, { status: configured ? 200 : 500 });
     }
-    const { plan, email, proofUrl } = body;
+    const { plan, email: emailInput, proofUrl } = body;
     const attribution = body.attribution || null;
     // 結帳二次確認：前端要先勾「我已閱讀並同意服務條款及退費政策」並在摘要頁按「確認購買」才會帶 agreeTerms
     if (body.agreeTerms !== true) return NextResponse.json({ error: "terms_required" }, { status: 400 });
@@ -60,9 +60,12 @@ export async function POST(req) {
     // 1) 方案合法性 + 價格/品名一律由後端決定
     const catalog = PLAN_CATALOG[plan];
     if (!catalog || catalog.sellable === false) return NextResponse.json({ error: "invalid_plan" }, { status: 400 });
-    if (!email || typeof email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (!emailInput || typeof emailInput !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput)) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }
+    // Email 一律小寫存放（與 lib/woocommerce、lib/manual-grant、order/grant-email、lib/email-log 一致）：
+    // enrollments 若存到大寫，登入身分一律小寫，lib/course-access 的 .eq("email", …) 會比不到 → 付了錢進不了教室、早鳥資格也失效。
+    const email = emailInput.trim().toLowerCase();
     const saleSettings = await getSaleSettings();
     const label = catalog.label;
 
@@ -80,6 +83,12 @@ export async function POST(req) {
       // 粉絲直購券綁 fan_plan 截止（預設 9/9 23:59）：過期或方案停用即拒收，與首頁隱藏粉絲卡同步
       if (coupon.code === FAN_COUPON_CODE && !fanCouponActive(saleSettings, new Date())) {
         return NextResponse.json({ error: "coupon_expired" }, { status: 400 });
+      }
+      // 憑證券（/api/fan-proof 發的 FAN-XXXXXXXX；直購券 FAN3999 沒有連字號故不受影響）必須附上
+      // 我們自己發的憑證圖網址，否則下方 insert 不會寫 proof_url／fan_review='pending'，
+      // 這筆單就不會出現在後台「粉絲待審核」＝拿憑證價買到課卻繞過審核。
+      if (coupon.code.startsWith("FAN-") && !isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+        return NextResponse.json({ error: "proof_required" }, { status: 400 });
       }
     }
 

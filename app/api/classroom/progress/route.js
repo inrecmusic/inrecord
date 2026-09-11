@@ -3,6 +3,14 @@ import { serverError } from "@/lib/api-error";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { hasCourseAccess } from "@/lib/course-access";
+import { createDistributedLimiter } from "@/lib/rate-limit";
+
+// 進度寫入限流：key 用 user.id（登入後比 IP 精準，也不會誤傷同一個 NAT／校園網路下的多位學員）。
+// 門檻 20 次/分的算法：前端心跳固定每 10 秒一次，sliding window 內單一播放器最多 7 次；
+// 開兩個分頁邊看邊複習約 14 次，再加上播完的 ended 補送，15 次會擦邊被擋，故取 20 留餘裕。
+// 對灌水的效果：單次 viewed_delta 已夾在 15 秒，20 次/分＝每分鐘最多記 300 秒觀看，
+// 也就是實際時間的 5 倍上限，無法再用迴圈在數秒內把單元刷成 completed 換結業證書。
+const progressLimiter = createDistributedLimiter({ limit: 20, windowMs: 60_000, prefix: "rl:classroom-progress" });
 
 // 進度心跳每 10 秒一次，購課檢查結果以 email 為 key 快取 60 秒，減半熱路徑 DB 往返
 // （開通/退款後最多延遲 60 秒生效，對進度寫入無實害）。
@@ -66,6 +74,14 @@ export async function POST(req) {
   const token = (req.headers.get("authorization") || "").replace("Bearer ", "");
   const user = await getUser(token);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const rl = await progressLimiter(user.id);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter || 60) } }
+    );
+  }
 
   const admin = getSupabaseAdmin();
   if (!admin) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });

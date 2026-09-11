@@ -33,6 +33,7 @@ export function ProgressCell({ p }) {
 export default function StudentsPage({showToast}){
   const [students,setStudents]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [loadErr,setLoadErr]=useState("");
   const [search,setSearch]=useState("");
   const [showUnfilledOnly,setShowUnfilledOnly]=useState(false);
   // 預設只列真實付費學員（paid）；取消勾選才看得到測試帳號／體驗名單等未付款者
@@ -42,13 +43,15 @@ export default function StudentsPage({showToast}){
   const dlRef=useRef(null);
 
   const load=useCallback(async()=>{
-    setLoading(true);
+    setLoading(true);setLoadErr("");
     try{
       const res=await _api("/api/admin/students");
-      const d=await res.json();
-      if(!res.ok||d.ok===false)throw new Error(d.error||"fetch_failed");
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok||d.ok===false)throw new Error(d.error||`載入失敗（HTTP ${res.status}）`);
       setStudents(d.data||[]);
-    }catch{setStudents([]);}
+    }
+    // 載入失敗保留前次資料並顯示錯誤，不要用空陣列冒充「還沒有任何學員」
+    catch(e){setLoadErr(e.message||"載入失敗");}
     finally{setLoading(false);}
   },[]);
   useEffect(()=>{load();},[load]);
@@ -67,9 +70,11 @@ export default function StudentsPage({showToast}){
 
   function exportCsv(){
     if(!dlRef.current)return;
+    // 防 CSV 公式注入：以 = + - @ Tab CR 開頭者前綴單引號並整欄加引號（同 OrdersPage 的 esc）
+    const esc=(v)=>{let t=String(v??"");const f=/^[=+\-@\t\r]/.test(t);if(f)t="'"+t;return f||/[",\n\r]/.test(t)?`"${t.replace(/"/g,'""')}"`:t;};
     const head=["Email","電話","方案","來源","狀態","已購課","建立時間"];
     const rows=[head,...filtered.map(s=>[s.email,s.phone||"",s.plan_label||"",s.source||"",statusLabel(s.status),s.purchased?"是":"否",s.created_at||""])];
-    const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const csv="﻿"+rows.map(r=>r.map(esc).join(",")).join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
     dlRef.current.href=url;dlRef.current.download="inrecord_students.csv";dlRef.current.click();
     setTimeout(()=>URL.revokeObjectURL(url),100);showToast?.("✅ 已匯出 CSV");
@@ -91,6 +96,12 @@ export default function StudentsPage({showToast}){
           <button className={styles.btnSmall} onClick={exportCsv}>匯出 CSV</button>
         </div>
       </div>
+      {loadErr&&(
+        <div role="alert" style={{margin:"0 0 14px",padding:"10px 14px",borderRadius:10,background:"#fef2f2",border:"1px solid #fecaca",color:"#991b1b",fontSize:13,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",wordBreak:"keep-all",lineBreak:"strict"}}>
+          <span>⚠️ 學員名單載入失敗：{loadErr}　畫面上的數字可能不是最新的。</span>
+          <button className={styles.btnSmall} onClick={load}>重試</button>
+        </div>
+      )}
       <div className={styles.statsGrid4}>
         {[["總學員",students.length,"位"],["本月新增",thisMonth.length,"位"],["已購課",purchased.length,"位"],["未購課",students.length-purchased.length,"位"]].map(([l,v,s])=>(
           <div key={l} className={styles.statCard}><div className={styles.statHead}><span className={styles.statLabel}>{l}</span></div><strong className={styles.statValue}>{v}</strong><div className={styles.statSub}>{s}</div></div>
@@ -110,7 +121,10 @@ export default function StudentsPage({showToast}){
             <table className={styles.table}>
               <thead><tr><th></th><th>姓名</th><th>Email</th><th>電話</th><th>已購課程數</th><th>狀態</th><th>程度</th><th>學習進度</th><th>已填</th><th>建立時間</th><th>操作</th></tr></thead>
               <tbody>
-                {!filtered.length?<tr><td colSpan={11} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>
+                {/* 空狀態只在「載入成功但真的是空」時顯示；載入失敗要講清楚是失敗 */}
+                {!filtered.length?(loadErr
+                  ?<tr><td colSpan={11} style={{textAlign:"center",padding:28,color:"#dc2626"}}>⚠️ {loadErr}　<button className={styles.btnSmall} onClick={load}>重試</button></td></tr>
+                  :<tr><td colSpan={11} className={styles.empty}><span className={styles.emptyIcon}>👥</span><span className={styles.emptyTitle}>還沒有任何學員</span><span className={styles.emptySub}>尚無名單資料</span></td></tr>)
                 :filtered.map(s=>(
                   <tr key={s.id}>
                     <td><div className={styles.studentAvatar}>{s.name[0]?.toUpperCase()}</div></td>

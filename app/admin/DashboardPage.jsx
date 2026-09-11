@@ -5,7 +5,7 @@ import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen } 
 import { excludeManual } from "@/lib/order-stats";
 
 // ── Dashboard Page ─────────────────────────────────────────────────────────
-export default function DashboardPage({leads,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
+export default function DashboardPage({leads,leadsTotal=null,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
   const now=new Date();
   const demoOpened=leads.filter(l=>l.demo_opened||["demo_opened","purchased"].includes(l.status));
   const fmtTWD=n=>n>=10000?`$${(n/10000).toFixed(1)}萬`:`$${n.toLocaleString()}`;
@@ -38,7 +38,7 @@ export default function DashboardPage({leads,orders=[],trendFilter,donutFilter,s
         <StatCard label="本月營收" value={fmtTWD(monthRev)} sub="本月累計營收" icon={DollarSign} color="#f59e0b"/>
         <StatCard label="本月訂單" value={excludeManual(paidM).length} sub="本月已完成訂單數（不含手動開通）" icon={ShoppingCart} color="#2563eb"/>
         <StatCard label="總營收"   value={fmtTWD(totalRev)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
-        <StatCard label="總學員數" value={leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
+        <StatCard label="總學員數" value={leadsTotal??leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
         <StatCard label="Demo 開啟率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
       </div>
