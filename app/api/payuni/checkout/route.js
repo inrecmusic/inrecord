@@ -66,7 +66,8 @@ export async function POST(req) {
     // Email 一律小寫存放（與 lib/woocommerce、lib/manual-grant、order/grant-email、lib/email-log 一致）：
     // enrollments 若存到大寫，登入身分一律小寫，lib/course-access 的 .eq("email", …) 會比不到 → 付了錢進不了教室、早鳥資格也失效。
     const email = emailInput.trim().toLowerCase();
-    const saleSettings = await getSaleSettings();
+    // strict：讀不到銷售設定就讓下方 catch 接住回 500，不要用 fallback 價把課賣掉
+    const saleSettings = await getSaleSettings({ strict: true });
     const label = catalog.label;
 
     // 先取得並驗證優惠券（讓有效「指定價」券可繞過開賣前封鎖）
@@ -84,10 +85,14 @@ export async function POST(req) {
       if (coupon.code === FAN_COUPON_CODE && !fanCouponActive(saleSettings, new Date())) {
         return NextResponse.json({ error: "coupon_expired" }, { status: 400 });
       }
-      // 憑證券（/api/fan-proof 發的 FAN-XXXXXXXX；直購券 FAN3999 沒有連字號故不受影響）必須附上
-      // 我們自己發的憑證圖網址，否則下方 insert 不會寫 proof_url／fan_review='pending'，
-      // 這筆單就不會出現在後台「粉絲待審核」＝拿憑證價買到課卻繞過審核。
-      if (coupon.code.startsWith("FAN-") && !isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+      // 憑證券（/api/fan-proof 發的 FAN-XXXXXXXX）必須附上我們自己發的憑證圖網址，否則下方 insert
+      // 不會寫 proof_url／fan_review='pending'，這筆單就不會出現在後台「粉絲待審核」＝拿憑證價買到
+      // 課卻繞過審核。
+      // ⚠️ 只認「憑證券」：fan-proof 發的券 batch_id 為 NULL，後台序號庫批次產的券一定有 batch_id。
+      // 少了 batch_id 這個條件，前綴填 FAN 的現場序號（同樣是 FAN-XXXXXXXX）會整批結不了帳。
+      // 直購券 FAN3999 沒有連字號，本來就不受這條影響。
+      const isProofCoupon = coupon.code.startsWith("FAN-") && !coupon.batch_id;
+      if (isProofCoupon && !isOwnProofUrl(proofUrl, process.env.NEXT_PUBLIC_SUPABASE_URL)) {
         return NextResponse.json({ error: "proof_required" }, { status: 400 });
       }
     }

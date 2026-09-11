@@ -10,6 +10,28 @@ import { PLAN_CATALOG } from "@/lib/plans";
 import { ExternalLink, DollarSign, CheckCircle2, CreditCard, BarChart2, AlertTriangle, X } from "lucide-react";
 import { excludeManual } from "@/lib/order-stats";
 
+// 同步到 Google 試算表的錯誤碼 → 人話（後端只回固定代碼，細節只進 server log）
+const SHEET_SYNC_ERRORS={
+  sheets_not_configured:"尚未設定 Google 試算表連線（SHEETS_WEBHOOK_URL／SHEETS_WEBHOOK_SECRET）",
+  invalid_range:"日期區間不正確，請確認開始日不晚於結束日",
+  sheets_request_failed:"連不上 Google 試算表，請確認 Apps Script 網頁應用程式是否正常運作",
+  sheets_rejected:"Google 試算表拒絕這次同步",
+  sheets_bad_response:"Google 試算表的回應格式不正確",
+  supabase_not_configured:"資料庫未設定，無法讀取訂單",
+  orders_load_failed:"讀取訂單失敗，請稍後再試",
+};
+// Apps Script 端回的原因碼 → 人話（sheets_rejected 時附帶）
+const SHEET_SYNC_REASONS={
+  unauthorized:"密鑰不符，請確認 SHEETS_WEBHOOK_SECRET 與試算表指令碼屬性一致",
+  not_configured:"試算表端尚未設定密鑰（指令碼屬性 SHEET_SYNC_SECRET）",
+  too_many_orders:"單次筆數超過上限，請縮小日期區間分批同步",
+  busy:"另一次同步正在進行，請稍等幾秒再按一次",
+  missing_order_no:"有訂單缺少訂單編號，無法寫入",
+  invalid_orders:"送出的資料格式不正確",
+  bad_request:"送出的資料格式不正確",
+  internal_error:"試算表端執行發生錯誤，請看 Apps Script 的執行記錄",
+};
+
 // ── Orders Page ────────────────────────────────────────────────────────────
 // 手動開通課程：外部站台(concert-shop/現場)已成交但名單沒進來時，直接輸入 Email 開通。
 export function ManualGrantCard({reload,showToast}){
@@ -166,6 +188,12 @@ export default function OrdersPage({showToast}){
   const [tablePage,setTablePage]=useState(1);
   // 自動開票關閉時（發票人工另外開）不顯示「發票待補開」告警；開票失敗／寄信失敗照舊。
   const [autoInvoice,setAutoInvoice]=useState(false);
+  // 同步到 Google 試算表：configured=null 代表還沒問到（按鈕先照常可按），false 才停用並說明原因。
+  // from/to 是伺服器（台灣時間）算好的預設區間＝上個月，避免瀏覽器時區與 hydration 差異。
+  const [sheetSync,setSheetSync]=useState({configured:null,from:"",to:""});
+  const [syncing,setSyncing]=useState(false);
+  const [syncResult,setSyncResult]=useState("");
+  const [loadErr,setLoadErr]=useState("");
   const PER=20;
 
   const loadOrders=useCallback(async()=>{
@@ -175,13 +203,29 @@ export default function OrdersPage({showToast}){
       const{data,autoInvoice}=await res.json();
       setRows(data||[]);
       setAutoInvoice(!!autoInvoice);
+      setLoadErr("");
     }catch{
-      setRows([]);
-      showToast?.("載入訂單失敗，顯示空白列表");
+      // 不要把載入失敗畫成「還沒有任何訂單」——那會讓人以為真的沒生意。保留前次資料並標記錯誤。
+      setLoadErr("載入訂單失敗");
+      showToast?.("載入訂單失敗，請按重試");
     }
   },[showToast]);
 
   useEffect(()=>{loadOrders();},[loadOrders]);
+
+  // 取回試算表同步的設定狀態與預設區間；問不到就維持 configured=null（按鈕照常可按，真沒設會回 503 提示）
+  useEffect(()=>{
+    let alive=true;
+    (async()=>{
+      try{
+        const res=await _api("/api/admin/sheets-sync");
+        if(!res.ok)return;
+        const d=await res.json();
+        if(alive)setSheetSync({configured:!!d.configured,from:d.from||"",to:d.to||""});
+      }catch{/* 設定狀態取不到不影響訂單頁其他功能 */}
+    })();
+    return()=>{alive=false;};
+  },[]);
 
   async function issueInvoice(realId){
     if(!realId||issuing)return;
@@ -347,6 +391,32 @@ export default function OrdersPage({showToast}){
     setTimeout(()=>URL.revokeObjectURL(url),100);
   }
 
+  // 同步訂單到 Google 試算表的「InRecord 訂單」分頁（以訂單編號 upsert，重跑不會長出重複列）。
+  // 沿用本頁既有的日期篩選（dateFrom／dateTo）；兩個日期都沒填時後端預設上個月整月。
+  // 送出期間按鈕停用，防連點重送。
+  async function syncToSheet(){
+    if(syncing)return;
+    setSyncing(true);setSyncResult("");
+    try{
+      const res=await _api("/api/admin/sheets-sync",{method:"POST",body:JSON.stringify({from:dateFrom||undefined,to:dateTo||undefined})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok||d.ok===false){
+        const base=SHEET_SYNC_ERRORS[d.error]||d.detail||"同步失敗，請稍後再試";
+        const why=SHEET_SYNC_REASONS[d.reason];
+        const msg=why?`${base}：${why}`:base;
+        setSyncResult("❌ "+msg);showToast?.("❌ "+msg);
+        if(d.error==="sheets_not_configured")setSheetSync(s=>({...s,configured:false}));
+        return;
+      }
+      const period=`${d.from||"最早"} ~ ${d.to||"最新"}`;
+      setSyncResult(`✅ 已同步 ${d.count} 筆（新增 ${d.inserted}、更新 ${d.updated}）·期間 ${period}`);
+      showToast?.(`✅ 已同步 ${d.count} 筆（新增 ${d.inserted}、更新 ${d.updated}）`);
+    }catch{
+      const msg="同步失敗，請檢查網路後再試一次";
+      setSyncResult("❌ "+msg);showToast?.("❌ "+msg);
+    }finally{setSyncing(false);}
+  }
+
   return(
     <div>
       <div className={styles.pageHeader}>
@@ -398,9 +468,26 @@ export default function OrdersPage({showToast}){
       <div className={styles.panel} style={{marginBottom:16}}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
           <h3 style={{margin:0}}>對帳彙整（依日期區間）</h3>
-          <button className={styles.btnSmall} onClick={exportReconciliation}>匯出對帳 CSV</button>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button className={styles.btnSmall} onClick={exportReconciliation}>匯出對帳 CSV</button>
+            <button
+              className={styles.btnSmall}
+              disabled={syncing||sheetSync.configured===false}
+              title={sheetSync.configured===false
+                ?"尚未設定 SHEETS_WEBHOOK_URL／SHEETS_WEBHOOK_SECRET，功能停用"
+                :"把日期區間內的訂單寫進 Google 試算表的「InRecord 訂單」分頁（同一筆訂單重跑只會更新，不會重複）"}
+              onClick={syncToSheet}
+            >{syncing?"同步中…":"📊 同步到 Google 試算表"}</button>
+          </div>
         </div>
         <div className={styles.reconPeriod}>期間：{(dateFrom||dateTo)?`${dateFrom||"…"} ~ ${dateTo||"…"}`:"全部期間"}（不受狀態／搜尋篩選影響）</div>
+        <div className={styles.reconPeriod}>
+          同步到 Google 試算表：{(dateFrom||dateTo)
+            ?`依下方日期篩選 ${dateFrom||"最早"} ~ ${dateTo||"最新"}`
+            :`兩個日期都留空時預設同步上個月${sheetSync.from?`（${sheetSync.from} ~ ${sheetSync.to}）`:""}`}
+          {sheetSync.configured===false&&"　⚠️ 尚未設定 SHEETS_WEBHOOK_URL／SHEETS_WEBHOOK_SECRET，功能停用"}
+        </div>
+        {syncResult&&<div className={styles.reconPeriod}>{syncResult}</div>}
         <div className={styles.reconGrid}>
           <div className={styles.reconTile}>
             <div className={styles.reconLabel}>有效收款</div>
@@ -469,7 +556,13 @@ export default function OrdersPage({showToast}){
           <table className={styles.table}>
             <thead><tr><th>訂單編號</th><th>學員</th><th>課程</th><th>金額</th><th>付款方式</th><th>狀態</th><th>開通</th><th>發票號碼</th><th>建立時間</th><th>操作</th></tr></thead>
             <tbody>
-              {!filtered.length?<tr><td colSpan={10} className={styles.empty}><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></td></tr>
+              {!filtered.length?<tr><td colSpan={10} className={styles.empty}>
+                {loadErr
+                  ? <><span className={styles.emptyIcon}>⚠️</span><span className={styles.emptyTitle}>{loadErr}</span><span className={styles.emptySub}><button className={styles.btnSmall} onClick={loadOrders}>重試</button></span></>
+                  : rows.length
+                    ? <><span className={styles.emptyIcon}>🔍</span><span className={styles.emptyTitle}>沒有符合條件的訂單</span><span className={styles.emptySub}>＋ 調整上方篩選條件</span></>
+                    : <><span className={styles.emptyIcon}>📋</span><span className={styles.emptyTitle}>還沒有任何訂單</span><span className={styles.emptySub}>＋ 等待第一筆購買</span></>}
+              </td></tr>
               :pageRows.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>

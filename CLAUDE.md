@@ -174,6 +174,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 | `/api/admin/issue-invoice` | POST | 後台手動開立發票（Amego） |
 | `/api/admin/resend-email` | POST | 後台補寄開課確認信（Brevo） |
 | `/api/admin/bunny-usage` | GET | 後台訂閱費用面板：Bunny 本月費用／流量／餘額（`lib/bunny-usage.js` 整理，伺服器快取 10 分） |
+| `/api/admin/sheets-sync` | GET/POST | 後台訂單同步到 Google 試算表「InRecord 訂單」分頁（`docs/sheets/orders-sync.gs` 的 doPost＋共用密鑰；以 `mer_trade_no` upsert，月底重跑／退款後再跑都不會長出重複列）。POST body `{from,to}` 為台灣時區日期、兩者留空＝上個月整月；欄位轉換純函式在 `lib/sheets-sync.js`。GET 只回 `configured`＋預設區間，供按鈕顯示停用原因；未設 env 時 POST 回 503 `sheets_not_configured` |
 | `/api/admin/courses` | GET/POST/PATCH/DELETE | 後台課程 CRUD |
 | `/api/admin/coupons` | GET/POST/PATCH/DELETE | 後台優惠券 CRUD |
 | `/api/admin/sale-settings` | GET/PATCH | 後台銷售設定（open_at / list_price / waves[] / lock_override）|
@@ -254,6 +255,8 @@ META_CAPI_TEST_CODE     # 選填，Events Manager「測試事件」驗證期間�
 AUTO_GRANT_ACCESS       # =on 才「付款即自動開通課程」；未設＝不開通、後台付款名單手動開通（只 payuni）
 AUTO_INVOICE            # =on 才「付款後自動開 Amego 發票」；未設＝發票人工開立
 ANTHROPIC_API_KEY       # 後台「營運助理」每週週報（cron ops-report 每週一 08:00 台灣）；未設＝排程跳過、後台顯示未設定、不影響其他功能
+SHEETS_WEBHOOK_URL      # Google Apps Script 網頁應用程式 URL（後台訂單同步到試算表）；與 SHEETS_WEBHOOK_SECRET 缺一＝功能安全停用（按鈕停用、API 回 503），不影響後台其他功能
+SHEETS_WEBHOOK_SECRET   # 與 Apps Script 共用的密鑰（doPost 比對後才寫試算表）
 LEAD_CAPTURE            # =on 才開「留信箱換免費試看」（首頁橫幅＋進站彈窗＋/api/newsletter/subscribe＋/trial）；未設＝首頁顯示原 CTA 卡片、API 回 503。試看影片上傳後再開
 ```
 
