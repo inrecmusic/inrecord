@@ -134,6 +134,16 @@ describe("POST /api/payuni/checkout（下單）", () => {
     expect(await res2.json()).toEqual({ error: "proof_required" });
   });
 
+  it("後台序號庫的 FAN 前綴批次券（有 batch_id）不受憑證規則限制，可正常結帳", async () => {
+    // 現場活動序號可能也用 FAN 當前綴，產出同樣是 FAN-XXXXXXXX。它們有 batch_id，
+    // 不是 /api/fan-proof 發的憑證券，不該被要求附憑證圖，否則整批序號結不了帳。
+    const coupon = { code: "FAN-BATCH999", type: "price", value: 3499, status: "active", usage_limit: 1, used: 0, plan: "bundle", batch_id: "b-1" };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const res = await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN-BATCH999" }));
+    expect(res.status).toBe(200);
+    expect(sb.calls.some((c) => c.table === "orders" && sb.has(c, "insert"))).toBe(true);
+  });
+
   it("憑證券（FAN-）帶自家憑證圖 → 建單並標成 fan_review pending", async () => {
     const coupon = { code: "FAN-ABCD2345", type: "price", value: 3699, status: "active", usage_limit: 1, used: 0, plan: "bundle" };
     const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);

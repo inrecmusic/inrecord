@@ -674,7 +674,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
                   <StatItem value={stats ? stats.purchases : null}                              suffix="+" en="members"  label="學員加入學習" />
-                  <StatItem value={showRating ? Number(stats.rating) : null}                     suffix=""  en="rating"   label="學員平均評分" decimals={1} />
+                  {showRating && <StatItem value={Number(stats.rating)}                          suffix=""  en="rating"   label="學員平均評分" decimals={1} />}
                 </div>
                 <div className={styles.termLn}>
                   <span className={styles.termP}>›</span>
