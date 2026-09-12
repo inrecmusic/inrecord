@@ -8,6 +8,7 @@ import { getSaleSettings, isPresale } from "@/lib/sale";
 import { buildAdminAlertHtml, sendAdminAlert } from "@/lib/admin-alert";
 import { hashEqual, interpretPayment } from "@/lib/payuni";
 import { sendPurchase } from "@/lib/meta-capi";
+import { recordPaymentEvent } from "@/lib/payment-events";
 
 // Payuni AES-256-GCM 解密：輸入為 hex( base64(密文) + ':::' + base64(GCM tag) )
 function aesDecrypt(encryptStr, key, iv) {
@@ -34,6 +35,11 @@ function makeHashInfo(encryptInfo, key, iv) {
 }
 
 // Payuni 背景通知（POST）
+// 原始回呼落地的硬逾時：超過就放棄這次落地，優先保證 PAYUNi 拿得到 200
+const RECORD_TIMEOUT_MS = 2500;
+
+export const maxDuration = 60;
+
 export async function POST(req) {
   try {
     let body;
@@ -77,11 +83,30 @@ export async function POST(req) {
       PaymentType: params.PaymentType || params.PayType,
     });
 
+    const sb = getSupabaseAdmin();
+
+    // 原始回呼一律先落地（在任何分流之前）：ATM／超商的「取號成功」通知帶著銀行代碼、虛擬帳號、
+    // 繳費期限、超商繳費代碼，以前走到檔尾就被丟掉，事後要退 ATM 的款查無匯款資訊。
+    // ⚠️ 只是多存一份底，不改變任何既有分流；失敗只記 log，絕不影響付款主流程。
+    // ⚠️「慢」不是錯誤，攔不到：supabase-js 走 fetch，預設逾時是分鐘級，遠超函式時間預算。
+    // DB 卡住會讓整支 notify 被平台砍掉 → PAYUNi 收不到 200 → 不斷重送。故加硬上限。
+    try {
+      await Promise.race([
+        recordPaymentEvent(sb, params),
+        new Promise((resolve) => setTimeout(() => {
+          console.error("[payment event] 落地逾時（不中斷 notify）", params.MerTradeNo);
+          resolve({ ok: false, error: "timeout" });
+        }, RECORD_TIMEOUT_MS)),
+      ]);
+    } catch (e) {
+      console.error("[payment event] 落地失敗（不中斷 notify）", e?.message || e);
+    }
+
     // 解密後 TradeStatus = 1 代表付款成功（外層 Status 為 'SUCCESS'）
     if (params.TradeStatus === "1") {
       console.log("[payuni paid]", params.MerTradeNo, params.TradeAmt);
 
-      const supabase = getSupabaseAdmin();
+      const supabase = sb;
       if (supabase) {
         // 先讀原訂單（狀態 + 下單金額）。若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
         // 付款仍要認（顧客已付錢），但限量券的預扣已被退回，稍後需補回扣抵 + 告警。

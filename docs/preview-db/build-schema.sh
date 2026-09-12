@@ -25,6 +25,7 @@ ORDER=(
   supabase-announcements-important.sql
   supabase-terms-consent.sql
   supabase-ops-reports.sql
+  supabase-payment-events.sql
   supabase-hardening.sql
 )
 {

@@ -8,6 +8,8 @@ vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 import { POST } from "./route";
 import { payuniTrade } from "@/lib/payuni";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit";
+import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
 
 // 最小 supabase 鏈式 mock：orders 單筆查詢回 order、其他 paid 單查詢回 paidOrders、update 記錄 patch
 function makeSupabase(order, paidOrders = []) {
@@ -71,7 +73,23 @@ function makeSpySupabase(order, rowsFor) {
 }
 
 const req = (body) => new Request("http://x/api/admin/refund", { method: "POST", body: JSON.stringify(body) });
-const paidOrder = { id: "o1", email: "a@b.c", grant_email: null, plan: "course", status: "paid", payuni_trade_no: "UNI1", amount: 3999 };
+const paidOrder = { id: "o1", email: "a@b.c", grant_email: null, plan: "course", status: "paid", payuni_trade_no: "UNI1", amount: 3999, mer_trade_no: "INREC1", pay_type: "2" };
+
+// state：order（單筆查詢回的訂單）、paidOrders（該 email 其他有效訂單）、
+//        refundColsError（寫 refunded_at／refund_amount 時的錯誤，模擬 SQL 未執行）、
+//        enrollment（刪除前的快照列）、subs（被取消的 subscriptions）
+function makeDb(state = {}) {
+  return makeSupabaseMock((table, ops) => {
+    const has = (m) => ops.some((o) => o.m === m);
+    const upd = ops.find((o) => o.m === "update")?.args[0];
+    if (table === "orders" && has("single")) return { data: state.order || paidOrder, error: null };
+    if (table === "orders" && has("in")) return { data: state.paidOrders || [], error: null };
+    if (table === "orders" && upd && "refunded_at" in upd) return { data: null, error: state.refundColsError || null };
+    if (table === "enrollments" && has("maybeSingle")) return { data: state.enrollment ?? null, error: null };
+    if (table === "subscriptions" && has("update")) return { data: state.subs || [], error: null };
+    return { data: null, error: null };
+  });
+}
 
 describe("POST /api/admin/refund", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -128,6 +146,79 @@ describe("POST /api/admin/refund", () => {
     expect(body).toMatchObject({ ok: true, method: "manual" });
     expect(body.enrollmentKept).toBeUndefined();
     expect(sb.calls.some((c) => c.table === "enrollments" && c.m === "delete")).toBe(true);
+  });
+
+  it("標記退款時一併寫 refunded_at／refund_amount（updated_at 會被後續操作蓋掉，不可拿來當退款日）", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ id: "o1", manual: true }))).json();
+    expect(body).toMatchObject({ ok: true });
+    const upd = sb.arg(sb.calls.find((c) => c.table === "orders" && sb.has(c, "update")), "update");
+    expect(upd).toMatchObject({ status: "refunded", refund_amount: 3999 });
+    expect(upd.refunded_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("降級：orders 還沒有 refunded_at／refund_amount 欄 → 退回只寫 status，退款照樣完成", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    // PGRST204＝PostgREST schema cache 找不到該欄（supabase-payment-events.sql 未執行）
+    const sb = makeDb({ refundColsError: { code: "PGRST204", message: "column refunded_at does not exist" } });
+    getSupabaseAdmin.mockReturnValue(sb);
+
+    const res = await POST(req({ id: "o1", manual: true }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, method: "manual" });
+    const updates = sb.calls.filter((c) => c.table === "orders" && sb.has(c, "update")).map((c) => sb.arg(c, "update"));
+    expect(updates).toHaveLength(2);                       // 第一次帶新欄位失敗 → 第二次只寫 status
+    expect(Object.keys(updates[1]).sort()).toEqual(["status", "updated_at"]);
+    expect(spy.mock.calls.flat().join(" ")).toContain("supabase-payment-events.sql");
+    spy.mockRestore();
+  });
+
+  it("撤銷課程存取前先留 enrollments 整列快照，連同金額／訂單編號寫進稽核紀錄", async () => {
+    const enrollment = { id: "e1", email: "a@b.c", course_id: "piano-101", enrolled_at: "2026-08-23T10:00:00Z", early_override: "early" };
+    const sb = makeDb({ enrollment }); getSupabaseAdmin.mockReturnValue(sb);
+
+    await POST(req({ id: "o1", manual: true }));
+
+    // 快照要在 delete 之前取
+    const order = sb.calls.filter((c) => c.table === "enrollments").map((c) => (sb.has(c, "delete") ? "delete" : "select"));
+    expect(order).toEqual(["select", "delete"]);
+    expect(logAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      action: "order.refund",
+      meta: expect.objectContaining({
+        amount: 3999, mer_trade_no: "INREC1", payuni_trade_no: "UNI1", pay_type: "2",
+        method: "manual", revoked_enrollment: enrollment,
+      }),
+    }));
+  });
+
+  it("快照查詢失敗不中斷退款（仍標記已退款、仍撤銷存取）", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const sb = makeDb();
+    // 讓 enrollments 的 select 直接爆開
+    const realFrom = sb.from;
+    sb.from = vi.fn((t) => {
+      const b = realFrom(t);
+      return t === "enrollments" ? new Proxy(b, { get: (o, m) => (m === "select" ? () => { throw new Error("boom"); } : o[m]) }) : b;
+    });
+    getSupabaseAdmin.mockReturnValue(sb);
+
+    const res = await POST(req({ id: "o1", manual: true }));
+
+    expect(await res.json()).toMatchObject({ ok: true, method: "manual" });
+    expect(sb.calls.some((c) => c.table === "enrollments" && sb.has(c, "delete"))).toBe(true);
+    spy.mockRestore();
+  });
+
+  it("bundle 退款：記錄被取消的 subscriptions 筆數", async () => {
+    const sb = makeDb({ order: { ...paidOrder, plan: "bundle" }, subs: [{ id: "s1" }] });
+    getSupabaseAdmin.mockReturnValue(sb);
+
+    await POST(req({ id: "o1", manual: true }));
+
+    expect(logAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      meta: expect.objectContaining({ revoked_subscriptions: 1 }),
+    }));
   });
 
   it("PAYUNi 拒絕時回傳原始錯誤碼與訊息，不再誤導成「等結算／隔日再試」", async () => {
