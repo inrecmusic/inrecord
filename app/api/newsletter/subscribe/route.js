@@ -44,8 +44,8 @@ export async function POST(req) {
     console.error("[subscribe] unsubscribe cleanup failed:", e?.message || e);
   }
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
-  const { subject, html } = buildTrialEmail({ email, siteUrl });
-  const mail = await sendNewsletterEmail({ to: email, subject, html, kind: "trial" });
+  const { subject, html, unsubscribeUrl } = buildTrialEmail({ email, siteUrl });
+  const mail = await sendNewsletterEmail({ to: email, subject, html, unsubscribeUrl, kind: "trial" });
   if (!mail.success) console.error("[subscribe] trial email failed:", mail.error);
   return NextResponse.json({ ok: true, trialSent: mail.success === true });
 }
