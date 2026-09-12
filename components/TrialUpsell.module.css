@@ -1,0 +1,118 @@
+/* 試看頁導購樣式：頁面上方說明層次、底部 CTA 按鈕列，以及影片播完的置中導購視窗。
+   依品牌指南：深底只用 #05070b，主色藍只出現在按鈕，金色只用在「限時／資格」那一顆膠囊（全檔唯一一處）。 */
+
+/* ── 上方說明：主說明一行、補充說明降字級與彩度，分開兩層 ───────────────── */
+.lead {
+  margin: 0 0 10px; max-width: 660px; color: rgba(255, 255, 255, .82);
+  font-size: clamp(16px, 2.1vw, 18px); line-height: 1.75; word-break: keep-all; line-break: strict;
+}
+.note {
+  margin: 0 0 26px; max-width: 620px; padding-left: 14px; border-left: 2px solid rgba(120, 160, 255, .28);
+  color: rgba(255, 255, 255, .58); font-size: 14.5px; line-height: 1.7; word-break: keep-all; line-break: strict;
+}
+
+/* ── 底部 CTA：主按鈕放大加重，次按鈕維持低調；手機滿寬上下堆疊 ──────────── */
+.ctaRow { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 44px 0 28px; }
+.btnPrimary {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 17px 40px;
+  background: var(--brand); color: #fff; border-radius: 10px; font-size: 18px; font-weight: 700;
+  letter-spacing: .01em; text-decoration: none; box-shadow: 0 14px 30px rgba(37, 99, 235, .3);
+  transition: transform .25s cubic-bezier(.22, 1, .36, 1), background .25s, box-shadow .25s;
+}
+.btnPrimary:hover { background: var(--brand-dark); transform: translateY(-1px); box-shadow: 0 18px 38px rgba(37, 99, 235, .42); }
+.btnSecondary {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 16px 28px;
+  background: transparent; color: #9dc0ff; border: 1.5px solid rgba(120, 160, 255, .42); border-radius: 10px;
+  font-size: 16px; font-weight: 600; text-decoration: none; transition: border-color .25s, color .25s;
+}
+.btnSecondary:hover { border-color: #4f86ea; color: #cfe0ff; }
+
+/* ── 導購視窗 ─────────────────────────────────────────────────────────── */
+.backdrop {
+  position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(5, 7, 11, .78); animation: fade .25s ease-out;
+}
+.modal {
+  position: relative; width: min(560px, 100%); max-height: calc(100dvh - 32px);
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 22px; color: #fff;
+  background: radial-gradient(78% 60% at 84% 0%, rgba(59, 130, 246, .22), transparent 62%), #0f172a;
+  border: 1px solid rgba(120, 160, 255, .18);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .07);
+  animation: rise .35s cubic-bezier(.22, 1, .36, 1);
+}
+/* 只有上半部參與內捲；頁尾（主 CTA）固定不動，矮視窗與橫向手機也一定看得到 */
+.scroll { flex: 0 1 auto; overflow: auto; padding: 38px 34px 2px; }
+.foot { flex: 0 0 auto; padding: 18px 34px 22px; }
+.modal:focus { outline: none; }
+.close {
+  position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .75); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.close:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+/* 全檔唯一一處金色：限時／資格膠囊，只疊在深底上 */
+.badge {
+  display: inline-block; padding: 7px 16px; border-radius: 999px;
+  background: linear-gradient(95deg, var(--gold-hi), var(--gold-mid) 55%, var(--gold-deep));
+  color: #3a2a08; font-family: var(--font-jetbrains), monospace; font-size: 11.5px; font-weight: 700; letter-spacing: 2.3px;
+}
+.title {
+  margin: 16px 0 10px; font-family: var(--type-display); font-weight: 600; font-size: clamp(24px, 4.4vw, 31px);
+  line-height: 1.2; letter-spacing: .01em; word-break: keep-all; line-break: strict;
+}
+.body { margin: 0 0 18px; color: rgba(255, 255, 255, .72); font-size: 15.5px; line-height: 1.75; word-break: keep-all; line-break: strict; }
+.facts { margin: 0 0 20px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.facts li {
+  position: relative; padding-left: 18px; color: rgba(255, 255, 255, .8); font-size: 14.5px; line-height: 1.6;
+  word-break: keep-all; line-break: strict;
+}
+.facts li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--brand-light); }
+.priceRow { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.price { font-family: var(--type-numeric); font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.was { font-family: var(--type-numeric); font-size: 19px; font-weight: 500; color: rgba(255, 255, 255, .45); text-decoration: line-through; }
+.countdown { margin: 0 0 20px; color: rgba(255, 255, 255, .68); font-size: 14px; line-height: 1.7; word-break: keep-all; line-break: strict; }
+.countdown strong { font-family: var(--font-jetbrains), monospace; font-weight: 700; color: #fff; letter-spacing: .02em; }
+.cta {
+  display: flex; align-items: center; justify-content: center; min-height: 56px; padding: 17px 28px;
+  background: var(--brand); color: #fff; border-radius: 10px; font-size: 18px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, .34);
+  transition: transform .25s cubic-bezier(.22, 1, .36, 1), background .25s, box-shadow .25s;
+}
+.cta:hover { background: var(--brand-dark); transform: translateY(-1px); box-shadow: 0 18px 38px rgba(37, 99, 235, .44); }
+.fine { margin: 12px 0 0; color: rgba(255, 255, 255, .5); font-size: 12.5px; line-height: 1.65; word-break: keep-all; line-break: strict; }
+.later { display: block; margin: 12px auto 0; padding: 6px 10px; border: 0; background: none; color: rgba(255, 255, 255, .45); font-size: 13px; cursor: pointer; }
+.later:hover { color: rgba(255, 255, 255, .75); text-decoration: underline; }
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 640px) {
+  .ctaRow { flex-direction: column; align-items: stretch; gap: 12px; margin: 34px 0 22px; }
+  .btnPrimary, .btnSecondary { width: 100%; }
+  .scroll { padding: 32px 22px 2px; }
+  .foot { padding: 16px 22px 18px; }
+  .price { font-size: 34px; }
+  .was { font-size: 17px; }
+}
+
+/* 橫向手機（844×390）與 320 寬矮機：壓掉可省的區塊，讓價格、倒數、CTA 一起進畫面 */
+@media (max-height: 600px) {
+  .scroll { padding: 20px 22px 2px; }
+  .foot { padding: 12px 22px 14px; }
+  .facts { display: none; }
+  .title { margin: 10px 0 8px; font-size: clamp(20px, 3.4vw, 24px); }
+  .body { margin: 0 0 12px; font-size: 14.5px; line-height: 1.6; }
+  .price { font-size: 30px; }
+  .was { font-size: 16px; }
+  .countdown { margin: 0; font-size: 13px; }
+  .cta { min-height: 50px; padding: 14px 24px; font-size: 16.5px; }
+  .fine { margin: 10px 0 0; font-size: 11.5px; }
+  .later { margin-top: 8px; }
+}
+
+/* 品牌指南要求的動態保底 */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .modal { animation: none; }
+  .btnPrimary, .btnSecondary, .cta { transition: none; }
+  .btnPrimary:hover, .cta:hover { transform: none; }
+}
