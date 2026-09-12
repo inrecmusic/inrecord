@@ -13,6 +13,26 @@ import { readTermsVersion } from "@/lib/terms-version";
 // 公開下單端點限流：擋洗 pending 單、灌爆 Amego/稅務查詢、當優惠券預言機、燒序號庫存。
 const checkoutLimiter = createDistributedLimiter({ limit: 10, windowMs: 60_000, prefix: "rl:checkout" });
 
+// 歸因欄位白名單（同 lib/attribution.js 實際寫進 cookie 的鍵；比照 /api/newsletter/subscribe 的做法）。
+// attribution 原本原封不動吃前端整包 JSON → 任何人都能往 orders 的 jsonb 塞任意／超大內容。
+// 只收這些鍵、每個值截 200 字；非物件存 null。正常訂單的歸因欄位都在名單內，行為不變。
+const ATTRIBUTION_KEYS = [
+  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+  "fbclid", "gclid", "landing_path", "referrer", "captured_at",
+];
+// fbclid／gclid 給 512：新版 fbclid 常超過 200 字，截斷後 lib/meta-capi.js 組出來的 fbc 是壞值，
+// 對 Meta 來說比不送更糟（該檔本身也允許到 512）。
+const ATTRIBUTION_MAX = { fbclid: 512, gclid: 512 };
+function pickAttribution(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const out = {};
+  for (const k of ATTRIBUTION_KEYS) {
+    const v = input[k];
+    if (typeof v === "string" && v) out[k] = v.slice(0, ATTRIBUTION_MAX[k] ?? 200);
+  }
+  return out;
+}
+
 // Payuni 統一金流 AES-256-GCM 加密
 // 輸出格式：hex( base64(密文) + ':::' + base64(GCM tag) )，與官方 SDK 一致
 function aesEncrypt(plaintext, key, iv) {
@@ -53,7 +73,7 @@ export async function POST(req) {
       return NextResponse.json(configured ? { ok: true } : { error: "missing_payuni_config" }, { status: configured ? 200 : 500 });
     }
     const { plan, email: emailInput, proofUrl } = body;
-    const attribution = body.attribution || null;
+    const attribution = pickAttribution(body.attribution);
     // 結帳二次確認：前端要先勾「我已閱讀並同意服務條款及退費政策」並在摘要頁按「確認購買」才會帶 agreeTerms
     if (body.agreeTerms !== true) return NextResponse.json({ error: "terms_required" }, { status: 400 });
 

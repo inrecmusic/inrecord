@@ -60,19 +60,32 @@ export async function POST(req) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
-  let orders;
-  try {
+  const BASE_COLS = "mer_trade_no, created_at, updated_at, fulfilled_at, email, grant_email, buyer_name, plan, plan_label, amount, coupon_code, pay_type, status, invoice_no, source";
+  const load = (cols) =>
     // selectAll 分頁撈取：訂單破千時不會被 PostgREST 預設 1000 列上限靜默截斷
-    orders = await selectAll(supabase, "orders", (q) => {
-      let s = q
-        .select("mer_trade_no, created_at, updated_at, fulfilled_at, email, grant_email, buyer_name, plan, plan_label, amount, coupon_code, pay_type, status, invoice_no, source")
-        .order("created_at", { ascending: true });
+    selectAll(supabase, "orders", (q) => {
+      let s = q.select(cols).order("created_at", { ascending: true });
       if (range.startIso) s = s.gte("created_at", range.startIso);
       if (range.endIso) s = s.lte("created_at", range.endIso);
       return s;
     });
+
+  let orders;
+  try {
+    orders = await load(`${BASE_COLS}, refunded_at, refund_amount`);
   } catch (err) {
-    return serverError(err, "orders_load_failed");
+    // 降級：supabase-payment-events.sql 還沒跑（沒有 refunded_at／refund_amount 欄）→ 用舊欄位組同步，
+    // 退款日期／金額由 lib/sheets-sync 以 updated_at 推算。不可因為少欄位就整個同步失敗。
+    if (/refunded_at|refund_amount/.test(err?.message || "")) {
+      console.error("[sheets-sync] orders 缺 refunded_at／refund_amount 欄，改用推算值；請先執行 supabase-payment-events.sql");
+      try {
+        orders = await load(BASE_COLS);
+      } catch (e) {
+        return serverError(e, "orders_load_failed");
+      }
+    } else {
+      return serverError(err, "orders_load_failed");
+    }
   }
 
   const payload = buildSyncPayload(orders, { secret, payLabelFn: payLabel });

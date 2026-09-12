@@ -96,6 +96,42 @@ describe("POST /api/payuni/checkout（下單）", () => {
     expect(sb.arg(ins, "insert").terms_agreed_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
+  it("attribution 只收白名單鍵、值截 200 字（不可原封不動吃前端整包 JSON）", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    await POST(req({
+      plan: "bundle", email: "a@x.com",
+      attribution: {
+        utm_source: "facebook", utm_medium: "cpc", utm_campaign: "fan", utm_term: "t", utm_content: "c",
+        fbclid: "fb1", gclid: "gc1", landing_path: "/", referrer: "https://fb.com", captured_at: "2026-09-12T00:00:00Z",
+        evil: "x".repeat(5000), nested: { a: 1 }, referrer_long: "y".repeat(500),
+      },
+    }));
+    const attr = sb.arg(sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert")), "insert").attribution;
+    expect(Object.keys(attr).sort()).toEqual([
+      "captured_at", "fbclid", "gclid", "landing_path", "referrer",
+      "utm_campaign", "utm_content", "utm_medium", "utm_source", "utm_term",
+    ]);
+    expect(attr.utm_source).toBe("facebook"); // 正常訂單行為不變
+    expect(attr.evil).toBeUndefined();
+    expect(attr.nested).toBeUndefined();
+  });
+
+  it("attribution 非物件（沒帶／字串／陣列）→ 存 null", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    const attrOf = (i) => sb.arg(sb.calls.filter((c) => c.table === "orders" && sb.has(c, "insert"))[i], "insert").attribution;
+    await POST(req({ plan: "bundle", email: "a@x.com" }));
+    await POST(req({ plan: "bundle", email: "a@x.com", attribution: "utm_source=x" }));
+    await POST(req({ plan: "bundle", email: "a@x.com", attribution: ["x"] }));
+    expect([attrOf(0), attrOf(1), attrOf(2)]).toEqual([null, null, null]);
+  });
+
+  it("超長值截到 200 字（避免灌爆 jsonb）", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    await POST(req({ plan: "bundle", email: "a@x.com", attribution: { referrer: "z".repeat(1000) } }));
+    const attr = sb.arg(sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert")), "insert").attribution;
+    expect(attr.referrer).toHaveLength(200);
+  });
+
   it("寫單失敗 → 500，且不吐出可付款的欄位（避免付了錢 DB 查無此單）", async () => {
     getSupabaseAdmin.mockReturnValue(makeDb({ insertError: { message: "db down" } }));
     const res = await POST(req({ plan: "bundle", email: "a@x.com" }));

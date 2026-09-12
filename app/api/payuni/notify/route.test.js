@@ -34,11 +34,12 @@ const PAID = { MerTradeNo: "INREC1", TradeNo: "UNI1", TradeStatus: "1", TradeAmt
 const ORDER = { id: "o1", email: "a@x.com", grant_email: null, plan: "bundle", plan_label: "課程包", amount: 3999, coupon_code: null, fulfilled_at: null, invoice_no: null, attribution: null, capi_data: null };
 
 // state：prior（先讀到的訂單）、priorError、order（update→paid 命中的列；null＝未命中/已退款）、claimed（fulfilled_at CAS）、
-//        coupon（優惠券現況）、couponClaim=false（計次 CAS 一直撞到）
+//        coupon（優惠券現況）、couponClaim=false（計次 CAS 一直撞到）、eventError（payment_events 寫入錯誤）
 function makeDb(state = {}) {
   return makeSupabaseMock((table, ops) => {
     const has = (m) => ops.some((o) => o.m === m);
     const upd = ops.find((o) => o.m === "update")?.args[0];
+    if (table === "payment_events") return { data: null, error: state.eventError || null };
     if (table === "coupons") {
       if (has("update")) return { data: state.couponClaim === false ? [] : [{ id: "c1" }], error: null };
       return { data: state.coupon || null, error: null };
@@ -69,17 +70,46 @@ describe("POST /api/payuni/notify（付款背景通知）", () => {
     expect(sb.from).not.toHaveBeenCalled();
   });
 
-  it("TradeStatus≠1（付款未成功）→ 回 SUCCESS 但不更新任何訂單", async () => {
+  it("TradeStatus≠1（付款未成功）→ 回 SUCCESS 但完全不碰 orders", async () => {
     const res = await POST(notifyReq({ ...PAID, TradeStatus: "0" }));
     expect(res.status).toBe(200); expect(await res.text()).toBe("SUCCESS");
-    expect(sb.from).not.toHaveBeenCalled();
+    expect(sb.calls.some((c) => c.table === "orders")).toBe(false);
+  });
+
+  it("ATM／超商取號通知：原始回呼落地（虛擬帳號、繳費期限都存下來），行為照舊回 SUCCESS", async () => {
+    const atm = { MerTradeNo: "INREC9", TradeNo: "UNI9", TradeStatus: "0", PaymentType: "2", BankType: "812", PayNo: "9103522104123456", ExpireDate: "2026-09-15" };
+    const res = await POST(notifyReq(atm));
+    expect(await res.text()).toBe("SUCCESS");
+    const ev = sb.calls.find((c) => c.table === "payment_events" && sb.has(c, "insert"));
+    expect(sb.arg(ev, "insert")).toMatchObject({ mer_trade_no: "INREC9", kind: "code_issued" });
+    expect(sb.arg(ev, "insert").raw).toMatchObject({ BankType: "812", PayNo: "9103522104123456", ExpireDate: "2026-09-15" });
+    expect(sb.calls.some((c) => c.table === "orders")).toBe(false); // 原本的分流完全不變
+  });
+
+  it("付款成功的回呼也落地一列 payment_events（kind=paid）", async () => {
+    await POST(notifyReq(PAID));
+    const ev = sb.calls.find((c) => c.table === "payment_events" && sb.has(c, "insert"));
+    expect(sb.arg(ev, "insert")).toMatchObject({ mer_trade_no: "INREC1", payuni_trade_no: "UNI1", kind: "paid" });
+  });
+
+  it("落地失敗（payment_events 表不存在）不影響付款：訂單照常轉 paid、照常寄信", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sb = makeDb({ eventError: { code: "42P01", message: "relation does not exist" } });
+    getSupabaseAdmin.mockReturnValue(sb);
+    const res = await POST(notifyReq(PAID));
+    expect(await res.text()).toBe("SUCCESS");
+    const upd = sb.calls.find((c) => c.table === "orders" && sb.has(c, "update") && "status" in sb.arg(c, "update"));
+    expect(sb.arg(upd, "update")).toMatchObject({ status: "paid" });
+    expect(sendPurchaseEmail).toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   it("查無此單 → 回 SUCCESS（避免重送轟炸）、不建孤兒單、寄管理員告警", async () => {
     sb = makeDb({ prior: null }); getSupabaseAdmin.mockReturnValue(sb);
     const res = await POST(notifyReq(PAID));
     expect(await res.text()).toBe("SUCCESS");
-    expect(sb.calls.some((c) => sb.has(c, "update") || sb.has(c, "insert") || sb.has(c, "upsert"))).toBe(false);
+    // 只看 orders：payment_events 是「原始回呼一律留底」，未知訂單的回呼更要留下來
+    expect(sb.calls.some((c) => c.table === "orders" && (sb.has(c, "update") || sb.has(c, "insert") || sb.has(c, "upsert")))).toBe(false);
     expect(sendAdminAlert).toHaveBeenCalledTimes(1);
   });
 
