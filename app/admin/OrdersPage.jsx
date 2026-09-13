@@ -210,6 +210,8 @@ export function PaymentDetails({merTradeNo,source}){
   const instKey=card?.matchedKeys?.installment??null;
   const last4=card?.last4??null;
   const authCode=card?.authCode??null;
+  const firstAmt=card?.firstAmt??null;
+  const eachAmt=card?.eachAmt??null;
   const mono={fontSize:12,background:"#f1f5f9",padding:"2px 6px",borderRadius:4};
 
   let body;
@@ -224,7 +226,7 @@ export function PaymentDetails({merTradeNo,source}){
     <>
       <div style={{display:"grid",gridTemplateColumns:"92px 1fr",gap:"7px 10px",fontSize:14,alignItems:"baseline"}}>
         <span style={{color:"#64748b",fontWeight:700}}>分期期數</span>
-        <span>{instState==="n"?<strong>{installment} 期</strong>
+        <span>{instState==="n"?<><strong>{installment} 期</strong>{firstAmt&&eachAmt?<span className={styles.dim} style={{fontSize:12,marginLeft:6}}>首期 NT${firstAmt.toLocaleString("en-US")}、之後每期 NT${eachAmt.toLocaleString("en-US")}</span>:null}</>
           :instState==="none"?"一次付清"
           :instState==="unparsable"?<span style={{color:"#b45309",fontWeight:700}}>欄位 <code style={mono}>{instKey}</code> 的值是 <code style={mono}>{instRaw}</code>，無法判讀</span>
           :<span style={{color:"#b45309",fontWeight:700}}>回呼中找不到分期欄位</span>}</span>
@@ -243,7 +245,7 @@ export function PaymentDetails({merTradeNo,source}){
       </div>
       <p style={{fontSize:12,margin:"10px 0 0",color:(instState==="n"||instState==="none")?"#64748b":"#b45309"}}>
         {instState==="n"||instState==="none"
-          ?<>分期期數取自「付款成功」回呼的欄位 <code style={mono}>{instKey}</code>。</>
+          ?<>分期期數取自「付款成功」回呼的欄位 <code style={mono}>{instKey}</code>（PAYUNi 以 1 表示一次付清，≥2 才是分期）。</>
           :instState==="unparsable"
           ?<>回呼裡有欄位 <code style={mono}>{instKey}</code>，但值不是純數字或超出 1–36 期，不敢判讀。請展開下方原始回呼核對。</>
           :<>PAYUNi 的分期欄位名稱我們還沒用真單核對過，這筆回呼裡找不到任何像分期期數的欄位。請展開下方原始回呼自行核對欄位名。</>}

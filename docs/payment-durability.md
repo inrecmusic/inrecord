@@ -136,3 +136,10 @@ order by created_at desc;
 - `app/api/admin/refund/route.js` — 退款欄位＋快照＋稽核 meta
 - `app/api/payuni/checkout/route.js` — `attribution` 白名單
 - `lib/sheets-sync.js`、`app/api/admin/sheets-sync/route.js` — 試算表退款欄位（含降級）
+
+
+## 五、分期欄位（2026-09-14 以真單核對）
+
+PAYUNi 信用卡付款成功回呼的實際欄位：`CardInst`（期數，**1＝一次付清、≥2＝分期**）、`FirstAmt`（首期金額）、
+`EachAmt`（之後每期；一次付清時為 0）、`Card4No`／`Card6No`、`AuthCode`、`AuthBank`、`AuthDay`／`AuthTime`。
+後台訂單明細的「付款明細」區依此顯示；`lib/payment-events.js` 的 `extractCardInfo` 把 0／1 都視為一次付清。
