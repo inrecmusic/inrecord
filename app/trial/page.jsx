@@ -34,7 +34,7 @@ async function readOffer() {
   }
 }
 
-const page = { minHeight: "100vh", background: "#05070b", color: "#fff", fontFamily: "var(--font-noto-sans), 'PingFang TC', 'Microsoft JhengHei', sans-serif", paddingBottom: 150 };
+const page = { minHeight: "100vh", background: "#05070b", color: "#fff", fontFamily: "var(--font-noto-sans), 'PingFang TC', 'Microsoft JhengHei', sans-serif" };
 const wrap = { maxWidth: 960, margin: "0 auto", padding: "28px 20px 72px" };
 const headRow = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "24px 34px 18px" };
 const noteWrap = { padding: "0 34px 12px" };
@@ -60,8 +60,8 @@ export default async function TrialPage({ searchParams }) {
 
   return (
     <main style={page}>
-      <div>
-        <div style={valid ? headRow : { ...headRow, padding: "24px 20px 0" }}>
+      <div className={valid && src ? styles.fitPage : undefined}>
+        <div className={valid && src ? styles.fitHead : undefined} style={valid && src ? undefined : { ...headRow, padding: "24px 20px 0" }}>
           <a href="/" aria-label="InRecord"><Logo white size={28} /></a>
           {valid ? <a href="/" className={styles.homeLink}>回官網首頁</a> : null}
         </div>
@@ -71,29 +71,35 @@ export default async function TrialPage({ searchParams }) {
             {src ? (
               <>
                 {/* 疊字排在影片之前：桌機靠絕對定位蓋在畫面上，手機自動退回靜態流、落在影片上方 */}
+                <div className={styles.fitBody}>
+                <div className={styles.overlay}>
+                  <span className={styles.overEyebrow}>Free Lesson</span>
+                  <h1 className={styles.overTitle}>免費試看課程影片</h1>
+                  <p className={styles.overLead}>課程片段精選</p>
+                  <p className={styles.overSub}>節錄自「1-2 尋找起始音 Do」正課內容</p>
+                </div>
+                <div className={styles.fitStageWrap}>
                 <div id="trial-stage" className={styles.stage}>
-                  <div className={styles.overlay}>
-                    <span className={styles.overEyebrow}>Free Lesson</span>
-                    <h1 className={styles.overTitle}>免費試看課程影片</h1>
-                    <p className={styles.overLead}>《從零開始學鋼琴》的教學實錄，跟正式課程同一套內容。</p>
-                  </div>
                   <div className={styles.videoFrame}>
                     <iframe id="trial-player" src={src} title="免費試看課程影片"
                       allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
                   </div>
                 </div>
-                <div style={noteWrap}>
-                  <p className={styles.underNote}>為了把試看控制在 5 分鐘內，這支影片有經過剪輯、部分片段也加快了；正式課程的影片是正常速度，講解更完整，細節也交代得更清楚。</p>
                 </div>
-                <TrialUpsell playerId="trial-player" offer={offer} stageId="trial-stage" />
+                <div className={styles.fitNote}>
+                  <p className={styles.underNote}>為提供流暢的預覽體驗，本試看影片經節奏濃縮與加速。正式課程皆採原速播放，完整保留所有教學細節與觀念解析。</p>
+                </div>
+                </div>
+                <TrialUpsell playerId="trial-player" offer={offer} />
                 <div className={styles.dock}>
                   <div className={styles.dockInfo}>
                     {offer?.mode && offer.mode !== "none" ? (
                       <>
+                        <span className={styles.dockPill}>{offer.planName}</span>
                         <span className={styles.dockPrice}>NT${Number(offer.price).toLocaleString("en-US")}</span>
                         {offer.originalPrice > offer.price
                           ? <span className={styles.dockWas}>NT${Number(offer.originalPrice).toLocaleString("en-US")}</span> : null}
-                        <span className={styles.dockMeta}>{offer.deadlineLabel} 截止</span>
+                        {offer.deadlineLabel ? <span className={styles.dockMeta}>{offer.deadlineLabel} 截止</span> : null}
                       </>
                     ) : <span className={styles.dockMeta}>看完想開始學，方案都在官網</span>}
                   </div>

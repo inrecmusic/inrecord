@@ -64,13 +64,27 @@ describe("三層觸發", () => {
     expect(screen.getByText(/你看完了這 5 分鐘/)).toBeTruthy();
   });
 
-  it("② 連續播放到 92% → 彈出；未達 92% 不彈", async () => {
+  it("② 看到一半先彈中場版，連續播放到 92% 再換成看完版", async () => {
     await renderReady();
     // 以 1 秒一跳模擬連續播放（每跳都在 CONTINUOUS_MAX_S 內，才會累計成「真的看了」）
-    for (let sec = 1; sec <= 270; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 }); // 90%
+    for (let sec = 1; sec <= 140; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 }); // 46%
     expect(screen.queryByRole("dialog")).toBeNull();
-    for (let sec = 271; sec <= 276; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 }); // 92%
-    expect(screen.getByRole("dialog")).toBeTruthy();
+    for (let sec = 141; sec <= 160; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 }); // 過半
+    expect(screen.getByText(/看到一半了/)).toBeTruthy();
+    expect(screen.queryByText(/你看完了/)).toBeNull();
+    // 中途關掉，看完時要能再彈一次
+    fireEvent.click(screen.getByLabelText("關閉"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    for (let sec = 161; sec <= 276; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 }); // 92%
+    expect(screen.getByText(/你看完了/)).toBeTruthy();
+  });
+
+  it("中場只彈一次：關掉後不會因為繼續播放再彈中場", async () => {
+    await renderReady();
+    for (let sec = 1; sec <= 160; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 });
+    fireEvent.click(screen.getByLabelText("關閉"));
+    for (let sec = 161; sec <= 200; sec += 1) await emit("timeupdate", { seconds: sec, duration: 300 }); // 仍未到 92%
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("② 直接把進度條拖到片尾不算看完（不彈）", async () => {
@@ -225,11 +239,12 @@ describe("導購文案與追蹤", () => {
     await renderReady();
     await emit("ended");
     const txt = screen.getByRole("dialog").textContent;
-    expect(txt).toContain("10 章節 ＋ 2 附錄，約 8 小時");
+    expect(txt).toContain("10 章節 ＋ 2 附錄，約 6 小時");
     expect(txt).toContain("24 個三和弦（12 個大三和弦 ＋ 12 個小三和弦）");
     expect(txt).toContain("10 首流行曲目實戰");
     // 法務句取 lib/terms-version 的 LICENSE_TERM_TEXT，本元件不自己講開課日期
-    expect(txt).toContain(`一次買斷，${LICENSE_TERM_TEXT}。`);
+    // 顯示時「至少 3 年」用不斷行空格綁住，比對前正規化回一般空格
+    expect(txt.replace(/\u00a0/g, " ")).toContain(`一次買斷，${LICENSE_TERM_TEXT}。`);
     expect(txt).not.toMatch(/\d{4}\/\d{1,2}\/\d{1,2}/);
   });
 

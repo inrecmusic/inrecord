@@ -124,41 +124,42 @@
   border-top: 1px solid rgba(120, 160, 255, .14); border-bottom: 1px solid rgba(120, 160, 255, .14);
 }
 .videoFrame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-/* 疊字：pointer-events:none 讓點擊穿透到播放器；開始播放後由 TrialUpsell 加上 data-playing 淡出。
-   ⚠️ 試看影片開頭是淺色卡，漸層要夠重字才讀得到，不能只靠文字陰影。 */
+/* 影片正上方的置中標頭。原本是疊在影片上，但一播放就得淡出、上半部會變成空白，
+   固定放在上方反而讓那塊空間有用，影片也會依剩餘高度自動縮小一點。 */
 .overlay {
-  position: absolute; inset: 0 0 auto 0; z-index: 2; padding: 26px 34px 64px; pointer-events: none;
-  background: linear-gradient(180deg, rgba(3, 5, 9, .92) 0%, rgba(3, 5, 9, .72) 38%, rgba(3, 5, 9, .28) 68%, rgba(3, 5, 9, 0) 100%);
-  transition: opacity .45s ease, transform .45s cubic-bezier(.22, 1, .36, 1);
+  padding: 4px 34px 16px; text-align: center;
 }
-.stage[data-playing="1"] .overlay { opacity: 0; transform: translateY(-8px); }
 .overEyebrow {
   display: block; font-family: var(--font-jetbrains), monospace; font-size: 11px; font-weight: 700;
   letter-spacing: .24em; text-transform: uppercase; color: #a9c6ff;
 }
 .overTitle {
-  margin: 8px 0 10px; font-family: var(--type-display); font-weight: 600;
-  font-size: clamp(22px, 3.4vw, 34px); line-height: 1.16; letter-spacing: .01em;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, .55); word-break: keep-all; line-break: strict;
+  margin: 7px 0 9px; font-family: var(--type-display); font-weight: 600;
+  font-size: clamp(21px, 2.6vw, 30px); line-height: 1.16; letter-spacing: .01em;
+  text-wrap: balance; word-break: keep-all; line-break: strict;
 }
 .overLead {
-  margin: 0; max-width: 46ch; color: rgba(255, 255, 255, .88); font-size: clamp(14px, 1.6vw, 16px);
-  line-height: 1.7; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); word-break: keep-all; line-break: strict;
+  margin: 0 auto; max-width: 46ch; color: rgba(255, 255, 255, .8); font-size: clamp(14px, 1.5vw, 15.5px);
+  line-height: 1.7; text-wrap: balance; word-break: keep-all; line-break: strict;
+}
+.overSub {
+  margin: 5px auto 0; color: rgba(255, 255, 255, .56); font-size: clamp(13px, 1.3vw, 14px);
+  line-height: 1.65; text-wrap: balance; word-break: keep-all; line-break: strict;
 }
 .underNote {
-  margin: 0; padding: 18px 0 0; color: rgba(255, 255, 255, .55); font-size: 13.5px; line-height: 1.7;
-  max-width: 62ch; word-break: keep-all; line-break: strict;
+  margin: 0 auto; text-wrap: pretty; padding: 18px 0 0; color: rgba(255, 255, 255, .55); font-size: 13.5px; line-height: 1.7;
+  max-width: 62ch; text-align: center; word-break: keep-all; line-break: strict;
 }
 /* 底部常駐購買列：捲到哪裡都在 */
 .dock {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
-  gap: 18px; flex-wrap: wrap; padding: 14px 34px;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center;
+  gap: 22px; flex-wrap: wrap; padding: 16px 34px calc(22px + env(safe-area-inset-bottom, 0px)); justify-content: center;
   background: rgba(10, 14, 22, .96); border-top: 1px solid rgba(120, 160, 255, .18);
   box-shadow: 0 -14px 34px rgba(0, 0, 0, .45);
 }
-.dockInfo { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
-.dockPrice { font-family: var(--type-numeric); font-size: 27px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
-.dockWas { font-family: var(--type-numeric); font-size: 14px; color: rgba(255, 255, 255, .42); text-decoration: line-through; }
+.dockInfo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.dockPrice { font-family: var(--type-numeric); font-size: 34px; font-weight: 800; letter-spacing: -.025em; line-height: 1; }
+.dockWas { font-family: var(--type-numeric); font-size: 15px; color: rgba(255, 255, 255, .42); text-decoration: line-through; }
 .dockMeta { color: rgba(255, 255, 255, .6); font-size: 12.5px; word-break: keep-all; line-break: strict; }
 .dockBtn {
   display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 14px 30px;
@@ -172,9 +173,9 @@
 
 @media (max-width: 700px) {
   /* 手機疊字會壓掉太多畫面，改成標題在影片上方（跟提案裡手機檢視一致） */
-  .overlay { position: static; padding: 0 20px 18px; background: none; opacity: 1 !important; transform: none !important; }
-  .overTitle { text-shadow: none; }
-  .overLead { text-shadow: none; color: rgba(255, 255, 255, .8); }
+  .overlay { padding: 2px 26px 14px; }
+  /* text-wrap:balance 讓句子平均分行，避免「內容」後面只剩一個句號掉到下一行 */
+  .overLead { max-width: 30ch; }
   .dock { padding: 12px 20px; flex-direction: column; align-items: stretch; gap: 10px; }
   .dock .dockBtn { width: 100%; }
   .dockInfo { justify-content: center; }
@@ -185,37 +186,47 @@
   .dockBtn:hover { transform: none; }
 }
 
-/* ── 看到一半滑出的小卡（不擋畫面、可關閉）─────────────────────────── */
-.midCard {
-  position: fixed; right: 22px; bottom: 96px; z-index: 45; width: min(290px, calc(100vw - 44px));
-  padding: 18px 18px 16px; border-radius: 16px; color: #fff;
-  background: radial-gradient(80% 60% at 85% 0%, rgba(59, 130, 246, .22), transparent 62%), #0f172a;
-  border: 1px solid rgba(120, 160, 255, .2);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .07);
-  animation: slideIn .4s cubic-bezier(.22, 1, .36, 1);
+/* ── 一眼看完：整頁鎖在一個視窗高，影片依「可用高度」縮放而非撐滿寬度 ───────
+   桌機不捲動；手機視窗太矮硬塞會讓影片變郵票，所以只在 701px 以上套用。 */
+.fitPage { display: flex; flex-direction: column; min-height: 100dvh; }
+.fitHead { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 34px 14px; }
+/* 標題＋影片＋說明當成一整組垂直置中：多餘空白平均留在整組上下，
+   文字才會貼著影片，而不是被推到畫面最上與最下。 */
+.fitBody { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding-bottom: 5vh; }
+.fitStageWrap { min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
+.fitStageWrap .stage { width: 100%; }
+.fitNote { padding: 14px 34px 16px; }
+
+@media (min-width: 701px) {
+  .fitPage { height: 100dvh; }
+  .fitStageWrap { flex: 1; }
+  /* height:100% ＋ aspect-ratio → 寬度由高度反推，影片永遠塞得進剩下的空間 */
+  .fitStageWrap .stage { height: 100%; width: auto; max-width: 100%; aspect-ratio: 16 / 9; }
+  .fitStageWrap .videoFrame { position: absolute; inset: 0; padding-top: 0; height: 100%; }
+  .fitNote { padding: 12px 34px 14px; }
+  .fitNote .overSub {
+  margin: 5px auto 0; color: rgba(255, 255, 255, .56); font-size: clamp(13px, 1.3vw, 14px);
+  line-height: 1.65; text-wrap: balance; word-break: keep-all; line-break: strict;
 }
-@keyframes slideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
-.midClose {
-  position: absolute; right: 8px; top: 8px; width: 28px; height: 28px; border: 0; border-radius: 50%;
-  background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .7); font-size: 16px; line-height: 1; cursor: pointer;
+.underNote { padding-top: 0; font-size: 13px; max-width: none; }
+  /* 頁尾購買列在流內就好，整頁本來就不捲 */
+  .fitPage .dock { position: sticky; }
 }
-.midClose:hover { background: rgba(255, 255, 255, .16); color: #fff; }
-.midTitle {
-  margin: 0 22px 10px 0; font-family: var(--type-display); font-weight: 600; font-size: 17px; line-height: 1.35;
-  word-break: keep-all; line-break: strict;
-}
-.midPriceRow { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-.midPrice { font-family: var(--type-numeric); font-size: 25px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
-.midWas { font-family: var(--type-numeric); font-size: 13px; color: rgba(255, 255, 255, .42); text-decoration: line-through; }
-.midMeta { margin: 6px 0 12px; color: rgba(255, 255, 255, .6); font-size: 12.5px; word-break: keep-all; line-break: strict; }
-.midBtn {
-  display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 18px;
-  background: var(--brand); color: #fff; border-radius: 10px; font-size: 15px; font-weight: 700;
-  text-decoration: none; box-shadow: 0 10px 24px rgba(37, 99, 235, .32);
-}
-.midBtn:hover { background: var(--brand-dark); }
 @media (max-width: 700px) {
-  .midCard { right: 14px; left: 14px; width: auto; bottom: 132px; padding: 15px 15px 14px; }
-  .midTitle { font-size: 15.5px; }
+  .fitHead { padding: 16px 20px 10px; }
+  .fitNote { padding: 12px 20px 14px; }
+  .fitPage .dock { position: sticky; bottom: 0; }
 }
-@media (prefers-reduced-motion: reduce) { .midCard { animation: none; } }
+
+/* 購買列的「限時」膠囊：全頁唯一一處金色（品牌指南：金色只用在限時／資格，且只疊深底） */
+.dockPill {
+  display: inline-block; padding: 5px 13px; border-radius: 999px;
+  background: linear-gradient(95deg, var(--gold-hi), var(--gold-mid) 55%, var(--gold-deep));
+  color: #3a2a08; font-family: var(--font-jetbrains), monospace;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .14em;
+  align-self: center; white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .fitBody { padding-bottom: 3vh; }
+  .dockPrice { font-size: 30px; }
+}

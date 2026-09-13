@@ -42,14 +42,17 @@ describe("試看頁四種狀態", () => {
     const iframe = document.querySelector("iframe#trial-player");
     expect(iframe).toBeTruthy();
     expect(iframe.getAttribute("src")).toContain("guid-1");
-    expect(screen.getByText(/跟正式課程同一套內容/)).toBeTruthy();
-    expect(screen.getByText(/經過剪輯、部分片段也加快了/)).toBeTruthy();
+    expect(screen.getByText(/課程片段精選/)).toBeTruthy();
+    expect(screen.getByText(/節錄自「1-2 尋找起始音 Do」正課內容/)).toBeTruthy();
+    expect(screen.getByText(/本試看影片經節奏濃縮與加速/)).toBeTruthy();
     // C-2 版面：主 CTA 在底部常駐購買列，次要動作（回官網首頁）移到頁首
     expect(screen.getByRole("link", { name: "查看課程方案" }).getAttribute("href")).toBe("/?ref=trial-dock#pricing");
     expect(screen.getByRole("link", { name: "回官網首頁" })).toBeTruthy();
-    // 疊字必須排在影片之前，手機才會落在影片上方而不是下方
+    // 標頭固定在影片正上方（不再疊在影片上）：DOM 上必須排在播放器容器之前
     const stage = document.getElementById("trial-stage");
-    expect(stage.firstElementChild.textContent).toContain("免費試看課程影片");
+    const head = stage.parentElement.previousElementSibling;
+    expect(head.textContent).toContain("免費試看課程影片");
+    expect(head.textContent).toContain("節錄自「1-2 尋找起始音 Do」正課內容");
     expect(screen.queryByRole("dialog")).toBeNull(); // 導購視窗要等觸發才出現
   });
 

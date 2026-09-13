@@ -34,6 +34,12 @@ export function nt(n) {
 
 // 觸發來源決定語氣：保底計時不可以宣稱他看完了
 export function upsellCopy(reason) {
+  if (reason === "mid") {
+    return {
+      title: "看到一半了，感覺如何？",
+      sub: "如果這樣的講法你跟得上，正式課程就是把這件事做完 —— 從鍵盤、中央 C 一路帶到能彈完一首歌。",
+    };
+  }
   return reason === "timer"
     ? {
         title: "想把這 5 分鐘變成一首完整的歌？",
@@ -62,9 +68,8 @@ function loadPlayerJs() {
   return _playerJsPromise;
 }
 
-export default function TrialUpsell({ playerId, offer, stageId }) {
+export default function TrialUpsell({ playerId, offer }) {
   const [open, setOpen] = useState(false);
-  const [mid, setMid] = useState(false); // 看到一半的側邊小卡
   const [reason, setReason] = useState("ended");
   const [nowMs, setNowMs] = useState(null); // 倒數：mounted 後才有值 → 首次渲染不碰 Date.now()
   const firedRef = useRef(false);
@@ -85,7 +90,6 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
     const fire = (r) => {
       if (unmounted || firedRef.current) return;
       firedRef.current = true;
-      setMid(false); // 看完的視窗一出現就收掉中場小卡，不要兩張同時在
       clearTimeout(fallbackTimer);
       setReason(r);
       setOpen(true);
@@ -101,7 +105,6 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
     const onBlur = () => {
       if (document.activeElement?.id !== playerId) return;
       armFallback();
-      if (stageId) { const el = document.getElementById(stageId); if (el) el.dataset.playing = "1"; }
     };
     window.addEventListener("blur", onBlur);
 
@@ -116,13 +119,6 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
         clearTimeout(fallbackTimer);
         fallbackTimer = null;
         window.removeEventListener("blur", onBlur);
-        // 開始播放就讓影片上的疊字淡出，否則它會一直擋著畫面
-        const revealVideo = () => {
-          if (!stageId) return;
-          const el = document.getElementById(stageId);
-          if (el) el.dataset.playing = "1";
-        };
-        player.on("play", revealVideo);
         player.on("ended", () => fire("ended"));
         player.on("timeupdate", (d) => {
           const sec = d?.seconds || 0;
@@ -133,7 +129,8 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
           if (dur > 0 && !midFiredRef.current && !firedRef.current
               && sec / dur >= MID_RATIO && watched >= dur * MID_RATIO * 0.8) {
             midFiredRef.current = true;
-            setMid(true);
+            setReason("mid");
+            setOpen(true);
           }
           if (dur > 0 && sec / dur >= PROGRESS_RATIO && watched >= dur * WATCHED_RATIO) fire("progress");
         });
@@ -145,7 +142,7 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
       clearTimeout(fallbackTimer);
       window.removeEventListener("blur", onBlur);
     };
-  }, [playerId, stageId]);
+  }, [playerId]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -184,24 +181,7 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
     return () => clearInterval(id);
   }, [open]);
 
-  const midCard = mid && !open ? (
-    <aside className={styles.midCard} role="complementary" aria-label="課程方案">
-      <button type="button" className={styles.midClose} aria-label="關閉" onClick={() => setMid(false)}>×</button>
-      <p className={styles.midTitle}>喜歡這個教法嗎？</p>
-      {offer?.mode && offer.mode !== "none" ? (
-        <>
-          <div className={styles.midPriceRow}>
-            <span className={styles.midPrice}>NT${nt(offer.price)}</span>
-            {offer.originalPrice > offer.price ? <span className={styles.midWas}>NT${nt(offer.originalPrice)}</span> : null}
-          </div>
-          <p className={styles.midMeta}>{offer.deadlineLabel} 截止</p>
-        </>
-      ) : null}
-      <a className={styles.midBtn} href="/?ref=trial-mid#pricing">查看課程方案</a>
-    </aside>
-  ) : null;
-
-  if (!open) return midCard;
+  if (!open) return null;
 
   const { title, sub } = upsellCopy(reason);
   const leftMs = nowMs != null && offer?.deadlineMs ? offer.deadlineMs - nowMs : null;
@@ -209,7 +189,7 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
   const expired = leftMs != null && leftMs <= 0;
   const mode = expired ? "none" : offer?.mode || "none";
   const showCountdown = mode !== "none" && leftMs != null && leftMs > 0;
-  const badge = mode === "fan" ? "粉絲限定 · 限時" : mode === "wave" ? "限時優惠 · 即將調漲" : "";
+  const badge = mode === "fan" ? "粉絲限定 · 限時" : mode === "wave" ? "限時優惠 · 即將調漲" : mode === "list" ? offer?.planName || "" : "";
 
   return (
     <div
@@ -231,7 +211,7 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
           <h2 id="trial-upsell-title" className={styles.title}>{title}</h2>
           <p className={styles.body}>{sub}</p>
           <ul className={styles.facts}>
-            <li>10 章節 ＋ 2 附錄，約 8 小時</li>
+            <li>10 章節 ＋ 2 附錄，約 6 小時</li>
             <li>24 個三和弦（12 個大三和弦 ＋ 12 個小三和弦）</li>
             <li>10 首流行曲目實戰</li>
           </ul>
@@ -254,7 +234,8 @@ export default function TrialUpsell({ playerId, offer, stageId }) {
         {/* 頁尾不參與內捲：橫向手機／矮視窗也保證主 CTA 看得到 */}
         <div className={styles.foot}>
           <a className={styles.cta} href="/?ref=trial-endcard#pricing">查看課程方案</a>
-          <p className={styles.fine}>一次買斷，{LICENSE_TERM_TEXT}。</p>
+          {/* 條款原文不動（其他頁面共用）；只在顯示時把「至少 3 年」用不斷行空格綁住，避免折行 */}
+          <p className={styles.fine}>一次買斷，{LICENSE_TERM_TEXT.replace("至少 3 年", "至少\u00a03\u00a0年")}。</p>
           <button type="button" className={styles.later} onClick={close}>先關掉，回到影片</button>
         </div>
       </div>
