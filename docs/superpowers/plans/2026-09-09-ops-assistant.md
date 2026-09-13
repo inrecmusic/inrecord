@@ -265,7 +265,7 @@ describe("upcomingDates", () => {
   it("14 天內的波段換價、粉絲截止、固定里程碑", () => {
     const settings = { waves: [{ starts_at: "2026-09-20T16:00:00Z", ends_at: "2026-10-04T16:00:00Z", prices: { bundle: 4799 } }], fan_plan: { enabled: true, deadline: "2026-09-14T23:59:59+08:00" } };
     const list = upcomingDates(settings, new Date("2026-09-14T00:00:00Z"));
-    expect(list.map((u) => u.label)).toEqual(["粉絲方案截止", "波段換價：bundle 4799", "第一批章節上架（Ch1～Ch5）"]);
+    expect(list.map((u) => u.label)).toEqual(["粉絲方案截止", "波段換價：bundle 4799", "第一批章節上架（Ch1～Ch3）"]);
   });
 });
 ```
@@ -311,7 +311,7 @@ export function couponAnomalies(coupons = [], settings = {}, now = new Date()) {
   return out;
 }
 
-const MILESTONES = [["2026-09-30T00:00:00+08:00", "第一批章節上架（Ch1～Ch5）"], ["2026-10-31T00:00:00+08:00", "正式開課日：全數上架"]];
+const MILESTONES = [["2026-09-30T00:00:00+08:00", "第一批章節上架（Ch1～Ch3）"], ["2026-10-31T00:00:00+08:00", "正式開課日：全數上架"]];
 export function upcomingDates(settings = {}, now = new Date(), days = 14) {
   const horizon = now.getTime() + days * DAY_MS;
   const items = [];

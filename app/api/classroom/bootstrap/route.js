@@ -5,7 +5,7 @@ import { mergePrefill } from "@/lib/student-profile";
 import { enforceDeviceLimit } from "@/lib/game-devices";
 import { buildContentItems, summarizeContent } from "@/lib/unit-content";
 import { resolveEarlyAccess } from "@/lib/early-access-server";
-import { stripPlayback, FULL_RELEASE_MS } from "@/lib/early-access";
+import { stripPlayback, chapterSortMap, SECOND_RELEASE_MS } from "@/lib/early-access";
 
 // 教室入口一次載入：驗 JWT 一次，之後並行撈 購課 / 遊戲存取 / 學員資料(+預填) /（購課者）章節+影片+進度，
 // 單一往返取代原本 verify-purchase + verify-subscription + course + progress + profile 五支
@@ -113,16 +113,18 @@ export async function GET(req) {
 
   out.chapters = chapRes.data || [];
   out.videos = vidRes.data || [];
-  // 早鳥搶先看分層：9/30 正式上架前，非早鳥（9/2 起購課）看得到完整大綱與試看單元，
-  // 但正課影片的可播欄位被摘掉（側欄自然顯示「預計 9/30 上架」）。兩種模式都做：儀表板要靠下面的
-  // playable 旗標挑「繼續上課」，必須反映摘除後的實際可播狀態。
-  if (Date.now() < FULL_RELEASE_MS) {
-    // UI 層：查詢故障時 fail-open（early=true），避免暫時性錯誤把真早鳥誤鎖成 9/30。
+  // 早鳥搶先看分層：完整上架（10/31）前，非早鳥（9/2 起購課）看得到完整大綱與試看單元，
+  // 但尚未放行的正課影片可播欄位被摘掉（9/30 前全摘、9/30–10/31 只留第一批 Ch1～Ch3）。
+  // 兩種模式都做：儀表板要靠下面的 playable 旗標挑「繼續上課」，必須反映摘除後的實際可播狀態。
+  if (Date.now() < SECOND_RELEASE_MS) {
+    // UI 層：查詢故障時 fail-open（early=true），避免暫時性錯誤把真早鳥誤鎖。
     // 真正的擋播在 video-embed（fail-closed 硬閘門），這裡放行不等於能播未簽發的影片。
     const { early, error } = await resolveEarlyAccess(supabase, user.email);
     const effectiveEarly = error ? true : early;
     out.earlyAccess = effectiveEarly;
-    out.videos = stripPlayback(out.videos, { early: effectiveEarly, nowMs: Date.now() });
+    out.videos = stripPlayback(out.videos, {
+      early: effectiveEarly, nowMs: Date.now(), chapterSortById: chapterSortMap(out.chapters),
+    });
   }
   // playable：有影片來源才算可播放（算在早鳥摘除之後），前端用來挑「繼續上課／預設單元」、
   // 避開尚未上傳影片的空單元。儀表板模式只給旗標、不外露 bunny_video_id/vimeo_id（維持原本不回來源 id 的邊界）。
