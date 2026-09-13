@@ -350,7 +350,7 @@ export default function NewsletterPage({showToast}){
                     <tr key={g.key}>
                       <td className={styles.dim} style={{whiteSpace:"nowrap",fontSize:12}}>
                         {g.dateTW}
-                        {!g.taggable&&<span style={{color:"#b45309",cursor:"help",fontWeight:800}} title={`${stats.tagSince} 之前寄出，Brevo 事件沒有標籤，只能以收件人名單比對推算，可能混入同期其他信件的開信`}> *</span>}
+                        {st&&!st.precise&&<span style={{color:"#b45309",cursor:"help",fontWeight:800}} title="這批信在 Brevo 事件裡沒有標籤，只能以收件人＋寄送時間推算，可能混入同一位收件人同期收到的其他信件的開信"> *</span>}
                       </td>
                       <td style={{fontSize:13,maxWidth:320,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={g.subject}>
                         {g.subject}
@@ -378,7 +378,7 @@ export default function NewsletterPage({showToast}){
             開信率只能當趨勢看，不是精確人數：它靠收件人載入一張追蹤圖片判斷，Apple Mail 的隱私保護會自動載入而把數字灌高、Gmail 不載入圖片又會壓低。
             Brevo 能辨識出前者，所以這裡把它拆成「代理載入」單獨一欄，沒有混進「開信（人）」。點擊數不受圖片影響，是比較可靠的參與度指標。<br/>
             開信率與點擊率的分母都是「送達」，不是「寄出」。「—」代表查不到事件（多半是超過 Brevo 的事件保留期），不是 0 人。<br/>同一主旨、同一天（台灣時間）、同一類型算同一次群發；寄出數與未寄出數來自本站自己的寄信紀錄，一定正確。每個開信事件只會算給該收件人最近一次收到的信，所以同一批名單連寄兩封時，前一封不會吃到後一封的開信。
-            {stats?.tagSince&&<>　標有 <b style={{color:"#b45309"}}>*</b> 的是 {stats.tagSince} 之前寄的信，當時還沒在信件上帶標籤，只能以收件人名單比對推算，可能混入同一位收件人同期收到的其他信件的開信。</>}
+            　標有 <b style={{color:"#b45309"}}>*</b> 的那幾列，Brevo 事件裡沒有標籤可比對，只能以收件人＋寄送時間推算，可能混入同一位收件人同期收到的其他信件的開信。
           </p>
         </>}
       </div>

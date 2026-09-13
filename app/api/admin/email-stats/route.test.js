@@ -87,7 +87,7 @@ describe("GET /api/admin/email-stats", () => {
     expect(f).not.toHaveBeenCalled();
     expect(body).toMatchObject({ ok: true, brevoConfigured: false, brevoError: null });
     expect(body.data).toHaveLength(1);
-    expect(body.data[0]).toMatchObject({ dateTW: "2026-09-02", subject: "九月電子報", sentCount: 2, failedCount: 1, stats: null, taggable: false });
+    expect(body.data[0]).toMatchObject({ dateTW: "2026-09-02", subject: "九月電子報", sentCount: 2, failedCount: 1, stats: null });
   });
 
   it("有金鑰：把事件對進該組，代理載入不混進開信；查詢區間前後各墊一天", async () => {

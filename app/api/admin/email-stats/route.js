@@ -3,7 +3,7 @@ import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { selectAll } from "@/lib/supabase-paginate";
-import { groupSends, summarizeGroup, hasTag, twDay, buildSendIndex, attributeEvents, TAG_SINCE_TW_DAY } from "@/lib/email-stats";
+import { groupSends, summarizeGroup, twDay, buildSendIndex, attributeEvents } from "@/lib/email-stats";
 
 // 後台電子報「寄送成效」：email_log 的群發分組 ＋ Brevo 交易信事件（開信／點擊／退訂）。唯讀。
 // 電子報是逐封寄的交易信，Brevo 沒有 Campaign 報表，只能查事件端點再自己對帳，見 lib/email-stats.js。
@@ -98,7 +98,6 @@ export async function GET(req) {
     brevoConfigured: !!apiKey,
     brevoError,
     truncated,
-    tagSince: TAG_SINCE_TW_DAY,
     // 診斷：抓回幾筆事件、對到幾筆。用來分辨「Brevo 沒有資料」與「事件被歸到沒顯示的信件」
     diagnostics: byKey.diagnostics || null,
     data: groups.map((g) => {
@@ -111,10 +110,9 @@ export async function GET(req) {
         sentCount: g.sentCount,
         failedCount: g.failedCount,
         recipientCount: g.recipients.size,
-        taggable: hasTag(g),
         // 逐組判斷：這組收件人完全沒有任何事件（多半是超過 Brevo 保留期）就回 null，
         // 由 UI 顯示「—」。全域用 events.length 判斷會把「查不到」畫成「0 人開信」。
-        stats: usable && mine?.length ? summarizeGroup(g, mine, { requireTag: hasTag(g) }) : null,
+        stats: usable && mine?.length ? summarizeGroup(g, mine) : null,
       };
     }),
   });

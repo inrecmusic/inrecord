@@ -12,10 +12,10 @@ beforeEach(() => vi.clearAllMocks());
 
 const ok = (body) => ({ ok: true, status: 200, json: async () => body });
 const STATS = {
-  ok: true, from: "2026-08-15", to: "2026-09-13", brevoConfigured: true, brevoError: null, truncated: false, tagSince: "2026-09-13",
+  ok: true, from: "2026-08-15", to: "2026-09-13", brevoConfigured: true, brevoError: null, truncated: false,
   data: [{
     key: "2026-09-02|九月電子報", subject: "九月電子報", kind: "newsletter", dateTW: "2026-09-02",
-    sentCount: 68, failedCount: 2, recipientCount: 68, taggable: false,
+    sentCount: 68, failedCount: 2, recipientCount: 68,
     stats: { delivered: 66, opened: 20, proxyOpened: 11, openedAll: 31, clicked: 7, bounced: 1, unsubscribed: 1, openRate: 20 / 66, openRateAll: 31 / 66, clickRate: 7 / 66 },
   }],
 };
@@ -50,7 +50,7 @@ describe("電子報「寄送成效」", () => {
     expect(row.textContent).toContain("11");          // 代理載入
     expect(row.textContent).toContain("10.6%");       // 點擊率 7/66
     // 沒有 tag 的舊資料要標星號並附說明
-    expect(row.querySelector('[title*="只能以收件人名單比對推算"]')).toBeTruthy();
+    expect(row.querySelector('[title*="只能以收件人＋寄送時間推算"]')).toBeTruthy();
     // 日期區間由後端回填
     expect(document.querySelector('input[title="開始日期"]').value).toBe("2026-08-15");
   });
