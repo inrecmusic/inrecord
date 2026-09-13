@@ -41,19 +41,21 @@ export async function POST(req) {
   let subject, body_md = "", sendOne;
   if (templateId) {
     subject = `[Brevo 範本 #${templateId}]`; // 只作 email_log／稽核標示，實際主旨由 Brevo 範本決定
-    sendOne = (to) => sendNewsletterEmail({ to, subject, templateId, params: { unsubscribe_url: unsubUrl(to) }, unsubscribeUrl: unsubUrl(to) });
+    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, templateId, params: { unsubscribe_url: unsubUrl(to) }, unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
   } else {
     // 讀草稿（寄送以 DB 內容為準）；HTML 逐封渲染（退訂連結因人而異，渲染成本可忽略）
     const { data: nl } = await supabase.from("newsletter").select("subject, body_md").eq("id", nlId).maybeSingle();
     subject = (nl?.subject || "").trim();
     body_md = nl?.body_md || "";
     if (!subject || !body_md.trim()) return NextResponse.json({ error: "empty_content" }, { status: 400 });
-    sendOne = (to) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to) }), unsubscribeUrl: unsubUrl(to) });
+    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to) }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
   }
 
   // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己。
   // 已退訂者一樣跳過（退訂承諾不因「測試」破例）並回報；刻意不寫 newsletter_sends——
   // 記進去會讓正式群發誤跳過同 email 的真學員；每日總量由 Brevo 硬上限把關（402/429 會回報失敗）。
+  // email_log 的 kind 記成 newsletter_test（同時也是 Brevo 的 tag）：測試信與正式群發往往
+  // 同主旨、同一天，不分開記就會被「寄送成效」併成同一組，把寄出數與開信率整個算歪。
   if (test) {
     const requested = dedupeEmails(Array.isArray(testEmails) ? testEmails : []).slice(0, 10);
     let emails = requested;
@@ -66,7 +68,7 @@ export async function POST(req) {
     const unsubscribed = emails.filter((e) => !allowed.includes(e));
     const results = [];
     for (const to of allowed) {
-      const r = await sendOne(to);
+      const r = await sendOne(to, "newsletter_test");
       results.push({ to, ok: !!r.success, ...(r.error ? { error: r.error } : {}) });
     }
     const okList = results.filter((x) => x.ok);
