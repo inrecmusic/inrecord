@@ -64,7 +64,7 @@ export function AnnouncementsBell({ ann }) {
   const n = ann.unread;
   return (
     <button
-      type="button" onClick={ann.openDrawer}
+      type="button" data-ann-bell onClick={() => (ann.open ? ann.closeDrawer() : ann.openDrawer())}
       aria-label={n ? `公告，${n} 則未讀` : "公告"}
       style={{ position: "relative", width: 34, height: 34, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.13)", background: "#fff", display: "grid", placeItems: "center", cursor: "pointer", color: "#334155", flexShrink: 0 }}
     >
@@ -84,12 +84,14 @@ export function AnnouncementsBell({ ann }) {
 export function AnnouncementsStrip({ ann }) {
   const a = ann.strip;
   if (!a) return null;
+  // 未讀＝藍底強調；已讀＝安靜的灰底，讓最新公告一直看得到但不搶戲
+  const on = a.unread;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 20px", background: "#eff6ff", borderBottom: "1px solid #bfdbfe", fontSize: 13, fontFamily: F }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 20px", background: on ? "#eff6ff" : "#f8fafc", borderBottom: `1px solid ${on ? "#bfdbfe" : "#e2e8f0"}`, fontSize: 13, fontFamily: F }}>
       <span aria-hidden="true">📢</span>
-      <span style={{ color: "#1d4ed8", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}</span>
-      <span style={{ color: "#1e3a8a", fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
-      <button type="button" onClick={ann.openDrawer} style={{ color: "#1d4ed8", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 12.5 }}>查看</button>
+      <span style={{ color: on ? "#1d4ed8" : "#64748b", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}</span>
+      <span style={{ color: on ? "#1e3a8a" : "#334155", fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
+      <button type="button" onClick={() => ann.openItem(a.id)} style={{ color: on ? "#1d4ed8" : "#475569", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 12.5 }}>查看</button>
       <button type="button" onClick={() => ann.dismissStrip(a.id)} aria-label="關閉提示" style={{ color: "#64748b", background: "none", border: "none", fontSize: 18, lineHeight: 1, cursor: "pointer" }}>×</button>
     </div>
   );
@@ -284,21 +286,36 @@ function AnnouncementModalBox({ ann, list, index, variant }) {
 
 /* ── 播放頁：右側抽屜（全部公告清單） ─────────────────────────────────────── */
 export function AnnouncementsDrawer({ ann }) {
+  const ref = useRef(null);
+  // 點外面或按 Esc 就收起來（下拉選單的慣例；沒有遮罩，不擋住底下的操作）
+  useEffect(() => {
+    if (!ann.open) return;
+    const onDown = (e) => { if (!ref.current?.contains(e.target) && !e.target.closest?.("[data-ann-bell]")) ann.closeDrawer(); };
+    const onKey = (e) => { if (e.key === "Escape") ann.closeDrawer(); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [ann.open, ann]);
+
   if (!ann.open || !ann.sorted.length) return null;
   return (
-    <div onClick={ann.closeDrawer} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.35)", zIndex: 1000 }}>
-      <aside
-        role="dialog" aria-label="課程公告" onClick={(e) => e.stopPropagation()}
-        style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(380px, 100%)", background: "#fff", boxShadow: "-12px 0 40px -18px rgba(15,23,42,0.35)", display: "flex", flexDirection: "column", fontFamily: F, color: "#0f172a" }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #e2e8f0" }}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>課程公告</h3>
-          <button type="button" onClick={ann.closeDrawer} aria-label="關閉公告清單" style={{ background: "none", border: "none", fontSize: 20, color: "#64748b", cursor: "pointer" }}>×</button>
-        </div>
-        <div style={{ overflow: "auto", padding: "14px 16px 20px" }}>
-          <AnnouncementList ann={ann} />
-        </div>
-      </aside>
+    <div
+      ref={ref} role="dialog" aria-label="課程公告"
+      style={{
+        position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 1000,
+        width: "min(360px, calc(100vw - 24px))", maxHeight: "min(60vh, 420px)", overflow: "auto",
+        background: "#fff", color: "#0f172a", fontFamily: F,
+        border: "1px solid #e2e8f0", borderRadius: 14,
+        boxShadow: "0 24px 60px -24px rgba(15,23,42,.45)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #f1f5f9", position: "sticky", top: 0, background: "#fff" }}>
+        <h3 style={{ margin: 0, fontSize: 14.5 }}>課程公告</h3>
+        <button type="button" onClick={ann.closeDrawer} aria-label="關閉公告清單" style={{ background: "none", border: "none", fontSize: 18, color: "#94a3b8", cursor: "pointer", lineHeight: 1 }}>×</button>
+      </div>
+      <div style={{ padding: "10px 12px 14px" }}>
+        <AnnouncementList ann={ann} />
+      </div>
     </div>
   );
 }

@@ -490,7 +490,10 @@ export default function ClassroomPage() {
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isTablet && <span style={{ fontSize: 13, color: "#64748b" }}>{user?.email}</span>}
-          <AnnouncementsBell ann={ann} />
+          <div style={{ position: "relative", display: "flex" }}>
+            <AnnouncementsBell ann={ann} />
+            <AnnouncementsDrawer ann={ann} />
+          </div>
 
           {/* 所有在賣方案(bundle)皆含遊戲、遊戲不再單賣 → 已購課者必有遊戲存取，
               僅顯示「已開通」徽章；移除會導到重買整包的「購買遊戲」死按鈕。 */}
@@ -533,7 +536,6 @@ export default function ClassroomPage() {
 
       {/* Announcements */}
       <AnnouncementsStrip ann={ann} />
-      <AnnouncementsDrawer ann={ann} />
       <ImportantDialog ann={ann} />
 
       {/* ── Body ── */}

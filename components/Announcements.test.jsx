@@ -146,11 +146,10 @@ describe("未讀遷移（舊使用者升級）", () => {
     expect(JSON.parse(storage.getItem("inrec_ann_read"))).toEqual(["old"]);
   });
 
-  it("seenAt 晚於全部 → 全部已讀，鈴鐺沒有數字、提示條不出現", () => {
+  it("seenAt 晚於全部 → 全部已讀，鈴鐺沒有未讀數字（提示條常駐但不強調）", () => {
     const storage = fakeStorage({ inrec_ann_seen_at: "2026-09-09T00:00:00.000Z" });
     render(<Watch items={TWO} storage={storage} />);
-    expect(screen.getByLabelText("公告")).toBeTruthy();
-    expect(screen.queryByText("標題 new")).toBeNull();
+    expect(screen.getByLabelText("公告")).toBeTruthy(); // 沒有「N 則未讀」
     expect(JSON.parse(storage.getItem("inrec_ann_read"))).toEqual(["new", "old"]);
   });
 
