@@ -37,15 +37,19 @@ async function show(searchParams, leadCapture = "on") {
 }
 
 describe("試看頁四種狀態", () => {
-  it("① 簽章有效有影片：播放器 ＋ 兩層說明 ＋ 兩顆按鈕", async () => {
+  it("① 簽章有效有影片：播放器 ＋ 兩層說明 ＋ 底部購買列", async () => {
     await show(VALID);
     const iframe = document.querySelector("iframe#trial-player");
     expect(iframe).toBeTruthy();
     expect(iframe.getAttribute("src")).toContain("guid-1");
     expect(screen.getByText(/跟正式課程同一套內容/)).toBeTruthy();
     expect(screen.getByText(/經過剪輯、部分片段也加快了/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "查看課程方案" }).getAttribute("href")).toBe("/?ref=trial-page#pricing");
+    // C-2 版面：主 CTA 在底部常駐購買列，次要動作（回官網首頁）移到頁首
+    expect(screen.getByRole("link", { name: "查看課程方案" }).getAttribute("href")).toBe("/?ref=trial-dock#pricing");
     expect(screen.getByRole("link", { name: "回官網首頁" })).toBeTruthy();
+    // 疊字必須排在影片之前，手機才會落在影片上方而不是下方
+    const stage = document.getElementById("trial-stage");
+    expect(stage.firstElementChild.textContent).toContain("免費試看課程影片");
     expect(screen.queryByRole("dialog")).toBeNull(); // 導購視窗要等觸發才出現
   });
 

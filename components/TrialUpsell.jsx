@@ -13,6 +13,7 @@ import styles from "./TrialUpsell.module.css";
 const FALLBACK_MS = 300000; // ③ 保底計時：從「使用者確實點進播放器」起算，長度抓試看片長
 const PROGRESS_RATIO = 0.92; // ② 播放位置門檻
 const WATCHED_RATIO = 0.6; // ② 連續播放累積門檻（防拖進度條誤觸）
+const MID_RATIO = 0.5; // 看到一半：滑出側邊小卡（不擋畫面，影片不會因此暫停而漏看內容）
 const CONTINUOUS_MAX_S = 1.5; // 兩次 timeupdate 的合理間隔，超過視為跳轉不計入
 
 // 倒數格式化（純函式、無 Date.now）：ms → "N 天 HH:MM:SS"
@@ -61,11 +62,13 @@ function loadPlayerJs() {
   return _playerJsPromise;
 }
 
-export default function TrialUpsell({ playerId, offer }) {
+export default function TrialUpsell({ playerId, offer, stageId }) {
   const [open, setOpen] = useState(false);
+  const [mid, setMid] = useState(false); // 看到一半的側邊小卡
   const [reason, setReason] = useState("ended");
   const [nowMs, setNowMs] = useState(null); // 倒數：mounted 後才有值 → 首次渲染不碰 Date.now()
   const firedRef = useRef(false);
+  const midFiredRef = useRef(false);
   const panelRef = useRef(null);
   const returnFocusRef = useRef(null);
   const downOnBackdropRef = useRef(false);
@@ -82,6 +85,7 @@ export default function TrialUpsell({ playerId, offer }) {
     const fire = (r) => {
       if (unmounted || firedRef.current) return;
       firedRef.current = true;
+      setMid(false); // 看完的視窗一出現就收掉中場小卡，不要兩張同時在
       clearTimeout(fallbackTimer);
       setReason(r);
       setOpen(true);
@@ -95,7 +99,9 @@ export default function TrialUpsell({ playerId, offer }) {
     };
     // 點進 iframe 會讓母頁失焦，且 activeElement 變成該 iframe —— 跨來源 iframe 唯一能偵測到的互動訊號。
     const onBlur = () => {
-      if (document.activeElement?.id === playerId) armFallback();
+      if (document.activeElement?.id !== playerId) return;
+      armFallback();
+      if (stageId) { const el = document.getElementById(stageId); if (el) el.dataset.playing = "1"; }
     };
     window.addEventListener("blur", onBlur);
 
@@ -110,6 +116,13 @@ export default function TrialUpsell({ playerId, offer }) {
         clearTimeout(fallbackTimer);
         fallbackTimer = null;
         window.removeEventListener("blur", onBlur);
+        // 開始播放就讓影片上的疊字淡出，否則它會一直擋著畫面
+        const revealVideo = () => {
+          if (!stageId) return;
+          const el = document.getElementById(stageId);
+          if (el) el.dataset.playing = "1";
+        };
+        player.on("play", revealVideo);
         player.on("ended", () => fire("ended"));
         player.on("timeupdate", (d) => {
           const sec = d?.seconds || 0;
@@ -117,6 +130,11 @@ export default function TrialUpsell({ playerId, offer }) {
           const delta = sec - lastSec;
           if (delta > 0 && delta <= CONTINUOUS_MAX_S) watched += delta;
           lastSec = sec;
+          if (dur > 0 && !midFiredRef.current && !firedRef.current
+              && sec / dur >= MID_RATIO && watched >= dur * MID_RATIO * 0.8) {
+            midFiredRef.current = true;
+            setMid(true);
+          }
           if (dur > 0 && sec / dur >= PROGRESS_RATIO && watched >= dur * WATCHED_RATIO) fire("progress");
         });
       });
@@ -127,7 +145,7 @@ export default function TrialUpsell({ playerId, offer }) {
       clearTimeout(fallbackTimer);
       window.removeEventListener("blur", onBlur);
     };
-  }, [playerId]);
+  }, [playerId, stageId]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -166,7 +184,24 @@ export default function TrialUpsell({ playerId, offer }) {
     return () => clearInterval(id);
   }, [open]);
 
-  if (!open) return null;
+  const midCard = mid && !open ? (
+    <aside className={styles.midCard} role="complementary" aria-label="課程方案">
+      <button type="button" className={styles.midClose} aria-label="關閉" onClick={() => setMid(false)}>×</button>
+      <p className={styles.midTitle}>喜歡這個教法嗎？</p>
+      {offer?.mode && offer.mode !== "none" ? (
+        <>
+          <div className={styles.midPriceRow}>
+            <span className={styles.midPrice}>NT${nt(offer.price)}</span>
+            {offer.originalPrice > offer.price ? <span className={styles.midWas}>NT${nt(offer.originalPrice)}</span> : null}
+          </div>
+          <p className={styles.midMeta}>{offer.deadlineLabel} 截止</p>
+        </>
+      ) : null}
+      <a className={styles.midBtn} href="/?ref=trial-mid#pricing">查看課程方案</a>
+    </aside>
+  ) : null;
+
+  if (!open) return midCard;
 
   const { title, sub } = upsellCopy(reason);
   const leftMs = nowMs != null && offer?.deadlineMs ? offer.deadlineMs - nowMs : null;

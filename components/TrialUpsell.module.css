@@ -116,3 +116,106 @@
   .btnPrimary, .btnSecondary, .cta { transition: none; }
   .btnPrimary:hover, .cta:hover { transform: none; }
 }
+
+/* ── C-2 版面：疊字在影片上、底部常駐購買列 ─────────────────────────── */
+.stage { position: relative; margin: 0 0 0; }
+.videoFrame {
+  position: relative; padding-top: 56.25%; background: #05070b; overflow: hidden;
+  border-top: 1px solid rgba(120, 160, 255, .14); border-bottom: 1px solid rgba(120, 160, 255, .14);
+}
+.videoFrame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* 疊字：pointer-events:none 讓點擊穿透到播放器；開始播放後由 TrialUpsell 加上 data-playing 淡出。
+   ⚠️ 試看影片開頭是淺色卡，漸層要夠重字才讀得到，不能只靠文字陰影。 */
+.overlay {
+  position: absolute; inset: 0 0 auto 0; z-index: 2; padding: 26px 34px 64px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(3, 5, 9, .92) 0%, rgba(3, 5, 9, .72) 38%, rgba(3, 5, 9, .28) 68%, rgba(3, 5, 9, 0) 100%);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.22, 1, .36, 1);
+}
+.stage[data-playing="1"] .overlay { opacity: 0; transform: translateY(-8px); }
+.overEyebrow {
+  display: block; font-family: var(--font-jetbrains), monospace; font-size: 11px; font-weight: 700;
+  letter-spacing: .24em; text-transform: uppercase; color: #a9c6ff;
+}
+.overTitle {
+  margin: 8px 0 10px; font-family: var(--type-display); font-weight: 600;
+  font-size: clamp(22px, 3.4vw, 34px); line-height: 1.16; letter-spacing: .01em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, .55); word-break: keep-all; line-break: strict;
+}
+.overLead {
+  margin: 0; max-width: 46ch; color: rgba(255, 255, 255, .88); font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.7; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); word-break: keep-all; line-break: strict;
+}
+.underNote {
+  margin: 0; padding: 18px 0 0; color: rgba(255, 255, 255, .55); font-size: 13.5px; line-height: 1.7;
+  max-width: 62ch; word-break: keep-all; line-break: strict;
+}
+/* 底部常駐購買列：捲到哪裡都在 */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; padding: 14px 34px;
+  background: rgba(10, 14, 22, .96); border-top: 1px solid rgba(120, 160, 255, .18);
+  box-shadow: 0 -14px 34px rgba(0, 0, 0, .45);
+}
+.dockInfo { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
+.dockPrice { font-family: var(--type-numeric); font-size: 27px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.dockWas { font-family: var(--type-numeric); font-size: 14px; color: rgba(255, 255, 255, .42); text-decoration: line-through; }
+.dockMeta { color: rgba(255, 255, 255, .6); font-size: 12.5px; word-break: keep-all; line-break: strict; }
+.dockBtn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 14px 30px;
+  background: var(--brand); color: #fff; border-radius: 10px; font-size: 16.5px; font-weight: 700;
+  text-decoration: none; box-shadow: 0 14px 30px rgba(37, 99, 235, .34);
+  transition: transform .25s cubic-bezier(.22, 1, .36, 1), background .25s, box-shadow .25s;
+}
+.dockBtn:hover { background: var(--brand-dark); transform: translateY(-1px); box-shadow: 0 18px 38px rgba(37, 99, 235, .44); }
+.homeLink { color: rgba(255, 255, 255, .5); font-size: 13.5px; text-decoration: none; }
+.homeLink:hover { color: rgba(255, 255, 255, .8); text-decoration: underline; }
+
+@media (max-width: 700px) {
+  /* 手機疊字會壓掉太多畫面，改成標題在影片上方（跟提案裡手機檢視一致） */
+  .overlay { position: static; padding: 0 20px 18px; background: none; opacity: 1 !important; transform: none !important; }
+  .overTitle { text-shadow: none; }
+  .overLead { text-shadow: none; color: rgba(255, 255, 255, .8); }
+  .dock { padding: 12px 20px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .dock .dockBtn { width: 100%; }
+  .dockInfo { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay { transition: none; }
+  .dockBtn { transition: none; }
+  .dockBtn:hover { transform: none; }
+}
+
+/* ── 看到一半滑出的小卡（不擋畫面、可關閉）─────────────────────────── */
+.midCard {
+  position: fixed; right: 22px; bottom: 96px; z-index: 45; width: min(290px, calc(100vw - 44px));
+  padding: 18px 18px 16px; border-radius: 16px; color: #fff;
+  background: radial-gradient(80% 60% at 85% 0%, rgba(59, 130, 246, .22), transparent 62%), #0f172a;
+  border: 1px solid rgba(120, 160, 255, .2);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .07);
+  animation: slideIn .4s cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+.midClose {
+  position: absolute; right: 8px; top: 8px; width: 28px; height: 28px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .7); font-size: 16px; line-height: 1; cursor: pointer;
+}
+.midClose:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+.midTitle {
+  margin: 0 22px 10px 0; font-family: var(--type-display); font-weight: 600; font-size: 17px; line-height: 1.35;
+  word-break: keep-all; line-break: strict;
+}
+.midPriceRow { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.midPrice { font-family: var(--type-numeric); font-size: 25px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.midWas { font-family: var(--type-numeric); font-size: 13px; color: rgba(255, 255, 255, .42); text-decoration: line-through; }
+.midMeta { margin: 6px 0 12px; color: rgba(255, 255, 255, .6); font-size: 12.5px; word-break: keep-all; line-break: strict; }
+.midBtn {
+  display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 18px;
+  background: var(--brand); color: #fff; border-radius: 10px; font-size: 15px; font-weight: 700;
+  text-decoration: none; box-shadow: 0 10px 24px rgba(37, 99, 235, .32);
+}
+.midBtn:hover { background: var(--brand-dark); }
+@media (max-width: 700px) {
+  .midCard { right: 14px; left: 14px; width: auto; bottom: 132px; padding: 15px 15px 14px; }
+  .midTitle { font-size: 15.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .midCard { animation: none; } }
