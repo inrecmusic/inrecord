@@ -86,7 +86,9 @@ export async function GET(req) {
     supabase.from("videos").select("id", { count: "exact", head: true }).eq("published", true),
     // 儀表板也要：教室首頁有「最新公告」區（components/Announcements 的 HubAnnouncements），
     // 先前只在播放頁撈，導致首頁那一區永遠是空的、公告發布了也看不到。公告資料量小，兩種模式都撈。
-    supabase.from("announcements").select("id, title, body, pinned, important, created_at").eq("published", true),
+    // ⚠️ published 必須撈回來：lib/announcements-view.js 的 sortAnnouncements 會再依 a.published 篩一次，
+    // 沒帶這欄的話每一則都是 undefined → 全部被濾掉 → 鈴鐺／提示條／儀表板公告區永遠不出現。
+    supabase.from("announcements").select("id, title, body, pinned, important, published, created_at").eq("published", true),
     // 播放頁側欄的內容 icon 用：只撈索引欄位，兩張表都小，成本可忽略。
     // 通用講義（video_id 為 null）不掛單元，先在 DB 濾掉。
     playerMode

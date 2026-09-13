@@ -19,7 +19,7 @@ const VIDEOS = [
   { id: "v1", chapter_id: "c1", title: "1-1", sort_order: 1, bunny_video_id: "bunny-1", vimeo_id: null, published: true },
   { id: "v2", chapter_id: "c1", title: "1-2", sort_order: 2, bunny_video_id: null, vimeo_id: null, published: true },
 ];
-const ANN = [{ id: "a1", title: "公告", body: "內容", pinned: false, important: true, created_at: "2026-09-04T00:00:00Z" }];
+const ANN = [{ id: "a1", title: "公告", body: "內容", pinned: false, important: true, published: true, created_at: "2026-09-04T00:00:00Z" }];
 
 function makeDb() {
   return makeSupabaseMock((table, ops) => {
@@ -68,6 +68,8 @@ describe("GET /api/classroom/bootstrap（教室進場一次取回）", () => {
     // 公告：儀表板的「最新公告」區與播放頁鈴鐺共用同一份。
     // 先前只有 player=1 才撈，導致首頁那一區永遠空的、發布了學員也看不到。
     expect(body.announcements.map((a) => a.id)).toContain("a1");
+    // published 必須一起回傳：前端 sortAnnouncements 會再依這個欄位篩一次，沒帶就全部被濾掉
+    expect(body.announcements[0].published).toBe(true);
     expect(enforceDeviceLimit).not.toHaveBeenCalled();
   });
 
