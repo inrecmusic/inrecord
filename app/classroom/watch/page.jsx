@@ -41,7 +41,11 @@ const CHAPTER_COMING_SOON = {
 // 個別單元的預計上架日（優先於章、章優先於 COMING_SOON）；key = 單元標題開頭編號。
 // 影片實際掛上去後這一列就不會顯示了（只有 !playable 才印），所以上架後不必回來刪。
 const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/7 上架", "1-5": "預計 9/7 上架" };
-function comingSoonFor(title, chNum) {
+// 非早鳥（9/2 起購課）在 10/31 前只開放第一批 Ch1～Ch3，第四章以後一律等到正式開課日。
+// 上面那張表是「這一章什麼時候上架」，對非早鳥來說會比他實際看得到的時間樂觀，所以要覆寫。
+const FIRST_BATCH_LAST_CH = 3;
+function comingSoonFor(title, chNum, early) {
+  if (early === false && Number.isFinite(chNum) && chNum > FIRST_BATCH_LAST_CH) return COMING_SOON;
   // 日期一過（台灣時間）影片還沒掛上 → comingSoonLabel 會改顯示「即將上架」
   return comingSoonLabel(UNIT_COMING_SOON[unitNo(title)] || CHAPTER_COMING_SOON[chNum] || COMING_SOON);
 }
@@ -116,6 +120,8 @@ export default function ClassroomPage() {
 
   const [chapters, setChapters]           = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  // bootstrap 的早鳥旗標：false＝9/2 起購課者，側欄日期要改成第二批的 10/31（10/31 後 bootstrap 不回此欄＝undefined，不覆寫）
+  const [earlyAccess, setEarlyAccess] = useState(undefined);
   const ann = useAnnouncements(announcements); // 鈴鐺／提示條／抽屜／重要卡片共用狀態
   const [contentItems, setContentItems]   = useState({});
   const [contentStats, setContentStats]   = useState(null);
@@ -173,6 +179,7 @@ export default function ClassroomPage() {
           setVideos(d.videos || []);
           setProgress(d.progress || []);
           setAnnouncements(d.announcements || []);
+          setEarlyAccess(d.earlyAccess);
           setContentItems(d.contentItems || {});
           setContentStats(d.contentStats || null);
           const vids = d.videos || [];
@@ -791,7 +798,7 @@ export default function ClassroomPage() {
 
                   {!cv.length && (
                     <div style={{ fontSize: 12, color: "#94a3b8", padding: "4px 8px 8px 14px" }}>
-                      單元準備中，{comingSoonLabel(CHAPTER_COMING_SOON[chNum] || COMING_SOON)}
+                      單元準備中，{comingSoonFor("", chNum, earlyAccess)}
                     </div>
                   )}
 
@@ -814,7 +821,7 @@ export default function ClassroomPage() {
                       <div key={v.id}>
                         <div className="unit-row"
                           role="button" tabIndex={0}
-                          title={!playable ? comingSoonFor(v.title, chNum) : undefined}
+                          title={!playable ? comingSoonFor(v.title, chNum, earlyAccess) : undefined}
                           onClick={() => handleUnitClick(v)}
                           onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleUnitClick(v); } }}
                           style={{
@@ -852,7 +859,7 @@ export default function ClassroomPage() {
                               {v.title}
                             </div>
                             {!playable ? (
-                              <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{comingSoonFor(v.title, chNum)}</div>
+                              <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{comingSoonFor(v.title, chNum, earlyAccess)}</div>
                             ) : isWatching ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                                 <div style={{ flex: 1, height: 3, background: "#e2e8f0", borderRadius: 2 }}>
