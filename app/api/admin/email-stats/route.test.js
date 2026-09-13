@@ -105,16 +105,35 @@ describe("GET /api/admin/email-stats", () => {
     expect(body.data[0].stats.openRate).toBeCloseTo(0.5, 5);
   });
 
-  it("事件滿一頁就續抓下一頁（offset 遞增）", async () => {
+  it("續抓到回傳 0 筆才停，offset 依實際筆數遞增", async () => {
     vi.stubEnv("BREVO_API_KEY", "key");
     const page1 = Array.from({ length: 5000 }, () => ({ email: "z@x.com", event: "delivered", date: "2026-09-02T12:01:00Z" }));
-    const f = vi.fn(async (url) => ({ ok: true, status: 200, json: async () => ({ events: url.includes("offset=0") ? page1 : EVENTS }) }));
+    const f = vi.fn(async (url) => ({
+      ok: true, status: 200,
+      json: async () => ({ events: url.includes("offset=0") ? page1 : url.includes("offset=5000") ? EVENTS : [] }),
+    }));
     vi.stubGlobal("fetch", f);
     const body = await (await get("?from=2026-09-02&to=2026-09-02")).json();
-    expect(f).toHaveBeenCalledTimes(2);
+    expect(f).toHaveBeenCalledTimes(3); // 第三頁回 0 筆才收工
     expect(f.mock.calls[1][0]).toContain("offset=5000");
     expect(body.truncated).toBe(false);
     expect(body.data[0].stats.delivered).toBe(2); // 第一頁那位不在名單內，不該被算進來
+  });
+
+  // 這條是 9/2「寄出 88、送達只有 7」的根因：Brevo 每頁實際回傳可能少於我們要求的 limit，
+  // 舊版把「短頁」當成沒有更多資料，於是只拿到最新的一批事件，愈舊的群發看起來就愈像沒人開信。
+  it("Brevo 回傳的頁數比 limit 少時，不可當成抓完就停手", async () => {
+    vi.stubEnv("BREVO_API_KEY", "key");
+    const short = [{ email: "z@x.com", event: "delivered", date: "2026-09-02T12:01:00Z" }]; // 只有 1 筆，遠少於 limit
+    const f = vi.fn(async (url) => ({
+      ok: true, status: 200,
+      json: async () => ({ events: url.includes("offset=0") ? short : url.includes("offset=1") ? EVENTS : [] }),
+    }));
+    vi.stubGlobal("fetch", f);
+    const body = await (await get("?from=2026-09-02&to=2026-09-02")).json();
+    expect(f.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(f.mock.calls[1][0]).toContain("offset=1");
+    expect(body.data[0].stats.delivered).toBe(2); // 第二頁的事件有被抓到才算得出來
   });
 
   it("Brevo 回非 2xx：整支不掛，回 200＋brevoError，寄出數照常", async () => {

@@ -14,7 +14,7 @@ export const maxDuration = 60;
 const KINDS = ["newsletter", "custom", "trial", "followup", "recovery"];
 const MAX_DAYS = 90;      // Brevo 事件端點的區間硬上限，超過會 400
 const PAGE = 5000;        // Brevo limit 上限
-const MAX_PAGES = 8;      // 安全閥，避免無限迴圈
+const MAX_PAGES = 40;     // 安全閥，避免無限迴圈（Brevo 每頁實際筆數可能遠小於 limit）
 const BUDGET_MS = 45_000; // 留餘裕給 maxDuration=60
 const DAY_MS = 86_400_000;
 
@@ -33,9 +33,10 @@ async function fetchEvents(apiKey, from, to) {
 
   const events = [];
   const deadline = Date.now() + BUDGET_MS;
+  let offset = 0;
   for (let page = 0; page < MAX_PAGES; page += 1) {
     if (Date.now() > deadline) return { events, brevoError: null, truncated: true };
-    const url = `https://api.brevo.com/v3/smtp/statistics/events?startDate=${start}&endDate=${end}&limit=${PAGE}&offset=${page * PAGE}`;
+    const url = `https://api.brevo.com/v3/smtp/statistics/events?startDate=${start}&endDate=${end}&limit=${PAGE}&offset=${offset}`;
     let res;
     try {
       res = await fetch(url, { headers: { "api-key": apiKey }, cache: "no-store", signal: AbortSignal.timeout(15_000) });
@@ -45,7 +46,11 @@ async function fetchEvents(apiKey, from, to) {
     if (!res.ok) return { events, brevoError: `brevo_${res.status}`, truncated: false };
     const batch = (await res.json().catch(() => ({})))?.events || [];
     events.push(...batch);
-    if (batch.length < PAGE) return { events, brevoError: null, truncated: false };
+    // ⚠️ 不可用「回傳筆數 < limit」當結束條件：Brevo 每頁實際回傳可能少於我們要求的 limit，
+    // 那樣會在第一頁就停手。事件是由新到舊排序，結果就是只拿到最近幾天、愈舊的群發愈像「沒人開信」。
+    // 只有「回傳 0 筆」才代表真的沒有了；offset 以實際筆數前進。
+    if (batch.length === 0) return { events, brevoError: null, truncated: false };
+    offset += batch.length;
   }
   return { events, brevoError: null, truncated: true };
 }
