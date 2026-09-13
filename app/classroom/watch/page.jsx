@@ -478,6 +478,9 @@ export default function ClassroomPage() {
       {/* ── Topbar ── */}
       <header style={{
         height: 52, flexShrink: 0,
+        // ⚠️ backdrop-filter 會讓這個 header 自成堆疊環境，裡面的公告下拉選單再高的 z-index
+        // 也只在這一層內比大小 → 會被後面的影片區蓋住。所以整個 header 要拉到最上層。
+        position: "relative", zIndex: 60,
         background: "rgba(255,255,255,0.88)",
         backdropFilter: "blur(20px) saturate(1.8)",
         WebkitBackdropFilter: "blur(20px) saturate(1.8)",

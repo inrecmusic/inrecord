@@ -120,7 +120,7 @@ const ANN_CSS = MD_CSS + `
 }
 .hub .ann-list{margin-bottom:40px}
 .ann-list{display:flex;flex-direction:column;gap:8px}
-.ann-row{display:grid;grid-template-columns:8px auto minmax(0,1fr) auto;gap:12px;align-items:center;
+.ann-row{display:grid;grid-template-columns:8px auto minmax(0,1fr) auto;gap:10px;align-items:center;
   width:100%;min-height:44px;padding:10px 14px;text-align:left;cursor:pointer;font:inherit;
   color:var(--ann-ink);background:var(--ann-card);border:1px solid var(--ann-line);border-radius:10px;
   transition:border-color .18s,background .18s}
@@ -129,7 +129,7 @@ const ANN_CSS = MD_CSS + `
 .ann-row .ann-dot{width:8px;height:8px;border-radius:50%;background:var(--ann-accent);visibility:hidden}
 .ann-row.unread .ann-dot{visibility:visible}
 .ann-row.unread .ann-t{font-weight:700}
-.ann-date{font-size:12.5px;color:var(--ann-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ann-date{font-size:12px;color:var(--ann-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .ann-main{min-width:0}
 .ann-hl{display:flex;align-items:center;gap:6px;min-width:0}
 .ann-t{font-size:14.5px;font-weight:600;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -198,7 +198,7 @@ export function AnnouncementList({ ann, items, variant = "light" }) {
               className={`ann-row${unread ? " unread" : ""}`} onClick={() => ann.openItem(a.id)}
             >
               <span className="ann-dot" aria-hidden="true" />
-              <span className="ann-date">{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）</span>
+              <span className="ann-date">{fmtDate(a.created_at)}</span>
               <span className="ann-main">
                 <span className="ann-hl">
                   {unread && <span className="ann-sr">未讀</span>}
