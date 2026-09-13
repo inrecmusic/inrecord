@@ -46,6 +46,7 @@ export default async function TrialPage({ searchParams }) {
   const e = String(searchParams?.e || "");
   const t = String(searchParams?.t || "");
   const enabled = process.env.LEAD_CAPTURE === "on";
+  const hasToken = Boolean(e || t); // 有帶參數＝從信裡點進來的（可能過期）；沒帶＝從導覽列直接進來
   const valid = enabled && verifyTrialToken(e, t);
   const [videoId, offerOrNull] = valid
     ? await Promise.all([readTrialVideoId(), readOffer()])
@@ -90,8 +91,14 @@ export default async function TrialPage({ searchParams }) {
         ) : (
           <div style={card}>
             <span style={{ ...eyebrow, color: "#2563eb" }}>Free Lesson</span>
-            <h1 style={{ ...h1, fontSize: 24, color: "#0f172a" }}>這個試看連結無效或已失效</h1>
-            <p style={{ ...p, color: "#64748b", fontSize: 15 }}>留下 Email，我們馬上再寄一次專屬的試看連結給你。</p>
+            <h1 style={{ ...h1, fontSize: 24, color: "#0f172a" }}>
+              {hasToken ? "這個試看連結無效或已失效" : "免費試看《從零開始學鋼琴》"}
+            </h1>
+            <p style={{ ...p, color: "#64748b", fontSize: 15 }}>
+              {hasToken
+                ? "留下 Email，我們馬上再寄一次專屬的試看連結給你。"
+                : "留下 Email，我們馬上把試看影片的專屬連結寄給你，隨時都能重看。"}
+            </p>
             <LeadForm layout="stack" cta="寄試看給我" />
           </div>
         )}

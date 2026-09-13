@@ -606,6 +606,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
             <a href="#curriculum">課程大綱</a>
             <a href="#instructor">講師介紹</a>
             <a href="#pricing">課程方案</a>
+            <a href="/trial">課程試看</a>
           </nav>
           <div className={styles.navActions}>
             {user
@@ -625,7 +626,8 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
             {[["#intro","課程介紹"],["#curriculum","課程大綱"],["#instructor","講師介紹"],["#pricing","課程方案"]].map(([href, label]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
-            <a href="/demo" onClick={() => setMenuOpen(false)}>課程試看</a>
+            <a href="/trial" onClick={() => setMenuOpen(false)}>課程試看</a>
+            <a href="/demo" onClick={() => setMenuOpen(false)}>線上試彈鋼琴</a>
             {user
               ? (presaleMode
                   ? <span style={{ opacity: .55 }}>課程準備中（開課將以 Email 通知）</span>

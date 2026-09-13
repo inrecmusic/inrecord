@@ -68,8 +68,15 @@ describe("試看頁四種狀態", () => {
     expect(screen.getByRole("button", { name: "寄試看給我" })).toBeTruthy();
   });
 
-  it("沒帶任何參數也走留信箱表單（不會爆）", async () => {
+  // 從官網導覽列「課程試看」點進來時沒有簽章參數，這種人不該看到「連結無效」
+  it("沒帶任何參數：邀請式文案＋留信箱表單（不是「連結無效」）", async () => {
     await show(undefined);
+    expect(screen.getByText("免費試看《從零開始學鋼琴》")).toBeTruthy();
+    expect(screen.queryByText("這個試看連結無效或已失效")).toBeNull();
+  });
+
+  it("帶了壞掉的簽章才顯示「連結無效」", async () => {
+    await show({ e: "a@b.co", t: "bad" });
     expect(screen.getByText("這個試看連結無效或已失效")).toBeTruthy();
   });
 });
