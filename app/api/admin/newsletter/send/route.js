@@ -5,7 +5,7 @@ import { verifyAdminToken } from "@/lib/adminAuth";
 import { renderNewsletterHtml, dedupeEmails } from "@/lib/newsletter";
 import {
   gatherAudienceEmails, sendNewsletterBatch,
-  contentHash, filterUnsent, countSentToday, claimSend, releaseSend,
+  contentHash, filterUnsent, countSentToday, claimSend, releaseSend, AUDIENCES,
 } from "@/lib/newsletter-send";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
 import { buildUnsubscribeUrl, excludeUnsubscribed } from "@/lib/unsubscribe";
@@ -84,7 +84,7 @@ export async function POST(req) {
   }
 
   // 正式群發
-  if (!["buyers", "registered", "leads"].includes(audience)) {
+  if (!AUDIENCES.includes(audience)) {
     return NextResponse.json({ error: "bad_audience" }, { status: 400 });
   }
 
