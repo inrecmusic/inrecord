@@ -170,6 +170,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 | `/api/coupons/validate` | POST | 公開：結帳前驗證優惠券、回傳折後價 |
 | `/api/admin/subscriptions` | GET/POST/PATCH | 後台遊戲存取管理 |
 | `/api/admin/orders` | GET | 後台訂單清單 |
+| `/api/admin/payment-events` | GET | 後台訂單詳情的「付款明細」：撈某筆訂單（`?mer_trade_no=`）的 PAYUNi 原始回呼（新到舊），每列附 `extractCardInfo(raw)` 解析出的分期期數／卡號末四碼／授權碼＋命中的原始欄位名。唯讀；表不存在回 200＋`tableMissing:true`（不 500）|
 | `/api/admin/refund` | POST | 退款（trade/close → fallback trade/cancel）+ 撤銷存取 |
 | `/api/admin/issue-invoice` | POST | 後台手動開立發票（Amego） |
 | `/api/admin/resend-email` | POST | 後台補寄開課確認信（Brevo） |

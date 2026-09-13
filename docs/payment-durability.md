@@ -107,6 +107,12 @@ order by created_at desc;
 > 要確認這個缺口真的補起來了，得開一筆真實的 ATM 訂單，確認 `payment_events` 有出現取號那一列。
 > 在驗證之前，請仍以 PAYUNi 商店後台為準。
 
+> **後台也看得到了**（2026-09-14）：訂單管理 →「查看」訂單詳情，裡面的「付款明細」區會顯示
+> 分期期數／卡號末四碼／授權碼，以及這筆訂單的回呼筆數與時間，並可展開原始回呼 JSON。
+> **分期期數的欄位名同樣還沒被真單驗證過**，所以抓不到時畫面會直說「回呼中找不到分期欄位」
+> （不會顯示成「一次付清」）——看到這句就展開 JSON 核對真正的欄位名，再把它補進
+> `lib/payment-events.js` 的 `CARD_KEYS.installment` 候選名單。命中的欄位名會顯示在畫面上供對照。
+
 只知道 Email 時，先從 `orders` 查訂單編號：
 
 ```sql
@@ -124,7 +130,8 @@ order by created_at desc;
 ## 相關檔案
 
 - `supabase-payment-events.sql` — 這批的唯一一支 SQL
-- `lib/payment-events.js` — `classifyEvent()`（純函式分類）／`recordPaymentEvent()`（落地，絕不拋出）
+- `lib/payment-events.js` — `classifyEvent()`（純函式分類）／`recordPaymentEvent()`（落地，絕不拋出）／`extractCardInfo()`（純函式，從 raw 寬鬆比對出分期／末四碼／授權碼，並回報命中的原始 key）
+- `app/api/admin/payment-events/route.js`、`app/admin/OrdersPage.jsx` 的 `PaymentDetails` — 後台訂單詳情的「付款明細」（唯讀）
 - `app/api/payuni/notify/route.js` — 解密後、分流前呼叫 `recordPaymentEvent`
 - `app/api/admin/refund/route.js` — 退款欄位＋快照＋稽核 meta
 - `app/api/payuni/checkout/route.js` — `attribution` 白名單

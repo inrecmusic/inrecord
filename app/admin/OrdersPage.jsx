@@ -171,6 +171,102 @@ export function WordpressLeadsPanel({rows,reload,showToast}){
   );
 }
 
+// 回呼種類 → 人話
+const EVENT_KIND_LABEL={paid:"付款成功",code_issued:"取號成功",other:"其他回呼"};
+
+// 訂單詳情的「付款明細」：展開某筆訂單時才去抓該筆的 PAYUNi 原始回呼（唯讀）。
+// ⚠️ PAYUNi 回呼裡「分期期數」的欄位名還沒用真單核對過，所以抓不到時一定要明說「找不到分期欄位」
+//    並附上原始回呼 JSON 讓人自己核對——絕不可默默顯示「一次付清」，那會變成假的「沒人分期」。
+export function PaymentDetails({merTradeNo,source}){
+  const [state,setState]=useState("loading"); // loading | error | ready
+  const [res,setRes]=useState(null);
+  const [showRaw,setShowRaw]=useState(false);
+  // 只有官網 PAYUNi 成交才會有回呼（現場／外部站台訂單本來就沒有）；舊單 source 為 NULL 也是官網單
+  const payuni=!source||source==="payuni";
+
+  useEffect(()=>{
+    if(!payuni||!merTradeNo)return;
+    let alive=true;setState("loading");setShowRaw(false);
+    (async()=>{
+      try{
+        const r=await _api(`/api/admin/payment-events?mer_trade_no=${encodeURIComponent(merTradeNo)}`);
+        const d=await r.json().catch(()=>({}));
+        if(!alive)return;
+        if(!r.ok||d.ok!==true){setState("error");return;}
+        setRes(d);setState("ready");
+      }catch{if(alive)setState("error");}
+    })();
+    return()=>{alive=false;};
+  },[merTradeNo,payuni]);
+
+  const events=res?.data||[];
+  // 只信「付款成功」那一筆（kind=paid 或 TradeStatus=1）。同一筆訂單可能先分期失敗、再改一次付清成功，
+  // 若在所有回呼裡撈第一個有值的，會把失敗那次的「3 期」當成成交結果 —— 這是唯一會吐出錯誤金流數字的路徑。
+  const paidEvent=events.find(e=>e.kind==="paid")||events.find(e=>String(e.trade_status)==="1")||null;
+  const card=paidEvent?.card||null;
+  const instState=card?.installmentState||"missing";
+  const installment=card?.installment??null;
+  const instRaw=card?.installmentRaw??null;
+  const instKey=card?.matchedKeys?.installment??null;
+  const last4=card?.last4??null;
+  const authCode=card?.authCode??null;
+  const mono={fontSize:12,background:"#f1f5f9",padding:"2px 6px",borderRadius:4};
+
+  let body;
+  if(!payuni)body=<span className={styles.dim}>非官網 PAYUNi 線上付款（來源：{source||"未知"}），沒有付款回呼紀錄。</span>;
+  else if(!merTradeNo)body=<span className={styles.dim}>這筆訂單沒有訂單編號，無法查詢回呼紀錄。</span>;
+  else if(state==="loading")body=<span className={styles.dim}>讀取付款明細中…</span>;
+  else if(state==="error")body=<span style={{color:"#b45309",fontWeight:700}}>讀取付款明細失敗，請關掉重開再試一次。</span>;
+  else if(res?.tableMissing)body=<span className={styles.dim}>尚未啟用付款回呼紀錄（資料庫還沒建 payment_events 表，請先執行 supabase-payment-events.sql）。</span>;
+  else if(!events.length)body=<span className={styles.dim}>查不到這筆訂單的回呼紀錄（可能是啟用回呼紀錄之前的舊單、還沒付款、或 PAYUNi 沒有送達通知）。</span>;
+  else if(!paidEvent)body=<span className={styles.dim}>這筆訂單有 {events.length} 筆回呼，但還沒有「付款成功」的那一筆，先不顯示卡片明細。</span>;
+  else body=(
+    <>
+      <div style={{display:"grid",gridTemplateColumns:"92px 1fr",gap:"7px 10px",fontSize:14,alignItems:"baseline"}}>
+        <span style={{color:"#64748b",fontWeight:700}}>分期期數</span>
+        <span>{instState==="n"?<strong>{installment} 期</strong>
+          :instState==="none"?"一次付清"
+          :instState==="unparsable"?<span style={{color:"#b45309",fontWeight:700}}>欄位 <code style={mono}>{instKey}</code> 的值是 <code style={mono}>{instRaw}</code>，無法判讀</span>
+          :<span style={{color:"#b45309",fontWeight:700}}>回呼中找不到分期欄位</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>卡號末四碼</span>
+        <span>{last4?<code style={mono}>**** {last4}</code>:<span className={styles.dim}>回呼中沒有</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>授權碼</span>
+        <span>{authCode?<code style={mono}>{authCode}</code>:<span className={styles.dim}>回呼中沒有</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>回呼紀錄</span>
+        <span>共 {events.length} 筆
+          {events.map(e=>(
+            <span key={e.id} className={styles.dim} style={{display:"block",fontSize:12,marginTop:4}}>
+              {fmt(e.created_at)}・{EVENT_KIND_LABEL[e.kind]||e.kind||"—"}（TradeStatus {e.trade_status??"—"}）
+            </span>
+          ))}
+        </span>
+      </div>
+      <p style={{fontSize:12,margin:"10px 0 0",color:(instState==="n"||instState==="none")?"#64748b":"#b45309"}}>
+        {instState==="n"||instState==="none"
+          ?<>分期期數取自「付款成功」回呼的欄位 <code style={mono}>{instKey}</code>。</>
+          :instState==="unparsable"
+          ?<>回呼裡有欄位 <code style={mono}>{instKey}</code>，但值不是純數字或超出 1–36 期，不敢判讀。請展開下方原始回呼核對。</>
+          :<>PAYUNi 的分期欄位名稱我們還沒用真單核對過，這筆回呼裡找不到任何像分期期數的欄位。請展開下方原始回呼自行核對欄位名。</>}
+      </p>
+      <button className={styles.btnSmall} style={{marginTop:10}} onClick={()=>setShowRaw(v=>!v)}>
+        {showRaw?"收合原始回呼 JSON":"展開原始回呼 JSON"}
+      </button>
+      {showRaw&&(
+        <pre style={{marginTop:8,maxHeight:260,overflow:"auto",background:"#0f172a",color:"#e2e8f0",padding:12,borderRadius:8,fontSize:11,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-all"}}>
+          {JSON.stringify(events.map(e=>({kind:e.kind,created_at:e.created_at,raw:e.raw})),null,2)}
+        </pre>
+      )}
+    </>
+  );
+
+  return (
+    <div style={{marginBottom:20,border:"1px solid #f1f5f9",borderRadius:12,padding:"12px 14px"}}>
+      <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>付款明細</div>
+      {body}
+    </div>
+  );
+}
+
 export default function OrdersPage({showToast}){
   const [statusFilter,setStatusFilter]=useState("all");
   const [search,setSearch]=useState("");
@@ -280,6 +376,7 @@ export default function OrdersPage({showToast}){
   const allOrders=useMemo(()=>rows.map(o=>({
     id:o.mer_trade_no||o.id,
     realId:o.id,
+    merTradeNo:o.mer_trade_no||"",
     source:o.source,
     plan:o.plan,
     enrolled:o.enrolled===true,
@@ -639,6 +736,7 @@ export default function OrdersPage({showToast}){
                 </div>
               ))}
             </div>
+            <PaymentDetails merTradeNo={detailOrder.merTradeNo} source={detailOrder.source}/>
             {detailOrder?.fanReview&&(
               <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #eee"}}>
                 <div style={{fontWeight:700,marginBottom:6}}>粉絲憑證審核：{detailOrder.fanReview==="pending"?"待審核":detailOrder.fanReview==="approved"?"✅ 通過":"❌ 不符"}</div>
