@@ -10,6 +10,7 @@ import {
 import { sendNewsletterEmail } from "@/lib/brevo-email";
 import { buildUnsubscribeUrl, excludeUnsubscribed } from "@/lib/unsubscribe";
 import { logAudit } from "@/lib/audit";
+import { normalizeDraftId } from "@/lib/newsletter-drafts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 群發逐封寄，給足執行時間
@@ -27,7 +28,8 @@ export async function POST(req) {
   const payload = await verifyAdminToken(req);
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { audience, test, brevoTemplateId, testEmails } = await req.json().catch(() => ({}));
+  const { audience, test, brevoTemplateId, testEmails, draftId } = await req.json().catch(() => ({}));
+  const nlId = normalizeDraftId(draftId); // 未指定＝default，沿用舊行為
   const templateId = Number.isInteger(brevoTemplateId) && brevoTemplateId > 0 ? brevoTemplateId : null;
 
   const supabase = getSupabaseAdmin();
@@ -42,7 +44,7 @@ export async function POST(req) {
     sendOne = (to) => sendNewsletterEmail({ to, subject, templateId, params: { unsubscribe_url: unsubUrl(to) }, unsubscribeUrl: unsubUrl(to) });
   } else {
     // 讀草稿（寄送以 DB 內容為準）；HTML 逐封渲染（退訂連結因人而異，渲染成本可忽略）
-    const { data: nl } = await supabase.from("newsletter").select("subject, body_md").eq("id", "default").maybeSingle();
+    const { data: nl } = await supabase.from("newsletter").select("subject, body_md").eq("id", nlId).maybeSingle();
     subject = (nl?.subject || "").trim();
     body_md = nl?.body_md || "";
     if (!subject || !body_md.trim()) return NextResponse.json({ error: "empty_content" }, { status: 400 });
@@ -115,8 +117,8 @@ export async function POST(req) {
   await supabase
     .from("newsletter")
     .update({ last_sent_at: new Date().toISOString(), last_sent_count: result.sent })
-    .eq("id", "default");
+    .eq("id", nlId);
 
-  await logAudit(supabase, { actor: payload.email, action: "newsletter.send", targetType: "newsletter", targetId: audience, meta: { audience, templateId, sent: result.sent, failed: result.failed, alreadySent }, req });
+  await logAudit(supabase, { actor: payload.email, action: "newsletter.send", targetType: "newsletter", targetId: audience, meta: { audience, templateId, draftId: nlId, sent: result.sent, failed: result.failed, alreadySent }, req });
   return NextResponse.json({ ok: true, audience, templateId, alreadySent, ...result });
 }

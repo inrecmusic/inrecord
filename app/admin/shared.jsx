@@ -351,7 +351,7 @@ export function DonutChart({orders=[],filter,onFilter}){
 }
 
 // ── Audit / Email Log Page ─────────────────────────────────────────────────
-export const EMAIL_KIND_LABEL={purchase:"購買確認",presale:"預購信",launch:"開課通知",newsletter:"電子報",custom:"自訂信",followup:"批次追單"};
+export const EMAIL_KIND_LABEL={purchase:"購買確認",presale:"預購信",launch:"開課通知",newsletter:"電子報",custom:"自訂信",followup:"批次追單",trial:"試看信"};
 
 // 學員資料頁（student_profiles）enum 顯示對照，比照 levelLabel；空值/未知值一律回退「—」。
 export function sourceLabel(v){return{ig:"Instagram",friend:"朋友介紹",concert:"演奏會",search:"網路搜尋",other:"其他"}[v]||"—";}

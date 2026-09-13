@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { adminFetch as _api } from "@/lib/admin-client";
 import styles from "./admin.module.css";
-import { renderMd, fmt } from "./shared";
+import { renderMd, fmt, EMAIL_KIND_LABEL } from "./shared";
 
 // 電子報：編輯標題+Markdown 內文 → 群發給「已付款／已開通學員 / 註冊官網帳號」。逐封寄(A 方案)，碰上限即回報。
 // 「已付款」對象＝已付款訂單 ∪ enrollments（見 lib/newsletter-send.js），付了錢但還沒開通的人也收得到。
@@ -82,6 +82,12 @@ export const NEWSLETTER_TEMPLATES=[
     "**InRecord・音樂刻 敬上**"].join("\n")},
 ];
 
+// ── 寄送成效（唯讀）────────────────────────────────────────────────────────
+const STATS_ERR={unauthorized:"登入已過期，請重新登入",db_not_configured:"資料庫尚未設定",invalid_range:"開始日不能晚於結束日",range_too_long:"日期區間超過 Brevo 上限 90 天，請縮小區間",server_error:"伺服器錯誤，請稍後再試"};
+const WARN_BOX={fontSize:12.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 12px",marginBottom:12};
+const NUM={fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap",fontSize:13};
+const pct=r=>r==null?"—":`${(r*100).toFixed(1)}%`;
+
 export default function NewsletterPage({showToast}){
   const [subject,setSubject]=useState("");
   const [bodyMd,setBodyMd]=useState("");
@@ -96,21 +102,50 @@ export default function NewsletterPage({showToast}){
   const [brevoTemplates,setBrevoTemplates]=useState([]);
   const [brevoTemplateId,setBrevoTemplateId]=useState(0);
   const [testTo,setTestTo]=useState(""); // 測試收件人（逗號/空白分隔，可多個；留空＝ADMIN_EMAIL）
+  // 多份草稿：newsletter 表以 id 為鍵，subject 當顯示名稱。需先移除 DB 的 newsletter_singleton 約束。
+  const [draftId,setDraftId]=useState("default");
+  const [drafts,setDrafts]=useState([]);
   const [quota,setQuota]=useState(null); // Brevo 寄件額度；期間依方案而定（免費＝每日、付費＝計費週期），見 lib/brevo-quota.js
   const refreshQuota=useCallback(async()=>{
     try{const r=await _api("/api/admin/brevo-quota");const d=await r.json().catch(()=>({}));if(d.ok)setQuota(d);}catch{}
   },[]);
+  // 寄送成效：預設收合，展開才查（免得每次進頁都打 Brevo）。日期留空交給後端算預設區間，
+  // 避免在 render 階段算 Date.now() 造成 hydration 不一致。
+  const [statsOpen,setStatsOpen]=useState(false);
+  const [statsFrom,setStatsFrom]=useState("");
+  const [statsTo,setStatsTo]=useState("");
+  const [stats,setStats]=useState(null);
+  const [statsBusy,setStatsBusy]=useState(false);
+  const [statsErr,setStatsErr]=useState("");
+  const loadStats=useCallback(async(from="",to="")=>{
+    setStatsBusy(true);setStatsErr("");
+    try{
+      const qs=new URLSearchParams({...(from?{from}:{}),...(to?{to}:{})});
+      const r=await _api(`/api/admin/email-stats${qs.toString()?`?${qs}`:""}`);
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok)throw new Error(d.message||STATS_ERR[d.error]||d.error||`載入失敗（HTTP ${r.status}）`);
+      setStats(d);setStatsFrom(d.from);setStatsTo(d.to);
+    }catch(e){setStats(null);setStatsErr(e.message||"載入失敗");}
+    finally{setStatsBusy(false);}
+  },[]);
+  function toggleStats(){
+    const next=!statsOpen;
+    setStatsOpen(next);
+    if(next&&!stats&&!statsBusy)loadStats();
+  }
   const useTpl=brevoTemplateId>0;
   const tplName=brevoTemplates.find(t=>t.id===brevoTemplateId)?.name||`#${brevoTemplateId}`;
   const dirty=subject!==savedSubject||bodyMd!==savedBody;
 
-  const load=useCallback(async()=>{
+  const load=useCallback(async(id="default")=>{
     try{
-      const res=await _api("/api/admin/newsletter");
-      const {data}=await res.json();
+      const res=await _api(`/api/admin/newsletter?id=${encodeURIComponent(id)}`);
+      const {data,drafts:list}=await res.json();
+      setDraftId(data.id||id);
+      setDrafts(list||[]);
       setSubject(data.subject||"");setBodyMd(data.body_md||"");
       setSavedSubject(data.subject||"");setSavedBody(data.body_md||"");
-      if(data.last_sent_at)setLastSent({at:data.last_sent_at,count:data.last_sent_count});
+      setLastSent(data.last_sent_at?{at:data.last_sent_at,count:data.last_sent_count}:null);
     }catch{}
     try{
       const res=await _api("/api/admin/brevo-templates");
@@ -119,11 +154,17 @@ export default function NewsletterPage({showToast}){
     }catch{}
     refreshQuota();
   },[refreshQuota]);
-  useEffect(()=>{load();},[load]);
+  useEffect(()=>{load("default");},[load]);
 
   async function persist(){
-    const res=await _api("/api/admin/newsletter",{method:"PATCH",body:JSON.stringify({subject,body_md:bodyMd})});
-    if(res.ok){setSavedSubject(subject);setSavedBody(bodyMd);}
+    const res=await _api("/api/admin/newsletter",{method:"PATCH",body:JSON.stringify({id:draftId,subject,body_md:bodyMd})});
+    if(res.ok){
+      setSavedSubject(subject);setSavedBody(bodyMd);
+      setDrafts(d=>d.some(x=>x.id===draftId)?d.map(x=>x.id===draftId?{...x,subject}:x):[...d,{id:draftId,subject,hasBody:true}]);
+    }else{
+      const d=await res.json().catch(()=>({}));
+      if(d.hint)showToast?.("❌ "+d.hint);
+    }
     return res.ok;
   }
   async function save(){
@@ -137,7 +178,7 @@ export default function NewsletterPage({showToast}){
     try{
       if(!useTpl)await persist();
       const list=testTo.split(/[\s,;、]+/).filter(Boolean);
-      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true,...(list.length?{testEmails:list}:{}),...(useTpl?{brevoTemplateId}:{})})});
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({test:true,draftId,...(list.length?{testEmails:list}:{}),...(useTpl?{brevoTemplateId}:{})})});
       const d=await res.json();
       if(d.ok)showToast?.("✅ 測試信已寄到 "+(d.to||"管理員信箱")+(d.unsubscribed?.length?`（${d.unsubscribed.length} 位已退訂，略過）`:""));
       else if(d.test&&d.sent!=null)showToast?.(`⚠️ 測試信 ${d.failed} 封失敗（成功 ${d.sent}：${d.to||"—"}）`);
@@ -152,7 +193,7 @@ export default function NewsletterPage({showToast}){
     setBusy("all");setResult(null);
     try{
       if(!useTpl)await persist();
-      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({audience,...(useTpl?{brevoTemplateId}:{})})});
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({audience,draftId,...(useTpl?{brevoTemplateId}:{})})});
       const d=await res.json();
       if(!d.ok){showToast?.("❌ 群發失敗："+(d.error||"unknown"));}
       else{
@@ -163,6 +204,30 @@ export default function NewsletterPage({showToast}){
         await load();
       }
     }catch(e){showToast?.("❌ 群發失敗："+e.message);} finally{setBusy("");refreshQuota();}
+  }
+
+  async function switchDraft(id){
+    if(id===draftId)return;
+    if(dirty&&!window.confirm("目前這份有未儲存的修改，切換會丟失。要繼續嗎？"))return;
+    await load(id);
+    setMode("edit");
+  }
+  async function newDraft(){
+    const name=window.prompt("新草稿的代號（英數與 - _，例如 b-plan）：","");
+    const id=String(name||"").trim().toLowerCase();
+    if(!id)return;
+    if(!/^[a-z0-9][a-z0-9_-]{0,39}$/.test(id)){showToast?.("❌ 代號只能用小寫英數與 - _");return;}
+    if(drafts.some(d=>d.id===id)){showToast?.("❌ 這個代號已經有了");return;}
+    if(dirty&&!window.confirm("目前這份有未儲存的修改，新增會丟失。要繼續嗎？"))return;
+    setDraftId(id);setSubject("");setBodyMd("");setSavedSubject("");setSavedBody("");setLastSent(null);setMode("edit");
+    setDrafts(d=>[...d,{id,subject:"",hasBody:false}]);
+  }
+  async function deleteDraft(){
+    if(draftId==="default"){showToast?.("❌ 預設草稿不能刪除");return;}
+    if(!window.confirm(`確定刪除草稿「${subject||draftId}」？無法復原。`))return;
+    const res=await _api(`/api/admin/newsletter?id=${encodeURIComponent(draftId)}`,{method:"DELETE"});
+    if(res.ok){showToast?.("✅ 已刪除");await load("default");}
+    else showToast?.("❌ 刪除失敗");
   }
 
   return(
@@ -180,6 +245,20 @@ export default function NewsletterPage({showToast}){
       </div>
 
       <div className={styles.panel} style={{marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14,paddingBottom:14,borderBottom:"1px solid #e2e8f0"}}>
+          <span style={{fontSize:13,fontWeight:700,color:"#475569"}}>草稿</span>
+          {(drafts.length?drafts:[{id:draftId,subject}]).map(d=>(
+            <button key={d.id} type="button"
+              className={`${styles.filterBtn} ${d.id===draftId?styles.filterActive:""}`}
+              onClick={()=>switchDraft(d.id)}
+              title={d.id==="default"?"預設草稿":d.id}>
+              {d.subject||(d.id==="default"?"（預設草稿）":d.id)}
+            </button>
+          ))}
+          <button type="button" className={styles.btnSmall} onClick={newDraft}>＋ 新增草稿</button>
+          {draftId!=="default"&&<button type="button" className={styles.btnSmall} onClick={deleteDraft}>刪除這份</button>}
+          <span style={{fontSize:12,color:"#94a3b8"}}>可以同時存多份（例如 A 版／B 版），各自儲存、各自寄測試信</span>
+        </div>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
           <span style={{fontSize:13,fontWeight:700,color:"#475569"}}>範本</span>
           {NEWSLETTER_TEMPLATES.map(t=>(
@@ -237,6 +316,66 @@ export default function NewsletterPage({showToast}){
         {result&&<div style={{marginTop:12,fontSize:13,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
           本次：對象 {result.total} 人 · 成功 {result.sent} · 失敗 {result.failed}{result.limitHit?` · ⚠️ 碰單日安全閥，剩 ${result.total-result.sent} 未寄`:""}
         </div>}
+      </div>
+
+      <div className={styles.panel} style={{marginTop:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <h3 style={{margin:0}}>寄送成效</h3>
+          <button className={styles.btnSmall} onClick={toggleStats}>{statsOpen?"收合":"展開"}</button>
+          <span style={{fontSize:12,color:"#94a3b8"}}>每次群發的送達／開信／點擊／退訂，資料取自 Brevo 交易信事件（唯讀，不會寄出任何信）</span>
+        </div>
+        {statsOpen&&<>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",margin:"14px 0"}}>
+            <input className={styles.selectInput} type="date" value={statsFrom} onChange={e=>setStatsFrom(e.target.value)} title="開始日期"/>
+            <span style={{color:"#94a3b8"}}>～</span>
+            <input className={styles.selectInput} type="date" value={statsTo} onChange={e=>setStatsTo(e.target.value)} title="結束日期"/>
+            <button className={styles.btnSmall} disabled={statsBusy} onClick={()=>loadStats(statsFrom,statsTo)}>{statsBusy?"查詢中…":"查詢"}</button>
+            <span style={{fontSize:12,color:"#94a3b8"}}>留空＝過去 30 天；Brevo 事件查詢上限 90 天</span>
+          </div>
+          {stats&&!stats.brevoConfigured&&<div style={WARN_BOX}>尚未設定 BREVO_API_KEY，只能顯示寄出封數。設好金鑰並重新部署後，這裡才會出現開信與點擊。</div>}
+          {stats?.brevoError&&<div style={WARN_BOX}>Brevo 事件讀取失敗（{stats.brevoError}）。為避免顯示不完整的數字，這次的開信／點擊全部留白（顯示「—」）；寄出封數來自本站紀錄，仍然正確。稍後再查一次即可。</div>}
+          {stats?.truncated&&<div style={WARN_BOX}>事件筆數太多已截斷，開信數可能偏低，請縮小日期區間再查。</div>}
+          {stats&&stats.brevoConfigured&&!stats.brevoError&&stats.data.length>0&&!stats.data.some(g=>g.stats)&&
+            <div style={WARN_BOX}>這段期間在 Brevo 查不到任何事件（可能已超過事件保留期），只能顯示寄出封數。</div>}
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead><tr><th>日期</th><th>主旨</th><th>寄出</th><th>送達</th><th>開信（人）</th><th>代理載入</th><th>點擊</th><th>退信</th><th>退訂</th></tr></thead>
+              <tbody>
+                {statsBusy?<tr><td colSpan={9} className={styles.empty}>載入中…</td></tr>
+                :statsErr?<tr><td colSpan={9} className={styles.empty}><span className={styles.emptyIcon}>⚠️</span><span className={styles.emptyTitle}>載入失敗</span><span className={styles.emptySub}>{statsErr}</span></td></tr>
+                :!stats?.data?.length?<tr><td colSpan={9} className={styles.empty}><span className={styles.emptyIcon}>📭</span><span className={styles.emptyTitle}>這段期間沒有群發紀錄</span><span className={styles.emptySub}>換個日期區間再查一次</span></td></tr>
+                :stats.data.map(g=>{
+                  const st=g.stats;
+                  return(
+                    <tr key={g.key}>
+                      <td className={styles.dim} style={{whiteSpace:"nowrap",fontSize:12}}>
+                        {g.dateTW}
+                        {!g.taggable&&<span style={{color:"#b45309",cursor:"help",fontWeight:800}} title={`${stats.tagSince} 之前寄出，Brevo 事件沒有標籤，只能以收件人名單比對推算，可能混入同期其他信件的開信`}> *</span>}
+                      </td>
+                      <td style={{fontSize:13,maxWidth:320,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={g.subject}>
+                        {g.subject}
+                        <span className={styles.dim} style={{fontSize:11,marginLeft:6}}>{EMAIL_KIND_LABEL[g.kind]||g.kind||""}</span>
+                      </td>
+                      <td style={NUM}>{g.sentCount}{g.failedCount>0&&<span style={{color:"#dc2626",fontSize:11}}> +{g.failedCount} 未寄出</span>}</td>
+                      <td style={NUM}>{st?st.delivered:"—"}</td>
+                      <td style={NUM}>{st?<>{st.opened}<span className={styles.dim} style={{fontSize:11,marginLeft:4}}>{pct(st.openRate)}</span></>:"—"}</td>
+                      <td style={NUM}>{st?st.proxyOpened:"—"}</td>
+                      <td style={NUM}>{st?<>{st.clicked}<span className={styles.dim} style={{fontSize:11,marginLeft:4}}>{pct(st.clickRate)}</span></>:"—"}</td>
+                      <td style={NUM}>{st?(st.bounced||0):"—"}</td>
+                      <td style={NUM}>{st?st.unsubscribed:"—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className={styles.dim} style={{fontSize:12,lineHeight:1.8,marginTop:12}}>
+            開信率只能當趨勢看，不是精確人數：它靠收件人載入一張追蹤圖片判斷，Apple Mail 的隱私保護會自動載入而把數字灌高、Gmail 不載入圖片又會壓低。
+            Brevo 能辨識出前者，所以這裡把它拆成「代理載入」單獨一欄，沒有混進「開信（人）」。點擊數不受圖片影響，是比較可靠的參與度指標。<br/>
+            開信率與點擊率的分母都是「送達」，不是「寄出」。「—」代表查不到事件（多半是超過 Brevo 的事件保留期），不是 0 人。<br/>同一主旨、同一天（台灣時間）、同一類型算同一次群發；寄出數與未寄出數來自本站自己的寄信紀錄，一定正確。每個開信事件只會算給該收件人最近一次收到的信，所以同一批名單連寄兩封時，前一封不會吃到後一封的開信。
+            {stats?.tagSince&&<>　標有 <b style={{color:"#b45309"}}>*</b> 的是 {stats.tagSince} 之前寄的信，當時還沒在信件上帶標籤，只能以收件人名單比對推算，可能混入同一位收件人同期收到的其他信件的開信。</>}
+          </p>
+        </>}
       </div>
     </div>
   );
