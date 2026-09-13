@@ -369,6 +369,11 @@ export default function NewsletterPage({showToast}){
               </tbody>
             </table>
           </div>
+          {stats?.diagnostics&&<p className={styles.dim} style={{fontSize:12,marginTop:10}}>
+            這段期間 Brevo 共 {stats.diagnostics.total} 筆事件，對到本站寄件紀錄 {stats.diagnostics.attributed} 筆
+            {stats.diagnostics.noRecipient>0&&<>，{stats.diagnostics.noRecipient} 筆的收件人不在本站紀錄內（Auth 驗證信等，不計入）</>}
+            {stats.diagnostics.tooOld>0&&<>，{stats.diagnostics.tooOld} 筆距離最近一次寄送超過 14 天（不計入）</>}。
+          </p>}
           <p className={styles.dim} style={{fontSize:12,lineHeight:1.8,marginTop:12}}>
             開信率只能當趨勢看，不是精確人數：它靠收件人載入一張追蹤圖片判斷，Apple Mail 的隱私保護會自動載入而把數字灌高、Gmail 不載入圖片又會壓低。
             Brevo 能辨識出前者，所以這裡把它拆成「代理載入」單獨一欄，沒有混進「開信（人）」。點擊數不受圖片影響，是比較可靠的參與度指標。<br/>

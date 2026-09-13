@@ -94,6 +94,8 @@ export async function GET(req) {
     brevoError,
     truncated,
     tagSince: TAG_SINCE_TW_DAY,
+    // 診斷：抓回幾筆事件、對到幾筆。用來分辨「Brevo 沒有資料」與「事件被歸到沒顯示的信件」
+    diagnostics: byKey.diagnostics || null,
     data: groups.map((g) => {
       const mine = byKey.get(g.key);
       return {
