@@ -304,6 +304,8 @@ export default function NewsletterPage({showToast}){
         </div>
         <div style={{display:"flex",gap:18,flexWrap:"wrap",marginBottom:14}}>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="buyers"} onChange={()=>setAudience("buyers")}/> 🎓 已付款／已開通學員</label>
+          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}} title="9/2（台灣時間）之前完成購課或開通者＝音樂會預購的早鳥。判定與教室的搶先看分層同一套規則"><input type="radio" name="aud" checked={audience==="buyers_early"} onChange={()=>setAudience("buyers_early")}/> 🎫 已購課 · 9/2 前（早鳥）</label>
+          <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}} title="9/2 當天及之後才完成購課或開通者"><input type="radio" name="aud" checked={audience==="buyers_standard"} onChange={()=>setAudience("buyers_standard")}/> 🗓️ 已購課 · 9/2 起</label>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}}><input type="radio" name="aud" checked={audience==="registered"} onChange={()=>setAudience("registered")}/> 👤 註冊官網帳號</label>
           <label style={{display:"flex",gap:6,alignItems:"center",fontSize:14,cursor:"pointer"}} title="首頁留信箱進 Brevo 清單的人，自動排除已購買與已退訂者"><input type="radio" name="aud" checked={audience==="leads"} onChange={()=>setAudience("leads")}/> 📬 潛客名單（還沒購買）</label>
         </div>
