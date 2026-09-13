@@ -1,18 +1,19 @@
 "use client";
 // 教室公告：儀表板「最新公告」區、播放頁鈴鐺／提示條／抽屜、重要公告卡片。
-// 狀態集中在 useAnnouncements（排序、未讀、重要、已讀記憶），各元件只負責畫。
+// 列表（一則一列）與彈出視窗（完整內容＋上一則／下一則）兩邊共用同一組元件。
+// 狀態集中在 useAnnouncements（排序、逐則已讀、重要），各元件只負責畫。
 // 沒有公告 → 所有元件都回 null，畫面上什麼都不出現。
-import { useEffect, useMemo, useState } from "react";
-import { sortAnnouncements, countUnread, pickImportant, pickStrip, isUnread } from "@/lib/announcements-view";
-import { announcementHtml } from "@/lib/announcement-md";
-import { readAnnouncementState, writeSeen, writeAck, writeStripDismissed } from "@/lib/announcement-state";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { sortAnnouncements, countUnread, pickImportant, pickStrip, isUnread, legacyReadIds } from "@/lib/announcements-view";
+import { announcementHtml, announcementSummary } from "@/lib/announcement-md";
+import { readAnnouncementState, writeRead, writeAck, writeStripDismissed } from "@/lib/announcement-state";
 
 const F = "var(--type-body)";
 const WD = "日一二三四五六";
 const asDate = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? null : d; };
 const fmtDate = (iso) => { const d = asDate(iso); return d ? `${d.getMonth() + 1}/${d.getDate()}` : ""; };
 const fmtWd = (iso) => { const d = asDate(iso); return d ? WD[d.getDay()] : ""; };
-const firstLine = (s) => String(s ?? "").split(/\r?\n/).find((l) => l.trim()) || "";
 
 // 內容 HTML 已由 announcementHtml 跳脫（只允許受限 Markdown 與 http(s) 連結）
 const Md = ({ body, className = "" }) => (
@@ -22,23 +23,39 @@ const Md = ({ body, className = "" }) => (
 export function useAnnouncements(items, { storage } = {}) {
   const store = storage !== undefined ? storage : (typeof window !== "undefined" ? window.localStorage : null);
   const sorted = useMemo(() => sortAnnouncements(items || []), [items]);
-  const [state, setState] = useState({ seenAt: null, acked: [], stripDismissed: null });
-  const [ready, setReady] = useState(false); // 讀完裝置記憶前不顯示未讀數／提示條，避免閃一下
-  const [open, setOpen] = useState(false);
+  const [state, setState] = useState({ seenAt: null, read: null, acked: [], stripDismissed: null });
+  const [ready, setReady] = useState(false); // 讀完裝置記憶前一律當已讀，避免未讀數／提示條閃一下
+  const [open, setOpen] = useState(false);   // 播放頁右側抽屜
+  const [openId, setOpenId] = useState(null); // 彈出視窗中的那一則
 
   useEffect(() => { setState(readAnnouncementState(store)); setReady(true); }, [store]);
 
-  const unread = ready ? countUnread(sorted, state.seenAt) : 0;
-  const important = ready ? pickImportant(sorted, state.acked) : null;
-  const strip = ready ? pickStrip(sorted, state.seenAt, state.stripDismissed) : null;
+  // 舊資料遷移（每台裝置一次）：這台還沒有逐則已讀清單時，把 seenAt 之前的公告一次記成已讀。
+  useEffect(() => {
+    if (!ready || state.read !== null || !sorted.length) return;
+    const read = writeRead(store, legacyReadIds(sorted, state.seenAt));
+    setState((s) => ({ ...s, read: [...new Set([...(s.read || []), ...(read || [])])] }));
+  }, [ready, state.read, state.seenAt, sorted, store]);
 
-  const markSeen = () => { const iso = new Date().toISOString(); writeSeen(store, iso); setState((s) => ({ ...s, seenAt: iso })); };
+  // 讀完裝置記憶前一律當「已讀」，避免首次渲染閃一下紅點與提示條
+  const readState = ready ? state : { read: sorted.map((a) => a.id) };
+  const unread = countUnread(sorted, readState);
+  const important = ready ? pickImportant(sorted, state.acked) : null;
+  const strip = pickStrip(sorted, readState, state.stripDismissed);
+
+  const markRead = useCallback((id) => {
+    const read = writeRead(store, [id]);
+    setState((s) => ({ ...s, read: [...new Set([...(s.read || []), ...(read || [])])] }));
+  }, [store]);
+
+  const openItem = useCallback((id) => { setOpenId(id); markRead(id); }, [markRead]);
+  const closeItem = useCallback(() => setOpenId(null), []);
   const ack = (id) => { writeAck(store, id); setState((s) => ({ ...s, acked: [...s.acked, id] })); };
   const dismissStrip = (id) => { writeStripDismissed(store, id); setState((s) => ({ ...s, stripDismissed: id })); };
   const openDrawer = () => setOpen(true);
-  const closeDrawer = () => { setOpen(false); markSeen(); };
+  const closeDrawer = () => { setOpen(false); setOpenId(null); };
 
-  return { sorted, unread, important, strip, open, openDrawer, closeDrawer, markSeen, ack, dismissStrip, seenAt: state.seenAt };
+  return { sorted, unread, important, strip, readState, open, openDrawer, closeDrawer, openId, openItem, closeItem, ack, dismissStrip };
 }
 
 /* ── 播放頁：頁首鈴鐺 ─────────────────────────────────────────────────────── */
@@ -86,12 +103,188 @@ const MD_CSS = `
 .ann-md h1,.ann-md h2,.ann-md h3{font-size:1em;margin:8px 0 4px}
 `;
 
-/* ── 播放頁：右側抽屜（全部公告） ───────────────────────────────────────────── */
+// 列表＋彈出視窗共用色票：預設淺色（播放頁）；在儀表板（.hub）改吃音樂廳主題變數，深／淺切換自動跟著走。
+const ANN_CSS = MD_CSS + `
+.ann-list,.ann-modal-bd{
+  --ann-card:#fff;--ann-ink:#0f172a;--ann-soft:#334155;--ann-muted:#64748b;
+  --ann-line:#e2e8f0;--ann-hover:#f8fafc;--ann-accent:#2563eb;
+  --ann-tag-bg:#eff6ff;--ann-tag-ink:#1d4ed8;--ann-tag-line:transparent;
+}
+.hub .ann-list,.ann-modal-bd[data-variant="hub"]{
+  --ann-card:var(--card);--ann-ink:var(--ink);--ann-soft:var(--ink-soft);--ann-muted:var(--ink-faint);
+  --ann-line:var(--line-soft);--ann-hover:var(--card-a);--ann-accent:var(--gold);
+  --ann-tag-bg:transparent;--ann-tag-ink:var(--gold);--ann-tag-line:var(--gold-line);
+  --ann-modal-bg:var(--bg2);
+}
+.hub .ann-list{margin-bottom:40px}
+.ann-list{display:flex;flex-direction:column;gap:8px}
+.ann-row{display:grid;grid-template-columns:8px auto minmax(0,1fr) auto;gap:12px;align-items:center;
+  width:100%;min-height:44px;padding:10px 14px;text-align:left;cursor:pointer;font:inherit;
+  color:var(--ann-ink);background:var(--ann-card);border:1px solid var(--ann-line);border-radius:10px;
+  transition:border-color .18s,background .18s}
+.ann-row:hover{border-color:var(--ann-accent);background:var(--ann-hover)}
+.ann-row:focus-visible{outline:2px solid var(--ann-accent);outline-offset:2px}
+.ann-row .ann-dot{width:8px;height:8px;border-radius:50%;background:var(--ann-accent);visibility:hidden}
+.ann-row.unread .ann-dot{visibility:visible}
+.ann-row.unread .ann-t{font-weight:700}
+.ann-date{font-size:12.5px;color:var(--ann-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ann-main{min-width:0}
+.ann-hl{display:flex;align-items:center;gap:6px;min-width:0}
+.ann-t{font-size:14.5px;font-weight:600;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ann-ex{display:block;margin-top:1px;font-size:12.5px;color:var(--ann-muted);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ann-go{font-size:12.5px;color:var(--ann-muted);white-space:nowrap}
+.ann-tag{flex:none;font-size:11px;font-weight:700;padding:1px 7px;border-radius:100px;
+  background:var(--ann-tag-bg);color:var(--ann-tag-ink);border:1px solid var(--ann-tag-line)}
+/* 「重要」要比「置頂」更有份量：實心底色，否則兩顆長得一樣、重要公告失去視覺權重 */
+.ann-tag.imp{background:var(--ann-accent);color:#fff;border-color:transparent}
+.ann-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ann-modal-bd{position:fixed;inset:0;z-index:1050;background:rgba(15,23,42,.55);display:grid;place-items:center;padding:20px}
+.ann-modal{width:min(520px,100%);max-height:min(78vh,700px);display:flex;flex-direction:column;
+  background:var(--ann-modal-bg,var(--ann-card));color:var(--ann-ink);border:1px solid var(--ann-line);
+  border-radius:16px;box-shadow:0 30px 80px -30px rgba(15,23,42,.6);animation:ann-pop .16s ease-out}
+.ann-modal:focus{outline:none}
+@keyframes ann-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ann-hd{position:relative;padding:18px 54px 12px 22px;border-bottom:1px solid var(--ann-line)}
+.ann-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:var(--ann-muted);font-variant-numeric:tabular-nums}
+.ann-hd h3{margin:0;font-size:18px;line-height:1.45;text-wrap:balance}
+.ann-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border:0;border-radius:10px;
+  background:none;color:var(--ann-muted);font-size:20px;line-height:1;cursor:pointer}
+.ann-x:hover{background:var(--ann-hover);color:var(--ann-ink)}
+.ann-bd{flex:1;overflow:auto;padding:16px 22px;color:var(--ann-soft);font-size:14px;line-height:1.8}
+.ann-ft{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-top:1px solid var(--ann-line)}
+.ann-ft button{min-height:40px;padding:8px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  color:var(--ann-accent);background:none;border:1px solid var(--ann-line);border-radius:10px}
+.ann-ft button:hover:not(:disabled){border-color:var(--ann-accent)}
+.ann-ft button:disabled{color:var(--ann-muted);opacity:.5;cursor:default}
+.ann-idx{font-size:12px;color:var(--ann-muted);font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+  .ann-row{grid-template-columns:8px auto minmax(0,1fr);min-height:52px;padding:11px 12px;gap:10px}
+  .ann-go{display:none}
+  .ann-modal-bd{padding:12px}
+  .ann-modal{width:100%;max-height:86vh}
+  .ann-hd{padding:16px 50px 10px 18px}
+  .ann-bd{padding:14px 18px}
+}
+@media (prefers-reduced-motion:reduce){.ann-row,.ann-modal{transition:none!important;animation:none!important}}
+`;
+
+/* ── 公告列表（儀表板與播放頁抽屜共用）：一則一列，點下去開彈出視窗 ───────── */
+export function AnnouncementList({ ann, items, variant = "light" }) {
+  const list = items || ann.sorted;
+  const rows = useRef({});
+  const last = useRef(null);
+
+  // 關掉視窗後把焦點還給觸發的那一列
+  useEffect(() => {
+    if (ann.openId) { last.current = ann.openId; return; }
+    if (!last.current) return;
+    const el = rows.current[last.current];
+    last.current = null;
+    el?.focus?.();
+  }, [ann.openId]);
+
+  if (!list.length) return null;
+  return (
+    <>
+      <style>{ANN_CSS}</style>
+      <div className="ann-list">
+        {list.map((a) => {
+          const unread = isUnread(a, ann.readState);
+          return (
+            <button
+              type="button" key={a.id} ref={(el) => { rows.current[a.id] = el; }}
+              className={`ann-row${unread ? " unread" : ""}`} onClick={() => ann.openItem(a.id)}
+            >
+              <span className="ann-dot" aria-hidden="true" />
+              <span className="ann-date">{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）</span>
+              <span className="ann-main">
+                <span className="ann-hl">
+                  {unread && <span className="ann-sr">未讀</span>}
+                  {a.pinned && <span className="ann-tag">置頂</span>}
+                  {a.important && <span className="ann-tag imp">重要</span>}
+                  <span className="ann-t">{a.title}</span>
+                </span>
+                <span className="ann-ex">{announcementSummary(a.body)}</span>
+              </span>
+              <span className="ann-go" aria-hidden="true">查看 →</span>
+            </button>
+          );
+        })}
+      </div>
+      <AnnouncementModal ann={ann} items={list} variant={variant} />
+    </>
+  );
+}
+
+/* ── 置中彈出視窗：完整內容＋上一則／下一則 ───────────────────────────────── */
+function AnnouncementModal({ ann, items, variant }) {
+  const list = items || ann.sorted;
+  const i = list.findIndex((a) => a.id === ann.openId);
+  if (i < 0) return null;
+  return <AnnouncementModalBox ann={ann} list={list} index={i} variant={variant} />;
+}
+
+function AnnouncementModalBox({ ann, list, index, variant }) {
+  const a = list[index];
+  const prev = list[index - 1] || null;
+  const next = list[index + 1] || null;
+  const box = useRef(null);
+
+  // 開啟時鎖住背景捲動、焦點移進視窗；關閉時還原
+  useEffect(() => {
+    const before = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    box.current?.focus();
+    return () => { document.body.style.overflow = before; };
+  }, []);
+
+  // Esc 關閉；Tab 鎖在視窗內
+  const onKeyDown = (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); ann.closeItem(); return; }
+    if (e.key !== "Tab" || !box.current) return;
+    const f = [...box.current.querySelectorAll("button:not([disabled]),a[href]")];
+    if (!f.length) { e.preventDefault(); return; }
+    const first = f[0], lastEl = f[f.length - 1], cur = document.activeElement;
+    if (e.shiftKey && (cur === first || cur === box.current)) { e.preventDefault(); lastEl.focus(); }
+    else if (!e.shiftKey && cur === lastEl) { e.preventDefault(); first.focus(); }
+  };
+
+  // ⚠️ 必須 portal 到 body：儀表板的 .wrap 有 position:relative + z-index，自成堆疊環境，
+  // 視窗的 z-index 只會在那一層裡比大小 → 右下角固定的「登出」按鈕會浮在遮罩之上還可以點，
+  // 學員讀公告時誤按就直接登出。
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="ann-modal-bd" data-variant={variant} onClick={ann.closeItem}>
+      <div
+        className="ann-modal" role="dialog" aria-modal="true" aria-labelledby={`ann-ttl-${a.id}`}
+        tabIndex={-1} ref={box} onClick={(e) => e.stopPropagation()} onKeyDown={onKeyDown}
+      >
+        <div className="ann-hd">
+          <div className="ann-meta">
+            <span>{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）</span>
+            {a.pinned && <span className="ann-tag">置頂</span>}
+            {a.important && <span className="ann-tag imp">重要</span>}
+          </div>
+          <h3 id={`ann-ttl-${a.id}`}>{a.title}</h3>
+          <button type="button" className="ann-x" aria-label="關閉公告" onClick={ann.closeItem}>×</button>
+        </div>
+        <div className="ann-bd"><Md body={a.body} className={variant === "hub" ? "" : "light"} /></div>
+        <div className="ann-ft">
+          <button type="button" disabled={!prev} onClick={() => prev && ann.openItem(prev.id)}>← 上一則</button>
+          <span className="ann-idx">{index + 1} / {list.length}</span>
+          <button type="button" disabled={!next} onClick={() => next && ann.openItem(next.id)}>下一則 →</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/* ── 播放頁：右側抽屜（全部公告清單） ─────────────────────────────────────── */
 export function AnnouncementsDrawer({ ann }) {
   if (!ann.open || !ann.sorted.length) return null;
   return (
     <div onClick={ann.closeDrawer} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.35)", zIndex: 1000 }}>
-      <style>{MD_CSS}</style>
       <aside
         role="dialog" aria-label="課程公告" onClick={(e) => e.stopPropagation()}
         style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(380px, 100%)", background: "#fff", boxShadow: "-12px 0 40px -18px rgba(15,23,42,0.35)", display: "flex", flexDirection: "column", fontFamily: F, color: "#0f172a" }}
@@ -100,22 +293,8 @@ export function AnnouncementsDrawer({ ann }) {
           <h3 style={{ margin: 0, fontSize: 16 }}>課程公告</h3>
           <button type="button" onClick={ann.closeDrawer} aria-label="關閉公告清單" style={{ background: "none", border: "none", fontSize: 20, color: "#64748b", cursor: "pointer" }}>×</button>
         </div>
-        <div style={{ overflow: "auto", padding: "6px 0" }}>
-          {ann.sorted.map((a) => {
-            const unread = isUnread(a, ann.seenAt);
-            return (
-              <div key={a.id} style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", position: "relative", background: unread ? "#f8fbff" : "transparent" }}>
-                {unread && <span aria-hidden="true" style={{ position: "absolute", left: 8, top: 20, width: 6, height: 6, borderRadius: "50%", background: "#2563eb" }} />}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#64748b", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
-                  <span>{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）</span>
-                  {a.important && <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 100, background: "#fef3c7", color: "#92400e" }}>重要</span>}
-                  {a.pinned && <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 100, background: "#eff6ff", color: "#1d4ed8" }}>置頂</span>}
-                </div>
-                <strong style={{ fontSize: 14 }}>{a.title}</strong>
-                <Md body={a.body} className="light" />
-              </div>
-            );
-          })}
+        <div style={{ overflow: "auto", padding: "14px 16px 20px" }}>
+          <AnnouncementList ann={ann} />
         </div>
       </aside>
     </div>
@@ -137,7 +316,7 @@ export function ImportantDialog({ ann, variant = "light" }) {
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: hub ? "var(--cta-ink)" : "#b45309", background: hub ? "var(--gold)" : "#fef3c7", display: "inline-block", padding: "3px 9px", borderRadius: 100 }}>重要公告</span>
         <h3 style={{ margin: "12px 0 4px", fontSize: 19, lineHeight: 1.35, textWrap: "balance" }}>{a.title}</h3>
         <div style={{ fontSize: 12, color: hub ? "var(--ink-faint)" : "#64748b", fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）· InRecord 音樂教室</div>
-        <Md body={a.body} className={hub ? "hub" : "light"} />
+        <Md body={a.body} className={hub ? "" : "light"} />
         <button type="button" onClick={() => ann.ack(a.id)} style={{ marginTop: 16, width: "100%", background: hub ? "var(--cta-bg)" : "#1d4ed8", color: hub ? "var(--cta-ink)" : "#fff", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: F }}>知道了</button>
         <div style={{ textAlign: "center", fontSize: 11.5, color: hub ? "var(--ink-faint)" : "#94a3b8", marginTop: 8 }}>按下後不會再彈出，之後可在公告清單回看</div>
       </div>
@@ -145,44 +324,21 @@ export function ImportantDialog({ ann, variant = "light" }) {
   );
 }
 
-/* ── 儀表板（音樂廳）：「最新公告」區。樣式在 HUB_CSS（.nt 等），這裡只出結構 ─── */
+/* ── 儀表板（音樂廳）：「最新公告」區，最多 3 則，點下去開同一個視窗 ───────── */
 export function HubAnnouncements({ ann }) {
   const [showAll, setShowAll] = useState(false);
-  const [openId, setOpenId] = useState(null);
   if (!ann.sorted.length) return null;
   const list = showAll ? ann.sorted : ann.sorted.slice(0, 3);
-  const toggle = (id) => { setOpenId((cur) => (cur === id ? null : id)); ann.markSeen(); };
   return (
     <>
       <div className="sect-t">最新公告
         {ann.sorted.length > 3 && (
-          <button type="button" className="more" onClick={() => { setShowAll((v) => !v); ann.markSeen(); }}>
+          <button type="button" className="more" onClick={() => setShowAll((v) => !v)}>
             {showAll ? "收起" : `全部公告（${ann.sorted.length}）→`}
           </button>
         )}
       </div>
-      <div className="notices">
-        {list.map((a) => {
-          const expanded = openId === a.id;
-          return (
-            <button type="button" key={a.id} className={`nt${a.pinned ? " pinned" : ""}${expanded ? " open" : ""}`} onClick={() => toggle(a.id)} aria-expanded={expanded}>
-              <div className="d"><b>{fmtDate(a.created_at)}</b><small>週{fmtWd(a.created_at)}</small></div>
-              <div className="body">
-                <div className="ttl">
-                  {isUnread(a, ann.seenAt) && <span className="dot" aria-label="未讀" />}
-                  {a.title}
-                  {a.important && <span className="tag imp">重要</span>}
-                  {a.pinned && <span className="tag">置頂</span>}
-                </div>
-                {expanded
-                  ? <Md body={a.body} className="hub" />
-                  : <div className="ex" dangerouslySetInnerHTML={{ __html: announcementHtml(firstLine(a.body)) }} />}
-              </div>
-              <div className="go">{expanded ? "收起" : "查看 →"}</div>
-            </button>
-          );
-        })}
-      </div>
+      <AnnouncementList ann={ann} items={list} variant="hub" />
     </>
   );
 }
