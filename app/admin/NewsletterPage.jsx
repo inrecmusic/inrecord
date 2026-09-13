@@ -83,6 +83,13 @@ export const NEWSLETTER_TEMPLATES=[
 ];
 
 // ── 寄送成效（唯讀）────────────────────────────────────────────────────────
+export const AUDIENCE_LABEL={
+  buyers:"已付款／已開通學員",
+  buyers_early:"已購課 · 9/2 前（早鳥）",
+  buyers_standard:"已購課 · 9/2 起",
+  registered:"註冊官網帳號",
+  leads:"潛客名單（Brevo）",
+};
 const STATS_ERR={unauthorized:"登入已過期，請重新登入",db_not_configured:"資料庫尚未設定",invalid_range:"開始日不能晚於結束日",range_too_long:"日期區間超過 Brevo 上限 90 天，請縮小區間",server_error:"伺服器錯誤，請稍後再試"};
 const WARN_BOX={fontSize:12.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 12px",marginBottom:12};
 const NUM={fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap",fontSize:13};
@@ -185,9 +192,20 @@ export default function NewsletterPage({showToast}){
       else showToast?.("❌ 測試寄送失敗："+(d.error||"unknown"));
     }catch(e){showToast?.("❌ 測試寄送失敗："+e.message);} finally{setBusy("");refreshQuota();}
   }
+  async function previewAudience(){
+    setBusy("preview");setResult(null);
+    try{
+      const res=await _api("/api/admin/newsletter/send",{method:"POST",body:JSON.stringify({audience,draftId,dryRun:true,...(useTpl?{brevoTemplateId}:{})})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok||!d.ok){showToast?.("❌ 預覽失敗："+(d.error||`HTTP ${res.status}`));return;}
+      showToast?.(`【${AUDIENCE_LABEL[audience]||audience}】名單 ${d.total} 人，這次會寄 ${d.pending} 封${d.alreadySent?`（${d.alreadySent} 人已收過這封，會跳過）`:""}`);
+      setResult(d);
+    }catch(e){showToast?.("❌ 預覽失敗："+e.message);} finally{setBusy("");}
+  }
+
   async function sendAll(){
     if(!useTpl&&(!subject.trim()||!bodyMd.trim())){showToast?.("請先填標題與內文");return;}
-    const label=audience==="buyers"?"已付款／已開通學員":audience==="leads"?"潛客名單（Brevo）":"註冊官網帳號";
+    const label=AUDIENCE_LABEL[audience]||audience;
     const what=useTpl?`用 Brevo 範本「${tplName}」`:"把這封電子報";
     if(!window.confirm(`確定${what}「正式群發」給【${label}】嗎？\n寄出後無法收回，建議先用「寄測試給我自己」確認版面。`))return;
     setBusy("all");setResult(null);
@@ -312,6 +330,7 @@ export default function NewsletterPage({showToast}){
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <input className={styles.searchInput} style={{width:300}} value={testTo} onChange={e=>setTestTo(e.target.value)} placeholder="測試收件人，逗號分隔可多個（留空＝寄給我自己）"/>
           <button className={styles.btnSmall} disabled={!!busy} onClick={sendTest}>{busy==="test"?"寄送中…":testTo.trim()?"寄測試":"寄測試給我自己"}</button>
+          <button className={styles.btnSmall} disabled={!!busy} onClick={previewAudience} title="只算名單、不寄任何信：確認對象選對了、名單撈得出來">{busy==="preview"?"計算中…":"預覽名單"}</button>
           <button className={styles.btnPrimary} disabled={!!busy} onClick={sendAll}>{busy==="all"?"群發中…":"正式群發"}</button>
         </div>
         {lastSent&&<p className={styles.dim} style={{fontSize:12,marginTop:12}}>上次寄送：{fmt(lastSent.at)}（{lastSent.count} 封）</p>}

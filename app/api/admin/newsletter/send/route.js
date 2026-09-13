@@ -28,7 +28,7 @@ export async function POST(req) {
   const payload = await verifyAdminToken(req);
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { audience, test, brevoTemplateId, testEmails, draftId } = await req.json().catch(() => ({}));
+  const { audience, test, brevoTemplateId, testEmails, draftId, dryRun } = await req.json().catch(() => ({}));
   const nlId = normalizeDraftId(draftId); // 未指定＝default，沿用舊行為
   const templateId = Number.isInteger(brevoTemplateId) && brevoTemplateId > 0 ? brevoTemplateId : null;
 
@@ -100,6 +100,16 @@ export async function POST(req) {
   }
   const alreadySent = emails.length - pending.length;
   const remaining = Math.max(0, DAILY_LIMIT - sentToday); // 真正的每日剩餘額度
+
+  // 預覽名單：只回報「會寄給誰、幾封」，一封都不寄、不寫任何紀錄。
+  // 正式群發前先按這個，可以在不動到學員的前提下確認對象選對了、名單撈得出來。
+  if (dryRun) {
+    return NextResponse.json({
+      ok: true, dryRun: true, audience, total: emails.length, alreadySent,
+      pending: pending.length, remaining,
+      sample: pending.slice(0, 5), // 只給前 5 筆供人工核對，不外流整份名單
+    });
+  }
 
   if (!pending.length || remaining === 0) {
     return NextResponse.json({
