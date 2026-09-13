@@ -36,7 +36,7 @@ async function readOffer() {
 
 const page = { minHeight: "100vh", background: "#05070b", color: "#fff", fontFamily: "var(--font-noto-sans), 'PingFang TC', 'Microsoft JhengHei', sans-serif" };
 const wrap = { maxWidth: 960, margin: "0 auto", padding: "28px 20px 72px" };
-const eyebrow = { fontFamily: "var(--font-jetbrains), monospace", fontSize: 12, fontWeight: 700, letterSpacing: ".22em", textTransform: "uppercase", color: "#a9c6ff" };
+const eyebrow = { display: "block", fontFamily: "var(--font-jetbrains), monospace", fontSize: 12, fontWeight: 700, letterSpacing: ".22em", textTransform: "uppercase", color: "#a9c6ff" };
 const h1 = { margin: "8px 0 14px", fontFamily: "var(--type-display)", fontWeight: 600, fontSize: "clamp(26px, 4vw, 38px)", lineHeight: 1.15, wordBreak: "keep-all", lineBreak: "strict" };
 const p = { margin: "0 0 22px", color: "rgba(255,255,255,.75)", fontSize: 16, lineHeight: 1.75, maxWidth: 640, wordBreak: "keep-all", lineBreak: "strict" };
 const videoBox = { position: "relative", paddingTop: "56.25%", background: "#000", borderRadius: 18, overflow: "hidden", border: "1px solid rgba(120,160,255,.18)", boxShadow: "0 30px 80px rgba(0,0,0,.5)" };
@@ -64,7 +64,7 @@ export default async function TrialPage({ searchParams }) {
             <span style={eyebrow}>Free Lesson</span>
             <h1 style={h1}>免費試看課程影片</h1>
             <p className={styles.lead}>《從零開始學鋼琴》的教學實錄，跟正式課程同一套內容。</p>
-            <p className={styles.note}>不過這支 5 分鐘的試看影片經過剪輯，正式的課程內容會更豐富，也更呈現細節。</p>
+            <p className={styles.note}>為了把試看控制在 5 分鐘內，這支影片有經過剪輯、部分片段也加快了；正式課程的影片是正常速度，講解更完整，細節也交代得更清楚。</p>
             {src ? (
               <div style={videoBox}>
                 <iframe id="trial-player" src={src} title="免費試看課程影片" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}

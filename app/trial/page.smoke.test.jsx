@@ -43,7 +43,7 @@ describe("試看頁四種狀態", () => {
     expect(iframe).toBeTruthy();
     expect(iframe.getAttribute("src")).toContain("guid-1");
     expect(screen.getByText(/跟正式課程同一套內容/)).toBeTruthy();
-    expect(screen.getByText(/經過剪輯，正式的課程內容會更豐富/)).toBeTruthy();
+    expect(screen.getByText(/經過剪輯、部分片段也加快了/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "查看課程方案" }).getAttribute("href")).toBe("/?ref=trial-page#pricing");
     expect(screen.getByRole("link", { name: "回官網首頁" })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull(); // 導購視窗要等觸發才出現
