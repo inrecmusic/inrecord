@@ -230,3 +230,8 @@
   .fitBody { padding-bottom: 3vh; }
   .dockPrice { font-size: 30px; }
 }
+
+/* 沒有影片可播的狀態（未開放／連結失效／從導覽列直接進來）：卡片在畫面中央，
+   不要卡在上方讓下面空一大片。頁首那一列的高度已扣掉。 */
+.centerPage { min-height: calc(100dvh - 78px); display: flex; align-items: center; justify-content: center; padding: 12px 20px 40px; }
+@media (max-width: 700px) { .centerPage { min-height: calc(100dvh - 66px); padding: 8px 16px 32px; } }

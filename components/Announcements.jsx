@@ -110,7 +110,7 @@ const ANN_CSS = MD_CSS + `
   --ann-line:#e2e8f0;--ann-hover:#f8fafc;--ann-accent:#2563eb;
   --ann-tag-bg:#eff6ff;--ann-tag-ink:#1d4ed8;--ann-tag-line:transparent;
 }
-.hub .ann-list,.ann-modal-bd[data-variant="hub"]{
+.hub .ann-list,.hub .ann-modal-bd,.ann-modal-bd[data-variant="hub"]{
   --ann-card:var(--card);--ann-ink:var(--ink);--ann-soft:var(--ink-soft);--ann-muted:var(--ink-faint);
   --ann-line:var(--line-soft);--ann-hover:var(--card-a);--ann-accent:var(--gold);
   --ann-tag-bg:transparent;--ann-tag-ink:var(--gold);--ann-tag-line:var(--gold-line);
@@ -140,7 +140,7 @@ const ANN_CSS = MD_CSS + `
 .ann-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ann-modal-bd{position:fixed;inset:0;z-index:1050;background:rgba(15,23,42,.55);display:grid;place-items:center;padding:20px}
 .ann-modal{width:min(520px,100%);max-height:min(78vh,700px);display:flex;flex-direction:column;
-  background:var(--ann-modal-bg,var(--ann-card));color:var(--ann-ink);border:1px solid var(--ann-line);
+  background:var(--ann-modal-bg,var(--ann-card,#fff));color:var(--ann-ink);border:1px solid var(--ann-line);
   border-radius:16px;box-shadow:0 30px 80px -30px rgba(15,23,42,.6);animation:ann-pop .16s ease-out}
 .ann-modal:focus{outline:none}
 @keyframes ann-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -249,10 +249,12 @@ function AnnouncementModalBox({ ann, list, index, variant }) {
     else if (!e.shiftKey && cur === lastEl) { e.preventDefault(); first.focus(); }
   };
 
-  // ⚠️ 必須 portal 到 body：儀表板的 .wrap 有 position:relative + z-index，自成堆疊環境，
-  // 視窗的 z-index 只會在那一層裡比大小 → 右下角固定的「登出」按鈕會浮在遮罩之上還可以點，
-  // 學員讀公告時誤按就直接登出。
+  // ⚠️ 要跳出 .wrap 的堆疊環境（position:relative + z-index），否則視窗的 z-index 只在那層裡比大小，
+  // 右下角固定的「登出」按鈕會浮在遮罩之上還點得到 —— 學員讀公告時誤按就直接登出。
+  // 但**不能 portal 到 body**：儀表板的主題變數（--card／--bg2／--gold）定義在 .hub 上，
+  // 搬出去就全部解析不到，視窗底色會變透明。所以掛在 .hub 本身，兩個問題一起解決。
   if (typeof document === "undefined") return null;
+  const host = document.querySelector(".hub") || document.body;
   return createPortal(
     <div className="ann-modal-bd" data-variant={variant} onClick={ann.closeItem}>
       <div
@@ -276,7 +278,7 @@ function AnnouncementModalBox({ ann, list, index, variant }) {
         </div>
       </div>
     </div>,
-    document.body
+    host
   );
 }
 

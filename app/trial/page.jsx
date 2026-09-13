@@ -117,13 +117,13 @@ export default async function TrialPage({ searchParams }) {
             )}
           </>
         ) : !enabled ? (
-          <div style={card}>
+          <div className={styles.centerPage}><div style={{ ...card, margin: 0 }}>
             <span style={{ ...eyebrow, color: "#2563eb" }}>Free Lesson</span>
             <h1 style={{ ...h1, fontSize: 24, color: "#0f172a" }}>免費試看即將開放</h1>
             <p style={{ ...p, color: "#64748b", fontSize: 15, marginBottom: 0 }}>試看影片準備中，開放後會在官網公告。</p>
-          </div>
+          </div></div>
         ) : (
-          <div style={card}>
+          <div className={styles.centerPage}><div style={{ ...card, margin: 0 }}>
             <span style={{ ...eyebrow, color: "#2563eb" }}>Free Lesson</span>
             <h1 style={{ ...h1, fontSize: 24, color: "#0f172a" }}>
               {hasToken ? "這個試看連結無效或已失效" : "免費試看《從零開始學鋼琴》"}
@@ -134,7 +134,7 @@ export default async function TrialPage({ searchParams }) {
                 : "留下 Email，我們馬上把試看影片的專屬連結寄給你，隨時都能重看。"}
             </p>
             <LeadForm layout="stack" cta="寄試看給我" />
-          </div>
+          </div></div>
         )}
       </div>
     </main>

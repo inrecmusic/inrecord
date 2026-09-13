@@ -227,7 +227,7 @@ describe("覆驗迴歸", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /標題 new/ })[0]);
     const dialog = screen.getByRole("dialog", { name: /標題 new/ });
     const root = screen.getByTestId("root");
-    expect(root.contains(dialog)).toBe(false);   // 不在元件樹的容器內
+    expect(root.contains(dialog)).toBe(false);   // 跳出了會關住 z-index 的容器
     expect(document.body.contains(dialog)).toBe(true);
   });
 
