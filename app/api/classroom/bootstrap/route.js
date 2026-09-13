@@ -84,9 +84,9 @@ export async function GET(req) {
     supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
     supabase.from("progress").select("video_id, watched_seconds, total_seconds, completed, watched_at").eq("user_id", user.id),
     supabase.from("videos").select("id", { count: "exact", head: true }).eq("published", true),
-    playerMode
-      ? supabase.from("announcements").select("id, title, body, pinned, important, created_at").eq("published", true)
-      : Promise.resolve({ data: null, error: null }),
+    // 儀表板也要：教室首頁有「最新公告」區（components/Announcements 的 HubAnnouncements），
+    // 先前只在播放頁撈，導致首頁那一區永遠是空的、公告發布了也看不到。公告資料量小，兩種模式都撈。
+    supabase.from("announcements").select("id, title, body, pinned, important, created_at").eq("published", true),
     // 播放頁側欄的內容 icon 用：只撈索引欄位，兩張表都小，成本可忽略。
     // 通用講義（video_id 為 null）不掛單元，先在 DB 濾掉。
     playerMode
@@ -97,10 +97,9 @@ export async function GET(req) {
       ? supabase.from("games").select("id, video_id, title").not("video_id", "is", null).not("is_active", "is", false)
       : Promise.resolve({ data: null, error: null }),
   ]);
-  if (playerMode) {
-    if (annRes.error) console.error("[bootstrap] announcements:", annRes.error.message);
-    out.announcements = annRes.data || [];
-  }
+  // 兩種模式都要給：儀表板的「最新公告」區與播放頁的鈴鐺共用同一份資料
+  if (annRes.error) console.error("[bootstrap] announcements:", annRes.error.message);
+  out.announcements = annRes.data || [];
 
   // 讀取失敗不讓整個教室白畫面：記 log、該區塊退回空值優雅降級（與原 dashboard 各 wave 的容錯一致）。
   if (chapRes.error) console.error("[bootstrap] chapters:", chapRes.error.message);

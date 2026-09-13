@@ -59,13 +59,15 @@ describe("GET /api/classroom/bootstrap（教室進場一次取回）", () => {
     expect(sb.calls.some((c) => c.table === "chapters")).toBe(false);
   });
 
-  it("儀表板模式：回章節／影片／進度與百分比；影片不外露 bunny_video_id 但帶 playable；不帶公告", async () => {
+  it("儀表板模式：回章節／影片／進度與百分比；影片不外露 bunny_video_id 但帶 playable；公告兩種模式都給", async () => {
     const body = await (await GET(req())).json();
     expect(body).toMatchObject({ ok: true, hasPurchased: true, completedCount: 1, totalCount: 2, percentage: 50 });
     expect(body.chapters).toHaveLength(1);
     expect(body.videos.map((v) => v.playable)).toEqual([true, false]);
     expect(body.videos[0]).not.toHaveProperty("bunny_video_id");
-    expect(body.announcements).toBeUndefined();
+    // 公告：儀表板的「最新公告」區與播放頁鈴鐺共用同一份。
+    // 先前只有 player=1 才撈，導致首頁那一區永遠空的、發布了學員也看不到。
+    expect(body.announcements.map((a) => a.id)).toContain("a1");
     expect(enforceDeviceLimit).not.toHaveBeenCalled();
   });
 
@@ -197,3 +199,4 @@ describe("GET /api/classroom/bootstrap（早鳥分批上架）", () => {
     expect(byId.t.bunny_video_id).toBe("b0");
   });
 });
+
