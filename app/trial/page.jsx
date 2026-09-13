@@ -34,10 +34,10 @@ async function readOffer() {
   }
 }
 
-const page = { minHeight: "100vh", background: "#05070b", color: "#fff", fontFamily: "var(--font-noto-sans), 'PingFang TC', 'Microsoft JhengHei', sans-serif", paddingBottom: 110 };
+const page = { minHeight: "100vh", background: "#05070b", color: "#fff", fontFamily: "var(--font-noto-sans), 'PingFang TC', 'Microsoft JhengHei', sans-serif", paddingBottom: 150 };
 const wrap = { maxWidth: 960, margin: "0 auto", padding: "28px 20px 72px" };
 const headRow = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "24px 34px 18px" };
-const noteWrap = { padding: "0 34px" };
+const noteWrap = { padding: "0 34px 12px" };
 const eyebrow = { display: "block", fontFamily: "var(--font-jetbrains), monospace", fontSize: 12, fontWeight: 700, letterSpacing: ".22em", textTransform: "uppercase", color: "#a9c6ff" };
 const h1 = { margin: "8px 0 14px", fontFamily: "var(--type-display)", fontWeight: 600, fontSize: "clamp(26px, 4vw, 38px)", lineHeight: 1.15, wordBreak: "keep-all", lineBreak: "strict" };
 const p = { margin: "0 0 22px", color: "rgba(255,255,255,.75)", fontSize: 16, lineHeight: 1.75, maxWidth: 640, wordBreak: "keep-all", lineBreak: "strict" };
