@@ -133,7 +133,7 @@ export default async function TrialPage({ searchParams }) {
                 ? "留下 Email，我們馬上再寄一次專屬的試看連結給你。"
                 : "留下 Email，我們馬上把試看影片的專屬連結寄給你，隨時都能重看。"}
             </p>
-            <LeadForm layout="stack" cta="寄試看給我" />
+            <LeadForm layout="stack" cta="寄出試看影片" />
           </div></div>
         )}
       </div>

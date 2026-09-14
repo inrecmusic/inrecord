@@ -13,7 +13,7 @@ afterEach(cleanup);
 beforeEach(() => { vi.clearAllMocks(); global.fetch = vi.fn(); });
 
 const fill = (email) => fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
-const submit = () => fireEvent.click(screen.getByRole("button", { name: /寄試看/ }));
+const submit = () => fireEvent.click(screen.getByRole("button", { name: /寄出試看影片/ }));
 
 describe("LeadForm（共用表單）", () => {
   it("沒勾同意 → 不打 API，提示先勾選", async () => {
@@ -41,7 +41,7 @@ describe("LeadForm（共用表單）", () => {
     expect(JSON.parse(init.body)).toEqual({ email: "a@x.com", consent: true, attribution: { utm_source: "ig" } });
     expect(trackEvent).toHaveBeenCalledWith("Lead", expect.objectContaining({ contentName: "trial" }));
     expect(onDone).toHaveBeenCalledWith("a@x.com");
-    expect(screen.queryByRole("button", { name: /寄試看/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /寄出試看影片/ })).toBeNull();
   });
 
   it("名單進了但試看信沒寄成 → 顯示補寄提示，不當成功寄出", async () => {
@@ -58,7 +58,7 @@ describe("LeadForm（共用表單）", () => {
     fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
     expect(await screen.findByText(/暫時無法送出/)).toBeTruthy();
     expect(trackEvent).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /寄試看/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /寄出試看影片/ })).toBeTruthy();
   });
 });
 

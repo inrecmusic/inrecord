@@ -73,7 +73,7 @@ describe("LeadPopup（元件）", () => {
     await screen.findByRole("dialog");
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "a@x.com" } });
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: /寄試看/ }));
+    fireEvent.click(screen.getByRole("button", { name: /寄出試看影片/ }));
     expect(await screen.findByText(/試看連結已寄到/)).toBeTruthy();
     expect(s.getItem(DONE_KEY)).toBe("1");
   });
