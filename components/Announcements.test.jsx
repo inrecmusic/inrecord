@@ -197,6 +197,27 @@ describe("抽屜與儀表板共用同一組清單", () => {
   });
 });
 
+describe("提示條與彈窗獨立於下拉（正式站回報：按「查看」沒反應）", () => {
+  it("下拉收著時按提示條「查看」→ 直接彈出該則視窗，並記成已讀", () => {
+    render(<Watch items={TWO} storage={fakeStorage()} />);
+    expect(screen.queryByRole("dialog", { name: "課程公告" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "查看" }));
+    expect(within(modal()).getByText("內容 new")).toBeTruthy();
+    expect(screen.getByLabelText("公告，1 則未讀")).toBeTruthy();
+  });
+
+  it("視窗開著時在視窗裡按下滑鼠、按 Esc 以外的鍵，都不會把視窗連同下拉關掉", () => {
+    render(<Watch items={TWO} storage={fakeStorage()} />);
+    fireEvent.click(screen.getByLabelText("公告，2 則未讀"));
+    fireEvent.click(row("標題 old"));
+    fireEvent.mouseDown(within(modal()).getByText("內容 old"));
+    expect(within(modal()).getByText("內容 old")).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "課程公告" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" }); // document 層的 Esc（下拉的監聽）在視窗開著時不動作
+    expect(within(modal()).getByText("內容 old")).toBeTruthy();
+  });
+});
+
 describe("重要公告卡片（行為不變）", () => {
   it("先彈卡片，按「知道了」才消失，並記住不再彈", () => {
     const storage = fakeStorage();

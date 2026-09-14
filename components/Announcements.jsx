@@ -173,7 +173,8 @@ const ANN_CSS = MD_CSS + `
 `;
 
 /* ── 公告列表（儀表板與播放頁抽屜共用）：一則一列，點下去開彈出視窗 ───────── */
-export function AnnouncementList({ ann, items, variant = "light" }) {
+// withModal=false：由外層自己掛 AnnouncementModal（播放頁下拉用，讓彈窗不隨下拉收起而消失）
+export function AnnouncementList({ ann, items, variant = "light", withModal = true }) {
   const list = items || ann.sorted;
   const rows = useRef({});
   const last = useRef(null);
@@ -215,7 +216,7 @@ export function AnnouncementList({ ann, items, variant = "light" }) {
           );
         })}
       </div>
-      <AnnouncementModal ann={ann} items={list} variant={variant} />
+      {withModal && <AnnouncementModal ann={ann} items={list} variant={variant} />}
     </>
   );
 }
@@ -290,17 +291,21 @@ function AnnouncementModalBox({ ann, list, index, variant }) {
 export function AnnouncementsDrawer({ ann }) {
   const ref = useRef(null);
   // 點外面或按 Esc 就收起來（下拉選單的慣例；沒有遮罩，不擋住底下的操作）
+  // 彈窗開著時不處理外點／Esc：視窗 portal 在 .hub／body 上，點視窗裡面會被誤判成「點到下拉外面」，
+  // 把下拉連同視窗一起關掉（讀到一半就消失）。Esc 交給視窗自己關。
   useEffect(() => {
     if (!ann.open) return;
-    const onDown = (e) => { if (!ref.current?.contains(e.target) && !e.target.closest?.("[data-ann-bell]")) ann.closeDrawer(); };
-    const onKey = (e) => { if (e.key === "Escape") ann.closeDrawer(); };
+    const onDown = (e) => { if (ann.openId) return; if (!ref.current?.contains(e.target) && !e.target.closest?.("[data-ann-bell]")) ann.closeDrawer(); };
+    const onKey = (e) => { if (e.key === "Escape" && !ann.openId) ann.closeDrawer(); };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
-  }, [ann.open, ann]);
+  }, [ann.open, ann.openId, ann]);
 
-  if (!ann.open || !ann.sorted.length) return null;
+  if (!ann.sorted.length) return null;
   return (
+    <>
+    {ann.open && (
     <div
       ref={ref} role="dialog" aria-label="課程公告"
       style={{
@@ -316,9 +321,13 @@ export function AnnouncementsDrawer({ ann }) {
         <button type="button" onClick={ann.closeDrawer} aria-label="關閉公告清單" style={{ background: "none", border: "none", fontSize: 18, color: "#94a3b8", cursor: "pointer", lineHeight: 1 }}>×</button>
       </div>
       <div style={{ padding: "10px 12px 14px" }}>
-        <AnnouncementList ann={ann} />
+        <AnnouncementList ann={ann} withModal={false} />
       </div>
     </div>
+    )}
+    {/* 彈窗獨立於下拉：提示條「查看」在下拉收著時也開得了；下拉收起也不會把視窗一起關掉 */}
+    <AnnouncementModal ann={ann} />
+    </>
   );
 }
 
