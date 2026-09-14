@@ -57,7 +57,7 @@ export function LeadForm({ layout = "row", dark = false, cta = "寄試看給我"
       </div>
       <label className={styles.consent}>
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={busy} />
-        <span>我同意收到 InRecord 的課程消息與<span className={styles.nb}>優惠通知</span>，可隨時取消訂閱。<span className={styles.nb}>詳見<a href="/privacy" target="_blank" rel="noopener noreferrer">隱私權政策</a></span>。</span>
+        <span>我同意收到 InRecord 的課程消息與優惠通知，可隨時取消訂閱。詳見<a href="/privacy" target="_blank" rel="noopener noreferrer">隱私權政策</a>。</span>
       </label>
       {msg && <p className={styles.msg} role="alert">{msg}</p>}
     </form>
