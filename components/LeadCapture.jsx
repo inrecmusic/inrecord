@@ -76,7 +76,7 @@ export default function LeadCapture() {
           <div>
             <span className={styles.eyebrow}>Free Lesson</span>
             <h2 id="lead-title" className={styles.title}>免費試看課程影片，<span>再決定要不要開始</span></h2>
-            <p className={styles.desc}>留下 Email，試看影片連結馬上寄到你的信箱。<br />新章節上架與限時優惠也會第一時間通知，隨時可以取消。</p>
+            <p className={styles.desc}>留下 Email，馬上收到試看影片連結。<br />新章節上架與限時優惠也會第一時間通知，隨時可以取消。</p>
             <LeadForm layout="row" dark />
           </div>
         </div>
