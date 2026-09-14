@@ -66,7 +66,8 @@
   .mascot { width: 150px; height: 150px; }
   .title { font-size: clamp(23px, 6.2vw, 26px); }
   .unit { font-size: 13.5px; margin-bottom: 10px; }
-  .desc { text-align: center; font-size: 15.5px; max-width: none; text-wrap: balance; }
+  /* 窄機（≤360）塞不下一整句時只在標點後換行，不會出現「點擊取／消訂閱」 */
+  .desc { text-align: center; font-size: 15.5px; max-width: none; word-break: keep-all; overflow-wrap: normal; }
   .consent { text-align: left; }
   /* 直排後 .row .input 的 flex:1 1（flex-basis 0）會在垂直軸生效，把 Email 欄壓到只剩 22px，
      連行內 height 都救不回來（flex 主軸尺寸由 flex-basis 決定）。直排時改回不伸縮。 */
