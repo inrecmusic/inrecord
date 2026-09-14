@@ -46,12 +46,14 @@
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .consent { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-size: 13.5px; line-height: 1.65; text-align: left; cursor: pointer; }
 .consent input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--brand); }
-/* keep-all：只在空格與標點後換行，多行時每行都是完整詞（balance／normal 都會把「取消」「通知」拆兩行） */
-.consent span { word-break: keep-all; line-break: strict; overflow-wrap: normal; }
+/* 換行以「片語」為單位（.ph inline-block）：normal 會把「取消」「通知」拆兩行；keep-all 在 iOS Safari 連標點後都不換行，
+   整行撐出卡片外（連 Email 欄／按鈕都被撐寬）。片語各自不超過最窄手機的可用寬度即可。 */
+.consent span { word-break: normal; line-break: strict; min-width: 0; }
+.ph { display: inline-block; }
 .consent a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
-/* align="center"（彈窗用）：同意文字與提示置中 */
-.center .consent { display: inline-flex; justify-self: center; justify-content: center; text-align: center; }
-.center .consent span { max-width: 22em; }
+/* align="center"（彈窗用）：勾選框跟著第一行文字一起置中 */
+.center .consent { display: block; text-align: center; }
+.center .consent input { display: inline-block; vertical-align: -3px; margin: 0 8px 0 0; }
 .center .msg { text-align: center; }
 .dark .consent { color: rgba(255, 255, 255, .7); }
 .dark .consent a { color: #a9c6ff; }
@@ -66,9 +68,9 @@
   .mascot { width: 150px; height: 150px; }
   .title { font-size: clamp(23px, 6.2vw, 26px); }
   .unit { font-size: 13.5px; margin-bottom: 10px; }
-  /* 窄機（≤360）塞不下一整句時只在標點後換行，不會出現「點擊取／消訂閱」 */
-  .desc { text-align: center; font-size: 15.5px; max-width: none; word-break: keep-all; overflow-wrap: normal; }
-  .consent { text-align: left; }
+  .desc { text-align: center; font-size: 15.5px; max-width: none; }
+  .consent { display: block; text-align: center; }
+  .consent input { display: inline-block; vertical-align: -3px; margin: 0 8px 0 0; }
   /* 直排後 .row .input 的 flex:1 1（flex-basis 0）會在垂直軸生效，把 Email 欄壓到只剩 22px，
      連行內 height 都救不回來（flex 主軸尺寸由 flex-basis 決定）。直排時改回不伸縮。 */
   .row .fields { flex-direction: column; gap: 10px; }

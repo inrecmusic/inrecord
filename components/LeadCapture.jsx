@@ -57,7 +57,7 @@ export function LeadForm({ layout = "row", dark = false, cta = "寄試看給我"
       </div>
       <label className={styles.consent}>
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={busy} />
-        <span>我同意收到 InRecord 的課程消息與優惠通知，可隨時取消訂閱。詳見<a href="/privacy" target="_blank" rel="noopener noreferrer">隱私權政策</a>。</span>
+        <span><span className={styles.ph}>我同意收到 InRecord 的課程消息</span><span className={styles.ph}>與優惠通知，可隨時取消訂閱。</span><span className={styles.ph}>詳見<a href="/privacy" target="_blank" rel="noopener noreferrer">隱私權政策</a>。</span></span>
       </label>
       {msg && <p className={styles.msg} role="alert">{msg}</p>}
     </form>
@@ -77,7 +77,7 @@ export default function LeadCapture() {
             <span className={styles.eyebrow}>Free Lesson</span>
             <h2 id="lead-title" className={styles.title}>免費試看課程影片，<span>再決定要不要開始</span></h2>
             <p className={styles.unit}>單元：1-2 尋找起始音 Do</p>
-            <p className={styles.desc}>留下 Email，立即為您寄出試看影片連結。<br />若不需要，信件下方可隨時點擊取消訂閱。</p>
+            <p className={styles.desc}><span className={styles.ph}>留下 Email，</span><span className={styles.ph}>立即為您寄出試看影片連結。</span></p>
             <LeadForm layout="row" dark />
           </div>
         </div>
