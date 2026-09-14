@@ -49,7 +49,7 @@
 .consent span { word-break: normal; line-break: strict; text-wrap: pretty; }
 .consent a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
 /* 手機兩行時不讓「優惠通知」「隱私權政策」被拆到兩行（word-break:normal 會在任兩個中文字之間換行） */
-.nb, .consent a { white-space: nowrap; }
+.consent span.nb, .consent a { white-space: nowrap; }
 /* align="center"（彈窗用）：同意文字與提示置中 */
 .center .consent { display: inline-flex; justify-self: center; justify-content: center; text-align: center; }
 .center .consent span { max-width: 22em; }
