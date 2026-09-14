@@ -29,22 +29,22 @@
 .stack .fields { display: grid; gap: 10px; }
 .stack .btn { width: 100%; }
 .input {
-  height: 50px; padding: 0 16px; font-size: 16px; color: var(--ink);
-  background: #fff; border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+  height: 56px; padding: 0 18px; font-size: 17px; color: var(--ink);
+  background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
 }
 .input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37, 99, 235, .18); }
 .input:disabled { background: #f1f5f9; }
 .dark .input { border-color: transparent; }
 .btn {
-  display: inline-flex; justify-content: center; align-items: center; height: 50px; padding: 0 24px; white-space: nowrap;
-  border: 0; border-radius: var(--radius-sm); background: var(--brand); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer;
+  display: inline-flex; justify-content: center; align-items: center; height: 56px; padding: 0 24px; white-space: nowrap;
+  border: 0; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer;
   transition: transform .2s, box-shadow .2s, background .2s;
 }
 .btn:hover:not(:disabled) { transform: translateY(-1px); background: var(--brand-dark); box-shadow: var(--shadow-md); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.consent { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); font-size: 13px; line-height: 1.6; text-align: left; cursor: pointer; }
-.consent input { flex: none; margin: 3px 0 0; accent-color: var(--brand); }
-.consent span { word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
+.consent { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-size: 13.5px; line-height: 1.65; text-align: left; cursor: pointer; }
+.consent input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--brand); }
+.consent span { word-break: normal; line-break: strict; text-wrap: pretty; }
 .consent a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
 /* align="center"（彈窗用）：同意文字與提示置中 */
 .center .consent { display: inline-flex; justify-self: center; justify-content: center; text-align: center; }
@@ -62,7 +62,7 @@
   .pic { width: 170px; height: 170px; margin: 0 auto; }
   .mascot { width: 150px; height: 150px; }
   .title { font-size: clamp(23px, 6.2vw, 26px); }
-  .desc { text-align: center; font-size: 16px; }
+  .desc { text-align: center; font-size: 15.5px; max-width: 28ch; margin-left: auto; margin-right: auto; text-wrap: balance; }
   .consent { text-align: left; }
   .row .fields { flex-direction: column; }
   .row .btn { width: 100%; }
