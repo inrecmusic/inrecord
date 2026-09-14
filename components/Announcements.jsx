@@ -89,10 +89,12 @@ export function AnnouncementsStrip({ ann }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 20px", background: on ? "#eff6ff" : "#f8fafc", borderBottom: `1px solid ${on ? "#bfdbfe" : "#e2e8f0"}`, fontSize: 13, fontFamily: F }}>
       <span aria-hidden="true">📢</span>
+      {a.persistent && <span style={{ fontSize: 11, fontWeight: 700, color: on ? "#1d4ed8" : "#475569", border: `1px solid ${on ? "#93c5fd" : "#cbd5e1"}`, borderRadius: 999, padding: "1px 7px", lineHeight: 1.5 }}>置頂</span>}
       <span style={{ color: on ? "#1d4ed8" : "#64748b", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}</span>
       <span style={{ color: on ? "#1e3a8a" : "#334155", fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
       <button type="button" onClick={() => ann.openItem(a.id)} style={{ color: on ? "#1d4ed8" : "#475569", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 12.5 }}>查看</button>
-      <button type="button" onClick={() => ann.dismissStrip(a.id)} aria-label="關閉提示" style={{ color: "#64748b", background: "none", border: "none", fontSize: 18, lineHeight: 1, cursor: "pointer" }}>×</button>
+      {/* 置頂公告常駐：不給關 */}
+      {!a.persistent && <button type="button" onClick={() => ann.dismissStrip(a.id)} aria-label="關閉提示" style={{ color: "#64748b", background: "none", border: "none", fontSize: 18, lineHeight: 1, cursor: "pointer" }}>×</button>}
     </div>
   );
 }
