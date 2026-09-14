@@ -69,6 +69,7 @@
   .unit { font-size: 13.5px; margin-bottom: 10px; }
   .desc { text-align: center; font-size: 15.5px; max-width: none; text-wrap: balance; }
   .consent { text-align: left; }
+  .consent > span { text-wrap: balance; } /* 多行時各行等長，配合 .nb 鎖詞，不會出現「詳／見」這種尾字 */
   /* 直排後 .row .input 的 flex:1 1（flex-basis 0）會在垂直軸生效，把 Email 欄壓到只剩 22px，
      連行內 height 都救不回來（flex 主軸尺寸由 flex-basis 決定）。直排時改回不伸縮。 */
   .row .fields { flex-direction: column; gap: 10px; }
