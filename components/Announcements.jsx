@@ -50,7 +50,8 @@ export function useAnnouncements(items, { storage } = {}) {
 
   const openItem = useCallback((id) => { setOpenId(id); markRead(id); }, [markRead]);
   const closeItem = useCallback(() => setOpenId(null), []);
-  const ack = (id) => { writeAck(store, id); setState((s) => ({ ...s, acked: [...s.acked, id] })); };
+  // 卡片已經把全文顯示出來，按「知道了」就一併記成已讀（否則鈴鐺數字、清單粗體、提示條藍底都還當它未讀）
+  const ack = (id) => { writeAck(store, id); markRead(id); setState((s) => ({ ...s, acked: [...s.acked, id] })); };
   const dismissStrip = (id) => { writeStripDismissed(store, id); setState((s) => ({ ...s, stripDismissed: id })); };
   const openDrawer = () => setOpen(true);
   const closeDrawer = () => { setOpen(false); setOpenId(null); };
@@ -109,6 +110,10 @@ const MD_CSS = `
 
 // 列表＋彈出視窗共用色票：預設淺色（播放頁）；在儀表板（.hub）改吃音樂廳主題變數，深／淺切換自動跟著走。
 const ANN_CSS = MD_CSS + `
+.ann-dd{position:absolute;top:calc(100% + 8px);right:0;z-index:1000;width:min(360px,calc(100vw - 24px));max-height:min(60vh,420px);overflow:auto;
+  background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 24px 60px -24px rgba(15,23,42,.45)}
+/* 手機：鈴鐺右邊還有帳號／登出，absolute 靠右錨定會讓 360px 的下拉左半邊掉出畫面外 → 改固定在視窗內 */
+@media (max-width:640px){.ann-dd{position:fixed;top:60px;left:12px;right:12px;width:auto;max-height:70vh}}
 .ann-list,.ann-modal-bd{
   --ann-card:#fff;--ann-ink:#0f172a;--ann-soft:#334155;--ann-muted:#64748b;
   --ann-line:#e2e8f0;--ann-hover:#f8fafc;--ann-accent:#2563eb;
@@ -305,17 +310,10 @@ export function AnnouncementsDrawer({ ann }) {
   if (!ann.sorted.length) return null;
   return (
     <>
+    {/* 樣式在這層注入：提示條「查看」開彈窗時下拉可能收著（AnnouncementList 沒掛），彈窗也要有樣式 */}
+    <style>{ANN_CSS}</style>
     {ann.open && (
-    <div
-      ref={ref} role="dialog" aria-label="課程公告"
-      style={{
-        position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 1000,
-        width: "min(360px, calc(100vw - 24px))", maxHeight: "min(60vh, 420px)", overflow: "auto",
-        background: "#fff", color: "#0f172a", fontFamily: F,
-        border: "1px solid #e2e8f0", borderRadius: 14,
-        boxShadow: "0 24px 60px -24px rgba(15,23,42,.45)",
-      }}
-    >
+    <div ref={ref} role="dialog" aria-label="課程公告" className="ann-dd" style={{ fontFamily: F }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #f1f5f9", position: "sticky", top: 0, background: "#fff" }}>
         <h3 style={{ margin: 0, fontSize: 14.5 }}>課程公告</h3>
         <button type="button" onClick={ann.closeDrawer} aria-label="關閉公告清單" style={{ background: "none", border: "none", fontSize: 18, color: "#94a3b8", cursor: "pointer", lineHeight: 1 }}>×</button>

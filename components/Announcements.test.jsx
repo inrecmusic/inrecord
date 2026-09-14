@@ -229,11 +229,12 @@ describe("重要公告卡片（行為不變）", () => {
     expect(storage.getItem("inrec_ann_acked")).toBe(JSON.stringify(["imp"]));
   });
 
-  it("按「知道了」不等於已讀，清單裡仍是未讀", () => {
+  it("卡片已顯示全文，按「知道了」就算已讀（鈴鐺不再顯示未讀數）", () => {
     const storage = fakeStorage();
     render(<Watch items={[A("imp", { important: true })]} storage={storage} />);
     fireEvent.click(screen.getByText("知道了"));
-    expect(screen.getByLabelText("公告，1 則未讀")).toBeTruthy();
+    expect(screen.getByLabelText("公告")).toBeTruthy();
+    expect(screen.queryByLabelText("公告，1 則未讀")).toBeNull();
   });
 });
 
