@@ -56,7 +56,7 @@ export default async function Page() {
       priceCurrency: "TWD",
       url: "https://inrecordmusic.com",
     },
-    hasCourseInstance: { "@type": "CourseInstance", courseMode: "Online", courseWorkload: "PT8H" },
+    hasCourseInstance: { "@type": "CourseInstance", courseMode: "Online", courseWorkload: "PT6H" },
   };
 
   // schema.org Organization（品牌／Google knowledge graph）

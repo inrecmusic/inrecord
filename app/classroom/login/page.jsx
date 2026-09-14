@@ -180,7 +180,7 @@ export default function ClassroomLoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <a href="/" className={styles.cardLogo} aria-label="InRecord 首頁"><Logo size={24} /></a>
-        <h2 className={styles.title}>學員登入</h2>
+        <h1 className={styles.title}>學員登入</h1>
         <p className={styles.sub}>登入以存取你的課程內容</p>
 
         {inApp && (

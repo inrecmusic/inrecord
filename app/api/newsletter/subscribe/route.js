@@ -9,7 +9,15 @@ import { buildTrialEmail } from "@/lib/trial";
 // 公開端點：首頁「留下 Email」→ 加進 Brevo 潛客清單。單次同意：勾選（consent=true）才收，送出即進名單。
 // 名單只存 Brevo（BREVO_LIST_ID）；屬性記來源／同意時間／UTM 來源，之後看得出哪個廣告帶來多少名單。
 // 進名單後立刻寄「免費試看」信（Email 專屬簽章連結 → /trial）；信寄失敗不影響已進名單，回 trialSent=false 讓前端提示。
-const limiter = createDistributedLimiter({ limit: 10, windowMs: 60_000, prefix: "rl:subscribe" });
+// 三道閘門（都走 lib/rate-limit 的 Upstash 限流器，缺 Redis 退回記憶體）：
+//   ① IP 5 次/分 —— 擋單機灌爆
+//   ② 同一 email 1 小時 1 封 —— 擋「信箱轟炸」（拿別人的信箱狂按，一小時內只會寄出第一封）
+//   ③ 全站每日 500 封（LEAD_TRIAL_DAILY_LIMIT 可調）—— 擋分散式灌爆把 Brevo 月額度燒光
+//      （額度一空，登入驗證碼／重設密碼／購課信也全寄不出去）
+// 第一封永遠即時寄出；被 ②③ 擋下的仍會進名單、回 200，只是不再重寄。
+const limiter = createDistributedLimiter({ limit: 5, windowMs: 60_000, prefix: "rl:subscribe" });
+const perEmail = createDistributedLimiter({ limit: 1, windowMs: 3_600_000, prefix: "rl:subscribe:email" });
+const daily = createDistributedLimiter({ limit: Number(process.env.LEAD_TRIAL_DAILY_LIMIT) || 500, windowMs: 86_400_000, prefix: "rl:subscribe:day" });
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UTM_ATTRS = { utm_source: "UTM_SOURCE", utm_medium: "UTM_MEDIUM", utm_campaign: "UTM_CAMPAIGN" };
 
@@ -24,6 +32,8 @@ export async function POST(req) {
   const email = normalizeEmail(body.email);
   if (!EMAIL_RE.test(email) || email.length > 254) return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
   if (body.consent !== true) return NextResponse.json({ ok: false, error: "consent_required" }, { status: 400 });
+  // ② 同一 email 一小時只寄一封：名單照進（addLeadContact 冪等），但不再重寄試看信
+  const fresh = (await perEmail(email)).allowed;
 
   const attributes = { SOURCE: "website", CONSENT_AT: new Date().toISOString() };
   const attr = body.attribution && typeof body.attribution === "object" ? body.attribution : {};
@@ -42,6 +52,12 @@ export async function POST(req) {
     if (sb) await sb.from("newsletter_unsubscribes").delete().eq("email", email);
   } catch (e) {
     console.error("[subscribe] unsubscribe cleanup failed:", e?.message || e);
+  }
+  if (!fresh) return NextResponse.json({ ok: true, trialSent: true, deduped: true });
+  // ③ 全站每日上限：超過就不寄（名單已進），trialSent=false 讓前端提示會補寄
+  if (!(await daily("all")).allowed) {
+    console.error("[subscribe] daily trial-email cap reached");
+    return NextResponse.json({ ok: true, trialSent: false, capped: true });
   }
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
   const { subject, html, unsubscribeUrl } = buildTrialEmail({ email, siteUrl });

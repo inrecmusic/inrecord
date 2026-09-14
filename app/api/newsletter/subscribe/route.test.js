@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: () => async () => ({ allowed: globalThis.__rlAllowed !== false }), clientIp: () => "1.1.1.1" }));
+vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: ({ prefix }) => async () => ({ allowed: (globalThis.__rl?.[prefix] ?? globalThis.__rlAllowed) !== false }), clientIp: () => "1.1.1.1" }));
 vi.mock("@/lib/brevo-contacts", () => ({ addLeadContact: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/brevo-email", () => ({ sendNewsletterEmail: vi.fn(async () => ({ success: true })) }));
@@ -13,7 +13,7 @@ import { sendNewsletterEmail } from "@/lib/brevo-email";
 const post = (body) => POST(new Request("http://x/api/newsletter/subscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
 
 describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
-  beforeEach(() => { vi.clearAllMocks(); globalThis.__rlAllowed = true; getSupabaseAdmin.mockReturnValue(null); sendNewsletterEmail.mockResolvedValue({ success: true }); process.env.SUPABASE_SERVICE_ROLE_KEY = "s"; vi.stubEnv("LEAD_CAPTURE", "on"); });
+  beforeEach(() => { vi.clearAllMocks(); globalThis.__rlAllowed = true; globalThis.__rl = {}; getSupabaseAdmin.mockReturnValue(null); sendNewsletterEmail.mockResolvedValue({ success: true }); process.env.SUPABASE_SERVICE_ROLE_KEY = "s"; vi.stubEnv("LEAD_CAPTURE", "on"); });
   afterEach(() => vi.unstubAllEnvs());
 
   it("LEAD_CAPTURE 未設 → 503 not_available，不打 Brevo", async () => {
@@ -103,6 +103,25 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     const r = await post({ email: "a@x.com", consent: true });
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ ok: true, trialSent: false });
+  });
+
+  it("同一 email 一小時內再送 → 名單照進、不重寄試看信、回 200 deduped（擋信箱轟炸）", async () => {
+    addLeadContact.mockResolvedValue({ ok: true });
+    globalThis.__rl = { "rl:subscribe:email": false };
+    const r = await post({ email: "a@x.com", consent: true });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true, trialSent: true, deduped: true });
+    expect(addLeadContact).toHaveBeenCalledTimes(1);
+    expect(sendNewsletterEmail).not.toHaveBeenCalled();
+  });
+
+  it("全站每日上限到 → 名單照進、不寄、trialSent=false（保住 Brevo 額度給登入／購課信）", async () => {
+    addLeadContact.mockResolvedValue({ ok: true });
+    globalThis.__rl = { "rl:subscribe:day": false };
+    const r = await post({ email: "a@x.com", consent: true });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true, trialSent: false, capped: true });
+    expect(sendNewsletterEmail).not.toHaveBeenCalled();
   });
 
   it("Brevo 名單失敗就不寄試看信", async () => {

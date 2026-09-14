@@ -85,9 +85,14 @@ export default function SaleSettingsPage({ showToast }) {
 
   const sendLaunch = async () => {
     if (launching) return; // 防連點重觸發群發
-    if (!confirm("確定立即寄送開課通知給所有已預購買家？")) return;
     setLaunching(true);
     try {
+      // 先預覽名單（不寄）：確認視窗顯示人數組成，避免按下去才發現名單不對
+      const pre = await adminFetch("/api/admin/send-launch-notify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dryRun: true }) });
+      const p = await pre.json().catch(() => ({}));
+      if (!pre.ok) { showToast?.(`讀取名單失敗：${p.error || pre.status}`); return; }
+      const extra = p.unenrolledPaid ? `\n另有 ${p.unenrolledPaid} 位已付款但尚未開通，不在名單內（要先到訂單管理開通）。` : "";
+      if (!confirm(`將寄開課通知給 ${p.pending ?? 0} 位已開通學員（名單共 ${p.total ?? 0} 位，已寄過的 ${p.alreadySent ?? 0} 位會跳過）。${extra}\n\n確定寄出？`)) return;
       const res = await adminFetch("/api/admin/send-launch-notify", { method: "POST" });
       const d = await res.json().catch(() => ({}));
       if (res.ok) showToast?.(d.alreadyNotified ? "先前已寄送過" : `已寄送 ${d.sent ?? 0} 封`);

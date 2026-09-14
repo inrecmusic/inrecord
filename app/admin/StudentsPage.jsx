@@ -181,9 +181,9 @@ export default function StudentsPage({showToast}){
                   if(!detailStudent.enrolled)return "—（未開通）";
                   const o=detailStudent.early_override;
                   if(o==="early")return "早鳥搶先看（手動指定）";
-                  if(o==="standard")return "9/30 正式上架後開放（手動指定）";
+                  if(o==="standard")return "一般學員：9/30 起第 1～3 章、10/31 全部開放（手動指定）";
                   const auto=isEarlyAccess({orderTimes:[detailStudent.first_paid_at].filter(Boolean),enrollTimes:[detailStudent.enrolled_at].filter(Boolean)});
-                  return auto?"早鳥搶先看（自動：9/2 前購課）":"9/30 正式上架後開放（自動：9/2 起購課）";
+                  return auto?"早鳥搶先看（自動：9/2 前購課）":"一般學員：9/30 起第 1～3 章、10/31 全部開放（自動：9/2 起購課）";
                 })()],
                 ["程度",levelLabel(detailStudent.level)],
                 ["來源",detailStudent.source||"—"],
@@ -198,7 +198,7 @@ export default function StudentsPage({showToast}){
             {detailStudent.enrolled&&(
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:14,padding:"10px 12px",background:"#f8fafc",borderRadius:10}}>
                 <span style={{fontSize:12.5,fontWeight:700,color:"#475569"}}>調整觀看權限</span>
-                {[["early","設為早鳥"],["standard","設為 9/30 開放"],[null,"恢復自動判斷"]].map(([ov,label])=>(
+                {[["early","設為早鳥"],["standard","設為一般學員"],[null,"恢復自動判斷"]].map(([ov,label])=>(
                   <button key={label} className={styles.btnSmall} disabled={busy||detailStudent.early_override===ov}
                     onClick={async()=>{
                       setBusy(true);

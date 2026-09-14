@@ -26,6 +26,7 @@ ORDER=(
   supabase-terms-consent.sql
   supabase-ops-reports.sql
   supabase-payment-events.sql
+  supabase-classroom-rls-tighten.sql
   supabase-hardening.sql
 )
 {

@@ -3,11 +3,12 @@ import styles from "./admin.module.css";
 import { StatCard, SalesTrendChart, DonutChart } from "./shared";
 import { DollarSign, TrendingUp, ShoppingCart, BarChart2, Music } from "lucide-react";
 import SourceAttributionTable from "@/components/admin/SourceAttributionTable";
+import { excludeManual } from "@/lib/order-stats";
 
 // ── Analytics Page ─────────────────────────────────────────────────────────
 export default function AnalyticsPage({orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter}){
   const now=new Date();
-  const paidOrders=orders.filter(o=>o.status==="paid");
+  const paidOrders=excludeManual(orders).filter(o=>o.status==="paid"); // 與儀表板／訂單頁同口徑：$0 手動開通單不算成交
   const purchased=paidOrders.length;
   const totalRev=paidOrders.reduce((s,o)=>s+(Number(o.amount)||0),0);
   const avgOrder=purchased>0?Math.round(totalRev/purchased):0;

@@ -12,8 +12,12 @@ export async function POST(req) {
   if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const sb = getSupabaseAdmin();
   if (!sb) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
+  // dryRun：只回名單人數（後台確認視窗用），不寄、不記 audit
+  const body = await req.json().catch(() => ({}));
+  const dryRun = body?.dryRun === true;
   // 後台手動：不檢查 isClassroomOpen（營運者明確要寄）；CAS 仍保證只寄一次
-  const r = await runLaunchNotify(sb, { sendLaunchEmail });
+  const r = await runLaunchNotify(sb, { sendLaunchEmail, dryRun });
+  if (dryRun) return NextResponse.json({ ok: true, ...r });
   await logAudit(sb, { actor: payload.email, action: "launch_notify.send", targetType: "launch_notify", meta: { total: r.total, sent: r.sent, pending: r.pending, errors: (r.errors || []).length }, req });
   return NextResponse.json({ ok: true, ...r });
 }
