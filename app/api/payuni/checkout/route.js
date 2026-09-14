@@ -12,6 +12,9 @@ import { readTermsVersion } from "@/lib/terms-version";
 
 // 公開下單端點限流：擋洗 pending 單、灌爆 Amego/稅務查詢、當優惠券預言機、燒序號庫存。
 const checkoutLimiter = createDistributedLimiter({ limit: 10, windowMs: 60_000, prefix: "rl:checkout" });
+// 以 email 為鍵的第二道限流：本端點不驗登入（訪客結帳）、email 由 body 任填，換 IP 就能替任意信箱大量建 pending 單
+// （每筆之後都會觸發挽回信）。放在所有驗證通過、寫單之前才計次，輸錯發票欄位之類的重試不會吃掉額度。
+const emailLimiter = createDistributedLimiter({ limit: 5, windowMs: 86_400_000, prefix: "rl:checkout:email" });
 
 // 歸因欄位白名單（同 lib/attribution.js 實際寫進 cookie 的鍵；比照 /api/newsletter/subscribe 的做法）。
 // attribution 原本原封不動吃前端整包 JSON → 任何人都能往 orders 的 jsonb 塞任意／超大內容。
@@ -206,6 +209,12 @@ export async function POST(req) {
       console.error("[payuni checkout] supabase admin unavailable，訂單無法寫入，拒絕吐出付款欄位");
       // 沒有 DB 連線就不能吐出可付款的 EncryptInfo/HashInfo，否則顧客能真的付款但 DB 完全查無此單（靜默漏款）。
       return NextResponse.json({ error: "order_create_failed" }, { status: 500 });
+    }
+
+    // 同一 email 一天最多 5 筆 pending 單（要在限量券預扣之前擋，否則被擋的請求會白白燒掉序號）
+    const erl = await emailLimiter(email);
+    if (!erl.allowed) {
+      return NextResponse.json({ error: "too_many_attempts" }, { status: 429, headers: { "Retry-After": String(erl.retryAfter) } });
     }
 
     // 限量券原子預扣（CAS）：延到此刻（所有驗證已過、緊接寫單）才扣，之後唯一失敗路徑就是下方 insert，

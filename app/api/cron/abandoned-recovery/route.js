@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { selectRecoveryCandidates, buildRecoveryEmail } from "@/lib/recovery";
+import { selectRecoveryCandidates, buildRecoveryEmail, RECOVERY_COOLDOWN_DAYS } from "@/lib/recovery";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
 
 // 未成交挽回信 cron（比照 release-coupons）
@@ -32,7 +32,17 @@ export async function GET(req) {
     .limit(200);
   if (error) { console.error("[cron abandoned-recovery]", error.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
 
-  const candidates = selectRecoveryCandidates(rows, now, { minHours, maxHours });
+  // 同一 email 7 天內只寄一次：撈近 7 天已寄過的 email 當排除名單（不論那筆訂單現在是什麼狀態）
+  const cooldownCutoff = new Date(now.getTime() - RECOVERY_COOLDOWN_DAYS * 86_400_000).toISOString();
+  const { data: recent, error: recentErr } = await supabase
+    .from("orders")
+    .select("email")
+    .not("recovery_sent_at", "is", null)
+    .gte("recovery_sent_at", cooldownCutoff)
+    .limit(1000);
+  if (recentErr) { console.error("[cron abandoned-recovery] recent", recentErr.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
+
+  const candidates = selectRecoveryCandidates(rows, now, { minHours, maxHours, recentEmails: (recent || []).map((r) => r.email) });
 
   let sent = 0;
   let failed = 0;

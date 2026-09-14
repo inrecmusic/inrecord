@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { makeHashInfo } from "@/lib/payuni";
 
+// 兩個限流器（IP：rl:checkout／email：rl:checkout:email）共用一個 mock，以 prefix 當第一個參數區分
 const limiter = vi.fn(async () => ({ allowed: true }));
-vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: () => (...a) => limiter(...a), clientIp: () => "1.1.1.1" }));
+vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: ({ prefix }) => (...a) => limiter(prefix, ...a), clientIp: () => "1.1.1.1" }));
 vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/sale", () => ({
   getSaleSettings: vi.fn(async () => ({})),
@@ -52,6 +53,27 @@ describe("POST /api/payuni/checkout（下單）", () => {
     const res = await POST(req({ plan: "bundle", email: "a@x.com" }));
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("30");
+  });
+
+  it("同一 email 一天超過 5 筆 → 429 too_many_attempts、不建單、不預扣限量券", async () => {
+    limiter.mockImplementation(async (prefix) => prefix === "rl:checkout:email" ? { allowed: false, retryAfter: 3600 } : { allowed: true });
+    const coupon = { code: "TEST1", type: "price", value: 1, status: "active", usage_limit: 1, used: 0, plan: null };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const res = await POST(req({ plan: "bundle", email: "Spam@X.com", couponCode: "TEST1" }));
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "too_many_attempts" });
+    expect(res.headers.get("Retry-After")).toBe("3600");
+    expect(limiter).toHaveBeenCalledWith("rl:checkout:email", "spam@x.com"); // 以正規化後的 email 為鍵
+    expect(sb.calls.some((c) => c.table === "orders" && sb.has(c, "insert"))).toBe(false);
+    expect(sb.calls.some((c) => c.table === "coupons" && sb.has(c, "update"))).toBe(false);
+  });
+
+  it("email 限流只在所有驗證通過後才計次（方案不合法不吃額度）", async () => {
+    getSupabaseAdmin.mockReturnValue(makeDb());
+    await POST(req({ plan: "game", email: "a@x.com" }));
+    expect(limiter.mock.calls.some((c) => c[0] === "rl:checkout:email")).toBe(false);
+    await POST(req({ plan: "bundle", email: "a@x.com" }));
+    expect(limiter).toHaveBeenCalledWith("rl:checkout:email", "a@x.com");
   });
 
   it("dryRun 只檢查金流設定、不建單", async () => {

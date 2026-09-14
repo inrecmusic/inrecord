@@ -3,6 +3,7 @@ import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { logAudit } from "@/lib/audit";
+import { escapeLike } from "@/lib/escape-like";
 
 // 後台學員名單「觀看權限」覆寫：null=依購買時間自動｜'early'=強制早鳥搶先看｜'standard'=強制 9/30 開放。
 // 寫在 enrollments.early_override（該 email 的所有開通列一起改）。
@@ -23,7 +24,7 @@ export async function PATCH(req) {
   const { data, error } = await supabase
     .from("enrollments")
     .update({ early_override: override })
-    .ilike("email", email) // 等值比對（無萬用字元），容忍大小寫差異
+    .ilike("email", escapeLike(email)) // 不分大小寫的等值比對；_／% 要先跳脫，否則 a_b@ 會連 axb@ 一起改到
     .select("id");
   if (error) return serverError(error);
   if (!data?.length) return NextResponse.json({ error: "no_enrollment" }, { status: 404 });

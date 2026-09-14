@@ -3,13 +3,18 @@ import { getSaleSettings, salePhase } from "@/lib/sale";
 import { isFanProofOpen } from "@/lib/fan-proof";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { readTermsVersion } from "@/lib/terms-version";
+import { getSiteStats } from "@/lib/site-stats";
 
 export const revalidate = 60;
 
 export default async function Page() {
   const now = new Date();
   const settings = await getSaleSettings();
-  const termsVersion = await readTermsVersion(getSupabaseAdmin());
+  const db = getSupabaseAdmin();
+  const termsVersion = await readTermsVersion(db);
+  // 社會證明數字伺服端先算好（隨頁面 60s revalidate 快取）：省掉每位訪客一次 /api/stats 與 2 個 DB 查詢，
+  // hero 的「已有 N 位學員」首屏就在、不會後到造成版位跳動。拿不到（DB 未設／查詢失敗）給 null，HomeClient 退回前端 fetch。
+  const initialStats = db ? await getSiteStats(db).catch(() => null) : null;
   const leadCapture = process.env.LEAD_CAPTURE === "on"; // 留信箱換免費試看（fail-safe：未設＝關，首頁顯示原本的 CTA 卡片、不彈窗） // 購買視窗第二步顯示的條款版本（寫單時後端會再讀一次）
   const phase = salePhase(settings, now);
 
@@ -65,14 +70,16 @@ export default async function Page() {
     "@type": "Organization",
     name: "InRecord",
     url: "https://inrecordmusic.com",
-    logo: "https://inrecordmusic.com/logo.png",
+    logo: "https://inrecordmusic.com/logo-512.png", // 縮到 512² 的版本（原檔 1254²／740KB 爬蟲抓太重）
     sameAs: ["https://www.instagram.com/inrecord.music"],
   };
 
   return (
     <>
+      {/* 桌機 LCP 元素是 .heroPhoto 的 CSS 背景圖，瀏覽器要等 CSS 解析完才發現它 → 預載讓它與 HTML 同時起跑（Next 會提升到 <head>） */}
+      <link rel="preload" as="image" href="/hero-pianist.webp" fetchPriority="high" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([courseLd, orgLd]).replace(/</g, "\\u003c") }} />
-      <HomeClient sale={sale} termsVersion={termsVersion} leadCapture={leadCapture} />
+      <HomeClient sale={sale} termsVersion={termsVersion} leadCapture={leadCapture} initialStats={initialStats} />
     </>
   );
 }

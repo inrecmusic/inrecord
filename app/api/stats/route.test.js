@@ -30,6 +30,7 @@ describe("GET /api/stats（首頁社會證明）", () => {
     const res = await GET(new Request("http://x/api/stats"));
     const body = await res.json();
     expect(body).toMatchObject({ ok: true, purchases: 3, rating: 5, ratingCount: 1 });
+    expect(res.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=300"); // 首頁已伺服端帶數字，此端點只是退路 → 讓 CDN 快取
     expect(db.calls).toContainEqual(["orders", "eq", "status", "paid"]);
     expect(db.calls).toContainEqual(["orders", "or", "source.is.null,source.neq.manual"]);
   });

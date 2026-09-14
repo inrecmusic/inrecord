@@ -336,6 +336,8 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
 };
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } };
+// hero 首屏專用：與 fadeUp 同節奏但不動 opacity（SSR 不能輸出透明文字，否則 LCP 要等 hydration）
+const heroRise = { hidden: { y: 28 }, visible: { y: 0, transition: fadeUp.visible.transition } };
 
 // 早鳥倒數格式化（純函式、無 Date.now）：ms → "N 天 HH:MM:SS"
 function fmtCountdown(ms) {
@@ -404,7 +406,7 @@ function StatItem({ value, suffix, en, label, decimals = 0 }) {
   );
 }
 
-export default function HomeClient({ sale, termsVersion = null, leadCapture = false }) {
+export default function HomeClient({ sale, termsVersion = null, leadCapture = false, initialStats = null }) {
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -414,7 +416,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   const [fanSerialEntry, setFanSerialEntry] = useState(false); // 序號輸入流程（保留機制；粉絲卡 $3,999 現走 autoCoupon 直購，已無入口）
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState("");
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState(initialStats ?? null); // 首頁伺服端已帶入時直接用，不再 fetch
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [photoHover, setPhotoHover] = useState(false);
   const [nowMs, setNowMs] = useState(null); // 早鳥倒數：mounted 後才有值 → SSR/client 初次都不渲染倒數（hydration-safe）
@@ -433,12 +435,14 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
     return () => subscription.unsubscribe();
   }, []);
 
+  // 退路：伺服端沒拿到數字（DB 未設／查詢失敗）才由前端打 /api/stats
   useEffect(() => {
+    if (initialStats) return;
     fetch("/api/stats")
       .then(r => r.json())
       .then(data => { if (data.ok) setStats(data); })
       .catch(() => {});
-  }, []);
+  }, [initialStats]);
 
   // 早鳥倒數 ticker：只在 client 執行，每秒更新 nowMs（server 端不跑 → 無 hydration 問題）
   useEffect(() => {
@@ -689,13 +693,15 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
             </div>
           </div>
           <div ref={heroContentRef} className={styles.heroGrid}>
+            {/* hero 用 heroRise（只動 y、不動 opacity）：fadeUp 的 hidden 會讓 SSR 直接輸出 opacity:0，手機 LCP 被拖到 hydration 之後；
+                其他 whileInView 區塊照用 fadeUp */}
             <motion.div className={styles.heroIntro} variants={stagger} initial="hidden" animate="visible">
-              <motion.span variants={fadeUp} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
-              <motion.h1 variants={fadeUp}>從零開始學<span>鋼琴</span></motion.h1>
-              <motion.p variants={fadeUp} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
-              <motion.p variants={fadeUp} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、能追蹤成效，看見進步。</motion.p>
+              <motion.span variants={heroRise} className={styles.heroSeries}>Crossoverick Vol.1</motion.span>
+              <motion.h1 variants={heroRise}>從零開始學<span>鋼琴</span></motion.h1>
+              <motion.p variants={heroRise} className={styles.heroSub}>了解三和弦與基礎伴奏</motion.p>
+              <motion.p variants={heroRise} className={styles.heroLead}>10 章節系統化學習，搭配互動遊戲練習，<br/>讓學鋼琴變得有趣、能追蹤成效，看見進步。</motion.p>
               {stats && (showRating || stats.purchases > 0) && (
-                <motion.div variants={fadeUp} className={styles.heroProof}>
+                <motion.div variants={heroRise} className={styles.heroProof}>
                   {showRating && (
                     <span className={styles.heroProofRating}>
                       <Star size={15} fill="currentColor" strokeWidth={0} />
@@ -707,7 +713,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                   )}
                 </motion.div>
               )}
-              <motion.div variants={fadeUp} className={styles.offerCard}>
+              <motion.div variants={heroRise} className={styles.offerCard}>
                 <span className={styles.offerPill}>{fanOn ? "粉絲限定方案·超早鳥預購" : offer.isEarlyBird ? `${PLANS[1].label}·限時早鳥` : PLANS[1].label}</span>
                 <div className={styles.offerPriceRow}>
                   <span className={styles.offerPrice}>NT${heroPrice.toLocaleString()}</span>
@@ -772,7 +778,10 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                   ].map(o => <li key={o}>{o}</li>)}
                 </ul>
               </div>
-              <div className={styles.pianoPhoto} />
+              <div className={styles.pianoPhoto}>
+                {/* 首屏以下的講師照改用 <img> 才能 lazy load（CSS background 無法延遲載入） */}
+                <img src="/rick-piano.jpg" alt="張育瑞（Rick）在鋼琴前" loading="lazy" decoding="async" width="1150" height="766" />
+              </div>
             </div>
           </div>
         </RevealSection>

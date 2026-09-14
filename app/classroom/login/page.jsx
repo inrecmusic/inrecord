@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { isInAppBrowser } from "@/lib/inapp-browser";
 import { safeNextPath } from "@/lib/safe-redirect";
+import { mapAuthError, isResetSendFailure } from "@/lib/auth-error";
 import Logo from "@/components/Logo";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import styles from "./login.module.css";
@@ -68,24 +69,26 @@ export default function ClassroomLoginPage() {
       if (authErr) throw authErr;
       router.replace(getNextPath());
     } catch (err) {
-      setError(err.message === "Invalid login credentials" ? "Email 或密碼錯誤" : err.message);
+      setError(mapAuthError(err.message));
     } finally {
       setLoading(false);
     }
   }
 
   // 忘記密碼：寄重設信，導回 /auth/callback 建立復原 session 後轉重設密碼頁。
-  // 無論帳號是否存在都回相同訊息，避免帳號枚舉。
+  // 無論帳號是否存在都回相同訊息，避免帳號枚舉；但限流／SMTP／網路類失敗（信根本沒寄出）要誠實告知，
+  // 否則學員等不到信也不知道要重試。supabase-js 不 throw、以 { error } 回傳，必須讀回傳值。
   async function handleForgot() {
     setError("");
     if (!supabase) { setError("系統設定錯誤，請聯繫管理員"); return; }
     if (!email) { setError("請先輸入電子信箱"); return; }
     setResetLoading(true);
     try {
-      await supabase.auth.resetPasswordForEmail(email, {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + "/auth/callback?next=/classroom/reset-password",
       });
-      setResetSent(true);
+      if (err && isResetSendFailure(err.message)) { setError("寄送太頻繁或系統忙碌，請稍後再試"); return; }
+      setResetSent(true); // 其餘錯誤（含帳號不存在類）不透露
     } catch {
       setResetSent(true); // 不透露錯誤/是否存在
     } finally {
@@ -106,7 +109,7 @@ export default function ClassroomLoginPage() {
       },
     });
     if (err) {
-      setError(err.message);
+      setError(mapAuthError(err.message));
       setGoogleLoading(false);
     }
   }
@@ -142,7 +145,7 @@ export default function ClassroomLoginPage() {
       if (err) throw err;
       setOtpSent(true);
     } catch (err) {
-      setError(err.message);
+      setError(mapAuthError(err.message));
     } finally {
       setLoading(false);
     }

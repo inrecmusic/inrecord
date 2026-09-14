@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { getSaleSettings, isPresale } from "@/lib/sale";
+import { logAudit } from "@/lib/audit";
 
 // 後台補寄開課確認信（比照 issue-invoice 結構）
 export async function POST(req) {
@@ -39,5 +40,7 @@ export async function POST(req) {
     return NextResponse.json({ error: result.error || "send_failed", skipped: result.skipped || false }, { status: 500 });
   }
   await supabase.from("orders").update({ email_error: null }).eq("id", order.id);
+  // 寄信涉及顧客個資與履約通知，留稽核（比照 send-presale-email）
+  await logAudit(supabase, { actor: payload.email, action: "email.resend_purchase", targetType: "order", targetId: order.id, meta: { email: order.email }, req });
   return NextResponse.json({ ok: true });
 }

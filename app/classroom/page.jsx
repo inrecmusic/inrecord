@@ -19,6 +19,7 @@ export default function ClassroomHub() {
   const [profileErr, setProfileErr]       = useState(false);
   const [loadError, setLoadError]         = useState(false); // bootstrap 載入失敗→顯示重試，不誤判未購買
   const [announcements, setAnnouncements] = useState([]);
+  const [earlyAccess, setEarlyAccess]     = useState(undefined); // bootstrap 帶回：false=非早鳥（9/30 前無正課可播）；完整上架後不再回傳
   const ann = useAnnouncements(announcements); // 最新公告區＋重要卡片
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
@@ -54,6 +55,7 @@ export default function ClassroomHub() {
           setTotal(d.totalCount || (d.videos || []).length);
           setProfile(d.profile || d.prefill || {});
           setAnnouncements(d.announcements || []);
+          setEarlyAccess(d.earlyAccess);
         } catch {
           setLoadError(true); // 網路/逾時失敗→重試，別誤判未購買
         } finally {
@@ -146,7 +148,8 @@ export default function ClassroomHub() {
           <div>
             <div className="eyebrow">Welcome back</div>
             <h1>{greeting}，{name}。{nextVideo ? <><br />上次上到 <span>{nextVideo.title}</span>，我們繼續吧。</> : <><br />準備好，我們開始吧。</>}</h1>
-            <p>{total > 0 ? <>已經完成 {pct}%（{done}/{total} 單元）了，點下面接著上次的進度。</> : <>課程即將上線，第一堂課很快和你見面。</>}</p>
+            {/* 非早鳥 9/30 前沒有任何可播單元（nextVideo 為 null、CTA 不渲染），不能再說「點下面接著」 */}
+            <p>{total > 0 ? (nextVideo || earlyAccess !== false ? <>已經完成 {pct}%（{done}/{total} 單元）了，點下面接著上次的進度。</> : <>第一批章節 9/30 開放，開放後從這裡接著上。</>) : <>課程即將上線，第一堂課很快和你見面。</>}</p>
             {nextVideo && <a className="cta" href={`/classroom/watch?v=${nextVideo.id}`}>▶ 繼續上課 · {nextVideo.title}</a>}
           </div>
           <div className="ring">

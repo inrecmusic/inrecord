@@ -106,8 +106,8 @@ export default function SubscriptionsPage({ showToast }) {
       <div className={styles.statsGrid4}>
         <StatCard label="有效存取人數" value={activeCount} sub="目前有效" icon={Users} color="#16a34a"/>
         <StatCard label="本月新增"     value={thisMonth}   sub="新增存取數" icon={TrendingUp} color="#2563eb"/>
-        <StatCard label="課程包永久"   value={bundleCount} sub="課程＋遊戲" icon={GraduationCap} color="#f59e0b"/>
-        <StatCard label="遊戲單買永久" value={gameCount}   sub="互動遊戲" icon={CreditCard} color="#7c3aed"/>
+        <StatCard label="課程包（長期）"   value={bundleCount} sub="課程＋遊戲" icon={GraduationCap} color="#f59e0b"/>
+        <StatCard label="遊戲單買（長期）" value={gameCount}   sub="互動遊戲" icon={CreditCard} color="#7c3aed"/>
       </div>
 
       <div className={styles.panel}>
@@ -237,7 +237,7 @@ export default function SubscriptionsPage({ showToast }) {
                   <label>到期日 *</label>
                   <input className={styles.input} type="date" value={addForm.expires_at}
                     onChange={e => setAddForm(p => ({ ...p, expires_at: e.target.value }))}/>
-                  <span style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 3, display: "block" }}>永久存取請填 <code style={{ background:"#f1f5f9", padding:"1px 5px", borderRadius:4 }}>2999-12-31</code></span>
+                  <span style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 3, display: "block" }}>長期存取（不設到期）請填 <code style={{ background:"#f1f5f9", padding:"1px 5px", borderRadius:4 }}>2999-12-31</code></span>
                 </div>
               </div>
               {addErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{addErr}</p>}

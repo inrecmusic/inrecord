@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { mapResetError } from "@/lib/auth-error";
 import Logo from "@/components/Logo";
 
 const F = "'PingFang TC','Noto Sans TC',system-ui,-apple-system,sans-serif";
@@ -44,7 +45,8 @@ export default function ResetPasswordPage() {
       if (err) throw err;
       setDone(true);
     } catch (err) {
-      setError("密碼更新失敗，請重新申請重設連結後再試一次。");
+      // 帳號頁「修改密碼」也連到這頁（登入中、沒有重設信），故依原因分流，不能一律叫人重申請重設連結
+      setError(mapResetError(err?.message));
     } finally {
       setSaving(false);
     }

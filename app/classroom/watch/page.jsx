@@ -12,7 +12,8 @@ import RatingTab from "@/components/classroom/RatingTab";
 import CommentsSection from "@/components/classroom/CommentsSection";
 import MaterialsSection from "@/components/classroom/MaterialsSection";
 import { freshToken, openMaterialById, getDeviceId, F } from "@/components/classroom/shared";
-import { comingSoonLabel } from "@/lib/coming-soon";
+import { comingSoonLabel, releaseBatchFor } from "@/lib/coming-soon";
+import { FULL_RELEASE_MS } from "@/lib/early-access";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function fmtDur(sec) {
@@ -41,11 +42,13 @@ const CHAPTER_COMING_SOON = {
 // 個別單元的預計上架日（優先於章、章優先於 COMING_SOON）；key = 單元標題開頭編號。
 // 影片實際掛上去後這一列就不會顯示了（只有 !playable 才印），所以上架後不必回來刪。
 const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/7 上架", "1-5": "預計 9/7 上架" };
-// 非早鳥（9/2 起購課）在 10/31 前只開放第一批 Ch1～Ch3，第四章以後一律等到正式開課日。
-// 上面那張表是「這一章什麼時候上架」，對非早鳥來說會比他實際看得到的時間樂觀，所以要覆寫。
-const FIRST_BATCH_LAST_CH = 3;
+// 非早鳥（9/2 起購課）分兩批放行：9/30 第一批 Ch1～Ch3、10/31 完整上架（與教室公告一致）。
+// 上面兩張表是「這一章什麼時候上架」，對非早鳥來說會比他實際看得到的時間樂觀（Ch2 的 9/23 是早鳥日），
+// 所以一律覆寫成批次日；批次判斷在 lib/coming-soon.js 的 releaseBatchFor（純函式、有單元測試）。
+const FIRST_BATCH_COMING_SOON = "預計 9/30 上架";
 function comingSoonFor(title, chNum, early) {
-  if (early === false && Number.isFinite(chNum) && chNum > FIRST_BATCH_LAST_CH) return COMING_SOON;
+  const batch = releaseBatchFor(chNum, early);
+  if (batch) return batch === "first" ? FIRST_BATCH_COMING_SOON : COMING_SOON;
   // 日期一過（台灣時間）影片還沒掛上 → comingSoonLabel 會改顯示「即將上架」
   return comingSoonLabel(UNIT_COMING_SOON[unitNo(title)] || CHAPTER_COMING_SOON[chNum] || COMING_SOON);
 }
@@ -486,7 +489,7 @@ export default function ClassroomPage() {
         WebkitBackdropFilter: "blur(20px) saturate(1.8)",
         borderBottom: "1px solid rgba(0,0,0,0.08)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 22px",
+        padding: isPhone ? "0 12px" : "0 22px", // 手機 52px 高的列塞不下，右側按鈕會被擠到逐字換行
       }}>
         <a href="/classroom" aria-label="回教室" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
           <img src="/logo-wordmark.png" alt="InRecord" style={{ height: 24, width: "auto", display: "block" }} />
@@ -500,9 +503,9 @@ export default function ClassroomPage() {
 
           {/* 所有在賣方案(bundle)皆含遊戲、遊戲不再單賣 → 已購課者必有遊戲存取，
               僅顯示「已開通」徽章；移除會導到重買整包的「購買遊戲」死按鈕。 */}
-          {hasSubscription && (
+          {hasSubscription && !isPhone && (
             <div style={{
-              display: "flex", alignItems: "center", gap: 5,
+              display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", flexShrink: 0,
               fontSize: 12, fontWeight: 600, color: "#16a34a",
               background: "rgba(22,163,74,0.1)", padding: "4px 12px", borderRadius: 980,
             }}>
@@ -518,7 +521,7 @@ export default function ClassroomPage() {
             background: "none", border: "1px solid rgba(0,0,0,0.13)",
             color: "#334155", borderRadius: 980, padding: "5px 16px",
             cursor: "pointer", fontSize: 12, fontWeight: 500, fontFamily: F,
-            textDecoration: "none",
+            textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0,
           }}>
             帳號
           </a>
@@ -527,7 +530,7 @@ export default function ClassroomPage() {
             background: "none", border: "1px solid rgba(0,0,0,0.13)",
             color: "#334155", borderRadius: 980, padding: "5px 16px",
             cursor: "pointer", fontSize: 12, fontWeight: 500, fontFamily: F,
-            transition: "background .15s",
+            transition: "background .15s", whiteSpace: "nowrap", flexShrink: 0,
           }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
@@ -596,7 +599,8 @@ export default function ClassroomPage() {
                     <circle cx="12" cy="12" r="4" fill="#fff"/>
                   </svg>
                   <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.28)", letterSpacing: ".02em" }}>
-                    請從右側選擇課程單元
+                    {/* 非早鳥 9/30 前全部單元都不可點（影片被摘掉），叫他「選單元」是死路；手機側欄也不在右側 */}
+                    {earlyAccess === false && Date.now() < FULL_RELEASE_MS ? "正課 9/30 開放，敬請期待" : "請從側欄選擇課程單元"}
                   </p>
                 </div>
               </div>
@@ -820,8 +824,10 @@ export default function ClassroomPage() {
                     const playable   = !!(v.bunny_video_id || v.vimeo_id);
                     // 沒影片的單元只列可下載項目（遊戲/作業要切分頁、會綁到別的單元）
                     const visibleItems = playable ? items : items.filter(i => i.kind === "handout" || i.kind === "score");
-                    // 規劃中的互動遊戲：接在對應單元下方（灰色列）
-                    const unitPlanned = plannedGames.filter(g => g.after === unitNo(v.title));
+                    // 規劃中的互動遊戲：接在對應單元下方（灰色列）。
+                    // 同編號可能有兩支單元（「1-2 尋找起始音 Do」與「1-2 【跟練】Do 之歌」），只讓第一支認領，否則會各印一次。
+                    const no = unitNo(v.title);
+                    const unitPlanned = cv.findIndex(x => unitNo(x.title) === no) === idx ? plannedGames.filter(g => g.after === no) : [];
                     return (
                       <div key={v.id}>
                         <div className="unit-row"

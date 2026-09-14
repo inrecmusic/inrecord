@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
+import { escapeLike } from "@/lib/escape-like";
 
 // 顧客 360：輸入 email，一次彙整該顧客的 訂單 / 課程開通 / 遊戲存取 / 寄信紀錄。
 export async function GET(req) {
@@ -10,13 +11,15 @@ export async function GET(req) {
 
   const email = (new URL(req.url).searchParams.get("email") || "").trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "missing_email" }, { status: 400 });
+  // ilike 只為容忍大小寫差異；_／% 是 LIKE 萬用字元，不跳脫會把別人的資料一起彙整進來
+  const pattern = escapeLike(email);
 
   const [ord, enr, sub, mail, prof] = await Promise.all([
-    supabase.from("orders").select("id, plan, plan_label, amount, status, source, mer_trade_no, invoice_no, created_at, access_granted_at, presale_email_sent_at, phone, buyer_name").ilike("email", email).order("created_at", { ascending: false }),
-    supabase.from("enrollments").select("course_id, enrolled_at, order_id").ilike("email", email),
-    supabase.from("subscriptions").select("plan_type, status, expires_at, source, created_at").ilike("email", email).order("created_at", { ascending: false }),
-    supabase.from("email_log").select("subject, kind, status, error, created_at").ilike("to_email", email).order("created_at", { ascending: false }).limit(50),
-    supabase.from("student_profiles").select("*").ilike("email", email).maybeSingle(),
+    supabase.from("orders").select("id, plan, plan_label, amount, status, source, mer_trade_no, invoice_no, created_at, access_granted_at, presale_email_sent_at, phone, buyer_name").ilike("email", pattern).order("created_at", { ascending: false }),
+    supabase.from("enrollments").select("course_id, enrolled_at, order_id").ilike("email", pattern),
+    supabase.from("subscriptions").select("plan_type, status, expires_at, source, created_at").ilike("email", pattern).order("created_at", { ascending: false }),
+    supabase.from("email_log").select("subject, kind, status, error, created_at").ilike("to_email", pattern).order("created_at", { ascending: false }).limit(50),
+    supabase.from("student_profiles").select("*").ilike("email", pattern).maybeSingle(),
   ]);
 
   const dbErr = ord.error || enr.error || sub.error || mail.error || prof.error;

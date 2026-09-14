@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req) {
   const payload = await verifyAdminToken(req);
@@ -36,8 +37,11 @@ export async function DELETE(req) {
   const db = getSupabaseAdmin();
   if (!db) return NextResponse.json({ error: "db_not_configured" }, { status: 500 });
   const id = new URL(req.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id_required" }, { status: 400 }); // 缺 id 不能交給 DB（.eq("id", null) 語意不明）
   const { error } = await db.from("comments").delete().eq("id", id);
   if (error) return serverError(error);
+  // 刪學員留言是不可逆操作，留稽核
+  await logAudit(db, { actor: payload.email, action: "comment.delete", targetType: "comment", targetId: id, req });
   return NextResponse.json({ ok: true });
 }
 

@@ -8,7 +8,8 @@ import { render, cleanup, waitFor } from "@testing-library/react";
 
 // 「預計 M/D 上架」日期一過會自動變「即將上架」（lib/coming-soon.js，另有單元測試）。
 // 這支 smoke test 釘的是「各章／單元用哪個文案」，不想隨真實日期漂移 → 把日期保險絲換成原樣回傳。
-vi.mock("@/lib/coming-soon", () => ({ comingSoonLabel: (s) => s }));
+// releaseBatchFor（非早鳥批次覆寫）保留真的，時間由測試裡 Date.now 釘住。
+vi.mock("@/lib/coming-soon", async (orig) => ({ ...(await orig()), comingSoonLabel: (s) => s }));
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
@@ -26,9 +27,12 @@ const CHAPTERS = [
   { id: "c4", title: "Ch4 和弦" },
   { id: "c5", title: "Ch5 伴奏" },
 ];
-// 只有 1-1 掛了影片；其餘皆未上架，側欄會印各自的「預計 X 上架」
+// 只有 1-1／1-2 兩支掛了影片；其餘皆未上架，側欄會印各自的「預計 X 上架」。
+// 1-2 有正課與跟練兩支同編號單元，用來釘「規劃遊戲列只印一次」。
 const VIDEOS = [
   { id: "v11", chapter_id: "c1", title: "1-1 認識鍵盤", bunny_video_id: "bunny-1" },
+  { id: "v12", chapter_id: "c1", title: "1-2 尋找起始音 Do", bunny_video_id: "bunny-2" },
+  { id: "v12b", chapter_id: "c1", title: "1-2 【跟練】Do 之歌", bunny_video_id: "bunny-3" },
   { id: "v13", chapter_id: "c1", title: "1-3 手型" },
   { id: "v21", chapter_id: "c2", title: "2-1 音名" },
   { id: "v31", chapter_id: "c3", title: "3-1 四分音符" },
@@ -90,5 +94,37 @@ describe("播放頁", () => {
     expect(text).toContain("預計 9/30 上架");  // 第一批：Ch2～Ch5
     expect(text).not.toContain("預計 9/9 上架"); // 舊的每週一章時程已取消
     expect(text).toContain("預計 10/31 上架"); // 第二批：Ch6 之後與附錄，正式開課日
+  });
+
+  it("同編號兩支單元（1-2 正課＋跟練），課綱規劃的遊戲列只印一次", async () => {
+    const { container } = render(<ClassroomPage />);
+    await waitFor(() => expect(container.textContent).toContain("1-2 【跟練】Do 之歌"));
+    expect(container.textContent.split("Do 給你找").length - 1).toBe(1);
+  });
+});
+
+// 非早鳥（9/2 起購課）：bootstrap 把正課影片摘掉、earlyAccess=false。
+// 側欄日期要是他實際看得到的批次日（與教室公告一致），播放器空狀態也不能叫他「選單元」（全部不可點）。
+describe("播放頁（非早鳥，9/30 前）", () => {
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-20T12:00:00+08:00"));
+    const stripped = VIDEOS.map(({ bunny_video_id, ...v }) => v);
+    vi.stubGlobal("fetch", vi.fn((url) =>
+      String(url).includes("/api/classroom/bootstrap") ? json({ ...BOOTSTRAP, earlyAccess: false, videos: stripped }) : json({})
+    ));
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("Ch1～Ch3 一律 9/30、Ch4 以後一律 10/31；空狀態顯示正課 9/30 開放", async () => {
+    const { container } = render(<ClassroomPage />);
+    await waitFor(() => expect(container.textContent).toContain("1-1 認識鍵盤"));
+    const text = container.textContent;
+    expect(text).not.toContain("預計 9/3 上架");  // Ch1 的單元層日期也被批次日蓋掉
+    expect(text).not.toContain("預計 9/23 上架"); // 那是早鳥日
+    expect(text).not.toContain("預計 10/7 上架");
+    expect(text).toContain("預計 9/30 上架");
+    expect(text).toContain("預計 10/31 上架");
+    expect(text).toContain("正課 9/30 開放，敬請期待");
+    expect(text).not.toContain("請從右側選擇課程單元");
   });
 });
