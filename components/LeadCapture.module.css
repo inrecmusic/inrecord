@@ -64,7 +64,10 @@
   .title { font-size: clamp(23px, 6.2vw, 26px); }
   .desc { text-align: center; font-size: 15.5px; max-width: 28ch; margin-left: auto; margin-right: auto; text-wrap: balance; }
   .consent { text-align: left; }
-  .row .fields { flex-direction: column; }
+  /* 直排後 .row .input 的 flex:1 1（flex-basis 0）會在垂直軸生效，把 Email 欄壓到只剩 22px，
+     連行內 height 都救不回來（flex 主軸尺寸由 flex-basis 決定）。直排時改回不伸縮。 */
+  .row .fields { flex-direction: column; gap: 10px; }
+  .row .input { flex: 0 0 auto; }
   .row .btn { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
