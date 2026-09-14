@@ -48,6 +48,8 @@
 .consent input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--brand); }
 .consent span { word-break: normal; line-break: strict; text-wrap: pretty; }
 .consent a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+/* 手機兩行時不讓「優惠通知」「隱私權政策」被拆到兩行（word-break:normal 會在任兩個中文字之間換行） */
+.nb, .consent a { white-space: nowrap; }
 /* align="center"（彈窗用）：同意文字與提示置中 */
 .center .consent { display: inline-flex; justify-self: center; justify-content: center; text-align: center; }
 .center .consent span { max-width: 22em; }
@@ -67,7 +69,6 @@
   .unit { font-size: 13.5px; margin-bottom: 10px; }
   .desc { text-align: center; font-size: 15.5px; max-width: none; text-wrap: balance; }
   .consent { text-align: left; }
-  .consent span { text-wrap: balance; } /* 兩行等長，避免「通知」被拆在行尾 */
   /* 直排後 .row .input 的 flex:1 1（flex-basis 0）會在垂直軸生效，把 Email 欄壓到只剩 22px，
      連行內 height 都救不回來（flex 主軸尺寸由 flex-basis 決定）。直排時改回不伸縮。 */
   .row .fields { flex-direction: column; gap: 10px; }
