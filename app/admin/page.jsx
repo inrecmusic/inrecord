@@ -168,6 +168,22 @@ export default function AdminPage(){
 
   useEffect(()=>{if(authed&&["dashboard","students","orders","messages","analytics"].includes(page))fetchLeads();},[authed,page,fetchLeads]);
 
+  // 潛客名單人數（留 Email 換試看）：名單只存在 Brevo，這裡單獨抓一個數字給儀表板卡片。
+  // 失敗維持 null → 卡片顯示「—」，不會把「抓不到」誤植成 0。
+  const [leadCount,setLeadCount]=useState(null);
+  useEffect(()=>{
+    if(!authed||page!=="dashboard")return;
+    let off=false;
+    (async()=>{
+      try{
+        const res=await fetch("/api/admin/lead-count",{headers:{Authorization:`Bearer ${getToken()}`}});
+        const d=await res.json().catch(()=>({}));
+        if(!off&&res.ok&&Number.isFinite(d.count))setLeadCount(d.count);
+      }catch{/* 儀表板的次要數字，抓不到就維持「—」 */}
+    })();
+    return()=>{off=true;};
+  },[authed,page]);
+
   const fetchOrders=useCallback(async()=>{
     setOrdersErr("");
     try{
@@ -253,7 +269,7 @@ export default function AdminPage(){
               <button className={styles.btnSmall} onClick={()=>{if(ordersErr)fetchOrders();if(leadsErr)fetchLeads();}}>重試</button>
             </div>
           )}
-          {page==="dashboard"   &&<DashboardPage leads={leads} leadsTotal={leadsTotal} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
+          {page==="dashboard"   &&<DashboardPage leads={leads} leadsTotal={leadsTotal} leadCount={leadCount} orders={orders} trendFilter={trendFilter} donutFilter={donutFilter} setTrendFilter={setTrendFilter} setDonutFilter={setDonutFilter} onViewOrders={()=>setPage("orders")}/>}
           {page==="courses"     &&(selectedCourse
             ? <CourseDetailPage course={selectedCourse} onBack={()=>setSelectedCourse(null)} showToast={showToast} unreadUnitComments={unreadUnitComments} onUnreadChange={n=>setUnreadUnitComments(n)}/>
             : <CoursesPage orders={orders} onManage={c=>{setSelectedCourse(c);}} showToast={showToast}/>

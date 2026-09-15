@@ -38,8 +38,26 @@ describe("DashboardPage 同一頁的成交筆數定義一致", () => {
     expect(card("總營收")).toContain("7,499");
   });
 
-  it("總學員數用伺服器回傳的 total，不是被分頁截斷的清單長度", () => {
-    renderDash({ leads: [{ id: "l1" }, { id: "l2" }], leadsTotal: 137 });
-    expect(card("總學員數")).toContain("137");
+  // 舊卡「總學員數／Demo 開啟率」讀 course_preview_leads，2026-09 起留 Email 只進 Brevo、該表無人寫入 → 永遠 0。
+  it("付費學員＝去重後的付款人數，手動開通單與未付款不算", () => {
+    renderDash({ orders: [...orders, { id: "5", status: "paid", source: "payuni", amount: 3999, email: "A@x.com", created_at: now }] });
+    expect(card("付費學員")).toContain("1"); // 只有第 5 筆有 email；1~4 無 email 不計
+  });
+
+  it("付費學員：同一人多筆訂單只算一次（不分大小寫）", () => {
+    renderDash({ orders: [
+      { id: "1", status: "paid", source: "payuni", amount: 3999, email: "a@x.com", created_at: now },
+      { id: "2", status: "paid", source: "payuni", amount: 3999, email: "A@X.com", created_at: now },
+      { id: "3", status: "paid", source: "manual", amount: 0, email: "m@x.com", created_at: now },
+    ] });
+    expect(card("付費學員")).toContain("1");
+  });
+
+  it("潛客名單：抓得到顯示人數，抓不到顯示「—」不冒充 0", () => {
+    renderDash({ leadCount: 44 });
+    expect(card("潛客名單")).toContain("44");
+    cleanup();
+    renderDash();
+    expect(card("潛客名單")).toContain("—");
   });
 });

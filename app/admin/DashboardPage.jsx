@@ -5,13 +5,15 @@ import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen } 
 import { excludeManual } from "@/lib/order-stats";
 
 // ── Dashboard Page ─────────────────────────────────────────────────────────
-export default function DashboardPage({leads,leadsTotal=null,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
+export default function DashboardPage({leads,leadsTotal=null,leadCount=null,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
   const now=new Date();
-  const demoOpened=leads.filter(l=>l.demo_opened||["demo_opened","purchased"].includes(l.status));
+  // 學員數＝實際付過錢的人（同一人多筆訂單只算一次；$0 手動開通單不算，與訂單頁／銷售分析同口徑）。
+  // 舊版這兩張卡讀 course_preview_leads，但 2026-09 起留 Email 只進 Brevo、那張表已無人寫入 → 永遠 0。
   const fmtTWD=n=>n>=10000?`$${(n/10000).toFixed(1)}萬`:`$${n.toLocaleString()}`;
 
   const sameMonth=v=>{const d=new Date(v||0);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();};
   const paidOrders=orders.filter(o=>o.status==="paid");
+  const buyerCount=new Set(excludeManual(paidOrders).map(o=>(o.email||"").trim().toLowerCase()).filter(Boolean)).size;
   const paidM=paidOrders.filter(o=>sameMonth(o.created_at||o.updated_at));
   const totalRev=paidOrders.reduce((s,o)=>s+(Number(o.amount)||0),0);
   const monthRev=paidM.reduce((s,o)=>s+(Number(o.amount)||0),0);
@@ -38,8 +40,8 @@ export default function DashboardPage({leads,leadsTotal=null,orders=[],trendFilt
         <StatCard label="本月營收" value={fmtTWD(monthRev)} sub="本月累計營收" icon={DollarSign} color="#f59e0b"/>
         <StatCard label="本月訂單" value={excludeManual(paidM).length} sub="本月已完成訂單數（不含手動開通）" icon={ShoppingCart} color="#2563eb"/>
         <StatCard label="總營收"   value={fmtTWD(totalRev)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
-        <StatCard label="總學員數" value={leadsTotal??leads.length} sub="已留存 Email" icon={Users} color="#7c3aed"/>
-        <StatCard label="Demo 開啟率" value={leads.length?Math.round(demoOpened.length/leads.length*100)+"%":"—"} sub={`Demo 開啟 ${demoOpened.length} 人`} icon={GraduationCap} color="#0891b2"/>
+        <StatCard label="付費學員" value={buyerCount} sub="已付款人數（不含手動開通）" icon={GraduationCap} color="#7c3aed"/>
+        <StatCard label="潛客名單" value={leadCount??"—"} sub="留 Email 換試看（Brevo 名單）" icon={Users} color="#0891b2"/>
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
       </div>
       <div className={styles.chartsRow}>
