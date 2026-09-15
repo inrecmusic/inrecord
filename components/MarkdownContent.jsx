@@ -16,9 +16,16 @@ export default function MarkdownContent({ md }) {
         .legal-md li{font-size:14px;color:#475569;line-height:1.75}
         .legal-md strong{color:#0f172a}
         .legal-md hr{border:none;border-top:1px solid #e2e8f0;margin:16px 0}
+        /* 手機窄欄會把「不予退費」切成「不予退／費」：儲存格一律不斷字，表格太寬就整張橫向捲動 */
         .legal-md table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 16px}
+        .legal-md th,.legal-md td{white-space:nowrap}
         .legal-md th{text-align:left;padding:8px 12px;border:1px solid #e2e8f0;font-weight:800;color:#0f172a;background:#f8fafc}
         .legal-md td{padding:8px 12px;border:1px solid #e2e8f0;color:#475569}
+        /* 窄螢幕：表格自己變成可橫向捲動的區塊（display:block 才捲得動），頁面本身不會被撐寬 */
+        @media (max-width:520px){
+          .legal-md table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;font-size:12.5px}
+          .legal-md th,.legal-md td{padding:8px 10px}
+        }
         .legal-md a{color:#2563eb}
         .legal-md h1+p{font-size:13px;color:#94a3b8;margin:0 0 32px}
       `}</style>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parsePayuniCallback } from "@/lib/payuni";
+import { RETURN_COOKIE, RETURN_TTL_MS, signReturnCookie } from "@/lib/grant-token";
 
 // Payuni 前景導回（ReturnURL）：Payuni 以 POST 導回，這裡判斷付款結果後 303 轉址到 /success。
 // 實際開通／發票由背景 NotifyURL /api/payuni/notify 負責，這裡僅作畫面導向（成功 vs 失敗引導）。
@@ -40,5 +41,14 @@ export async function POST(req) {
   if (merTradeNo) target.searchParams.set("MerTradeNo", merTradeNo);
 
   // 用 303 讓瀏覽器改以 GET 載入結果頁
-  return NextResponse.redirect(target, 303);
+  const res = NextResponse.redirect(target, 303);
+  // 付款完成憑證：/success 只有拿得到這張 cookie 才會顯示「確認開通信箱」表單。
+  // 它只在這裡（PAYUNi 導回、且判定為成功）種下，所以光知道網址上的訂單編號改不了別人的訂單。
+  // SameSite=Lax：303 之後是一次 GET 的頂層導航，Lax 會送出；不用 None 以免被當成第三方 cookie。
+  if (status === "success" && merTradeNo) {
+    res.cookies.set(RETURN_COOKIE, signReturnCookie(merTradeNo), {
+      httpOnly: true, secure: true, sameSite: "lax", path: "/success", maxAge: Math.floor(RETURN_TTL_MS / 1000),
+    });
+  }
+  return res;
 }

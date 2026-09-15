@@ -2,7 +2,8 @@ import Logo from "@/components/Logo";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getTrackingSettings } from "@/lib/tracking";
-import { signGrantToken } from "@/lib/grant-token";
+import { cookies } from "next/headers";
+import { RETURN_COOKIE, signGrantToken, verifyReturnCookie } from "@/lib/grant-token";
 import PurchaseTracking from "@/components/tracking/PurchaseTracking";
 import GrantEmailForm from "@/components/GrantEmailForm";
 
@@ -26,8 +27,12 @@ export default async function SuccessPage({ searchParams }) {
   const sp = searchParams || {};
   const tradeNo = sp.MerTradeNo || sp.TradeNo || "";
   const failed = sp.status === "failed";
-  // 開通 email 表單的簽章憑證：證明請求者確實看得到這筆訂單的成功頁（防 IDOR）。
-  const grantToken = tradeNo ? signGrantToken(tradeNo) : "";
+  // 「確認開通信箱」表單只給真的從 PAYUNi 付款完成導回來的人：憑證是 /api/payuni/return
+  // 驗過 PAYUNi 簽章後種下的 HttpOnly cookie。訂單編號是可預測的時間戳、又會留在網址列與瀏覽紀錄，
+  // 光憑它（或它的 HMAC）不足以證明身分——沒有 cookie 就不顯示表單、也不吐出買家 email。
+  const fromPayuni = Boolean(tradeNo) && !failed
+    && verifyReturnCookie(tradeNo, cookies().get(RETURN_COOKIE)?.value);
+  const grantToken = fromPayuni ? signGrantToken(tradeNo) : "";
 
   // 與購買信（lib/brevo-email.js）一致：預售期間顯示「預購成功」、開課後顯示「購買成功，課程已開通」。
   // 讀取失敗時安全 fallback 成預購（= 現況），不讓成功頁壞掉。
@@ -46,7 +51,7 @@ export default async function SuccessPage({ searchParams }) {
         : { data: null };
       if (order) {
         orderExists = true;
-        orderEmail = order.email || "";
+        if (fromPayuni) orderEmail = order.email || ""; // 沒憑證就不預填（等於不外洩買家信箱）
         if (order.status !== "refunded") {
           const platforms = await getTrackingSettings();
           purchase = {
@@ -105,7 +110,7 @@ export default async function SuccessPage({ searchParams }) {
           </div>
         )}
 
-        {tradeNo && orderExists && <GrantEmailForm tradeNo={tradeNo} defaultEmail={orderEmail} grantToken={grantToken} />}
+        {fromPayuni && orderExists && <GrantEmailForm tradeNo={tradeNo} defaultEmail={orderEmail} grantToken={grantToken} />}
 
         {tradeNo && <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 24 }}>訂單編號：{tradeNo}</p>}
 
