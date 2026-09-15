@@ -48,7 +48,12 @@ export async function POST(req) {
     subject = (nl?.subject || "").trim();
     body_md = nl?.body_md || "";
     if (!subject || !body_md.trim()) return NextResponse.json({ error: "empty_content" }, { status: 400 });
-    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to) }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
+    // 收信理由要對得上收件人身分：潛客名單是「在官網留過 Email 換免費試看」的人，
+    // 不是學員也不保證註冊過，用預設句等於對顧客講錯話（同 lib/newsletter.js 對追單的處理）。
+    const reasonLine = audience === "leads"
+      ? "你收到這封信，是因為你曾在 InRecord 官網留下 Email 索取免費試看。"
+      : undefined;
+    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to), reasonLine }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
   }
 
   // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己。
