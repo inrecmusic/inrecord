@@ -18,7 +18,7 @@ export async function POST(req) {
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, email, plan, plan_label, mer_trade_no")
+    .select("id, email, plan, plan_label, mer_trade_no, amount")
     .eq("id", id)
     .single();
   if (error || !order) return NextResponse.json({ error: "order_not_found" }, { status: 404 });
@@ -32,6 +32,7 @@ export async function POST(req) {
     plan:       order.plan,
     planLabel:  order.plan_label,
     merTradeNo: order.mer_trade_no,
+    amount:     order.amount,
     presale,
   });
 

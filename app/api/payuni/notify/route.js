@@ -234,6 +234,7 @@ export async function POST(req) {
                 plan:       order.plan,
                 planLabel:  order.plan_label,
                 merTradeNo: params.MerTradeNo,
+                amount:     order.amount,
                 // 不自動開通時，信一律「預購成功、開通後 Email 通知」文案（開通改人工）。
                 presale:    !autoGrantEnabled() ? true : isPresale(saleSettings, new Date()),
               });
