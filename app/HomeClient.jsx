@@ -598,6 +598,12 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   const waveEndMs = sale.nextIncreaseAt ? Date.parse(sale.nextIncreaseAt) : NaN;
   const waveCountdownMs = (nowMs != null && Number.isFinite(waveEndMs)) ? waveEndMs - nowMs : 0;
   const showWaveCountdown = !fanOn && waveCountdownMs > 0;
+  // 折數（幾折）：以劃線牌價為基準、無條件捨去到小數一位——對外講的折扣不能比實際更甜（誇大不實）。
+  // 例：4,299 / 13,800 = 0.3115… → 3.1 折。沒有折扣（售價 ≥ 牌價）時不顯示。
+  const discountTenths = offer.originalPrice > offer.price
+    ? Math.floor((offer.price / offer.originalPrice) * 100) / 10
+    : null;
+  const discountLabel = discountTenths && discountTenths < 10 ? `${discountTenths} 折` : null;
 
   // 星等社會證明：評價少於 3 則就不顯示平均（樣本太少、易被當成不實廣告）；達標才連同樣本數一起講
   const showRating = !!stats && stats.rating != null && stats.ratingCount >= 3;
@@ -973,7 +979,10 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
               </motion.div>
               ) : (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
-                <div className={styles.planRibbon}>★ 最超值全配</div>
+                <div className={styles.planRibbon}>{discountLabel ? `★ ${discountLabel}` : "★ 最超值全配"}</div>
+                {showWaveCountdown && (
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "#2563eb", letterSpacing: ".04em", marginBottom: 4 }}>限時倒數・早鳥優惠</div>
+                )}
                 <h3 className={styles.planName}>{PLANS[1].label}</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "4px 0 14px" }}>
                   <strong style={{ fontSize: 32, lineHeight: 1 }}>NT${offer.price.toLocaleString()}</strong>
