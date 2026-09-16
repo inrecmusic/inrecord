@@ -267,14 +267,15 @@ export default function NewsletterPage({showToast}){
       <div className={styles.panel} style={{marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14,paddingBottom:14,borderBottom:"1px solid #e2e8f0"}}>
           <span style={{fontSize:13,fontWeight:700,color:"#475569"}}>草稿</span>
-          {(drafts.length?drafts:[{id:draftId,subject}]).map(d=>(
-            <button key={d.id} type="button"
-              className={`${styles.filterBtn} ${d.id===draftId?styles.filterActive:""}`}
-              onClick={()=>switchDraft(d.id)}
-              title={d.id==="default"?"預設草稿":d.id}>
-              {d.subject||(d.id==="default"?"（預設草稿）":d.id)}
-            </button>
-          ))}
+          {/* 草稿多了之後，一份一顆按鈕會把整列撐開、主旨長的還會折行。改成下拉選單：固定寬度、看得到全部。 */}
+          <select value={draftId} onChange={e=>switchDraft(e.target.value)}
+            style={{minWidth:280,maxWidth:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid #cbd5e1",fontSize:13.5,background:"#fff",color:"#0f172a"}}>
+            {(drafts.length?drafts:[{id:draftId,subject}]).map(d=>(
+              <option key={d.id} value={d.id}>
+                {(d.subject||(d.id==="default"?"（預設草稿）":d.id))}　［{d.id}］
+              </option>
+            ))}
+          </select>
           <button type="button" className={styles.btnSmall} onClick={newDraft}>＋ 新增草稿</button>
           {draftId!=="default"&&<button type="button" className={styles.btnSmall} onClick={deleteDraft}>刪除這份</button>}
           <span style={{fontSize:12,color:"#94a3b8"}}>可以同時存多份（例如 A 版／B 版），各自儲存、各自寄測試信</span>
