@@ -5,7 +5,7 @@ import { adminFetch } from "@/lib/admin-client";
 
 // course 單賣已下架，只剩課程包（bundle）需設定價格
 const PLANS = [
-  { key: "bundle", label: "學琴全攻略（課程包）" },
+  { key: "bundle", label: "完整課程方案（課程包）" },
 ];
 
 const EMPTY_SETTINGS = { open_at: null, lock_override: null, launch_notified_at: null, list_price: {}, list_anchor: {}, waves: [], fan_plan: {} };

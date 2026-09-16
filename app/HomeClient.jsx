@@ -283,7 +283,7 @@ const PLANS = [
   },
   {
     plan: "bundle",
-    label: "學琴全攻略",
+    label: "完整課程方案",
     pillLabel: "最超值全配",
     price: 3999,
     features: ["完整 10 章節課程", "課程時數 6 小時", "全部互動遊戲買斷使用", "10 首簡易歌曲實戰", "完整樂譜下載", "無限次重複觀看"],
@@ -536,7 +536,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
       for (const e of entries) {
         if (e.isIntersecting && !fired) {
           fired = true;
-          trackEvent("ViewContent", { contentIds: ["bundle"], contentName: "學琴全攻略（課程包）", value: sale?.plans?.bundle?.price, currency: "TWD" });
+          trackEvent("ViewContent", { contentIds: ["bundle"], contentName: "完整課程方案（課程包）", value: sale?.plans?.bundle?.price, currency: "TWD" });
           io.disconnect();
         }
       }
@@ -730,7 +730,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 </motion.div>
               )}
               <motion.div variants={heroRise} className={styles.offerCard}>
-                <span className={styles.offerPill}>{fanOn ? "粉絲限定方案·超早鳥預購" : offer.isEarlyBird ? `${PLANS[1].label}·限時早鳥` : PLANS[1].label}</span>
+                <span className={styles.offerPill}>{fanOn ? "粉絲限定方案·超早鳥預購" : (offer.isEarlyBird && discountLabel) ? `限時 ${discountLabel}・早鳥優惠` : offer.isEarlyBird ? "限時倒數・早鳥優惠" : PLANS[1].label}</span>
                 <div className={styles.offerPriceRow}>
                   <span className={styles.offerPrice}>NT${heroPrice.toLocaleString()}</span>
                   {offer.originalPrice > heroPrice && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
@@ -980,9 +980,6 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
               ) : (
               <motion.div className={[styles.planCard, styles.planCardFeatured].join(" ")} variants={fadeUp}>
                 <div className={styles.planRibbon}>{discountLabel ? `★ ${discountLabel}` : "★ 最超值全配"}</div>
-                {showWaveCountdown && (
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "#2563eb", letterSpacing: ".04em", marginBottom: 4 }}>限時倒數・早鳥優惠</div>
-                )}
                 <h3 className={styles.planName}>{PLANS[1].label}</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "4px 0 14px" }}>
                   <strong style={{ fontSize: 32, lineHeight: 1 }}>NT${offer.price.toLocaleString()}</strong>

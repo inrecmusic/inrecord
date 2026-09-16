@@ -43,7 +43,7 @@ export default function SubscriptionsPage({ showToast }) {
   const bundleCount = subs.filter(s => s.plan_type === "bundle" && isLive(s)).length;
   const gameCount   = subs.filter(s => s.plan_type === "game"   && isLive(s)).length;
 
-  const planLabel = { bundle: "學琴全攻略", game: "互動遊戲", monthly: "月繳", yearly: "年繳", gift: "贈送" };
+  const planLabel = { bundle: "完整課程方案", game: "互動遊戲", monthly: "月繳", yearly: "年繳", gift: "贈送" };
 
   async function extendOne(id) {
     setActing(id + "_extend");
@@ -229,7 +229,7 @@ export default function SubscriptionsPage({ showToast }) {
                   <label>方案</label>
                   <select className={styles.selectInput} style={{ width: "100%" }} value={addForm.plan_type}
                     onChange={e => setAddForm(p => ({ ...p, plan_type: e.target.value }))}>
-                    <option value="bundle">學琴全攻略（課程＋遊戲）</option>
+                    <option value="bundle">完整課程方案（課程＋遊戲）</option>
                     <option value="game">互動遊戲</option>
                   </select>
                 </div>

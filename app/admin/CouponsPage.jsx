@@ -410,7 +410,7 @@ export default function CouponsPage({ showToast }){
                   <select className={styles.selectInput} style={{width:"100%"}} value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}>
                     <option value="">不限方案</option>
                     <option value="course">鋼琴自學全課程</option>
-                    <option value="bundle">學琴全攻略（課程包）</option>
+                    <option value="bundle">完整課程方案（課程包）</option>
                   </select>
                 </div>
               </div>
@@ -474,7 +474,7 @@ export default function CouponsPage({ showToast }){
                   <select className={styles.selectInput} style={{width:"100%"}} value={batchForm.plan} onChange={e=>setBatchForm(p=>({...p,plan:e.target.value}))}>
                     <option value="">不限方案</option>
                     <option value="course">鋼琴自學全課程</option>
-                    <option value="bundle">學琴全攻略（課程包）</option>
+                    <option value="bundle">完整課程方案（課程包）</option>
                   </select>
                 </div>
               </div>
