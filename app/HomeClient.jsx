@@ -593,6 +593,12 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   const fanProofDiscount = sale.fanProofDiscount ?? 300;
   const proofPrice = Math.max(0, offer.price - fanProofDiscount);
 
+  // 粉絲方案結束後，hero 卡的倒數改成「這個波段還剩多久」——波段一結束就漲價，倒數的急迫感要延續下去，
+  // 不能只在粉絲期間有。nextIncreaseAt 是當下波段的結束時間（salePhase 算好）；最後一個波段結束後就沒有下一次調漲，不顯示。
+  const waveEndMs = sale.nextIncreaseAt ? Date.parse(sale.nextIncreaseAt) : NaN;
+  const waveCountdownMs = (nowMs != null && Number.isFinite(waveEndMs)) ? waveEndMs - nowMs : 0;
+  const showWaveCountdown = !fanOn && waveCountdownMs > 0;
+
   // 星等社會證明：評價少於 3 則就不顯示平均（樣本太少、易被當成不實廣告）；達標才連同樣本數一起講
   const showRating = !!stats && stats.rating != null && stats.ratingCount >= 3;
 
@@ -726,6 +732,9 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <div className={styles.offerLaunch}>📅 10/31 課程正式上架</div>
                 {fanOn && showFanCountdown && (
                   <div className={styles.offerCountdown}>⏳ 粉絲最後優惠剩 <strong>{fmtCountdown(fanCountdownMs)}</strong></div>
+                )}
+                {showWaveCountdown && (
+                  <div className={styles.offerCountdown}>⏳ 本波優惠剩 <strong>{fmtCountdown(waveCountdownMs)}</strong></div>
                 )}
                 <div className={styles.offerBtns}>
                   <button className={styles.btnPrimary} onClick={scrollToPricing}>{buyShort}</button>
