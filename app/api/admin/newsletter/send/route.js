@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
-import { renderNewsletterHtml, dedupeEmails } from "@/lib/newsletter";
+import { renderNewsletterHtml, dedupeEmails, tagNewsletterLinks } from "@/lib/newsletter";
 import {
   gatherAudienceEmails, sendNewsletterBatch,
   contentHash, filterUnsent, countSentToday, claimSend, releaseSend, AUDIENCES,
@@ -53,7 +53,10 @@ export async function POST(req) {
     const reasonLine = audience === "leads"
       ? "你收到這封信，是因為你曾在 InRecord 官網留下 Email 索取免費試看。"
       : undefined;
-    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: body_md, siteUrl, unsubscribeUrl: unsubUrl(to), reasonLine }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
+    // 站內連結自動補 UTM（campaign＝草稿代號）：靠人工在每封信的每個連結手動加，遲早會漏，
+    // 漏掉的那封就永遠分不出成效。已自帶 utm_source 的連結不覆寫（例如手動指定活動名稱）。
+    const tagged = tagNewsletterLinks(body_md, siteUrl, nlId);
+    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: tagged, siteUrl, unsubscribeUrl: unsubUrl(to), reasonLine }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
   }
 
   // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己。
