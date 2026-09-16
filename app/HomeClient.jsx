@@ -589,6 +589,10 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   const fanOn = !!sale.fanPlan?.enabled;
   const heroPrice = fanOn ? sale.fanPlan.directPrice : offer.price;
 
+  // 憑證折抵改成「當下售價再折 N 元」（2026-09）：跟著波段價自動走，調價不必再改憑證設定。
+  const fanProofDiscount = sale.fanProofDiscount ?? 300;
+  const proofPrice = Math.max(0, offer.price - fanProofDiscount);
+
   // 星等社會證明：評價少於 3 則就不顯示平均（樣本太少、易被當成不實廣告）；達標才連同樣本數一起講
   const showRating = !!stats && stats.rating != null && stats.ratingCount >= 3;
 
@@ -935,13 +939,13 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                   {fanProofOpen && (
                   <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
                     <span>上傳憑證</span>
-                    <strong>NT${sale.fanPlan.proofPrice.toLocaleString()}</strong>
+                    <strong>NT${proofPrice.toLocaleString()}</strong>
                   </label>
                   )}
                 </div>
                 {fanProofOpen && (
                 <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
-                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可享 NT${sale.fanPlan.proofPrice.toLocaleString()} 優惠價購買。
+                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可再折 NT${fanProofDiscount.toLocaleString()}。
                 </div>
                 )}
                 <ul className={styles.planFeatures}>
@@ -949,7 +953,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
                   onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
-                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${sale.fanPlan.proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
+                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
                 {/* 現場/活動序號兌換入口：serialEntry 模式的 BuyModal 收任何 type=price 序號券 */}
@@ -972,6 +976,23 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale}>
                   {sale.onSale ? `${buyShort}　NT$${offer.price.toLocaleString()}` : "即將開賣"}
                 </button>
+                {/* 粉絲直購價結束後，憑證折抵仍持續：這裡是唯一的入口，沒有它粉絲就沒地方用福利 */}
+                {fanProofOpen && sale.onSale && (
+                  <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", marginTop: 12, lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict", textAlign: "center" }}>
+                    買過演奏會門票、專輯或樂譜？<br />
+                    <button type="button" onClick={() => startBuy(PLANS[1], { fanProof: true })}
+                      style={{ background: "none", border: "none", padding: 0, marginTop: 4, fontSize: 13, fontWeight: 700, color: "#2563eb", textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "inherit" }}>
+                      上傳憑證再折 NT${fanProofDiscount.toLocaleString()}（NT${proofPrice.toLocaleString()}）
+                    </button>
+                  </div>
+                )}
+                {/* 現場／活動序號兌換入口：粉絲卡收起後這裡仍要留，否則序號卡持有者無處兌換 */}
+                {sale.onSale && (
+                <button type="button" onClick={() => startBuy(PLANS[1], { serialEntry: true })}
+                  style={{ background: "none", border: "none", padding: 0, marginTop: 10, display: "block", width: "100%", textAlign: "center", fontSize: 12.5, color: "#566180", textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "inherit" }}>
+                  有序號？點此兌換
+                </button>
+                )}
               </motion.div>
               )}
             </motion.div>
@@ -996,7 +1017,11 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 ["什麼時候可以上課？",           <>課程分兩批上架：<b>9/30</b> 開放第一章到第三章，<b>10/31</b> 全部章節上架完成，也就是正式開課日。購課後隨時可以登入教室，每批章節上架時會寄信通知。<br/>音樂會期間預購的早鳥學員，已於 9/7 起搶先觀看已上架的章節。</>],
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
-                ...(fanOn ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷，包含完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可享 NT$${sale.fanPlan.proofPrice.toLocaleString()} 優惠價。`]] : []),
+                ...(fanOn
+                  ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷，包含完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可再折 NT$${fanProofDiscount.toLocaleString()}，實付 NT$${proofPrice.toLocaleString()}。`]]
+                  : fanProofOpen
+                    ? [["我買過演奏會門票或專輯，有優惠嗎？", `有。購買流程中上傳憑證（門票、專輯或樂譜的購買證明）通過後，即可在當下售價再折 NT$${fanProofDiscount.toLocaleString()}，目前實付 NT$${proofPrice.toLocaleString()}。之後售價調整時，折抵金額不變。`]]
+                    : []),
                 ["課程有效期多久？",             "課程購買後在平台營運期間都可以觀看，無觀看次數限制，並保證自正式開課日起至少 3 年。若日後須停止服務，會提前 90 天以 Email 通知你。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
                 ["付款方式有哪些？",             "目前支援信用卡（Visa、Mastercard、JCB）、簽帳金融卡、ATM 轉帳及超商代碼繳費，透過 PAYUNi 金流安全處理。"],
@@ -1066,7 +1091,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
         </div>
       </footer>
 
-      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} serialEntry={fanSerialEntry} fanProofPrice={sale.fanPlan.proofPrice} fanDirectPrice={sale.fanPlan.directPrice} termsVersion={termsVersion} />
+      <BuyModal open={buyOpen} onClose={() => setBuyOpen(false)} plan={selectedPlan} email={user?.email} pricing={selectedPlan ? sale.plans[selectedPlan.plan] : undefined} onSale={sale.onSale} fanProof={fanProofMode} autoCoupon={fanAutoCoupon} serialEntry={fanSerialEntry} fanProofPrice={proofPrice} fanDirectPrice={sale.fanPlan.directPrice} termsVersion={termsVersion} />
     </>
   );
 }

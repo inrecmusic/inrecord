@@ -1,6 +1,5 @@
 import HomeClient from "./HomeClient";
 import { getSaleSettings, salePhase } from "@/lib/sale";
-import { isFanProofOpen } from "@/lib/fan-proof";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { readTermsVersion } from "@/lib/terms-version";
 import { getSiteStats } from "@/lib/site-stats";
@@ -27,8 +26,9 @@ export default async function Page() {
     plans: phase.plans,
     fanPlan: phase.fanPlan,
     openAt: settings?.open_at || null,
-    // 伺服器端算好「粉絲憑證是否開放」：避免在 client render 用 Date.now() 造成 hydration 不一致
-    fanProofOpen: isFanProofOpen(now.getTime(), phase.fanPlan?.deadlineMs),
+    // 憑證折抵有自己的開關，不隨粉絲直購方案的截止日關閉（伺服器端算好，避免 client 用 Date.now() 造成 hydration 不一致）
+    fanProofOpen: phase.fanPlan?.proofEnabled !== false,
+    fanProofDiscount: phase.fanPlan?.proofDiscount ?? 300,
   };
 
   // 開課通知 lazy trigger（免費方案無 sub-daily cron）：開課後首位訪客觸發，CAS 去重。

@@ -59,7 +59,10 @@ export default function SaleSettingsPage({ showToast }) {
   const fanDeadline = fp.deadline || "2026-08-06T23:59:59+08:00";
   const fanProofPrice = Number.isInteger(fp.proof_price) ? fp.proof_price : 3699;
   const fanDirectPrice = Number.isInteger(fp.direct_price) ? fp.direct_price : 3999;
-  const setFan = (key, val) => setS((prev) => ({ ...prev, fan_plan: { enabled: fanEnabled, deadline: fanDeadline, proof_price: fanProofPrice, direct_price: fanDirectPrice, [key]: val } }));
+  const fanProofEnabled = typeof fp.proof_enabled === "boolean" ? fp.proof_enabled : true;
+  const fanProofDiscount = Number.isInteger(fp.proof_discount) ? fp.proof_discount : 300;
+  const fanFields = { enabled: fanEnabled, deadline: fanDeadline, proof_price: fanProofPrice, direct_price: fanDirectPrice, proof_enabled: fanProofEnabled, proof_discount: fanProofDiscount };
+  const setFan = (key, val) => setS((prev) => ({ ...prev, fan_plan: { ...fanFields, [key]: val } }));
 
   const setWave = (i, key, val) =>
     setS((prev) => ({ ...prev, waves: prev.waves.map((w, j) => (j === i ? { ...w, [key]: val } : w)) }));
@@ -74,7 +77,7 @@ export default function SaleSettingsPage({ showToast }) {
         body: JSON.stringify({
           open_at: s.open_at, lock_override: s.lock_override,
           list_price: s.list_price || {}, list_anchor: s.list_anchor || {}, waves: s.waves || [],
-          fan_plan: { enabled: fanEnabled, deadline: fanDeadline, proof_price: fanProofPrice, direct_price: fanDirectPrice },
+          fan_plan: fanFields,
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -181,7 +184,20 @@ export default function SaleSettingsPage({ showToast }) {
           <input type="number" min="0" style={input} value={fanDirectPrice}
             onChange={(e) => setFan("direct_price", e.target.value === "" ? 0 : Number(e.target.value))} />
         </span>
-        <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>粉絲價 ≤ 直購價；改直購價會同步更新 FAN3999 券。截止後只關上傳入口，直購仍可。</p>
+        <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>粉絲價 ≤ 直購價；改直購價會同步更新 FAN3999 券。以上三項只管「粉絲直購」，截止後整張粉絲卡收起。</p>
+
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px dashed #cbd5e1" }}>
+          <strong style={{ fontSize: 13.5 }}>憑證折抵（獨立於上面的截止日）</strong>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "8px 0" }}>
+            <input type="checkbox" checked={fanProofEnabled} onChange={(e) => setFan("proof_enabled", e.target.checked)} />
+            開放上傳憑證折抵
+          </label>
+          <span style={{ display: "inline-block" }}>折抵金額 NT$
+            <input type="number" min="1" style={input} value={fanProofDiscount}
+              onChange={(e) => setFan("proof_discount", e.target.value === "" ? 0 : Number(e.target.value))} />
+          </span>
+          <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>憑證券改發「折抵金額」券，會跟著當下波段價自動走（例：波段價 4,299 折 300＝3,999），調價不必再改這裡。已發出但未使用的舊券維持原本的固定價。</p>
+        </div>
       </div>
 
       <label style={field}>手動覆寫
