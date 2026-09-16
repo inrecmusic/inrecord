@@ -5,7 +5,7 @@ vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/amego-invoice", () => ({ createInvoice: vi.fn(async () => ({ success: true, invoiceNo: "AA1" })) }));
 vi.mock("@/lib/brevo-email", () => ({ sendPurchaseEmail: vi.fn(async () => ({ success: true, messageId: "m1" })) }));
 vi.mock("@/lib/fulfillment-grant", () => ({ grantAccess: vi.fn(async () => ({ ok: true, errors: [] })) }));
-vi.mock("@/lib/sale", () => ({ getSaleSettings: vi.fn(async () => ({})), isPresale: vi.fn(() => false) }));
+vi.mock("@/lib/sale", () => ({ getSaleSettings: vi.fn(async () => ({})), isPresale: vi.fn(() => false), purchasePhaseLabel: vi.fn(() => "早鳥期間") }));
 vi.mock("@/lib/admin-alert", async (orig) => ({ ...(await orig()), sendAdminAlert: vi.fn(async () => {}) }));
 vi.mock("@/lib/meta-capi", () => ({ sendPurchase: vi.fn(async () => ({ ok: true })) }));
 
