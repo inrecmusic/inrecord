@@ -255,6 +255,9 @@ META_CAPI_TEST_CODE     # 選填，Events Manager「測試事件」驗證期間�
 # 履約 fail-safe 開關（2026-08，皆預設關；未設＝不自動、改人工）——設 on 才恢復自動
 AUTO_GRANT_ACCESS       # =on 才「付款即自動開通課程」；未設＝不開通、後台付款名單手動開通（只 payuni）
 AUTO_INVOICE            # =on 才「付款後自動開 Amego 發票」；未設＝發票人工開立
+# 合作夥伴唯讀金鑰（外部工具／AI 助理接廣告數據；與後台 admin token 完全分離、可單獨撤銷）
+PARTNER_ADS_KEY         # ≥24 字的隨機字串；未設＝/api/partner/* 一律 401（fail-closed）
+PARTNER_ADS_LABEL       # 選填，稽核紀錄裡的操作者名稱（例：rick）
 ANTHROPIC_API_KEY       # 後台「營運助理」每週週報（cron ops-report 每週一 08:00 台灣）；未設＝排程跳過、後台顯示未設定、不影響其他功能
 SHEETS_WEBHOOK_URL      # Google Apps Script 網頁應用程式 URL（後台訂單同步到試算表）；與 SHEETS_WEBHOOK_SECRET 缺一＝功能安全停用（按鈕停用、API 回 503），不影響後台其他功能
 SHEETS_WEBHOOK_SECRET   # 與 Apps Script 共用的密鑰（doPost 比對後才寫試算表）
