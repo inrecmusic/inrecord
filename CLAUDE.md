@@ -271,7 +271,7 @@ LEAD_CAPTURE            # =on 才開「留信箱換免費試看」（首頁橫�
 
 > **廣告成效（Phase 2）**：Cron `sync-ad-insights`（每日 5:20）撈 Meta insights → `ad_insights`；後臺「廣告成效」分頁以 `utm_campaign` 對接真實訂單算 ROAS。**guarded on token**：未設 `META_ADS_ACCESS_TOKEN`/`META_AD_ACCOUNT_ID` 前 cron no-op、儀錶板顯示空狀態。⚠️ ROAS join 靠**投放時 ad URL 的 `utm_campaign` = Meta 活動名（正規化 trim+小寫）**——用 slug/id 會全對不上、board 讀虧損；且**廣告帳戶幣別須為 TWD**（與 `orders.amount` 一致）。
 
-> Cron（`vercel.json`）：`release-coupons`（每日 4:00）、`sale-launch-notify`（每日 4:05）、`abandoned-recovery`（每日 5:00，未成交挽回信）。2026-08 起正式站已升 **Vercel Pro**，cron 不再受「每日一次」限制，可改任意排程。
+> Cron（`vercel.json`）：`release-coupons`（每日 4:00）、`sale-launch-notify`（每日 4:05）、`abandoned-recovery`（每日 5:00，未成交挽回信）。2026-08 起正式站已升 **Vercel Pro**，cron 不再受「每日一次」限制，可改任意排程；**`ad-daily`（每日 05:40 UTC＝台灣 13:40，排在 sync-ad-insights 之後 20 分鐘）**——昨日廣告日報寄給 ADMIN_EMAIL，數字與「該停／該減／該加碼」全由 `lib/ad-advice.js` 的固定門檻算（不經模型），昨日無花費就不寄。
 
 > **函式區域**：`vercel.json` 的 `regions: ["hnd1"]`（東京）。刻意與 Supabase 的 `ap-northeast-1`（東京）同區——先前預設 `iad1`（美國華盛頓）會讓每次 DB 查詢橫跨太平洋。改動此值前先確認 Supabase 專案區域。
 

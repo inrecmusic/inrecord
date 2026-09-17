@@ -7,6 +7,7 @@
     { "path": "/api/cron/sale-launch-notify", "schedule": "5 4 * * *" },
     { "path": "/api/cron/abandoned-recovery", "schedule": "0 5 * * *" },
     { "path": "/api/cron/sync-ad-insights", "schedule": "20 5 * * *" },
-    { "path": "/api/cron/ops-report", "schedule": "0 0 * * 1" }
+    { "path": "/api/cron/ops-report", "schedule": "0 0 * * 1" },
+    { "path": "/api/cron/ad-daily", "schedule": "40 5 * * *" }
   ]
 }
