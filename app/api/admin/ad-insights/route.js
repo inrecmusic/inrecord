@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { selectAll } from "@/lib/supabase-paginate";
 import { buildAdReport } from "@/lib/ad-report";
+import { isConfigured } from "@/lib/meta-ads";
 
 export async function GET(req) {
   if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -25,5 +26,6 @@ export async function GET(req) {
   } catch (e) { return serverError(e); }
 
   const report = buildAdReport({ insights, paidOrders: orders, targetRoas });
-  return NextResponse.json({ data: report, days, targetRoas });
+  // configured 讓前端分辨空狀態的原因：沒接 Meta（要去設 env）vs 已接但期間內沒花錢（正常）
+  return NextResponse.json({ data: report, days, targetRoas, configured: isConfigured() });
 }

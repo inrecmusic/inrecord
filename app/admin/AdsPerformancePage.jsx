@@ -168,15 +168,17 @@ const CSS = `
 `;
 
 // ── Empty state ──────────────────────────────────────────────────────────
-function EmptyState() {
+// 空狀態有兩種原因，講錯會讓人白忙一場：沒接 Meta 要去設定；已接但期間內沒投放是正常的。
+function EmptyState({ configured, days }) {
   return (
     <div className="emptyWrap">
       <div className="card emptyCard">
         <span className="emptyIcon" aria-hidden="true">📊</span>
-        <span className="emptyTitle">尚未有廣告數據</span>
+        <span className="emptyTitle">{configured ? `過去 ${days} 天沒有廣告花費` : "尚未接上 Meta 廣告"}</span>
         <span className="emptyDesc">
-          請在 env 設定 <span className="kbd">META_ADS_ACCESS_TOKEN</span> / <span className="kbd">META_AD_ACCOUNT_ID</span>
-          （並確認 Meta Pixel 已於追蹤碼分頁啟用），廣告投放後每日自動同步。
+          {configured
+            ? <>Meta 廣告帳戶已接上，每日自動同步。開始投放後這裡就會出現數據。<br />投放時記得讓廣告網址的 <span className="kbd">utm_campaign</span> 與 Meta 活動名稱一致（建議用 <span className="kbd">{"{{campaign.id}}"}</span> 巨集），否則對不到訂單、ROAS 會顯示 0。</>
+            : <>請在 env 設定 <span className="kbd">META_ADS_ACCESS_TOKEN</span> / <span className="kbd">META_AD_ACCOUNT_ID</span>（並確認 Meta Pixel 已於追蹤碼分頁啟用），廣告投放後每日自動同步。</>}
         </span>
       </div>
     </div>
@@ -518,7 +520,7 @@ export default function AdsPerformancePage({ showToast }) {
       })
       .then((d) => {
         if (cancelled) return;
-        setReport(d?.data || null);
+        setReport(d?.data ? { ...d.data, configured: !!d.configured } : null);
         setTargetRoas(Number(d?.targetRoas) || 3);
       })
       .catch(() => {
@@ -553,7 +555,7 @@ export default function AdsPerformancePage({ showToast }) {
         </header>
 
         {empty ? (
-          <EmptyState />
+          <EmptyState configured={!!report?.configured} days={days} />
         ) : (
           <>
             <ActionCallouts best={report.best} worst={report.worst} />
