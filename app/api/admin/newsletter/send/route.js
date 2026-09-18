@@ -3,6 +3,8 @@ import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { renderNewsletterHtml, dedupeEmails, tagNewsletterLinks } from "@/lib/newsletter";
+import { substituteSaleVars } from "@/lib/newsletter-vars";
+import { getSaleSettings } from "@/lib/sale";
 import {
   gatherAudienceEmails, sendNewsletterBatch,
   contentHash, filterUnsent, countSentToday, claimSend, releaseSend, AUDIENCES,
@@ -55,7 +57,12 @@ export async function POST(req) {
       : undefined;
     // 站內連結自動補 UTM（campaign＝草稿代號）：靠人工在每封信的每個連結手動加，遲早會漏，
     // 漏掉的那封就永遠分不出成效。已自帶 utm_source 的連結不覆寫（例如手動指定活動名稱）。
-    const tagged = tagNewsletterLinks(body_md, siteUrl, nlId);
+    // 波段價格／日期／剩餘天數在寄出當下現算（見 lib/newsletter-vars）：草稿只寫佔位符，
+    // 不必每次手改，也不會把上一波的金額寄出去。讀不到 sale_settings 就原樣保留佔位符。
+    let saleSettings = null;
+    try { saleSettings = await getSaleSettings(); } catch { saleSettings = null; }
+    const filled = substituteSaleVars(body_md, saleSettings);
+    const tagged = tagNewsletterLinks(filled, siteUrl, nlId);
     sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: tagged, siteUrl, unsubscribeUrl: unsubUrl(to), reasonLine }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
   }
 
