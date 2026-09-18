@@ -8,10 +8,12 @@ vi.mock("@/lib/fulfillment-grant", () => ({ grantAccess: vi.fn(async () => ({ ok
 vi.mock("@/lib/sale", () => ({ getSaleSettings: vi.fn(async () => ({})), isPresale: vi.fn(() => false), purchasePhaseLabel: vi.fn(() => "早鳥期間") }));
 vi.mock("@/lib/admin-alert", async (orig) => ({ ...(await orig()), sendAdminAlert: vi.fn(async () => {}) }));
 vi.mock("@/lib/meta-capi", () => ({ sendPurchase: vi.fn(async () => ({ ok: true })) }));
+vi.mock("@/lib/brevo-contacts", () => ({ removeLeadContact: vi.fn(async () => ({ ok: true })) }));
 
 import { POST } from "./route";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { removeLeadContact } from "@/lib/brevo-contacts";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendAdminAlert } from "@/lib/admin-alert";
@@ -129,6 +131,20 @@ describe("POST /api/payuni/notify（付款背景通知）", () => {
     expect(grantAccess).not.toHaveBeenCalled();
     expect(sendPurchaseEmail).toHaveBeenCalledWith(expect.objectContaining({ email: "a@x.com", merTradeNo: "INREC1", presale: true }));
     expect(createInvoice).not.toHaveBeenCalled();
+  });
+
+  // 買了課要退出潛客名單，否則 Brevo 的自動化流程會對已購買者寄「還在考慮嗎」
+  it("付款成功：購買信箱移出 Brevo 潛客名單", async () => {
+    await POST(notifyReq(PAID));
+    expect(removeLeadContact).toHaveBeenCalledWith("a@x.com");
+  });
+
+  it("購買信箱與開通信箱不同時兩個都移除；相同時只移一次", async () => {
+    removeLeadContact.mockClear();
+    sb = makeDb({ order: { ...ORDER, grant_email: "learn@x.com" } });
+    getSupabaseAdmin.mockReturnValue(sb);
+    await POST(notifyReq(PAID));
+    expect(removeLeadContact.mock.calls.map((c) => c[0]).sort()).toEqual(["a@x.com", "learn@x.com"]);
   });
 
   it("AUTO_GRANT_ACCESS=on → 付款即開通", async () => {

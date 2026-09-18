@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createInvoice } from "@/lib/amego-invoice";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { removeLeadContact } from "@/lib/brevo-contacts";
 import { needsFulfillment, needsInvoice, autoInvoiceEnabled, autoGrantEnabled } from "@/lib/order-fulfillment";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { getSaleSettings, isPresale, purchasePhaseLabel } from "@/lib/sale";
@@ -248,6 +249,14 @@ export async function POST(req) {
                 emailReason = mailResult.error || "send_failed";
                 await supabase.from("orders").update({ email_error: emailReason }).eq("id", order.id);
               }
+            }
+
+            // 買了課就退出 Brevo 潛客名單：那份名單的自動化流程在寄「還在考慮嗎」這類信，
+            // 付完錢隔天收到會很怪。購買信箱與開通信箱都移除（可能是不同兩個）。
+            // best-effort：失敗只記 log，絕不影響付款流程。
+            for (const e of [...new Set([order.email, order.grant_email].filter(Boolean))]) {
+              const r = await removeLeadContact(e);
+              if (!r.ok && r.error !== "missing_brevo_config") console.error("[leads] 移除潛客失敗:", e, r.error);
             }
           }
         }
