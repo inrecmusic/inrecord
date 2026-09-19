@@ -3,7 +3,7 @@ import { fmt, StatCard, SalesTrendChart, DonutChart, OrderStatusPill } from "./s
 import { useEffect, useState } from "react";
 import { adminFetch as _api } from "@/lib/admin-client";
 import styles from "./admin.module.css";
-import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen, Eye } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, Eye } from "lucide-react";
 import { excludeManual } from "@/lib/order-stats";
 
 // 試看領取：平常只在統計卡顯示一個數字，點卡片才展開趨勢圖。
@@ -120,7 +120,6 @@ export default function DashboardPage({leads,leadsTotal=null,leadCount=null,orde
         <StatCard label="總營收"   value={fmtTWD(totalRev)} sub="累計至今" icon={TrendingUp} color="#16a34a"/>
         <StatCard label="付費學員" value={buyerCount} sub="已付款人數（不含手動開通）" icon={GraduationCap} color="#7c3aed"/>
         <StatCard label="潛客名單" value={leadCount??"—"} sub="留 Email 換試看（Brevo 名單）" icon={Users} color="#0891b2"/>
-        <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
         <div role="button" tabIndex={0} onClick={()=>setTrialOpen(v=>!v)}
           onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setTrialOpen(v=>!v);}}}
           style={{cursor:"pointer"}} aria-expanded={trialOpen} aria-label="試看領取，點擊展開趨勢">
