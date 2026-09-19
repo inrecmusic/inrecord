@@ -3,16 +3,12 @@ import { fmt, StatCard, SalesTrendChart, DonutChart, OrderStatusPill } from "./s
 import { useEffect, useState } from "react";
 import { adminFetch as _api } from "@/lib/admin-client";
 import styles from "./admin.module.css";
-import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen, Eye } from "lucide-react";
 import { excludeManual } from "@/lib/order-stats";
 
-// 試看領取趨勢：來源是 email_log 的 trial 寄信紀錄（寄出＝有人留 Email 領取）。
-// 放在儀表板是因為投放期間這是每天要看的第一個數字——名單有沒有進來，比營收先反應。
-//
-// 版面刻意壓縮：數字才是重點，圖只是趨勢輔助。90 天用「每日一根」會變成一排頭髮絲、
-// 大部分是 0 又全擠在右邊，所以超過 30 天自動改成「每週一根」。
-function TrialTrendPanel(){
-  const [days,setDays]=useState(30);
+// 試看領取：平常只在統計卡顯示一個數字，點卡片才展開趨勢圖。
+// 圖表很佔版面、但不是每天都要看細節，所以預設收起——儀表板的第一屏要留給營收與訂單。
+function useTrialStats(days){
   const [d,setD]=useState(null);
   const [state,setState]=useState("loading");
   useEffect(()=>{
@@ -23,9 +19,12 @@ function TrialTrendPanel(){
       .catch(()=>{ if(!off)setState("error"); });
     return()=>{off=true;};
   },[days]);
+  return { d, state };
+}
 
+function TrialTrendPanel({days,setDays,d,state,onClose}){
   const series=d?.series||[];
-  // 超過 30 天改成週彙總：從最新往回每 7 天一組，避免一排看不清的細線
+  // 超過 30 天改成週彙總：90 根細線大部分是 0 又全擠在右邊，看不出東西
   const bars=(()=>{
     if(days<=30)return series.map(x=>({key:x.day,label:x.day.slice(5).replace("-","/"),people:x.people,span:"日"}));
     const out=[];
@@ -36,40 +35,22 @@ function TrialTrendPanel(){
     return out;
   })();
   const max=Math.max(1,...bars.map(x=>x.people));
-  const today=series.at(-1)?.people??0;
-  const yesterday=series.at(-2)?.people??0;
-  const chg=d?.changePct;
-
-  const num=(v)=><strong style={{fontSize:19,color:"#0f172a",fontWeight:800,letterSpacing:"-.01em"}}>{v}</strong>;
-  const cell=(label,node)=>(
-    <div style={{display:"flex",flexDirection:"column",gap:1}}>
-      <span style={{fontSize:11.5,color:"#94a3b8"}}>{label}</span>
-      <span style={{lineHeight:1.2}}>{node}</span>
-    </div>
-  );
-
   return (
     <div className={styles.panel} style={{marginBottom:16,padding:"14px 16px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:10}}>
-        <h2 style={{margin:0,fontSize:15}}>試看領取</h2>
-        <div style={{display:"flex",gap:6}}>
+        <h2 style={{margin:0,fontSize:15}}>試看領取趨勢</h2>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
           {[7,30,90].map(n=>(
             <button key={n} className={`${styles.filterBtn} ${days===n?styles.filterActive:""}`} onClick={()=>setDays(n)}>{n} 天</button>
           ))}
+          <button className={styles.btnSmall} onClick={onClose}>收合</button>
         </div>
       </div>
       {state==="loading"&&<span className={styles.dim}>載入中…</span>}
       {state==="error"&&<span className={styles.dim}>讀取失敗，請重新整理。</span>}
       {state==="ok"&&(
         <>
-          <div style={{display:"flex",gap:26,alignItems:"flex-end",flexWrap:"wrap",marginBottom:10}}>
-            {cell("今天",num(today))}
-            {cell("昨天",num(yesterday))}
-            {cell("近 7 天",<>{num(d.last7)}{chg!=null&&<span style={{marginLeft:5,fontSize:12.5,fontWeight:700,color:chg>=0?"#16a34a":"#dc2626"}}>{chg>=0?"+":""}{chg}%</span>}</>)}
-            {cell(days+" 天內",<>{num(d.totals.people)}<span style={{fontSize:12,color:"#94a3b8",marginLeft:4}}>人 / {d.totals.sent} 封</span></>)}
-            {d.totals.failed>0&&cell("寄送失敗",<strong style={{fontSize:19,color:"#b45309",fontWeight:800}}>{d.totals.failed}</strong>)}
-          </div>
-          <div style={{display:"flex",alignItems:"flex-end",gap:bars.length>40?1:3,height:52}}>
+          <div style={{display:"flex",alignItems:"flex-end",gap:bars.length>40?1:3,height:64}}>
             {bars.map(x=>(
               <div key={x.key} title={x.label+" 起這一"+x.span+"："+x.people+" 人"}
                 style={{flex:1,minWidth:0,height:"100%",display:"flex",alignItems:"flex-end"}}>
@@ -83,6 +64,15 @@ function TrialTrendPanel(){
             <span>{days>30?"每根＝一週":"每根＝一天"}</span>
             <span>{bars.at(-1)?.label}</span>
           </div>
+          <div style={{display:"flex",gap:22,marginTop:12,fontSize:13,color:"#475569",flexWrap:"wrap"}}>
+            <span>今天 <strong style={{color:"#0f172a"}}>{series.at(-1)?.people??0}</strong></span>
+            <span>昨天 <strong style={{color:"#0f172a"}}>{series.at(-2)?.people??0}</strong></span>
+            <span>{days} 天內 <strong style={{color:"#0f172a"}}>{d.totals.people}</strong> 人 / {d.totals.sent} 封</span>
+            {d.totals.failed>0&&<span style={{color:"#b45309",fontWeight:700}}>寄送失敗 {d.totals.failed} 封</span>}
+          </div>
+          <p style={{fontSize:12,color:"#94a3b8",margin:"8px 0 0"}}>
+            一封試看信＝一次領取。同一個信箱重複領取只算一人。
+          </p>
         </>
       )}
     </div>
@@ -92,6 +82,9 @@ function TrialTrendPanel(){
 // ── Dashboard Page ─────────────────────────────────────────────────────────
 export default function DashboardPage({leads,leadsTotal=null,leadCount=null,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
   const now=new Date();
+  const [trialOpen,setTrialOpen]=useState(false);
+  const [trialDays,setTrialDays]=useState(30);
+  const trial=useTrialStats(trialDays);
   // 學員數＝實際付過錢的人（同一人多筆訂單只算一次；$0 手動開通單不算，與訂單頁／銷售分析同口徑）。
   // 舊版這兩張卡讀 course_preview_leads，但 2026-09 起留 Email 只進 Brevo、那張表已無人寫入 → 永遠 0。
   const fmtTWD=n=>n>=10000?`$${(n/10000).toFixed(1)}萬`:`$${n.toLocaleString()}`;
@@ -128,8 +121,16 @@ export default function DashboardPage({leads,leadsTotal=null,leadCount=null,orde
         <StatCard label="付費學員" value={buyerCount} sub="已付款人數（不含手動開通）" icon={GraduationCap} color="#7c3aed"/>
         <StatCard label="潛客名單" value={leadCount??"—"} sub="留 Email 換試看（Brevo 名單）" icon={Users} color="#0891b2"/>
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
+        <div role="button" tabIndex={0} onClick={()=>setTrialOpen(v=>!v)}
+          onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setTrialOpen(v=>!v);}}}
+          style={{cursor:"pointer"}} aria-expanded={trialOpen} aria-label="試看領取，點擊展開趨勢">
+          <StatCard label="試看領取" value={trial.d?trial.d.last7:"—"}
+            sub={trialOpen?"近 7 天・點此收合":"近 7 天・點此看趨勢"}
+            growth={trial.d?.changePct!=null?(trial.d.changePct>=0?"+":"")+trial.d.changePct+"%":undefined}
+            icon={Eye} color="#0d9488"/>
+        </div>
       </div>
-      <TrialTrendPanel/>
+      {trialOpen&&<TrialTrendPanel days={trialDays} setDays={setTrialDays} d={trial.d} state={trial.state} onClose={()=>setTrialOpen(false)}/>}
 
       <div className={styles.chartsRow}>
         <SalesTrendChart orders={orders} filter={trendFilter} onFilter={setTrendFilter}/>
