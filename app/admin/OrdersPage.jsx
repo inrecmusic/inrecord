@@ -5,6 +5,7 @@ import styles from "./admin.module.css";
 import { LEAD_SOURCES } from "@/lib/admin-leads";
 import { fmt, payTypeLabel, StatCard, OrderStatusPill, ProofImage, ComposeEmailModal, BulkFollowupModal } from "./shared";
 import { inDateRange } from "@/lib/date-range";
+import { extractTransferInfo, PAY_TYPE_LABEL } from "@/lib/payment-events";
 import { summarizeOrders } from "@/lib/reconciliation";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { ExternalLink, DollarSign, CheckCircle2, CreditCard, BarChart2, AlertTriangle, X } from "lucide-react";
@@ -200,6 +201,10 @@ export function PaymentDetails({merTradeNo,source}){
   },[merTradeNo,payuni]);
 
   const events=res?.data||[];
+  // 付款方式決定要顯示哪些欄位：ATM／超商本來就沒有卡片資料，硬套信用卡欄位會整排「回呼中沒有」，
+  // 看起來像系統壞掉。先判斷付款方式，再顯示對應明細。
+  const transfer=extractTransferInfo(events);
+  const payKind=transfer.kind;
   // 只信「付款成功」那一筆（kind=paid 或 TradeStatus=1）。同一筆訂單可能先分期失敗、再改一次付清成功，
   // 若在所有回呼裡撈第一個有值的，會把失敗那次的「3 期」當成成交結果 —— 這是唯一會吐出錯誤金流數字的路徑。
   const paidEvent=events.find(e=>e.kind==="paid")||events.find(e=>String(e.trade_status)==="1")||null;
@@ -222,6 +227,45 @@ export function PaymentDetails({merTradeNo,source}){
   else if(res?.tableMissing)body=<span className={styles.dim}>尚未啟用付款回呼紀錄（資料庫還沒建 payment_events 表，請先執行 supabase-payment-events.sql）。</span>;
   else if(!events.length)body=<span className={styles.dim}>查不到這筆訂單的回呼紀錄（可能是啟用回呼紀錄之前的舊單、還沒付款、或 PAYUNi 沒有送達通知）。</span>;
   else if(!paidEvent)body=<span className={styles.dim}>這筆訂單有 {events.length} 筆回呼，但還沒有「付款成功」的那一筆，先不顯示卡片明細。</span>;
+  else if(payKind==="atm"||payKind==="cvs")body=(
+    <>
+      <div style={{display:"grid",gridTemplateColumns:"96px 1fr",gap:"7px 10px",fontSize:14,alignItems:"baseline"}}>
+        <span style={{color:"#64748b",fontWeight:700}}>付款方式</span>
+        <span>{PAY_TYPE_LABEL[payKind]}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>{payKind==="atm"?"虛擬帳號":"繳費代碼"}</span>
+        <span>{transfer.payNo?<code style={mono}>{transfer.payNo}</code>:<span className={styles.dim}>回呼中沒有</span>}</span>
+        {payKind==="atm"&&<>
+          <span style={{color:"#64748b",fontWeight:700}}>繳款銀行</span>
+          <span>{transfer.bank||<span className={styles.dim}>回呼中沒有</span>}</span>
+          <span style={{color:"#64748b",fontWeight:700}}>轉出帳號</span>
+          <span>{transfer.fromAccount5?<code style={mono}>末五碼 {transfer.fromAccount5}</code>:<span className={styles.dim}>回呼中沒有</span>}</span>
+        </>}
+        <span style={{color:"#64748b",fontWeight:700}}>繳費時間</span>
+        <span>{transfer.paidAt||<span className={styles.dim}>回呼中沒有</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>繳費期限</span>
+        <span>{transfer.expireAt||<span className={styles.dim}>回呼中沒有</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>回呼紀錄</span>
+        <span>共 {events.length} 筆
+          {events.map(e=>(
+            <span key={e.id} className={styles.dim} style={{display:"block",fontSize:12,marginTop:4}}>
+              {fmt(e.created_at)}・{EVENT_KIND_LABEL[e.kind]||e.kind||"—"}（TradeStatus {e.trade_status??"—"}）
+            </span>
+          ))}
+        </span>
+      </div>
+      <p style={{fontSize:12,margin:"10px 0 0",color:"#64748b"}}>
+        {payKind==="atm"?"ATM 轉帳沒有卡號與分期，這裡顯示的是虛擬帳號與實際繳款資訊。":"超商代碼繳費沒有卡號與分期，這裡顯示的是繳費代碼與繳款資訊。"}
+      </p>
+      <button className={styles.btnSmall} style={{marginTop:10}} onClick={()=>setShowRaw(v=>!v)}>
+        {showRaw?"收合原始回呼 JSON":"展開原始回呼 JSON"}
+      </button>
+      {showRaw&&(
+        <pre style={{marginTop:8,maxHeight:260,overflow:"auto",background:"#0f172a",color:"#e2e8f0",padding:12,borderRadius:8,fontSize:11,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-all"}}>
+          {JSON.stringify(events.map(e=>({kind:e.kind,created_at:e.created_at,raw:e.raw})),null,2)}
+        </pre>
+      )}
+    </>
+  );
   else body=(
     <>
       <div style={{display:"grid",gridTemplateColumns:"92px 1fr",gap:"7px 10px",fontSize:14,alignItems:"baseline"}}>
