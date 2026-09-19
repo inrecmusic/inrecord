@@ -6,8 +6,11 @@ import styles from "./admin.module.css";
 import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen } from "lucide-react";
 import { excludeManual } from "@/lib/order-stats";
 
-// 試看領取每日趨勢：來源是 email_log 的 trial 寄信紀錄（寄出＝有人留 Email 領取）。
+// 試看領取趨勢：來源是 email_log 的 trial 寄信紀錄（寄出＝有人留 Email 領取）。
 // 放在儀表板是因為投放期間這是每天要看的第一個數字——名單有沒有進來，比營收先反應。
+//
+// 版面刻意壓縮：數字才是重點，圖只是趨勢輔助。90 天用「每日一根」會變成一排頭髮絲、
+// 大部分是 0 又全擠在右邊，所以超過 30 天自動改成「每週一根」。
 function TrialTrendPanel(){
   const [days,setDays]=useState(30);
   const [d,setD]=useState(null);
@@ -22,17 +25,34 @@ function TrialTrendPanel(){
   },[days]);
 
   const series=d?.series||[];
-  const max=Math.max(1,...series.map(x=>x.people));
+  // 超過 30 天改成週彙總：從最新往回每 7 天一組，避免一排看不清的細線
+  const bars=(()=>{
+    if(days<=30)return series.map(x=>({key:x.day,label:x.day.slice(5).replace("-","/"),people:x.people,span:"日"}));
+    const out=[];
+    for(let i=series.length;i>0;i-=7){
+      const g=series.slice(Math.max(0,i-7),i);
+      out.unshift({key:g[0].day,label:g[0].day.slice(5).replace("-","/"),people:g.reduce((s,x)=>s+x.people,0),span:"週"});
+    }
+    return out;
+  })();
+  const max=Math.max(1,...bars.map(x=>x.people));
+  const today=series.at(-1)?.people??0;
+  const yesterday=series.at(-2)?.people??0;
   const chg=d?.changePct;
+
+  const num=(v)=><strong style={{fontSize:19,color:"#0f172a",fontWeight:800,letterSpacing:"-.01em"}}>{v}</strong>;
+  const cell=(label,node)=>(
+    <div style={{display:"flex",flexDirection:"column",gap:1}}>
+      <span style={{fontSize:11.5,color:"#94a3b8"}}>{label}</span>
+      <span style={{lineHeight:1.2}}>{node}</span>
+    </div>
+  );
+
   return (
-    <div className={styles.panel} style={{marginBottom:16}}>
-      <div className={styles.panelHead}>
-        <h2>試看領取</h2>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          {state==="ok"&&<span className={styles.dim}>
-            近 7 天 <strong style={{color:"#0f172a"}}>{d.last7}</strong> 人
-            {chg!=null&&<span style={{marginLeft:6,color:chg>=0?"#16a34a":"#dc2626",fontWeight:700}}>{chg>=0?"+":""}{chg}%</span>}
-          </span>}
+    <div className={styles.panel} style={{marginBottom:16,padding:"14px 16px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:10}}>
+        <h2 style={{margin:0,fontSize:15}}>試看領取</h2>
+        <div style={{display:"flex",gap:6}}>
           {[7,30,90].map(n=>(
             <button key={n} className={`${styles.filterBtn} ${days===n?styles.filterActive:""}`} onClick={()=>setDays(n)}>{n} 天</button>
           ))}
@@ -42,27 +62,27 @@ function TrialTrendPanel(){
       {state==="error"&&<span className={styles.dim}>讀取失敗，請重新整理。</span>}
       {state==="ok"&&(
         <>
-          <div style={{display:"flex",alignItems:"flex-end",gap:2,height:110,marginTop:4}}>
-            {series.map(x=>(
-              <div key={x.day} title={`${x.day}：${x.people} 人領取${x.failed?`（${x.failed} 封寄送失敗）`:""}`}
-                style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"flex-end",height:"100%"}}>
-                <div style={{height:`${Math.round(x.people/max*100)}%`,minHeight:x.people?3:1,
-                  background:x.people?"#2563eb":"#e2e8f0",borderRadius:"3px 3px 0 0"}}/>
+          <div style={{display:"flex",gap:26,alignItems:"flex-end",flexWrap:"wrap",marginBottom:10}}>
+            {cell("今天",num(today))}
+            {cell("昨天",num(yesterday))}
+            {cell("近 7 天",<>{num(d.last7)}{chg!=null&&<span style={{marginLeft:5,fontSize:12.5,fontWeight:700,color:chg>=0?"#16a34a":"#dc2626"}}>{chg>=0?"+":""}{chg}%</span>}</>)}
+            {cell(days+" 天內",<>{num(d.totals.people)}<span style={{fontSize:12,color:"#94a3b8",marginLeft:4}}>人 / {d.totals.sent} 封</span></>)}
+            {d.totals.failed>0&&cell("寄送失敗",<strong style={{fontSize:19,color:"#b45309",fontWeight:800}}>{d.totals.failed}</strong>)}
+          </div>
+          <div style={{display:"flex",alignItems:"flex-end",gap:bars.length>40?1:3,height:52}}>
+            {bars.map(x=>(
+              <div key={x.key} title={x.label+" 起這一"+x.span+"："+x.people+" 人"}
+                style={{flex:1,minWidth:0,height:"100%",display:"flex",alignItems:"flex-end"}}>
+                <div style={{width:"100%",height:Math.max(x.people?8:2,Math.round(x.people/max*100))+"%",
+                  background:x.people?"#2563eb":"#eef2f7",borderRadius:"2px 2px 0 0"}}/>
               </div>
             ))}
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:"#94a3b8",marginTop:6}}>
-            <span>{series[0]?.day?.slice(5).replace("-","/")}</span>
-            <span>{series.at(-1)?.day?.slice(5).replace("-","/")}</span>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#b6bfcc",marginTop:4}}>
+            <span>{bars[0]?.label}</span>
+            <span>{days>30?"每根＝一週":"每根＝一天"}</span>
+            <span>{bars.at(-1)?.label}</span>
           </div>
-          <div style={{display:"flex",gap:18,marginTop:12,fontSize:13,color:"#475569",flexWrap:"wrap"}}>
-            <span>期間領取 <strong style={{color:"#0f172a"}}>{d.totals.people}</strong> 人</span>
-            <span>寄出 <strong style={{color:"#0f172a"}}>{d.totals.sent}</strong> 封</span>
-            {d.totals.failed>0&&<span style={{color:"#b45309",fontWeight:700}}>寄送失敗 {d.totals.failed} 封</span>}
-          </div>
-          <p style={{fontSize:12,color:"#94a3b8",margin:"8px 0 0"}}>
-            一封試看信＝一次領取。同一個信箱重複領取只算一人；寄送失敗多半是信箱打錯或被退信。
-          </p>
         </>
       )}
     </div>
