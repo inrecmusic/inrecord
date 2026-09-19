@@ -41,11 +41,21 @@ export function LeadForm({ layout = "row", dark = false, cta = "寄出試看影�
 
   if (done) {
     return (
-      <p className={`${styles.done} ${dark ? styles.doneDark : ""}`} role="status">
-        {done.trialSent
-          ? <>試看連結已寄到 {done.email}，請收信。沒看到的話，找一下促銷或垃圾信件夾。</>
-          : <>已收到你的 Email，但試看信暫時沒寄成，我們會盡快補寄；急的話直接來信 support@inrecordmusic.com。</>}
-      </p>
+      <div className={`${styles.done} ${dark ? styles.doneDark : ""}`} role="status">
+        {done.trialSent ? (
+          <>
+            <p className={styles.doneMain}>試看連結已寄到 {done.email}</p>
+            {/* 收不到信是最常見的客訴來源。把「去哪找」獨立成一塊、並給出可以直接搜尋的寄件人地址， */}
+            {/* 比塞在句尾的一句話有用得多。 */}
+            <p className={styles.doneHint}>
+              沒收到嗎？請檢查<strong>促銷</strong>與<strong>垃圾郵件</strong>分頁，
+              或在信箱搜尋 <strong>support@inrecordmusic.com</strong>。
+            </p>
+          </>
+        ) : (
+          <p className={styles.doneMain}>已收到你的 Email，但試看信暫時沒寄成，我們會盡快補寄；急的話直接來信 support@inrecordmusic.com。</p>
+        )}
+      </div>
     );
   }
   return (

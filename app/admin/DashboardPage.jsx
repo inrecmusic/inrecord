@@ -1,8 +1,73 @@
 "use client";
 import { fmt, StatCard, SalesTrendChart, DonutChart, OrderStatusPill } from "./shared";
+import { useEffect, useState } from "react";
+import { adminFetch as _api } from "@/lib/admin-client";
 import styles from "./admin.module.css";
 import { DollarSign, ShoppingCart, TrendingUp, Users, GraduationCap, BookOpen } from "lucide-react";
 import { excludeManual } from "@/lib/order-stats";
+
+// 試看領取每日趨勢：來源是 email_log 的 trial 寄信紀錄（寄出＝有人留 Email 領取）。
+// 放在儀表板是因為投放期間這是每天要看的第一個數字——名單有沒有進來，比營收先反應。
+function TrialTrendPanel(){
+  const [days,setDays]=useState(30);
+  const [d,setD]=useState(null);
+  const [state,setState]=useState("loading");
+  useEffect(()=>{
+    let off=false; setState("loading");
+    _api("/api/admin/trial-stats?days="+days)
+      .then(r=>r.json())
+      .then(j=>{ if(off)return; if(j.ok){setD(j);setState("ok");} else setState("error"); })
+      .catch(()=>{ if(!off)setState("error"); });
+    return()=>{off=true;};
+  },[days]);
+
+  const series=d?.series||[];
+  const max=Math.max(1,...series.map(x=>x.people));
+  const chg=d?.changePct;
+  return (
+    <div className={styles.panel} style={{marginBottom:16}}>
+      <div className={styles.panelHead}>
+        <h2>試看領取</h2>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {state==="ok"&&<span className={styles.dim}>
+            近 7 天 <strong style={{color:"#0f172a"}}>{d.last7}</strong> 人
+            {chg!=null&&<span style={{marginLeft:6,color:chg>=0?"#16a34a":"#dc2626",fontWeight:700}}>{chg>=0?"+":""}{chg}%</span>}
+          </span>}
+          {[7,30,90].map(n=>(
+            <button key={n} className={`${styles.filterBtn} ${days===n?styles.filterActive:""}`} onClick={()=>setDays(n)}>{n} 天</button>
+          ))}
+        </div>
+      </div>
+      {state==="loading"&&<span className={styles.dim}>載入中…</span>}
+      {state==="error"&&<span className={styles.dim}>讀取失敗，請重新整理。</span>}
+      {state==="ok"&&(
+        <>
+          <div style={{display:"flex",alignItems:"flex-end",gap:2,height:110,marginTop:4}}>
+            {series.map(x=>(
+              <div key={x.day} title={`${x.day}：${x.people} 人領取${x.failed?`（${x.failed} 封寄送失敗）`:""}`}
+                style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"flex-end",height:"100%"}}>
+                <div style={{height:`${Math.round(x.people/max*100)}%`,minHeight:x.people?3:1,
+                  background:x.people?"#2563eb":"#e2e8f0",borderRadius:"3px 3px 0 0"}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:"#94a3b8",marginTop:6}}>
+            <span>{series[0]?.day?.slice(5).replace("-","/")}</span>
+            <span>{series.at(-1)?.day?.slice(5).replace("-","/")}</span>
+          </div>
+          <div style={{display:"flex",gap:18,marginTop:12,fontSize:13,color:"#475569",flexWrap:"wrap"}}>
+            <span>期間領取 <strong style={{color:"#0f172a"}}>{d.totals.people}</strong> 人</span>
+            <span>寄出 <strong style={{color:"#0f172a"}}>{d.totals.sent}</strong> 封</span>
+            {d.totals.failed>0&&<span style={{color:"#b45309",fontWeight:700}}>寄送失敗 {d.totals.failed} 封</span>}
+          </div>
+          <p style={{fontSize:12,color:"#94a3b8",margin:"8px 0 0"}}>
+            一封試看信＝一次領取。同一個信箱重複領取只算一人；寄送失敗多半是信箱打錯或被退信。
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
 
 // ── Dashboard Page ─────────────────────────────────────────────────────────
 export default function DashboardPage({leads,leadsTotal=null,leadCount=null,orders=[],trendFilter,donutFilter,setTrendFilter,setDonutFilter,onViewOrders}){
@@ -44,6 +109,8 @@ export default function DashboardPage({leads,leadsTotal=null,leadCount=null,orde
         <StatCard label="潛客名單" value={leadCount??"—"} sub="留 Email 換試看（Brevo 名單）" icon={Users} color="#0891b2"/>
         <StatCard label="課程數量" value="1" sub="已建立課程" icon={BookOpen} color="#dc2626"/>
       </div>
+      <TrialTrendPanel/>
+
       <div className={styles.chartsRow}>
         <SalesTrendChart orders={orders} filter={trendFilter} onFilter={setTrendFilter}/>
         <DonutChart orders={orders} filter={donutFilter} onFilter={setDonutFilter}/>
