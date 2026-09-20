@@ -241,7 +241,8 @@ describe("導購文案與追蹤", () => {
     const txt = screen.getByRole("dialog").textContent;
     expect(txt).toContain("10 章節 ＋ 2 附錄，約 6 小時");
     expect(txt).toContain("24 個三和弦（12 個大三和弦 ＋ 12 個小三和弦）");
-    expect(txt).toContain("10 首流行曲目實戰");
+    expect(txt).toContain("10 首曲目實戰");
+    expect(txt).not.toContain("流行曲目");
     // 法務句取 lib/terms-version 的 LICENSE_TERM_TEXT，本元件不自己講開課日期
     // 顯示時「至少 3 年」用不斷行空格綁住，比對前正規化回一般空格
     expect(txt.replace(/\u00a0/g, " ")).toContain(`一次買斷，${LICENSE_TERM_TEXT}。`);

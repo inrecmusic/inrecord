@@ -213,7 +213,7 @@ export default function TrialUpsell({ playerId, offer }) {
           <ul className={styles.facts}>
             <li>10 章節 ＋ 2 附錄，約 6 小時</li>
             <li>24 個三和弦（12 個大三和弦 ＋ 12 個小三和弦）</li>
-            <li>10 首流行曲目實戰</li>
+            <li>10 首曲目實戰</li>
           </ul>
           {mode !== "none" && (
             <>
