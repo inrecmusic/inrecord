@@ -117,10 +117,11 @@ export async function POST(req) {
   if (!video || !video.published) return NextResponse.json({ error: "video_not_found" }, { status: 404 });
 
   const clientTotal = Math.max(0, Math.floor(Number(total_seconds) || 0));
-  // 完成判定的分母一律以伺服器端知道的長度為準（後台 duration 欄位），不採信前端送來的 total_seconds——
-  // 否則連送兩次 total_seconds=1 就能把任一單元刷成完成、進而取得結業證書。
-  // 後台沒填 duration 才退回前端值，此時靠 RPC 的 GREATEST 保證門檻只會往上、不會被後來的小 total 調低。
-  const t = video.seconds || clientTotal;
+  // 完成判定的分母取「後台 duration」與「播放器回報長度」的較大值。
+  //  ·「不小於後台值」→ 前端送 total_seconds=1 也壓不低門檻（原本連送兩次就能把單元刷成完成、進而領證書）。
+  //  ·「取較大值」→ 後台時長若填得比實際短，仍以播放器的真實長度為準，不會讓門檻變鬆。
+  // 兩邊都沒有值就是 0，維持原本「沒有長度就不判完成」的行為。
+  const t = Math.max(video.seconds || 0, clientTotal);
   const wRaw = Math.max(0, Math.floor(Number(watched_seconds) || 0));
   const w = t > 0 ? Math.min(wRaw, t) : wRaw; // watched_seconds＝最遠播放位置（續播用）
   // viewed_delta＝這次心跳「實際播放」的秒數。夾在 0..15（心跳 10 秒 + 容忍誤差）：

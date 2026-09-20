@@ -54,10 +54,13 @@ export default async function SuccessPage({ searchParams }) {
         : { data: null };
       if (order) {
         orderExists = true;
-        orderPaid = order.status === "paid";
+        // notify 是背景通知，可能比瀏覽器導回晚到；此時訂單還是 pending，但導回 cookie 已由 PAYUNi
+        // 驗章且內層 TradeStatus=1（見 /api/payuni/return），足以當作「真的收到款」的即時憑據，
+        // 不能因為 DB 還沒更新就把刷卡成功的人導去待繳費畫面。已退款的單不適用。
+        orderPaid = order.status === "paid" || (fromPayuni && order.status !== "refunded");
         if (fromPayuni) orderEmail = order.email || ""; // 沒憑證就不預填（等於不外洩買家信箱）
         // 轉換追蹤只在真的收到款時觸發：ATM／超商的「取號成功」也會導回這一頁，
-        // 此時訂單還是 pending，打 Purchase 會讓廣告平台記到一筆沒收到錢的轉換。
+        // 此時訂單是 pending 且沒有上述憑證，打 Purchase 會讓廣告平台記到一筆沒收到錢的轉換。
         if (orderPaid) {
           const platforms = await getTrackingSettings();
           purchase = {

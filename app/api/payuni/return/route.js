@@ -29,7 +29,10 @@ export async function POST(req) {
     if (result.verified) {
       merTradeNo = result.params.MerTradeNo || merTradeNo;
       status = result.paid ? "success" : "failed";
-      verifiedPaid = result.paid;
+      // ⚠️ cookie 的條件比畫面導向更嚴：只認內層 TradeStatus=1（與 notify 同一條規則）。
+      // parsePayuniCallback 的 paid 還包含外層 Status=SUCCESS，而 ATM／超商「取號成功」也會是 SUCCESS——
+      // 那不是收到錢，不能發「已付款」憑證，也不該讓 /success 顯示成交。
+      verifiedPaid = result.params.TradeStatus === "1";
     } else {
       // 無法驗章/解密時退而求其次：讀外層未加密的 Status 欄位
       const outer = form.get("Status");

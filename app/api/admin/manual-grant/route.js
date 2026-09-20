@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { grantAccess } from "@/lib/fulfillment-grant";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { removeLeadContacts } from "@/lib/brevo-contacts";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { normalizeManualGrantInput, buildManualOrder } from "@/lib/manual-grant";
 import { logAudit } from "@/lib/audit";
@@ -76,6 +77,15 @@ export async function POST(req) {
       // 開通失敗 → 刪掉剛建的孤兒訂單，否則去重守衛下次以「有 manual 單」誤判為已處理、回假成功並永久卡住重試。
       await supabase.from("orders").delete().eq("id", orderId);
       return serverError(res.errors.join("; "), "grant_failed");
+    }
+
+    // 已經開通課程的人就不該留在潛客名單裡（名單的自動化在寄「還在考慮嗎」這類信）。
+    // 只在真的開通時移除；grant=false 的「只寄通知信」不算買過，維持原樣。
+    // best-effort：失敗只記 log，不影響開通結果。
+    try {
+      await removeLeadContacts([email]);
+    } catch (e) {
+      console.error("[manual-grant] 移除潛客失敗（不影響開通）", e?.message || e);
     }
   }
 

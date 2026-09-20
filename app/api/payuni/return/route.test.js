@@ -48,6 +48,11 @@ describe("POST /api/payuni/return（付款導回）", () => {
     expect(cookieOf(res)).not.toContain("inrec_pu=");
   });
 
+  it("ATM／超商取號（外層 Status=SUCCESS、無 TradeStatus=1）→ 不種 cookie", async () => {
+    const res = await POST(returnReq({ MerTradeNo: "INREC1", ...signed({ MerTradeNo: "INREC1", Status: "SUCCESS", TradeStatus: "0" }) }));
+    expect(cookieOf(res)).not.toContain("inrec_pu=");
+  });
+
   it("驗章通過但未付款（TradeStatus≠1）→ status=failed、不種 cookie", async () => {
     const res = await POST(returnReq({ MerTradeNo: "INREC1", ...signed({ MerTradeNo: "INREC1", TradeStatus: "0" }) }));
     expect(new URL(res.headers.get("location")).searchParams.get("status")).toBe("failed");

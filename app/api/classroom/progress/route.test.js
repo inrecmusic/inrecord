@@ -45,11 +45,26 @@ describe("POST /api/classroom/progress（完成判定的分母以伺服器端長
     expect(db.rpc.mock.calls[0][1].p_viewed_delta).toBe(15);
   });
 
-  it("watched_seconds 夾在伺服器端長度內，不會因前端謊報而超出", async () => {
+  it("謊報 total=1＋watched 超大 → 分母收斂回後台長度，watched 也跟著夾住", async () => {
     const db = makeDb({ published: true, duration: "10:00" });
     getSupabaseAdmin.mockReturnValue(db);
-    await post({ video_id: uuid(5), watched_seconds: 999999, total_seconds: 999999, viewed_delta: 5 });
+    await post({ video_id: uuid(5), watched_seconds: 999999, total_seconds: 1, viewed_delta: 5 });
+    expect(db.rpc.mock.calls[0][1].p_total).toBe(600);
     expect(db.rpc.mock.calls[0][1].p_watched).toBe(600);
+  });
+
+  it("後台時長填得比實際短 → 以播放器回報的真實長度為準，門檻不會變鬆", async () => {
+    const db = makeDb({ published: true, duration: "5:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    await post({ video_id: uuid(7), watched_seconds: 10, total_seconds: 900, viewed_delta: 10 });
+    expect(db.rpc.mock.calls[0][1].p_total).toBe(900);
+  });
+
+  it("謊報超大 total 只會把門檻推高、不會放寬（分母永遠不小於後台長度）", async () => {
+    const db = makeDb({ published: true, duration: "10:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    await post({ video_id: uuid(8), watched_seconds: 1, total_seconds: 999999, viewed_delta: 5 });
+    expect(db.rpc.mock.calls[0][1].p_total).toBeGreaterThanOrEqual(600);
   });
 
   it("未發布的單元 → 404，不寫進度", async () => {

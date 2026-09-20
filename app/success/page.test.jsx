@@ -5,6 +5,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const cookieStore = { value: undefined };
 vi.mock("next/headers", () => ({ cookies: () => ({ get: () => (cookieStore.value ? { value: cookieStore.value } : undefined) }) }));
+// fromPayuni＝有 PAYUNi 驗章過的導回 cookie；簽章本身另有 lib/grant-token 的測試，這裡只控制真／假
+vi.mock("@/lib/grant-token", () => ({
+  RETURN_COOKIE: "inrec_pu",
+  signGrantToken: () => "grant-token",
+  verifyReturnCookie: (_tradeNo, value) => value === "valid",
+}));
 vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/sale", () => ({ getSaleSettings: vi.fn(async () => ({})), isPresale: vi.fn(() => false) }));
 vi.mock("@/lib/order-fulfillment", () => ({ autoGrantEnabled: vi.fn(() => true) }));
@@ -51,6 +57,23 @@ describe("/success 依訂單狀態決定畫面與追蹤", () => {
     expect(r.text).toContain("已取得繳費資訊");
     expect(r.text).not.toContain("購買成功");
     expect(r.text).not.toContain("預購成功");
+    expect(r.names).not.toContain("PurchaseTracking");
+  });
+
+  it("刷卡成功但 notify 還沒寫入（訂單仍 pending＋有導回憑證）→ 仍顯示成功並觸發追蹤", async () => {
+    cookieStore.value = "valid";
+    mockOrder({ amount: 4299, plan: "bundle", status: "pending", email: "a@x.com" });
+    const r = await renderPage({ MerTradeNo: "INREC6" });
+    expect(r.text).toContain("成功");
+    expect(r.text).not.toContain("已取得繳費資訊");
+    expect(r.names).toContain("PurchaseTracking");
+  });
+
+  it("已退款訂單即使帶著導回憑證 → 不顯示成功、不觸發追蹤", async () => {
+    cookieStore.value = "valid";
+    mockOrder({ amount: 4299, plan: "bundle", status: "refunded", email: "a@x.com" });
+    const r = await renderPage({ MerTradeNo: "INREC7" });
+    expect(r.text).toContain("已取得繳費資訊");
     expect(r.names).not.toContain("PurchaseTracking");
   });
 

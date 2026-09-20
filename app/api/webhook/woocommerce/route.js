@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { parseCourseProductMap } from "@/lib/woocommerce";
 import { handleWoocommerceWebhook } from "@/lib/woocommerce-webhook";
 import { makePresaleEmailSender } from "@/lib/presale-email-sender";
+import { removeLeadContacts } from "@/lib/brevo-contacts";
 
 export const runtime = "nodejs"; // 需 node crypto 與原始 body 驗 HMAC
 
@@ -17,6 +18,7 @@ export async function POST(req) {
     productMap: parseCourseProductMap(process.env.WOOCOMMERCE_COURSE_PRODUCT_IDS),
     supabase: getSupabaseAdmin(),
     sendEmail: makePresaleEmailSender(),
+    removeLead: removeLeadContacts, // 買了課就退出潛客名單
   });
   return new Response(body, { status });
 }
