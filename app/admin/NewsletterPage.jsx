@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { adminFetch as _api } from "@/lib/admin-client";
 import styles from "./admin.module.css";
 import { renderMd, fmt, EMAIL_KIND_LABEL } from "./shared";
+import LeadCleanupPanel from "./LeadCleanupPanel";
 
 // 電子報：編輯標題+Markdown 內文 → 群發給「已付款／已開通學員 / 註冊官網帳號」。逐封寄(A 方案)，碰上限即回報。
 // 「已付款」對象＝已付款訂單 ∪ enrollments（見 lib/newsletter-send.js），付了錢但還沒開通的人也收得到。
@@ -406,6 +407,8 @@ export default function NewsletterPage({showToast}){
           </p>
         </>}
       </div>
+      {/* 潛客名單維護：與群發對象「潛客」用同一套「已購買」判定 */}
+      <LeadCleanupPanel showToast={showToast} />
     </div>
   );
 }
