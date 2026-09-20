@@ -404,7 +404,10 @@ export default function OrdersPage({showToast}){
     try{
       const res=await _api("/api/admin/refund",{method:"POST",body:JSON.stringify({id:realId,manual})});
       const d=await res.json();
-      if(res.ok&&d.ok){await loadOrders();setDetailOrder(null);const label=d.method==="manual"?"已標記退款":d.method==="cancel"?"已取消授權（未請款）":"退款成功";showToast?.("✅ "+label+(d.detail?"："+d.detail:"，存取已撤銷"));}
+      if(res.ok&&d.ok){
+        // 退款成功但撤銷存取失敗：2.4 秒的綠色 toast 會讓人以為全部完成，改用 alert 停住要求人工處理
+        if(d.revokeFailed?.length)window.alert("⚠️ "+(d.detail||"PAYUNi 退款已成功，但撤銷課程/遊戲存取時發生錯誤，請手動確認並撤銷存取。"));
+        await loadOrders();setDetailOrder(null);const label=d.method==="manual"?"已標記退款":d.method==="cancel"?"已取消授權（未請款）":"退款成功";showToast?.("✅ "+label+(d.detail?"："+d.detail:"，存取已撤銷"));}
       else showToast?.("❌ 退款失敗："+(d.detail||d.error||"unknown"));
     }catch(e){showToast?.("❌ 退款失敗："+e.message);}
     finally{setRefunding(false);}

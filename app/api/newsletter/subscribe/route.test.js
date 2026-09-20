@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: ({ prefix }) => async () => ({ allowed: (globalThis.__rl?.[prefix] ?? globalThis.__rlAllowed) !== false }), clientIp: () => "1.1.1.1" }));
+vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: ({ prefix }) => async () => { (globalThis.__rlCalls ||= []).push(prefix); return { allowed: (globalThis.__rl?.[prefix] ?? globalThis.__rlAllowed) !== false }; }, clientIp: () => "1.1.1.1" }));
 vi.mock("@/lib/brevo-contacts", () => ({ addLeadContact: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/brevo-email", () => ({ sendNewsletterEmail: vi.fn(async () => ({ success: true })) }));
@@ -128,5 +128,17 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     addLeadContact.mockResolvedValueOnce({ ok: false, error: "brevo_500" });
     await post({ email: "a@x.com", consent: true });
     expect(sendNewsletterEmail).not.toHaveBeenCalled();
+  });
+
+  it("Brevo 失敗回 502 時不扣「同一 email 一小時一封」的額度：使用者重試仍收得到試看信", async () => {
+    globalThis.__rlCalls = [];
+    addLeadContact.mockResolvedValueOnce({ ok: false, error: "brevo_500" });
+    expect((await post({ email: "a@x.com", consent: true })).status).toBe(502);
+    expect(globalThis.__rlCalls).not.toContain("rl:subscribe:email"); // 失敗那次沒動到 per-email 額度
+    addLeadContact.mockResolvedValueOnce({ ok: true });
+    const r = await post({ email: "a@x.com", consent: true });
+    expect(await r.json()).toEqual({ ok: true, trialSent: true });
+    expect(globalThis.__rlCalls).toContain("rl:subscribe:email"); // 成功後才扣
+    expect(sendNewsletterEmail).toHaveBeenCalledTimes(1);
   });
 });

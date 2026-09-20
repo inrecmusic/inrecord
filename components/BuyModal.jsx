@@ -146,7 +146,14 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
   }
 
   // 關閉視窗或換方案：回到第一步，同意勾選也清回未勾（同意必須每次由消費者主動打勾，不可預設或沿用）
-  useEffect(() => { setStep(1); setAgree(false); }, [open, plan?.plan]);
+  // 同時清掉 loading／error：送出到 PAYUNi 後 loading 一直是 true，從付款頁按「返回」（iOS Safari bfcache 會整頁還原）
+  // 回來會卡在「處理中…」按不了；關閉重開也要是乾淨的狀態。
+  useEffect(() => { setStep(1); setAgree(false); setLoading(false); setError(""); }, [open, plan?.plan]);
+  useEffect(() => {
+    const onPageShow = (e) => { if (e.persisted) setLoading(false); };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   if (!open || !plan) return null;
 
@@ -233,7 +240,7 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
     finally { setFanUploading(false); }
   }
   function fanErrText(e) {
-    return e === "closed" ? "粉絲憑證申請已截止（8/6）" :
+    return e === "closed" ? "粉絲憑證申請已截止" :
            e === "too_large" ? "圖片需小於 5MB" :
            (e === "bad_type" || e === "bad_magic") ? "僅接受 JPG / PNG 圖片" :
            e === "unauthorized" ? "請先登入" : "上傳失敗，請重試";

@@ -9,6 +9,9 @@ export async function POST(req) {
   // 預設成功：避免極端情況（無法驗章/解密）把真的付款成功的人誤導到失敗頁。
   // 失敗只在「明確判定未付款」時才標記；帳號實際開通與否仍以背景 notify 為準。
   let status = "success";
+  // 導回憑證 cookie 只發給「驗過 PAYUNi 簽章且付款成功」的導回；上面的 status 預設 success 是畫面導向的保守值，
+  // 不能拿來當發 cookie 的依據——否則任何人 POST 一個只帶 MerTradeNo 的表單就能拿到別人訂單的憑證。
+  let verifiedPaid = false;
 
   try {
     const form        = await req.formData();
@@ -26,6 +29,7 @@ export async function POST(req) {
     if (result.verified) {
       merTradeNo = result.params.MerTradeNo || merTradeNo;
       status = result.paid ? "success" : "failed";
+      verifiedPaid = result.paid;
     } else {
       // 無法驗章/解密時退而求其次：讀外層未加密的 Status 欄位
       const outer = form.get("Status");
@@ -45,7 +49,7 @@ export async function POST(req) {
   // 付款完成憑證：/success 只有拿得到這張 cookie 才會顯示「確認開通信箱」表單。
   // 它只在這裡（PAYUNi 導回、且判定為成功）種下，所以光知道網址上的訂單編號改不了別人的訂單。
   // SameSite=Lax：303 之後是一次 GET 的頂層導航，Lax 會送出；不用 None 以免被當成第三方 cookie。
-  if (status === "success" && merTradeNo) {
+  if (verifiedPaid && merTradeNo) {
     res.cookies.set(RETURN_COOKIE, signReturnCookie(merTradeNo), {
       httpOnly: true, secure: true, sameSite: "lax", path: "/success", maxAge: Math.floor(RETURN_TTL_MS / 1000),
     });

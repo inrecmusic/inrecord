@@ -34,7 +34,8 @@ export async function GET(req) {
 
 // POST：建立批次 + 產碼（mode: 'auto' | 'manual'）
 export async function POST(req) {
-  if (!await verifyAdminToken(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const payload = await verifyAdminToken(req);
+  if (!payload) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
@@ -103,6 +104,9 @@ export async function POST(req) {
     if (cErr.code === "23505") return NextResponse.json({ error: "code_exists" }, { status: 409 });
     return serverError(cErr);
   }
+
+  // 一批最多 500 組等同現金的序號；刪批次有稽核、建批次以前沒有，補齊（不記序號內容）
+  await logAudit(supabase, { actor: payload.email, action: "coupon_batch.create", targetType: "coupon_batch", targetId: batch.id, meta: { name, type, value: Math.round(value), plan, count: rows.length }, req });
 
   return NextResponse.json({ data: { ...batch, total: rows.length, used: 0 } });
 }

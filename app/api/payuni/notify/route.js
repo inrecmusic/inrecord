@@ -108,6 +108,12 @@ export async function POST(req) {
       console.log("[payuni paid]", params.MerTradeNo, params.TradeAmt);
 
       const supabase = sb;
+      // 沒有資料庫連線（env 缺漏）：不能回 SUCCESS 讓 PAYUNi 以為我們收到了——這筆付款會就此消失且毫無訊號。
+      // 與下方「讀訂單 DB 錯誤 → FAIL」同一套：回 FAIL 讓 PAYUNi 重送，等設定修好再認款。
+      if (!supabase) {
+        console.error("[payuni notify] 無資料庫連線，回 FAIL 讓 PAYUNi 重送", params.MerTradeNo);
+        return new Response("FAIL", { status: 500 });
+      }
       if (supabase) {
         // 先讀原訂單（狀態 + 下單金額）。若此訂單曾被「逾時釋放」標記 expired（見 cron/release-coupons），
         // 付款仍要認（顧客已付錢），但限量券的預扣已被退回，稍後需補回扣抵 + 告警。

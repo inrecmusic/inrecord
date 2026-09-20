@@ -32,8 +32,6 @@ export async function POST(req) {
   const email = normalizeEmail(body.email);
   if (!EMAIL_RE.test(email) || email.length > 254) return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
   if (body.consent !== true) return NextResponse.json({ ok: false, error: "consent_required" }, { status: 400 });
-  // ② 同一 email 一小時只寄一封：名單照進（addLeadContact 冪等），但不再重寄試看信
-  const fresh = (await perEmail(email)).allowed;
 
   const attributes = { SOURCE: "website", CONSENT_AT: new Date().toISOString() };
   const attr = body.attribution && typeof body.attribution === "object" ? body.attribution : {};
@@ -46,6 +44,9 @@ export async function POST(req) {
     console.error("[subscribe] brevo failed:", r.error, r.detail || "");
     return NextResponse.json({ ok: false, error: r.error }, { status: r.error === "missing_brevo_config" ? 503 : 502 });
   }
+  // ② 同一 email 一小時只寄一封：名單照進（addLeadContact 冪等），但不再重寄試看信。
+  //    放在 Brevo 成功之後才扣額度：Brevo 暫時故障回 502 時，使用者一小時內重試才不會被當成「已寄過」而收不到信。
+  const fresh = (await perEmail(email)).allowed;
   // 之前按過「取消訂閱」又回來留信箱＝重新同意 → 從退訂名單移除（失敗不影響訂閱結果）
   try {
     const sb = getSupabaseAdmin();

@@ -186,7 +186,11 @@ export default function SubscriptionsPage({ showToast }) {
                         <button
                           className={styles.btnSmall}
                           disabled={acting === s.id + "_extend"}
-                          onClick={() => extendOne(s.id)}
+                          onClick={() => {
+                            // API 會把狀態直接改回 active：已到期／退款撤銷的列按下去等於重新開通，先問一次
+                            if (!isActive && !window.confirm("這筆存取目前不是啟用中（已到期或已撤銷）。按下去會重新啟用並延長 1 個月，確定？")) return;
+                            extendOne(s.id);
+                          }}
                         >
                           +1月
                         </button>

@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { getTrackingSettings } from "@/lib/tracking";
 import { cookies } from "next/headers";
 import { RETURN_COOKIE, signGrantToken, verifyReturnCookie } from "@/lib/grant-token";
+import { autoGrantEnabled } from "@/lib/order-fulfillment";
 import PurchaseTracking from "@/components/tracking/PurchaseTracking";
 import GrantEmailForm from "@/components/GrantEmailForm";
 
@@ -34,10 +35,11 @@ export default async function SuccessPage({ searchParams }) {
     && verifyReturnCookie(tradeNo, cookies().get(RETURN_COOKIE)?.value);
   const grantToken = fromPayuni ? signGrantToken(tradeNo) : "";
 
-  // 與購買信（lib/brevo-email.js）一致：預售期間顯示「預購成功」、開課後顯示「購買成功，課程已開通」。
+  // 與購買信（notify → lib/brevo-email.js）同一條規則：自動開通關閉（AUTO_GRANT_ACCESS 未設）時付款後不會立刻開通，
+  // 一律顯示「預購成功、開通後 Email 通知」；只有自動開通開啟且已開課才顯示「課程已開通／前往登入」。
   // 讀取失敗時安全 fallback 成預購（= 現況），不讓成功頁壞掉。
   let presale = true;
-  try { presale = isPresale(await getSaleSettings()); } catch { presale = true; }
+  try { presale = !autoGrantEnabled() || isPresale(await getSaleSettings()); } catch { presale = true; }
 
   // 回查訂單以觸發 Purchase 轉換追蹤 + 取得開通 email 預填值；best-effort，任何失敗都不影響成功頁本身。
   let purchase = null;

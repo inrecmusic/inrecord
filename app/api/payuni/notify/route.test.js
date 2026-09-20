@@ -194,4 +194,12 @@ describe("POST /api/payuni/notify（付款背景通知）", () => {
     expect(sendPurchaseEmail).not.toHaveBeenCalled();
     expect(grantAccess).not.toHaveBeenCalled();
   });
+
+  it("付款成功但沒有資料庫連線（env 缺漏）→ 回 FAIL 500 讓 PAYUNi 重送，而不是默默吞掉", async () => {
+    getSupabaseAdmin.mockReturnValue(null);
+    const res = await POST(notifyReq(PAID));
+    expect(res.status).toBe(500);
+    expect(await res.text()).toBe("FAIL");
+    expect(sendPurchaseEmail).not.toHaveBeenCalled();
+  });
 });

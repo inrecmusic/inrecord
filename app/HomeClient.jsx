@@ -397,7 +397,7 @@ function RevealSection({ className = "", ...props }) {
 
 function StatItem({ value, suffix, en, label, decimals = 0 }) {
   const [count, ref] = useCountUp(value ?? 0, 1800, decimals);
-  const shown = decimals > 0 ? Number(count).toFixed(decimals) : count.toLocaleString();
+  const shown = decimals > 0 ? Number(count).toFixed(decimals) : count.toLocaleString("en-US");
   return (
     <span className={styles.stat} ref={ref} title={label}>
       <span className={styles.statKey}>{en}</span>
@@ -495,8 +495,11 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) {
-      const desc = params.get("error_description") || "登入發生問題，請重試";
-      setAuthError(decodeURIComponent(desc.replace(/\+/g, " ")));
+      // URLSearchParams 已經解過一次碼；再 decode 一次是為了相容雙重編碼的 OAuth 錯誤描述，
+      // 但遇到像 "%" 這種非法序列會丟 URIError → 整個首頁被 error boundary 換掉，故包起來退回原字串。
+      let desc = (params.get("error_description") || "登入發生問題，請重試").replace(/\+/g, " ");
+      try { desc = decodeURIComponent(desc); } catch {}
+      setAuthError(desc);
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -571,7 +574,8 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   // 早鳥倒數：mounted 後(nowMs != null)才算；截止(<=0)或無截止時不顯示
   const fanCountdownMs = (nowMs != null && sale.fanPlan?.deadlineMs) ? sale.fanPlan.deadlineMs - nowMs : 0;
   const showFanCountdown = fanCountdownMs > 0;
-  const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
+  // 固定台灣時區：伺服器（Vercel）是 UTC，截止時間若在台灣的 00:00–08:00，沒指定 timeZone 會 SSR 出前一天的日期，與瀏覽器不符
+  const fanDeadlineLabel = new Date(sale.fanPlan.deadlineMs).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric" });
   // 課程上架時間（第一批）：固定台灣時區顯示，供 hero CTA 提示；未設 open_at 則不顯示。
   // ⚠️ 末尾 .replace 把日期與時間之間的分隔空白正規化為一般空格：Node(伺服器) 的 ICU 在 zh-TW
   //    會插入 U+2009 細空格、瀏覽器 ICU 用一般空格(U+0020) → 不正規化 → SSR 與 client 文字不符
@@ -725,15 +729,15 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                     </span>
                   )}
                   {stats.purchases > 0 && (
-                    <span className={styles.heroProofMembers}>已有 <strong>{stats.purchases.toLocaleString()}+</strong> 位學員加入</span>
+                    <span className={styles.heroProofMembers}>已有 <strong>{stats.purchases.toLocaleString("en-US")}+</strong> 位學員加入</span>
                   )}
                 </motion.div>
               )}
               <motion.div variants={heroRise} className={styles.offerCard}>
                 <span className={styles.offerPill}>{fanOn ? "粉絲限定方案·超早鳥預購" : (offer.isEarlyBird && discountLabel) ? `限時 ${discountLabel}・早鳥優惠` : offer.isEarlyBird ? "限時倒數・早鳥優惠" : PLANS[1].label}</span>
                 <div className={styles.offerPriceRow}>
-                  <span className={styles.offerPrice}>NT${heroPrice.toLocaleString()}</span>
-                  {offer.originalPrice > heroPrice && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString()}</span>}
+                  <span className={styles.offerPrice}>NT${heroPrice.toLocaleString("en-US")}</span>
+                  {offer.originalPrice > heroPrice && <span className={styles.offerWas}>NT${offer.originalPrice.toLocaleString("en-US")}</span>}
                 </div>
                 <div className={styles.offerLaunch}>📅 10/31 課程正式上架</div>
                 {fanOn && showFanCountdown && (
@@ -949,18 +953,18 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "4px 0 14px" }} role="radiogroup" aria-label="粉絲限定購買方式">
                   <label style={fanRowStyle(fanChoice === "direct" || !fanProofOpen)} onClick={() => setFanChoice("direct")} role="radio" aria-checked={fanChoice === "direct" || !fanProofOpen} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("direct"); } }}>
                     <span>直接購買</span>
-                    <strong>NT${sale.fanPlan.directPrice.toLocaleString()}</strong>
+                    <strong>NT${sale.fanPlan.directPrice.toLocaleString("en-US")}</strong>
                   </label>
                   {fanProofOpen && (
                   <label style={fanRowStyle(fanChoice === "proof")} onClick={() => setFanChoice("proof")} role="radio" aria-checked={fanChoice === "proof"} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFanChoice("proof"); } }}>
                     <span>上傳憑證</span>
-                    <strong>NT${proofPrice.toLocaleString()}</strong>
+                    <strong>NT${proofPrice.toLocaleString("en-US")}</strong>
                   </label>
                   )}
                 </div>
                 {fanProofOpen && (
                 <div style={{ fontSize: 12.5, color: "#566180", background: "#eef4ff", border: "1px solid #cdddf8", borderRadius: 10, padding: "10px 12px", margin: "2px 0 14px", lineHeight: 1.75, wordBreak: "keep-all", lineBreak: "strict" }}>
-                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可再折 NT${fanProofDiscount.toLocaleString()}。
+                  ※ 購買演奏會門票、專輯或樂譜者，上傳憑證後即可再折 NT${fanProofDiscount.toLocaleString("en-US")}。
                 </div>
                 )}
                 <ul className={styles.planFeatures}>
@@ -968,7 +972,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`}
                   onClick={() => (fanChoice === "proof" && fanProofOpen) ? startBuy(PLANS[1], { fanProof: true }) : startBuy(PLANS[1], { autoCoupon: "FAN3999" })}>
-                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${proofPrice.toLocaleString()}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString()}`}
+                  {(fanChoice === "proof" && fanProofOpen) ? `上傳憑證並${buyShort}　NT$${proofPrice.toLocaleString("en-US")}` : `${buyShort}　NT$${sale.fanPlan.directPrice.toLocaleString("en-US")}`}
                 </button>
                 {fanProofOpen && <span style={{ fontSize: 11.5, color: "#6a5b48", marginTop: 8, display: "block", textAlign: "center" }}>粉絲價申請至 {fanDeadlineLabel} 截止</span>}
                 {/* 現場/活動序號兌換入口：serialEntry 模式的 BuyModal 收任何 type=price 序號券 */}
@@ -982,14 +986,14 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <div className={styles.planRibbon}>{discountLabel ? `★ ${discountLabel}` : "★ 最超值全配"}</div>
                 <h3 className={styles.planName}>{PLANS[1].label}</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "4px 0 14px" }}>
-                  <strong style={{ fontSize: 32, lineHeight: 1 }}>NT${offer.price.toLocaleString()}</strong>
-                  {offer.originalPrice > offer.price && <span style={{ textDecoration: "line-through", color: "#94a3b8", fontSize: 16 }}>NT${offer.originalPrice.toLocaleString()}</span>}
+                  <strong style={{ fontSize: 32, lineHeight: 1 }}>NT${offer.price.toLocaleString("en-US")}</strong>
+                  {offer.originalPrice > offer.price && <span style={{ textDecoration: "line-through", color: "#94a3b8", fontSize: 16 }}>NT${offer.originalPrice.toLocaleString("en-US")}</span>}
                 </div>
                 <ul className={styles.planFeatures}>
                   {PLANS[1].features.map(f => <li key={f}><Check size={14} strokeWidth={2.5} />{f}</li>)}
                 </ul>
                 <button className={`${styles.planBtn} ${styles.planBtnFeatured}`} onClick={() => startBuy(PLANS[1])} disabled={!sale.onSale}>
-                  {sale.onSale ? `${buyShort}　NT$${offer.price.toLocaleString()}` : "即將開賣"}
+                  {sale.onSale ? `${buyShort}　NT$${offer.price.toLocaleString("en-US")}` : "即將開賣"}
                 </button>
                 {/* 粉絲直購價結束後，憑證折抵仍持續：這裡是唯一的入口，沒有它粉絲就沒地方用福利 */}
                 {fanProofOpen && sale.onSale && (
@@ -997,7 +1001,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                     買過演奏會門票、專輯或樂譜？<br />
                     <button type="button" onClick={() => startBuy(PLANS[1], { fanProof: true })}
                       style={{ background: "none", border: "none", padding: 0, marginTop: 4, fontSize: 13, fontWeight: 700, color: "#2563eb", textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "inherit" }}>
-                      上傳憑證再折 NT${fanProofDiscount.toLocaleString()}（NT${proofPrice.toLocaleString()}）
+                      上傳憑證再折 NT${fanProofDiscount.toLocaleString("en-US")}（NT${proofPrice.toLocaleString("en-US")}）
                     </button>
                   </div>
                 )}
@@ -1033,9 +1037,9 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 ["我需要準備鋼琴嗎？",           "互動遊戲有免鍵盤的互動練習，但建議準備鋼琴、電鋼琴或電子琴來練習曲目，效果更好。"],
                 ["這門課會教五線譜嗎？",         "本課程重點在鍵盤音名、唱名、三和弦與和弦譜閱讀，讓你快速彈出流行歌曲伴奏，不以五線譜為主。"],
                 ...(fanOn
-                  ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷，包含完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString()} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可再折 NT$${fanProofDiscount.toLocaleString()}，實付 NT$${proofPrice.toLocaleString()}。`]]
+                  ? [["直接購買和上傳憑證有什麼差別？", `兩者都是一次買斷，包含完整課程與全部互動遊戲。直接購買可用 NT$${sale.fanPlan.directPrice.toLocaleString("en-US")} 購買；若你購買過演奏會門票、專輯或樂譜，上傳憑證即可再折 NT$${fanProofDiscount.toLocaleString("en-US")}，實付 NT$${proofPrice.toLocaleString("en-US")}。`]]
                   : fanProofOpen
-                    ? [["我買過演奏會門票或專輯，有優惠嗎？", `有。購買流程中上傳憑證（門票、專輯或樂譜的購買證明）通過後，即可在當下售價再折 NT$${fanProofDiscount.toLocaleString()}，目前實付 NT$${proofPrice.toLocaleString()}。之後售價調整時，折抵金額不變。`]]
+                    ? [["我買過演奏會門票或專輯，有優惠嗎？", `有。購買流程中上傳憑證（門票、專輯或樂譜的購買證明）通過後，即可在當下售價再折 NT$${fanProofDiscount.toLocaleString("en-US")}，目前實付 NT$${proofPrice.toLocaleString("en-US")}。之後售價調整時，折抵金額不變。`]]
                     : []),
                 ["課程有效期多久？",             "課程購買後在平台營運期間都可以觀看，無觀看次數限制，並保證自正式開課日起至少 3 年。若日後須停止服務，會提前 90 天以 Email 通知你。"],
                 ["可以在手機或平板上看嗎？",     "可以。課程支援電腦、手機、平板等所有裝置，只要有瀏覽器和網路連線即可觀看。"],
@@ -1072,7 +1076,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
 
       <div className={`${styles.stickyBuyBar} ${showStickyBar ? styles.stickyBuyBarShow : ""}`}>
         <div className={styles.stickyBuyInfo}>
-          <span className={styles.stickyBuyPrice}>NT${heroPrice.toLocaleString()}</span>
+          <span className={styles.stickyBuyPrice}>NT${heroPrice.toLocaleString("en-US")}</span>
           <span className={styles.stickyBuyLabel}>{fanOn ? "粉絲限定方案" : PLANS[1].label}</span>
         </div>
         <button className={styles.stickyBuyBtn} onClick={scrollToPricing}>

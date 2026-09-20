@@ -98,7 +98,7 @@ export default function SaleSettingsPage({ showToast }) {
       if (!confirm(`將寄開課通知給 ${p.pending ?? 0} 位已開通學員（名單共 ${p.total ?? 0} 位，已寄過的 ${p.alreadySent ?? 0} 位會跳過）。${extra}\n\n確定寄出？`)) return;
       const res = await adminFetch("/api/admin/send-launch-notify", { method: "POST" });
       const d = await res.json().catch(() => ({}));
-      if (res.ok) showToast?.(d.alreadyNotified ? "先前已寄送過" : `已寄送 ${d.sent ?? 0} 封`);
+      if (res.ok) showToast?.(d.alreadyComplete ? "先前已寄送過" : `已寄送 ${d.sent ?? 0} 封`);
       else showToast?.(`寄送失敗：${d.error || res.status}`);
     } catch { showToast?.("寄送失敗，請稍後再試"); }
     finally { setLaunching(false); }

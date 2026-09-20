@@ -25,6 +25,10 @@ export async function PATCH(req) {
   const patch = { id: "default", updated_at: new Date().toISOString() };
 
   if ("open_at" in body) patch.open_at = body.open_at || null;
+  // 存進去的不是合法時間 → isClassroomOpen 算不出來會一直鎖站（fail-closed），且後台看不出原因；直接擋在門口
+  if (patch.open_at && Number.isNaN(Date.parse(patch.open_at))) {
+    return NextResponse.json({ error: "invalid_open_at" }, { status: 400 });
+  }
 
   if ("lock_override" in body) {
     const v = body.lock_override;

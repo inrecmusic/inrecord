@@ -18,7 +18,7 @@ export async function POST(req) {
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
   const { data: orders, error } = await fetchPendingLeads(supabase, {
-    columns: "id, email, plan",
+    columns: "id, email, grant_email, plan", // grantAccess 以 grant_email ?? email 開通；漏選 grant_email 會開到下單信箱
     flagColumn: "access_granted_at",
     ids,
   });

@@ -5,6 +5,9 @@ import { sendNewsletterEmail } from "@/lib/brevo-email";
 
 // 未成交挽回信 cron（比照 release-coupons）
 // 觸發：Vercel Cron（自動帶 Authorization: Bearer <CRON_SECRET>）或手動 curl。
+// 逐封寄信最多 200 封；比照 sale-launch-notify 放寬到 300 秒，否則被平台砍在「已 claim、還沒寄」之間的那筆會永久標成已寄。
+export const maxDuration = 300;
+
 export async function GET(req) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization") || "";
