@@ -272,6 +272,9 @@ export async function POST(req) {
 
     return NextResponse.json({
       url: payuniUrl,
+      // 後端實際建單金額：前端據此與「確認購買」畫面上的金額比對，不符就退回重新確認。
+      // 首頁價格是 60 秒 ISR 快照＋分頁開著的時間，波段剛換價時會與實收不同，而條款寫契約在按下那一刻成立。
+      amount: Number(price),
       fields: { MerID: merID, Version: "1.0", EncryptInfo: encryptInfo, HashInfo: hashInfo },
     });
   } catch (err) {

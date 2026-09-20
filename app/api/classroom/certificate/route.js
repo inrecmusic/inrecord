@@ -11,7 +11,13 @@ export async function GET(req) {
   if (g.res) return g.res;
   const { user, supabase } = g;
 
-  const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "學員";
+  // 證書要印報名時填的真實姓名；student_profiles.real_name 是引導流程的必填欄位。
+  // 查不到才退回顯示名稱／email 前綴（舊資料或尚未完成引導者）。
+  // ⚠️ 必須在「已發證直接回傳」之前算好，否則已領證的學員仍會拿到舊的暱稱。
+  const { data: profile } = await supabase
+    .from("student_profiles").select("real_name").eq("user_id", user.id).maybeSingle();
+  const name = (profile?.real_name || "").trim()
+    || user.user_metadata?.full_name || user.email?.split("@")[0] || "學員";
 
   // 已發證 → 一律直接回傳，證書一經取得永久可讀；不再重算資格，避免管理員日後新增
   // 影片/測驗使 eligible 翻 false 而讓既有證書變成看不到（且省去重訪必觸發的 23505）。

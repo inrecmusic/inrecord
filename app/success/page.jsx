@@ -44,6 +44,7 @@ export default async function SuccessPage({ searchParams }) {
   // 回查訂單以觸發 Purchase 轉換追蹤 + 取得開通 email 預填值；best-effort，任何失敗都不影響成功頁本身。
   let purchase = null;
   let orderExists = false;
+  let orderPaid = false;
   let orderEmail = "";
   if (tradeNo && !failed) {
     try {
@@ -53,8 +54,11 @@ export default async function SuccessPage({ searchParams }) {
         : { data: null };
       if (order) {
         orderExists = true;
+        orderPaid = order.status === "paid";
         if (fromPayuni) orderEmail = order.email || ""; // 沒憑證就不預填（等於不外洩買家信箱）
-        if (order.status !== "refunded") {
+        // 轉換追蹤只在真的收到款時觸發：ATM／超商的「取號成功」也會導回這一頁，
+        // 此時訂單還是 pending，打 Purchase 會讓廣告平台記到一筆沒收到錢的轉換。
+        if (orderPaid) {
           const platforms = await getTrackingSettings();
           purchase = {
             transactionId: tradeNo,
@@ -67,6 +71,11 @@ export default async function SuccessPage({ searchParams }) {
       }
     } catch {}
   }
+
+  // ATM／超商取號：導回時訂單仍是 pending（notify 只在 TradeStatus=1 才寫 paid）。
+  // 這種情況不能說「購買成功」，改顯示待繳費說明。
+  // 查不到訂單時維持原本的成功畫面（保守，不嚇到真的付款成功的人）。
+  const awaitingPayment = orderExists && !orderPaid;
 
   if (failed) {
     return (
@@ -81,6 +90,25 @@ export default async function SuccessPage({ searchParams }) {
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <a href="/#pricing" style={primaryBtn}>重新購買</a>
             <a href="/contact" style={ghostBtn}>聯絡客服</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (awaitingPayment) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, background: "linear-gradient(135deg,#fffbeb,#eff6ff)" }}>
+        <div style={card}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>🧾</div>
+          <Logo size={28} />
+          <h1 style={{ fontSize: 30, letterSpacing: "-.04em", margin: "16px 0 10px", wordBreak: "keep-all", lineBreak: "strict" }}>已取得繳費資訊</h1>
+          <p style={{ color: "#64748b", margin: "0 0 8px", lineHeight: 1.8, wordBreak: "keep-all", lineBreak: "strict" }}>這筆訂單還沒完成付款。請依付款方式提供的帳號或代碼，在期限內完成繳費。</p>
+          <p style={{ color: "#64748b", marginBottom: 24, wordBreak: "keep-all", lineBreak: "strict" }}>繳費完成後我們會收到通知，並以 Email 與你確認。</p>
+          {tradeNo && <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 24 }}>訂單編號：{tradeNo}</p>}
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="/" style={primaryBtn}>回到首頁</a>
+            <a href="/contact" style={ghostBtn}>聯絡我們</a>
           </div>
         </div>
       </div>

@@ -61,15 +61,16 @@ export default function CertificatePage() {
       <div style={{ maxWidth: 420, width: "100%", background: "#fff", borderRadius: 18, padding: "30px 28px", boxShadow: "0 10px 40px rgba(0,0,0,.08)" }}>
         <div style={{ marginBottom: 14 }}><Logo size={24} /></div>
         <h2 style={{ margin: "0 0 8px", fontSize: 20, color: "#0f172a" }}>尚未完成課程</h2>
-        <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.8, margin: "0 0 16px" }}>完成以下項目即可領取完課證書：</p>
+        <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.8, margin: "0 0 16px", wordBreak: "keep-all", lineBreak: "strict" }}>看完所有課程單元即可領取完課證書：</p>
         <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#334155" }}>課程單元</span>
             <span style={{ color: state.videoDone === state.videoTotal && state.videoTotal > 0 ? "#16a34a" : "#b45309", fontWeight: 600 }}>已看完 {state.videoDone}/{state.videoTotal}</span>
           </div>
+          {/* 測驗目前不是領證門檻（學員端尚無作答介面），顯示成中性數字、不標紅，免得看起來像卡住 */}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#334155" }}>章節測驗</span>
-            <span style={{ color: state.quizDone === state.quizTotal ? "#16a34a" : "#b45309", fontWeight: 600 }}>已通過 {state.quizDone}/{state.quizTotal}</span>
+            <span style={{ color: "#334155" }}>章節測驗<span style={{ color: "#94a3b8", fontSize: 12, marginLeft: 6 }}>（自我檢核）</span></span>
+            <span style={{ color: "#64748b", fontWeight: 600 }}>已通過 {state.quizDone}/{state.quizTotal}</span>
           </div>
         </div>
         <a href="/classroom" style={{ display: "inline-block", marginTop: 20, color: "#2563eb", fontSize: 14, textDecoration: "none" }}>← 繼續上課</a>

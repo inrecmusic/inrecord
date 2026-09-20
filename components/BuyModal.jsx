@@ -329,6 +329,16 @@ export default function BuyModal({ open, onClose, plan, email, pricing, onSale =
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "checkout_failed");
 
+      // 後端才是價格權威：畫面上的價格來自首頁 60 秒快照，波段剛換價時兩者會不一致。
+      // 不一致就退回第一步讓消費者重新確認，不要默默用新價去收款。
+      const shown = Number(couponApplied?.finalPrice ?? basePrice);
+      if (Number.isFinite(data.amount) && Number.isFinite(shown) && data.amount !== shown) {
+        setStep(1);
+        setError(`⚠️ 優惠價格已更新為 NT$${Number(data.amount).toLocaleString("en-US")}，請重新確認後再送出。`);
+        setLoading(false);
+        return;
+      }
+
       const form = document.createElement("form");
       form.method = "POST";
       form.action = data.url;
