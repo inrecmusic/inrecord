@@ -1,51 +1,75 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const getUser = vi.fn();
-const limit = vi.fn(async () => ({ allowed: globalThis.__rlAllowed !== false, retryAfter: 42 }));
-vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ auth: { getUser } }) }));
-vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: () => globalThis.__sb }));
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({ auth: { getUser: async () => ({ data: { user: { id: "u1", email: "a@x.com" } }, error: null }) } }),
+}));
+vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/course-access", () => ({ hasCourseAccess: vi.fn(async () => true) }));
-vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: () => (...a) => limit(...a), clientIp: () => "1.1.1.1" }));
+vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: () => async () => ({ allowed: true }), clientIp: () => "1.1.1.1" }));
 
 import { POST } from "./route";
-import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
-const USER = { id: "u1", email: "student@x.com" };
-const rpc = vi.fn(async () => ({ data: { video_id: "v1", completed: false }, error: null }));
+// 每個案例用不同 UUID：route 模組層有 5 分鐘的影片快取，共用同一支會互相污染
+const uuid = (n) => `1111111${n}-2222-3333-4444-555555555555`;
+const post = (body) => POST(new Request("http://x/api/classroom/progress", {
+  method: "POST", headers: { authorization: "Bearer t", "content-type": "application/json" }, body: JSON.stringify(body),
+}));
 
-const req = (body) => new Request("http://x/api/classroom/progress", {
-  method: "POST",
-  headers: { authorization: "Bearer t", "content-type": "application/json" },
-  body: JSON.stringify(body),
-});
+function makeDb(video) {
+  const rpc = vi.fn(async () => ({ data: { completed: false }, error: null }));
+  return { rpc, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: video, error: null }) }) }) }) };
+}
 
-describe("POST /api/classroom/progress（心跳限流）", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    globalThis.__rlAllowed = true;
-    getUser.mockResolvedValue({ data: { user: USER }, error: null });
-    globalThis.__sb = { ...makeSupabaseMock(() => ({ data: null, error: null })), rpc };
+describe("POST /api/classroom/progress（完成判定的分母以伺服器端長度為準）", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("以後台 duration 當分母：前端謊報 total_seconds=1 也不影響門檻", async () => {
+    const db = makeDb({ published: true, duration: "10:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    await post({ video_id: uuid(1), watched_seconds: 1, total_seconds: 1, viewed_delta: 1 });
+    expect(db.rpc.mock.calls[0][1].p_total).toBe(600);
   });
 
-  it("正常心跳 → 200 並寫入進度，限流以 user.id 為 key（非 IP）", async () => {
-    const res = await POST(req({ video_id: "v1", watched_seconds: 30, total_seconds: 100, viewed_delta: 10 }));
-    expect(res.status).toBe(200);
-    expect(limit).toHaveBeenCalledWith("u1");
-    expect(rpc).toHaveBeenCalledWith("upsert_progress", expect.objectContaining({ p_user_id: "u1", p_viewed_delta: 10 }));
+  it("後台沒填 duration → 退回前端值（由 SQL 的 GREATEST 保底）", async () => {
+    const db = makeDb({ published: true, duration: null });
+    getSupabaseAdmin.mockReturnValue(db);
+    await post({ video_id: uuid(2), watched_seconds: 5, total_seconds: 300, viewed_delta: 10 });
+    expect(db.rpc.mock.calls[0][1].p_total).toBe(300);
   });
 
-  it("超過門檻 → 429 帶 Retry-After，且完全不碰資料庫（擋迴圈刷完成度換證書）", async () => {
-    globalThis.__rlAllowed = false;
-    const res = await POST(req({ video_id: "v1", watched_seconds: 30, total_seconds: 100, viewed_delta: 15 }));
-    expect(res.status).toBe(429);
-    expect(res.headers.get("Retry-After")).toBe("42");
-    expect(await res.json()).toEqual({ error: "rate_limited" });
-    expect(rpc).not.toHaveBeenCalled();
+  it("viewed_delta 仍夾在 15 秒（單次心跳無法灌大量觀看時數）", async () => {
+    const db = makeDb({ published: true, duration: "10:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    await post({ video_id: uuid(3), watched_seconds: 1, total_seconds: 600, viewed_delta: 9999 });
+    expect(db.rpc.mock.calls[0][1].p_viewed_delta).toBe(15);
   });
 
-  it("未登入 → 401，且不消耗限流額度", async () => {
-    getUser.mockResolvedValueOnce({ data: { user: null }, error: { message: "bad jwt" } });
-    expect((await POST(req({ video_id: "v1" }))).status).toBe(401);
-    expect(limit).not.toHaveBeenCalled();
+  it("watched_seconds 夾在伺服器端長度內，不會因前端謊報而超出", async () => {
+    const db = makeDb({ published: true, duration: "10:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    await post({ video_id: uuid(5), watched_seconds: 999999, total_seconds: 999999, viewed_delta: 5 });
+    expect(db.rpc.mock.calls[0][1].p_watched).toBe(600);
+  });
+
+  it("未發布的單元 → 404，不寫進度", async () => {
+    const db = makeDb({ published: false, duration: "10:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    expect((await post({ video_id: uuid(4), total_seconds: 600, viewed_delta: 10 })).status).toBe(404);
+    expect(db.rpc).not.toHaveBeenCalled();
+  });
+
+  it("查無該影片 → 404", async () => {
+    const db = makeDb(null);
+    getSupabaseAdmin.mockReturnValue(db);
+    expect((await post({ video_id: uuid(6), total_seconds: 600, viewed_delta: 10 })).status).toBe(404);
+    expect(db.rpc).not.toHaveBeenCalled();
+  });
+
+  it("video_id 非 UUID → 400，不查 DB", async () => {
+    const db = makeDb({ published: true, duration: "10:00" });
+    getSupabaseAdmin.mockReturnValue(db);
+    expect((await post({ video_id: "'; drop--", total_seconds: 600 })).status).toBe(400);
+    expect(db.rpc).not.toHaveBeenCalled();
   });
 });

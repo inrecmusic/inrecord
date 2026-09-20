@@ -42,6 +42,17 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // 正式部署的 vercel.app 別名與正式網域指向同一份部署；分享出去的 vercel.app 連結會繞過
+  // 以網域為單位的保護（Bunny 播放白名單、追蹤網域），故一律導回正式網域。
+  // 只比對這兩個「正式」別名，preview 的 inrecord-<hash>-… 與 inrecord-preview-inrec 不受影響。
+  async redirects() {
+    return ["inrecord-swart.vercel.app", "inrecord-inrecmusic-9815s-projects.vercel.app"].map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host", value: host }],
+      destination: "https://inrecordmusic.com/:path*",
+      permanent: true,
+    }));
+  },
   // /demo 為純靜態頁（public/demo/index.html）。Next dev 不會把 bare /demo 對應到
   // 該檔（只有 /demo/index.html 會中），正式站靠 vercel.json cleanUrls 才會通；
   // 這條 rewrite 讓本機與正式站一致：/demo 內部導向靜態檔。

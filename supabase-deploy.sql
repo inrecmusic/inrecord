@@ -315,9 +315,13 @@ AS $$
     watched_seconds = GREATEST(progress.watched_seconds, EXCLUDED.watched_seconds),
     total_seconds   = GREATEST(progress.total_seconds, EXCLUDED.total_seconds),
     viewed_seconds  = progress.viewed_seconds + GREATEST(p_viewed_delta, 0),
+    -- 門檻的分母取「已存長度」與「本次送來的長度」的較大值：只能往上、不能被後來的小 total 調低。
+    -- （2026-09-20：原本只看本次 p_total，連送兩次 total_seconds=1 就能把單元刷成完成、進而領證書。
+    --   路由層現已改以後台 videos.duration 為權威分母，這裡是沒填 duration 的單元的保底。）
     completed       = progress.completed OR EXCLUDED.completed
-                      OR (GREATEST(p_total,0) > 0
-                          AND progress.viewed_seconds + GREATEST(p_viewed_delta,0) >= FLOOR(GREATEST(p_total,0) * 0.7)),
+                      OR (GREATEST(progress.total_seconds, GREATEST(p_total,0)) > 0
+                          AND progress.viewed_seconds + GREATEST(p_viewed_delta,0)
+                              >= FLOOR(GREATEST(progress.total_seconds, GREATEST(p_total,0)) * 0.7)),
     watched_at      = NOW()
   RETURNING *;
 $$;

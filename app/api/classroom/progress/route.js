@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { hasCourseAccess } from "@/lib/course-access";
 import { createDistributedLimiter } from "@/lib/rate-limit";
+import { parseDurationSeconds } from "@/lib/duration";
 
 // 進度寫入限流：key 用 user.id（登入後比 IP 精準，也不會誤傷同一個 NAT／校園網路下的多位學員）。
 // 門檻 20 次/分的算法：前端心跳固定每 10 秒一次，sliding window 內單一播放器最多 7 次；
@@ -25,6 +26,24 @@ async function hasCourseAccessCached(admin, email) {
     for (const [k, v] of accessCache) { if (v.exp <= now) accessCache.delete(k); }
   }
   return ok;
+}
+
+// 影片長度（伺服器端權威值）快取 5 分鐘：心跳每 10 秒一次，不快取會變成每次心跳多一次 DB 往返。
+// 值為 { published, seconds }；查不到該影片記 null。
+const videoCache = new Map(); // video_id -> { v, exp }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function getVideoCached(admin, videoId) {
+  const now = Date.now();
+  const hit = videoCache.get(videoId);
+  if (hit && hit.exp > now) return hit.v;
+  const { data } = await admin.from("videos").select("published, duration").eq("id", videoId).maybeSingle();
+  const v = data ? { published: !!data.published, seconds: parseDurationSeconds(data.duration) } : null;
+  videoCache.set(videoId, { v, exp: now + 300_000 });
+  if (videoCache.size > 500) { // 簡單防脹
+    for (const [k, e] of videoCache) { if (e.exp <= now) videoCache.delete(k); }
+  }
+  return v;
 }
 
 function getUserClient(token) {
@@ -90,7 +109,18 @@ export async function POST(req) {
 
   const { video_id, watched_seconds = 0, total_seconds = 0, viewed_delta = 0 } = await req.json();
   if (!video_id) return NextResponse.json({ error: "video_id_required" }, { status: 400 });
-  const t = Math.max(0, Math.floor(Number(total_seconds) || 0));
+  // video_id 一律驗格式：非 UUID 會讓 PostgREST 丟 22P02，變成 500
+  if (typeof video_id !== "string" || !UUID_RE.test(video_id)) {
+    return NextResponse.json({ error: "invalid_video_id" }, { status: 400 });
+  }
+  const video = await getVideoCached(admin, video_id);
+  if (!video || !video.published) return NextResponse.json({ error: "video_not_found" }, { status: 404 });
+
+  const clientTotal = Math.max(0, Math.floor(Number(total_seconds) || 0));
+  // 完成判定的分母一律以伺服器端知道的長度為準（後台 duration 欄位），不採信前端送來的 total_seconds——
+  // 否則連送兩次 total_seconds=1 就能把任一單元刷成完成、進而取得結業證書。
+  // 後台沒填 duration 才退回前端值，此時靠 RPC 的 GREATEST 保證門檻只會往上、不會被後來的小 total 調低。
+  const t = video.seconds || clientTotal;
   const wRaw = Math.max(0, Math.floor(Number(watched_seconds) || 0));
   const w = t > 0 ? Math.min(wRaw, t) : wRaw; // watched_seconds＝最遠播放位置（續播用）
   // viewed_delta＝這次心跳「實際播放」的秒數。夾在 0..15（心跳 10 秒 + 容忍誤差）：
