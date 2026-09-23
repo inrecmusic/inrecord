@@ -11,7 +11,7 @@ const STEPS = [
 ];
 
 /**
- * POINT 4 唱名階梯 — 聽音點對唱名、一階一階往上爬，原生 DOM（no <img>）。
+ * POINT 4 唱名小達人 — 聽音點對唱名、一階一階往上爬，原生 DOM（no <img>）。
  */
 export default function SolfegeStairs({ ariaLabel }) {
   return (

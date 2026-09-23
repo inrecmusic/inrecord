@@ -79,7 +79,7 @@ const PLANNED_GAMES = 9;
 // after = 接在哪個單元之後（比對單元標題開頭的編號，如 "1-2"）。該單元尚未上架時退回章節最後一列。
 const PLANNED_CHAPTER_GAMES = {
   1:  [{ name: "Do 給你找",       after: "1-2" }],
-  2:  [{ name: "音名快閃",        after: "2-1" }, { name: "唱名階梯", after: "2-2" }],
+  2:  [{ name: "音名快閃",        after: "2-1" }, { name: "唱名小達人", after: "2-2" }],
   4:  [{ name: "節奏打點師",      after: "4-5" }],
   6:  [{ name: "和弦辨識家",      after: "6-4" }],
   7:  [{ name: "情緒調色盤",      after: "7-1" }],
