@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { makeHashInfo } from "@/lib/payuni";
+import { makeHashInfo, aesDecrypt } from "@/lib/payuni";
 
 // 兩個限流器（IP：rl:checkout／email：rl:checkout:email）共用一個 mock，以 prefix 當第一個參數區分
 const limiter = vi.fn(async () => ({ allowed: true }));
@@ -11,13 +11,16 @@ vi.mock("@/lib/sale", () => ({
   currentPrice: vi.fn(() => 3999),
   fanCouponActive: vi.fn(() => true),
   FAN_COUPON_CODE: "FAN3999",
+  activeWave: vi.fn(() => null),
+  listPrice: vi.fn(() => 13800),
+  getFanPlan: vi.fn(() => ({ deadlineMs: Date.now() + 30 * 86400000 })),
 }));
 vi.mock("@/lib/coupon-hold", () => ({ releaseOwnPendingCouponHolds: vi.fn(async () => {}) }));
 vi.mock("@/lib/amego-verify", () => ({ verifyTaxId: vi.fn(async () => ({ valid: true })), verifyCarrier: vi.fn(async () => ({ valid: true })) }));
 
 import { POST } from "./route";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { isOnSale } from "@/lib/sale";
+import { isOnSale, activeWave, getFanPlan } from "@/lib/sale";
 import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
 
 const KEY = "k".repeat(32), IV = "i".repeat(16);
@@ -220,6 +223,44 @@ describe("POST /api/payuni/checkout（下單）", () => {
     const ins = sb.calls.find((c) => c.table === "orders" && sb.has(c, "insert"));
     expect(sb.arg(ins, "insert")).toMatchObject({ amount: 3999, coupon_code: "FAN3999" });
     expect(sb.arg(ins, "insert").fan_review).toBeUndefined();
+  });
+
+  // 送給 PAYUNi 的參數（EncryptInfo 解開）
+  const uppParams = (body) => Object.fromEntries(new URLSearchParams(aesDecrypt(body.fields.EncryptInfo, KEY, IV)));
+
+  it("正式牌價（沒波段、沒券）→ 不帶 ExpireDate，用 PAYUNi 預設繳費期限", async () => {
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com" }))).json();
+    expect(uppParams(body)).not.toHaveProperty("ExpireDate");
+    expect(uppParams(body)).not.toHaveProperty("Credit");
+  });
+
+  it("波段進行中 → ExpireDate＝波段最後一天（ATM 帳號跟優惠價同天失效）", async () => {
+    // 波段台灣時間 3 天後 00:00 結束（exclusive）→ 期限是前一天
+    const end = new Date(); end.setUTCHours(16, 0, 0, 0); end.setUTCDate(end.getUTCDate() + 3);
+    activeWave.mockReturnValue({ starts_at: "2026-01-01T00:00:00Z", ends_at: end.toISOString(), prices: { bundle: 3999 } });
+    const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com" }))).json();
+    const expected = new Date(end.getTime() - 1).toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
+    expect(uppParams(body).ExpireDate).toBe(expected);
+  });
+
+  it("指定價券的價格不隨波段變 → 波段結束不算截止、不帶 ExpireDate", async () => {
+    const end = new Date(); end.setUTCHours(16, 0, 0, 0); end.setUTCDate(end.getUTCDate() + 3);
+    activeWave.mockReturnValue({ starts_at: "2026-01-01T00:00:00Z", ends_at: end.toISOString(), prices: { bundle: 3999 } });
+    const coupon = { code: "TV34YGR1", type: "price", value: 2500, status: "active", usage_limit: null, used: 0 };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "TV34YGR1" }))).json();
+    expect(uppParams(body)).not.toHaveProperty("ExpireDate");
+  });
+
+  it("粉絲直購券 FAN3999 且截止剩不到 2 小時 → 只開信用卡（Credit=1）、不給 ATM", async () => {
+    getFanPlan.mockReturnValue({ deadlineMs: Date.now() + 60 * 60 * 1000 });
+    const coupon = { code: "FAN3999", type: "price", value: 3999, status: "active", usage_limit: null, used: 0, plan: "bundle" };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN3999" }))).json();
+    expect(uppParams(body)).toMatchObject({ Credit: "1" });
+    expect(uppParams(body)).not.toHaveProperty("ExpireDate");
   });
 
   it("限量券被搶完（CAS 沒搶到）→ 400 coupon_used_up、不建單", async () => {

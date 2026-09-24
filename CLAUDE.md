@@ -123,7 +123,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 
 ### 購買開通流程（PAYUNi）
 
-1. `BuyModal` 兩步結帳（主管機關網路締約範本）：第一步勾「我已閱讀並同意服務條款及退費政策」→ 第二步「確認訂單」摘要（課程／實付／付款方式／授權期間／發票／條款版本，`lib/terms-version.js` 的 `buildOrderSummary`）→「確認購買」才 `POST /api/payuni/checkout` `{ plan, price, label, email, agreeTerms: true, … }`（email 必填，來自登入）。後端 `agreeTerms!==true` 回 400 `terms_required`；寫入 pending `orders` 時自帶 `terms_version`（＝條款「最後更新」日期，`readTermsVersion` 讀 site_content／預設）與 `terms_agreed_at`。MerTradeNo 格式 `INREC{timestamp}`。
+1. `BuyModal` 兩步結帳（主管機關網路締約範本）：第一步勾「我已閱讀並同意服務條款及退費政策」→ 第二步「確認訂單」摘要（課程／實付／付款方式／授權期間／發票／條款版本，`lib/terms-version.js` 的 `buildOrderSummary`）→「確認購買」才 `POST /api/payuni/checkout` `{ plan, price, label, email, agreeTerms: true, … }`（email 必填，來自登入）。後端 `agreeTerms!==true` 回 400 `terms_required`；寫入 pending `orders` 時自帶 `terms_version`（＝條款「最後更新」日期，`readTermsVersion` 讀 site_content／預設）與 `terms_agreed_at`。MerTradeNo 格式 `INREC{timestamp}`。**ATM／超商繳費期限**（`lib/payuni-expire.js`，2026-09）：結帳時依這筆價格的截止（FAN3999→`fan_plan.deadline`、券自身 `ends_at`、波段價→波段 `ends_at`，取最早）帶 PAYUNi `ExpireDate`（台灣日期），讓虛擬帳號跟優惠價同一天失效；截止剩不到 2 小時只帶 `Credit=1`（只開信用卡，PAYUNi 規定當日期限至少留 2 小時）；沒有截止或截止晚於 +7 天就不帶、用 PAYUNi 預設。取號後 PAYUNi 無法取消或縮短期限，所以只能在取號當下設。
 2. PAYUNi 付款成功後背景通知 `POST /api/payuni/notify`，依 `order.plan` 分流：
    - `course` / `bundle` → upsert `enrollments`（課程永久）。
    - `game` / `bundle` → insert `subscriptions`（`expires_at=2999-12-31`、`source='purchase'`、`plan_type` 為 `bundle`/`game`），以 `source='purchase' + payuni_order_id` 做冪等。
