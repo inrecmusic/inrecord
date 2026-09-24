@@ -49,7 +49,7 @@ describe("POST /api/payuni/checkout（下單）", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://inrecordmusic.com");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
   });
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 
   it("限流 → 429 並帶 Retry-After", async () => {
     limiter.mockResolvedValueOnce({ allowed: false, retryAfter: 30 });
@@ -235,31 +235,47 @@ describe("POST /api/payuni/checkout（下單）", () => {
     expect(uppParams(body)).not.toHaveProperty("Credit");
   });
 
+  // 固定「現在」＝台灣 2026-09-27 10:00，期望值寫死，才驗得到時區換算本身
+  const freeze = () => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-27T02:00:00Z")); };
+  const WAVE = { starts_at: "2026-09-16T16:00:00Z", ends_at: "2026-10-01T16:00:00Z", prices: { bundle: 3999 } }; // 台灣 10/2 00:00 結束
+
   it("波段進行中 → ExpireDate＝波段最後一天（ATM 帳號跟優惠價同天失效）", async () => {
-    // 波段台灣時間 3 天後 00:00 結束（exclusive）→ 期限是前一天
-    const end = new Date(); end.setUTCHours(16, 0, 0, 0); end.setUTCDate(end.getUTCDate() + 3);
-    activeWave.mockReturnValue({ starts_at: "2026-01-01T00:00:00Z", ends_at: end.toISOString(), prices: { bundle: 3999 } });
+    freeze(); activeWave.mockReturnValue(WAVE);
     const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
     const body = await (await POST(req({ plan: "bundle", email: "a@x.com" }))).json();
-    const expected = new Date(end.getTime() - 1).toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
-    expect(uppParams(body).ExpireDate).toBe(expected);
+    expect(uppParams(body).ExpireDate).toBe("2026-10-01");
+  });
+
+  it("百分比券在波段內：價格隨波段變 → 仍帶波段最後一天", async () => {
+    freeze(); activeWave.mockReturnValue(WAVE);
+    const coupon = { code: "SAVE10", type: "percent", value: 10, status: "active", usage_limit: null, used: 0 };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "SAVE10" }))).json();
+    expect(uppParams(body).ExpireDate).toBe("2026-10-01");
+  });
+
+  it("限時券（ends_at）沒有波段 → ExpireDate＝券的最後一天", async () => {
+    freeze();
+    const coupon = { code: "SAVE10", type: "percent", value: 10, status: "active", usage_limit: null, used: 0, ends_at: "2026-09-29" };
+    const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
+    const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "SAVE10" }))).json();
+    expect(uppParams(body).ExpireDate).toBe("2026-09-29");
   });
 
   it("指定價券的價格不隨波段變 → 波段結束不算截止、不帶 ExpireDate", async () => {
-    const end = new Date(); end.setUTCHours(16, 0, 0, 0); end.setUTCDate(end.getUTCDate() + 3);
-    activeWave.mockReturnValue({ starts_at: "2026-01-01T00:00:00Z", ends_at: end.toISOString(), prices: { bundle: 3999 } });
+    freeze(); activeWave.mockReturnValue(WAVE);
     const coupon = { code: "TV34YGR1", type: "price", value: 2500, status: "active", usage_limit: null, used: 0 };
     const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
     const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "TV34YGR1" }))).json();
     expect(uppParams(body)).not.toHaveProperty("ExpireDate");
   });
 
-  it("粉絲直購券 FAN3999 且截止剩不到 2 小時 → 只開信用卡（Credit=1）、不給 ATM", async () => {
-    getFanPlan.mockReturnValue({ deadlineMs: Date.now() + 60 * 60 * 1000 });
+  it("粉絲直購券 FAN3999 且截止剩不到 2 小時 → 只開信用卡與 AFTEE、不給 ATM", async () => {
+    freeze(); getFanPlan.mockReturnValue({ deadlineMs: Date.parse("2026-09-27T03:00:00Z") }); // 台灣 9/27 11:00，剩 1 小時
     const coupon = { code: "FAN3999", type: "price", value: 3999, status: "active", usage_limit: null, used: 0, plan: "bundle" };
     const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
     const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "FAN3999" }))).json();
-    expect(uppParams(body)).toMatchObject({ Credit: "1" });
+    expect(uppParams(body)).toMatchObject({ Credit: "1", Aftee: "1" });
     expect(uppParams(body)).not.toHaveProperty("ExpireDate");
   });
 
