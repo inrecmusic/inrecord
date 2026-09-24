@@ -266,6 +266,35 @@ export function PaymentDetails({merTradeNo,source}){
       )}
     </>
   );
+  else if(payKind==="aftee"||payKind==="other")body=(
+    <>
+      <div style={{display:"grid",gridTemplateColumns:"96px 1fr",gap:"7px 10px",fontSize:14,alignItems:"baseline"}}>
+        <span style={{color:"#64748b",fontWeight:700}}>付款方式</span>
+        <span>{PAY_TYPE_LABEL[payKind]}{paidEvent?.raw?.PaymentType?<span className={styles.dim} style={{fontSize:12,marginLeft:6}}>（PaymentType {String(paidEvent.raw.PaymentType)}）</span>:null}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>交易序號</span>
+        <span>{transfer.payNo?<code style={mono}>{transfer.payNo}</code>:<span className={styles.dim}>回呼中沒有</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>付款時間</span>
+        <span>{transfer.paidAt||<span className={styles.dim}>回呼中沒有</span>}</span>
+        <span style={{color:"#64748b",fontWeight:700}}>回呼紀錄</span>
+        <span>共 {events.length} 筆
+          {events.map(e=>(
+            <span key={e.id} className={styles.dim} style={{display:"block",fontSize:12,marginTop:4}}>
+              {fmt(e.created_at)}・{EVENT_KIND_LABEL[e.kind]||e.kind||"—"}（TradeStatus {e.trade_status??"—"}）
+            </span>
+          ))}
+        </span>
+      </div>
+      <p style={{fontSize:12,margin:"10px 0 0",color:"#64748b"}}>這類付款方式沒有卡號與分期資料，這裡只顯示 PAYUNi 回呼的交易序號與付款時間。</p>
+      <button className={styles.btnSmall} style={{marginTop:10}} onClick={()=>setShowRaw(v=>!v)}>
+        {showRaw?"收合原始回呼 JSON":"展開原始回呼 JSON"}
+      </button>
+      {showRaw&&(
+        <pre style={{marginTop:8,maxHeight:260,overflow:"auto",background:"#0f172a",color:"#e2e8f0",padding:12,borderRadius:8,fontSize:11,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-all"}}>
+          {JSON.stringify(events.map(e=>({kind:e.kind,created_at:e.created_at,raw:e.raw})),null,2)}
+        </pre>
+      )}
+    </>
+  );
   else body=(
     <>
       <div style={{display:"grid",gridTemplateColumns:"92px 1fr",gap:"7px 10px",fontSize:14,alignItems:"baseline"}}>

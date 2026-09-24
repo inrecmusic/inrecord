@@ -92,6 +92,9 @@ export async function POST(req) {
     const email = emailInput.trim().toLowerCase();
     // strict：讀不到銷售設定就讓下方 catch 接住回 500，不要用 fallback 價把課賣掉
     const saleSettings = await getSaleSettings({ strict: true });
+    // 判開賣／算價／算繳費期限全用同一個時鐘：中間有 await 外部 API（統編／載具驗證，可達數秒），
+    // 若各自 new Date()，跨過波段邊界時會出現「用舊價寫單、卻算不出截止」的脫鉤。
+    const now = new Date();
     const label = catalog.label;
 
     // 先取得並驗證優惠券（讓有效「指定價」券可繞過開賣前封鎖）
@@ -106,7 +109,7 @@ export async function POST(req) {
       const pErr = couponPlanError(coupon, plan);
       if (pErr) return NextResponse.json({ error: pErr }, { status: 400 });
       // 粉絲直購券綁 fan_plan 截止（預設 9/9 23:59）：過期或方案停用即拒收，與首頁隱藏粉絲卡同步
-      if (coupon.code === FAN_COUPON_CODE && !fanCouponActive(saleSettings, new Date())) {
+      if (coupon.code === FAN_COUPON_CODE && !fanCouponActive(saleSettings, now)) {
         return NextResponse.json({ error: "coupon_expired" }, { status: 400 });
       }
       // 憑證券（/api/fan-proof 發的 FAN-XXXXXXXX）必須附上我們自己發的憑證圖網址，否則下方 insert
@@ -123,11 +126,11 @@ export async function POST(req) {
 
     // pre_launch：僅在有有效「指定價」券時放行（一般購買未開）
     const hasPriceCoupon = !!(coupon && coupon.type === "price");
-    if (!isOnSale(saleSettings, new Date()) && !hasPriceCoupon) {
+    if (!isOnSale(saleSettings, now) && !hasPriceCoupon) {
       return NextResponse.json({ error: "not_on_sale" }, { status: 400 });
     }
 
-    let price = currentPrice(plan, saleSettings, new Date());
+    let price = currentPrice(plan, saleSettings, now);
 
     // 這裡只算折扣價、先不預扣額度。限量券（序號 usage_limit=1）的原子預扣延到「所有驗證通過、
     // 緊接寫單前」才做——否則中途任何 early-return（價格過低／發票欄位錯／設定缺）都會把序號永久
@@ -195,7 +198,6 @@ export async function POST(req) {
     // ATM／超商繳費期限：虛擬帳號要跟這筆價格同一天失效，否則截止前取號、截止後才轉帳，
     // 就能用已結束的優惠價付款（見 lib/payuni-expire.js）。波段截止取「成交價真正改變的那一刻」
     // （priceEndsAt：同價相接的波段不算；指定價券如 FAN3999／現場序號的價格不隨波段變 → 無波段截止）。
-    const now = new Date();
     const toFinal = (p) => (coupon ? applyCoupon(p, coupon) : p);
     Object.assign(orderParams, atmExpireParams({ now, deadlines: [
       couponCode === FAN_COUPON_CODE ? getFanPlan(saleSettings).deadlineMs : NaN,

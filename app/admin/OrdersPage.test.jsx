@@ -169,6 +169,17 @@ describe("訂單詳情 → 付款明細", () => {
     expect(screen.getByText("Installment")).toBeTruthy(); // 命中的原始欄位名，供日後與真單對照
   });
 
+  it("AFTEE 後支付（PaymentType 7）→ 走非卡版面：顯示付款方式與交易序號，不套信用卡欄位、不跳「找不到分期欄位」", async () => {
+    const raw = { MerTradeNo: "INREC1788000000000", TradeStatus: "1", PaymentType: "7", PayNo: "tr_7U79ziH4kYhjRi7Y", PayTime: "2026-09-16 09:53:45", Message: "付款成功" };
+    mockApi({ events: { ok: true, tableMissing: false, data: [EVENT(CARD(), { pay_type: "7", raw })] } });
+    render(<OrdersPage showToast={vi.fn()} />);
+    await openDetail();
+    expect((await screen.findAllByText("AFTEE 後支付")).length).toBeGreaterThan(0);
+    expect(screen.getByText("tr_7U79ziH4kYhjRi7Y")).toBeTruthy();
+    expect(screen.queryByText(/回呼中找不到分期欄位/)).toBeNull();
+    expect(screen.queryByText(/卡號末四碼/)).toBeNull();
+  });
+
   it("分期欄位是 0 → 一次付清（與「找不到欄位」不同）", async () => {
     const card = CARD({ installmentState: "none", matchedKeys: { installment: "Installment", last4: null, authCode: null } });
     mockApi({ events: { ok: true, tableMissing: false, data: [EVENT(card)] } });

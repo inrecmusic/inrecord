@@ -60,11 +60,12 @@ export default function CouponsPage({ showToast }){
     });
   }
 
-  // 依生效/結束日推算批次狀態（與前台 couponError 的日期判斷一致），避免後台「啟用中」但前台「尚未開始」對不起來
+  // 依生效/結束日推算批次狀態（與前台 couponError 的日期判斷一致：台灣 starts_at 00:00 ～ ends_at 23:59:59），
+  // 避免後台「啟用中」但前台「尚未開始」對不起來
   function batchStatus(b){
-    const now=new Date();
-    if(b.starts_at&&new Date(b.starts_at)>now)return["upcoming",`尚未開始（${b.starts_at} 起）`,"#fef9c3","#854d0e"];
-    if(b.ends_at){const e=new Date(b.ends_at);e.setHours(23,59,59,999);if(e<now)return["ended","已結束","#fee2e2","#991b1b"];}
+    const now=Date.now();
+    if(b.starts_at&&Date.parse(`${b.starts_at}T00:00:00+08:00`)>now)return["upcoming",`尚未開始（${b.starts_at} 起）`,"#fef9c3","#854d0e"];
+    if(b.ends_at&&Date.parse(`${b.ends_at}T23:59:59.999+08:00`)<now)return["ended","已結束","#fee2e2","#991b1b"];
     return["active","進行中","#dcfce7","#166534"];
   }
 
@@ -152,10 +153,10 @@ export default function CouponsPage({ showToast }){
   },[]);
   useEffect(()=>{fetchCoupons();},[fetchCoupons]);
 
-  const now=new Date();
+  const now=Date.now();
   function displayStatus(c){
     if(c.status==="disabled")return "disabled";
-    if(c.ends_at){const e=new Date(c.ends_at);e.setHours(23,59,59,999);if(e<now)return "expired";}
+    if(c.ends_at&&Date.parse(`${c.ends_at}T23:59:59.999+08:00`)<now)return "expired"; // 台灣日界，與後端一致
     return "active";
   }
   const rows=coupons.map(c=>({...c,_status:displayStatus(c)}));
