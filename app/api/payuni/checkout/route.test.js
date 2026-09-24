@@ -11,8 +11,7 @@ vi.mock("@/lib/sale", () => ({
   currentPrice: vi.fn(() => 3999),
   fanCouponActive: vi.fn(() => true),
   FAN_COUPON_CODE: "FAN3999",
-  activeWave: vi.fn(() => null),
-  listPrice: vi.fn(() => 13800),
+  priceEndsAt: vi.fn(() => null),
   getFanPlan: vi.fn(() => ({ deadlineMs: Date.now() + 30 * 86400000 })),
 }));
 vi.mock("@/lib/coupon-hold", () => ({ releaseOwnPendingCouponHolds: vi.fn(async () => {}) }));
@@ -20,7 +19,7 @@ vi.mock("@/lib/amego-verify", () => ({ verifyTaxId: vi.fn(async () => ({ valid: 
 
 import { POST } from "./route";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { isOnSale, activeWave, getFanPlan } from "@/lib/sale";
+import { isOnSale, priceEndsAt, getFanPlan } from "@/lib/sale";
 import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
 
 const KEY = "k".repeat(32), IV = "i".repeat(16);
@@ -237,17 +236,17 @@ describe("POST /api/payuni/checkout（下單）", () => {
 
   // 固定「現在」＝台灣 2026-09-27 10:00，期望值寫死，才驗得到時區換算本身
   const freeze = () => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-27T02:00:00Z")); };
-  const WAVE = { starts_at: "2026-09-16T16:00:00Z", ends_at: "2026-10-01T16:00:00Z", prices: { bundle: 3999 } }; // 台灣 10/2 00:00 結束
+  const WAVE_END = Date.parse("2026-10-01T16:00:00Z"); // 波段台灣 10/2 00:00 結束（priceEndsAt 的判定另在 lib/sale.test.js）
 
   it("波段進行中 → ExpireDate＝波段最後一天（ATM 帳號跟優惠價同天失效）", async () => {
-    freeze(); activeWave.mockReturnValue(WAVE);
+    freeze(); priceEndsAt.mockReturnValue(WAVE_END);
     const sb = makeDb(); getSupabaseAdmin.mockReturnValue(sb);
     const body = await (await POST(req({ plan: "bundle", email: "a@x.com" }))).json();
     expect(uppParams(body).ExpireDate).toBe("2026-10-01");
   });
 
   it("百分比券在波段內：價格隨波段變 → 仍帶波段最後一天", async () => {
-    freeze(); activeWave.mockReturnValue(WAVE);
+    freeze(); priceEndsAt.mockReturnValue(WAVE_END);
     const coupon = { code: "SAVE10", type: "percent", value: 10, status: "active", usage_limit: null, used: 0 };
     const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
     const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "SAVE10" }))).json();
@@ -262,8 +261,8 @@ describe("POST /api/payuni/checkout（下單）", () => {
     expect(uppParams(body).ExpireDate).toBe("2026-09-29");
   });
 
-  it("指定價券的價格不隨波段變 → 波段結束不算截止、不帶 ExpireDate", async () => {
-    freeze(); activeWave.mockReturnValue(WAVE);
+  it("價格沒有截止（priceEndsAt 回 null，例如指定價券）→ 不帶 ExpireDate", async () => {
+    freeze(); priceEndsAt.mockReturnValue(null);
     const coupon = { code: "TV34YGR1", type: "price", value: 2500, status: "active", usage_limit: null, used: 0 };
     const sb = makeDb({ coupon }); getSupabaseAdmin.mockReturnValue(sb);
     const body = await (await POST(req({ plan: "bundle", email: "a@x.com", couponCode: "TV34YGR1" }))).json();

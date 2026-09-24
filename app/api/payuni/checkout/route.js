@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PLAN_CATALOG, applyCoupon, couponError, couponPlanError } from "@/lib/plans";
-import { currentPrice, getSaleSettings, isOnSale, fanCouponActive, FAN_COUPON_CODE, activeWave, listPrice, getFanPlan } from "@/lib/sale";
+import { currentPrice, getSaleSettings, isOnSale, fanCouponActive, FAN_COUPON_CODE, getFanPlan, priceEndsAt } from "@/lib/sale";
 import { atmExpireParams, couponEndsAtMs } from "@/lib/payuni-expire";
 import { releaseOwnPendingCouponHolds } from "@/lib/coupon-hold";
 import { verifyCarrier, verifyTaxId } from "@/lib/amego-verify";
@@ -193,16 +193,14 @@ export async function POST(req) {
     };
 
     // ATM／超商繳費期限：虛擬帳號要跟這筆價格同一天失效，否則截止前取號、截止後才轉帳，
-    // 就能用已結束的優惠價付款（見 lib/payuni-expire.js）。波段只在它真的影響到這筆價格時才算
-    // （指定價券如 FAN3999／現場序號的價格不隨波段變，波段結束對它沒意義）。
+    // 就能用已結束的優惠價付款（見 lib/payuni-expire.js）。波段截止取「成交價真正改變的那一刻」
+    // （priceEndsAt：同價相接的波段不算；指定價券如 FAN3999／現場序號的價格不隨波段變 → 無波段截止）。
     const now = new Date();
-    const wave = activeWave(saleSettings, now);
-    const base = listPrice(plan, saleSettings);
-    const waveMatters = !!wave && price !== (coupon ? applyCoupon(base, coupon) : base);
+    const toFinal = (p) => (coupon ? applyCoupon(p, coupon) : p);
     Object.assign(orderParams, atmExpireParams({ now, deadlines: [
       couponCode === FAN_COUPON_CODE ? getFanPlan(saleSettings).deadlineMs : NaN,
       coupon ? couponEndsAtMs(coupon.ends_at) : NaN,
-      waveMatters ? Date.parse(wave.ends_at) : NaN,
+      priceEndsAt(plan, saleSettings, now, toFinal) ?? NaN,
     ] }));
 
     // 以 application/x-www-form-urlencoded 組成 query string（與 PHP http_build_query 對應）

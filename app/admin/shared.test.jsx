@@ -6,11 +6,14 @@ import { payTypeLabel, fetchCommentStats } from "./shared";
 beforeEach(() => vi.clearAllMocks());
 
 describe("payTypeLabel（統一走 lib/dashboard 的 payLabel）", () => {
-  it("PayUni 數字碼照 lib/dashboard 對照表翻譯，含先前漏掉的 6＝超商條碼", () => {
+  it("PayUni 數字碼照官方文件對照表翻譯（6＝icash Pay、7＝AFTEE，先前 6 誤標超商條碼、7 顯示其他）", () => {
     expect(payTypeLabel("1")).toBe("信用卡");
     expect(payTypeLabel("2")).toBe("ATM 轉帳");
     expect(payTypeLabel("3")).toBe("超商代碼");
-    expect(payTypeLabel("6")).toBe("超商條碼");
+    expect(payTypeLabel("6")).toBe("icash Pay");
+    expect(payTypeLabel("7")).toBe("AFTEE 後支付");
+    expect(payTypeLabel("9")).toBe("LINE Pay");
+    expect(payTypeLabel("11")).toBe("街口支付");
   });
 
   it("先前漏掉的字串型別也翻得出來", () => {
@@ -29,7 +32,7 @@ describe("payTypeLabel（統一走 lib/dashboard 的 payLabel）", () => {
   it("傳整筆訂單時，沒有 pay_type 會退回來源標籤（與對帳彙整一致）", () => {
     expect(payTypeLabel({ source: "concert" })).toBe("音樂會現場");
     expect(payTypeLabel({ source: "wordpress" })).toBe("碩樂現場");
-    expect(payTypeLabel({ pay_type: "6", source: "payuni" })).toBe("超商條碼");
+    expect(payTypeLabel({ pay_type: "7", source: "payuni" })).toBe("AFTEE 後支付");
   });
 });
 
