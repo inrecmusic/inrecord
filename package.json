@@ -17,6 +17,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "@vimeo/player": "^2.30.4",
+    "abcjs": "^6.7.1",
     "framer-motion": "^12.40.0",
     "gsap": "^3.15.0",
     "jose": "^6.2.3",

@@ -7,6 +7,7 @@ import { isProfileCoreComplete } from "@/lib/student-profile";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
 import NotesTab from "@/components/classroom/NotesTab";
 import GamesTab from "@/components/classroom/GamesTab";
+import ScoreTab from "@/components/classroom/ScoreTab";
 import AssignmentTab from "@/components/classroom/AssignmentTab";
 import RatingTab from "@/components/classroom/RatingTab";
 import CommentsSection from "@/components/classroom/CommentsSection";
@@ -27,6 +28,7 @@ function fmtDur(sec) {
 const UNIT_ICONS = [
   { key: "handout",    emoji: "📎", label: "講義下載" },
   { key: "score",      emoji: "🎼", label: "樂譜下載" },
+  { key: "sheet",      emoji: "🎹", label: "互動樂譜" },
   { key: "game",       emoji: "🎮", label: "互動遊戲" },
   { key: "assignment", emoji: "📝", label: "作業繳交" },
 ];
@@ -123,10 +125,14 @@ export default function ClassroomPage() {
   const [progress, setProgress]           = useState([]);
   const [tab, setTab]                     = useState("rating");
 
-  // 作業分頁只在該單元有作業時存在；切到沒作業的單元時退回評價分頁，避免面板空白
+  // 這個單元有沒有掛互動樂譜（bootstrap 帶回的 contentItems）
+  const hasSheet = (contentItems[currentVideo?.id] || []).some((it) => it.kind === "sheet");
+
+  // 作業／樂譜分頁只在該單元真的有時存在；切到沒有的單元時退回評價分頁，避免面板空白
   useEffect(() => {
     if (tab === "assignment" && !currentVideo?.assignment_desc?.trim()) setTab("rating");
-  }, [tab, currentVideo]);
+    if (tab === "score" && !hasSheet) setTab("rating");
+  }, [tab, currentVideo, hasSheet]);
 
   const gameCacheRef                      = useRef({});
   const playerCtrlRef = useRef(null); // { getSeconds, seek, pause, play }
@@ -357,6 +363,7 @@ export default function ClassroomPage() {
   async function handleItemClick(e, v, item) {
     e.stopPropagation();
     if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
+    if (item.kind === "sheet") { setTab("score"); return; }
     if (item.kind === "game") { setPendingGameId(item.id); setTab("games"); return; }
     if (item.kind === "assignment") { setTab("assignment"); return; }
     setItemErr("");
@@ -662,6 +669,8 @@ export default function ClassroomPage() {
               { id: "rating",     label: "課程評價" },
               // 作業繳交：只有該單元真的設了作業說明才出現（後台填了就自動顯示）
               ...(currentVideo?.assignment_desc?.trim() ? [{ id: "assignment", label: "作業繳交" }] : []),
+              // 互動樂譜：單元有掛樂譜才出現（contentItems 由 bootstrap 帶回）
+              ...(hasSheet ? [{ id: "score", label: "樂譜" }] : []),
               { id: "games",      label: "互動遊戲" },
               { id: "notes",      label: "筆記" },
             ].map(t => (
@@ -683,6 +692,7 @@ export default function ClassroomPage() {
           <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
             {tab === "rating"     && <RatingTab token={token} />}
             {tab === "assignment" && currentVideo?.assignment_desc?.trim() && <AssignmentTab video={currentVideo} token={token} />}
+            {tab === "score"      && hasSheet && <ScoreTab token={token} video={currentVideo} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} pendingGameId={pendingGameId} onPendingConsumed={() => setPendingGameId(null)} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
           </div>

@@ -79,7 +79,7 @@ export async function GET(req) {
   // 購課者：章節 + 影片 + 進度 + 已發布單元總數（播放頁另加公告）。並行。
   // 播放頁需要 bunny_video_id/vimeo_id（判斷播放來源）與作業欄位，故回完整列。
   const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, duration, bunny_video_id, vimeo_id";
-  const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes] = await Promise.all([
+  const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes, scoreRes] = await Promise.all([
     supabase.from("chapters").select("*").order("sort_order", { ascending: true }),
     supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
     supabase.from("progress").select("video_id, watched_seconds, total_seconds, completed, watched_at").eq("user_id", user.id),
@@ -97,6 +97,10 @@ export async function GET(req) {
     // 停用（is_active=false）的遊戲不算，語意對齊 games/route.js 的 `!== false`（true/null 都算啟用）。
     playerMode
       ? supabase.from("games").select("id, video_id, title").not("video_id", "is", null).not("is_active", "is", false)
+      : Promise.resolve({ data: null, error: null }),
+    // 互動樂譜（supabase-scores.sql；表還沒建就當作沒有樂譜，側欄照常）
+    playerMode
+      ? supabase.from("scores").select("id, video_id, title").not("video_id", "is", null).eq("published", true)
       : Promise.resolve({ data: null, error: null }),
   ]);
   // 兩種模式都要給：儀表板的「最新公告」區與播放頁的鈴鐺共用同一份資料
@@ -141,9 +145,11 @@ export async function GET(req) {
     // 讀取失敗不讓側欄壞掉：記 log、明細退回空物件，icon 不顯示而已（與本檔既有容錯一致）
     if (matRes.error) console.error("[bootstrap] materials:", matRes.error.message);
     if (gameRes.error) console.error("[bootstrap] games:", gameRes.error.message);
+    if (scoreRes.error) console.error("[bootstrap] scores:", scoreRes.error.message);
     out.contentItems = buildContentItems({
       materials: matRes.data || [],
       games: gameRes.data || [],
+      scores: scoreRes.data || [],
       videos: out.videos,
     });
     out.contentStats = summarizeContent(out.contentItems, totalCount);
