@@ -78,7 +78,7 @@ export async function GET(req) {
 
   // 購課者：章節 + 影片 + 進度 + 已發布單元總數（播放頁另加公告）。並行。
   // 播放頁需要 bunny_video_id/vimeo_id（判斷播放來源）與作業欄位，故回完整列。
-  const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, bunny_video_id, vimeo_id";
+  const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, duration, bunny_video_id, vimeo_id";
   const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes] = await Promise.all([
     supabase.from("chapters").select("*").order("sort_order", { ascending: true }),
     supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),

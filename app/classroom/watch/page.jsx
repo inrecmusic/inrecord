@@ -13,6 +13,7 @@ import CommentsSection from "@/components/classroom/CommentsSection";
 import MaterialsSection from "@/components/classroom/MaterialsSection";
 import { freshToken, openMaterialById, getDeviceId, F } from "@/components/classroom/shared";
 import { comingSoonLabel, releaseBatchFor } from "@/lib/coming-soon";
+import { CHAPTER_RELEASE_DATES, PLANNED_CHAPTER_GAMES, mdLabel, unitNo } from "@/lib/release-schedule";
 import { FULL_RELEASE_MS } from "@/lib/early-access";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────────── */
@@ -32,15 +33,10 @@ const UNIT_ICONS = [
 
 // 尚未上傳影片的單元／尚無單元的章節顯示此文案。改期只需改這一行。
 const COMING_SOON = "預計 10/31 上架"; // 正式開課日（Ch6～Ch10、附錄）
-// 各章的預計上架日（章號 → 文案）；章號取自章節標題開頭的 ChN。
+// 各章的預計上架日（章號 → 文案）；日期在 lib/release-schedule.js（儀表板共用），改期只改那裡。
 // 各章實際上架日（2026-09-13 定案）。非早鳥的可播時間另由 lib/early-access.js 的 FULL_RELEASE_MS 控管，
 // 這裡只是「這一章什麼時候會出現」的預告，兩者不同層次。
-const CHAPTER_COMING_SOON = {
-  // Ch3 由 9/23 併到 9/30，與 Ch4 同一天（2026-09-22 使用者調整）。
-  // 只影響早鳥看到的預計日；非早鳥本來就被 releaseBatchFor 覆寫成第一批的 9/30，不受影響。
-  2: "預計 9/23 上架", 3: "預計 9/30 上架", 4: "預計 9/30 上架", 5: "預計 10/7 上架",
-  6: "預計 10/14 上架", 7: "預計 10/21 上架", 8: "預計 10/28 上架", 9: "預計 10/31 上架", 10: "預計 10/31 上架",
-};
+const CHAPTER_COMING_SOON = Object.fromEntries(Object.entries(CHAPTER_RELEASE_DATES).map(([n, d]) => [n, `預計 ${mdLabel(d)} 上架`]));
 // 個別單元的預計上架日（優先於章、章優先於 COMING_SOON）；key = 單元標題開頭編號。
 // 影片實際掛上去後這一列就不會顯示了（只有 !playable 才印），所以上架後不必回來刪。
 const UNIT_COMING_SOON = { "1-3": "預計 9/3 上架", "1-4": "預計 9/7 上架", "1-5": "預計 9/7 上架" };
@@ -77,19 +73,8 @@ const PLANNED_GAMES = 9;
 // 課綱規劃的各章互動遊戲名稱（依章節標題 ChN 對應）。上傳後：該章任一單元掛了同名遊戲，
 // 對應的規劃列就自動消失（比對用 includes，容忍上傳時加副標）。
 // after = 接在哪個單元之後（比對單元標題開頭的編號，如 "1-2"）。該單元尚未上架時退回章節最後一列。
-const PLANNED_CHAPTER_GAMES = {
-  1:  [{ name: "Do 給你找",       after: "1-2" }],
-  2:  [{ name: "音名快閃",        after: "2-1" }, { name: "唱名小達人", after: "2-2" }, { name: "音名唱名連連看", after: "2-3" }],
-  4:  [{ name: "節奏打點師",      after: "4-5" }],
-  6:  [{ name: "和弦辨識家",      after: "6-4" }],
-  7:  [{ name: "情緒調色盤",      after: "7-1" }],
-  8:  [{ name: "分解和弦連連看",  after: "8-4" }],
-  9:  [{ name: "和弦神預測",      after: "9-3" }],
-  10: [{ name: "自由創作坊",      after: "10-6" }],
-};
 
 // 單元標題開頭的編號："1-2 尋找起始音 Do" → "1-2"
-function unitNo(title) { return String(title || "").trim().split(/\s+/)[0]; }
 
 // Bunny Stream 影片進度追蹤需要 player.js（Bunny CDN 提供）。注入一次、快取 Promise；
 // 載入失敗就放棄（不擋影片播放）。用 window.playerjs.Player(iframe) 監聽 timeupdate。

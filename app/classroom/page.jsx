@@ -1,11 +1,25 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAnnouncements, HubAnnouncements, ImportantDialog } from "@/components/Announcements";
 import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete } from "@/lib/student-profile";
+import { announcementSummary } from "@/lib/announcement-md";
+import { isUnread } from "@/lib/announcements-view";
+import { buildHubModel, greetingLine, relativeDayLabel, joinCn } from "@/lib/hub-view";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
+import { HUB_CSS } from "./hub-css";
 
 const F = `var(--type-body)`;
+const WEEKDAY = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+/* 小圖示（inline SVG，不用 emoji） */
+const Play = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>;
+const Lock = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V8a3 3 0 0 0-6 0v2z" fill="currentColor" /></svg>;
+const Cal = () => <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V2zm13 8H4v10h16V10z" fill="currentColor" /></svg>;
+const Bell = () => <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 2a6 6 0 0 0-6 6v4.6L4 16v1h16v-1l-2-3.4V8a6 6 0 0 0-6-6zm0 20a2.5 2.5 0 0 0 2.4-2H9.6A2.5 2.5 0 0 0 12 22z" fill="currentColor" /></svg>;
+const Arrow = () => <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 12h12m-5-6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+const Check = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+const GAME_GLYPH = ["♩", "♫", "⇄", "♪", "♬"];
 
 /* ── 音樂廳學員中心 ─────────────────────────────────────────────────────────── */
 export default function ClassroomHub() {
@@ -24,9 +38,8 @@ export default function ClassroomHub() {
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
   const [progress, setProgress]           = useState([]);
-  const [pct, setPct]                     = useState(0);
-  const [done, setDone]                   = useState(0);
-  const [total, setTotal]                 = useState(0);
+  const [openedGames, setOpenedGames]     = useState(null); // 已上傳的遊戲標題（有遊戲存取才查；null=不知道）
+  const [nowMs, setNowMs]                 = useState(null); // 資料到齊後才定「現在」（render 不碰 Date.now，避免 hydration 不一致）
   const [theme, setTheme]                 = useState(null);   // null=跟系統；'dark'/'light'=手動
   const [sysDark, setSysDark]             = useState(true);   // 系統是否偏好深色（logo white 判斷用）
   const [greeting, setGreeting]           = useState("歡迎回來");
@@ -50,12 +63,16 @@ export default function ClassroomHub() {
           setChapters(d.chapters || []);
           setVideos(d.videos || []);
           setProgress(d.progress || []);
-          setPct(d.percentage || 0);
-          setDone(d.completedCount || 0);
-          setTotal(d.totalCount || (d.videos || []).length);
           setProfile(d.profile || d.prefill || {});
           setAnnouncements(d.announcements || []);
           setEarlyAccess(d.earlyAccess);
+          setNowMs(Date.now());
+          // 練功房卡片要知道哪些遊戲已上傳（best-effort，失敗就當不知道）
+          if (d.hasSubscription) {
+            fetch("/api/classroom/games", { headers: { Authorization: `Bearer ${accessToken}` } })
+              .then((g) => (g.ok ? g.json() : null)).then((g) => setOpenedGames((g?.games || []).map((x) => x.title || "")))
+              .catch(() => {});
+          }
         } catch {
           setLoadError(true); // 網路/逾時失敗→重試，別誤判未購買
         } finally {
@@ -81,10 +98,15 @@ export default function ClassroomHub() {
   }
   async function handleLogout() { await supabase?.auth.signOut(); window.location.href = "/"; }
 
+  const model = useMemo(
+    () => buildHubModel({ chapters, videos, progress, earlyAccess, nowMs: nowMs ?? 0, openedGames }),
+    [chapters, videos, progress, earlyAccess, nowMs, openedGames]
+  );
+
   /* gates */
   if (loading || (hasPurchased && token && !profileLoaded)) {
     return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0e1118" }}>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0c0f16" }}>
         <div style={{ width: 28, height: 28, border: "2.5px solid rgba(255,255,255,.12)", borderTopColor: "#e8c583", borderRadius: "50%", animation: "hubspin .7s linear infinite" }} />
         <style>{`@keyframes hubspin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -119,187 +141,231 @@ export default function ClassroomHub() {
   }
 
   /* 衍生資料 */
-  const progMap = Object.fromEntries(progress.map(p => [p.video_id, p]));
-  // 「繼續上課」只指向有影片可播的單元（尚未上傳影片的空單元不算）；全部無可播放則不顯示 CTA
-  const nextVideo = videos.find(v => v.playable && !progMap[v.id]?.completed) || videos.find(v => v.playable) || null;
-  const roman = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ","Ⅵ","Ⅶ","Ⅷ","Ⅸ","Ⅹ"];
   const name = (profile && profile.real_name) || user?.email?.split("@")[0] || "同學";
-  const dash = 578, offset = Math.round(dash * (1 - Math.min(100, pct) / 100));
   const effectiveDark = theme ? theme === "dark" : sysDark; // 目前實際是深色嗎（logo 用白版）
+  const { hero, lastWatched, opened, watched, pct, weekCount, lessons, currentChapter, games, nextOpen, firstChapter } = model;
+  const ringLen = 283, ringOff = Math.round(ringLen * (1 - Math.min(100, pct) / 100));
+  const latestAnn = ann.sorted[0] || null;
+  const dateLabel = nowMs ? (() => { const d = new Date(nowMs + 8 * 3_600_000); return `${d.getUTCMonth() + 1} 月 ${d.getUTCDate()} 日　${WEEKDAY[d.getUTCDay()]}`; })() : "";
+  const chapterCount = model.chapters.filter((c) => !c.isAppendix).length;
+  const appxCount = model.chapters.length - chapterCount;
+  const showLockedPoster = !hero;
 
   return (
     <div className="hub" data-theme={theme || undefined}>
       <style>{HUB_CSS}</style>
-      <div className="glow" aria-hidden="true" />
       <ImportantDialog ann={ann} variant="hub" />
 
-      <nav>
-        <a href="/classroom" aria-label="InRecord"><img src={effectiveDark ? "/logo-wordmark-white.png" : "/logo-wordmark.png"} alt="InRecord" style={{ height: 22, width: "auto", display: "block" }} /></a>
-        <div className="r">
-          <a href="/classroom/watch">音樂教室</a>
-          <a href="/classroom/account">帳號</a>
-          <button className="toggle" onClick={toggleTheme} aria-label="切換深色／淺色">{effectiveDark ? "☾" : "☀"}</button>
-          <div className="av">{name.slice(0, 1)}</div>
+      <header className="nav">
+        <div className="wrap">
+          <a className="logo" href="/classroom" aria-label="InRecord"><img src={effectiveDark ? "/logo-wordmark-white.png" : "/logo-wordmark.png"} alt="InRecord" /></a>
+          <nav className="links" aria-label="教室">
+            <a className="on" href="/classroom" aria-current="page">儀表板</a>
+            <a href="/classroom/watch">音樂教室</a>
+            <a href="/classroom/account">帳號</a>
+          </nav>
+          <div className="sp" />
+          {ann.sorted.length > 0 && (
+            <a className="icon" href="#announcements" aria-label={ann.unread ? `公告，${ann.unread} 則未讀` : "公告"}>
+              <Bell />{ann.unread > 0 && <span className="dot">{ann.unread}</span>}
+            </a>
+          )}
+          <button className="icon" onClick={toggleTheme} aria-label={effectiveDark ? "切換為淺色模式" : "切換為深色模式"}>{effectiveDark ? "☾" : "☀"}</button>
+          <a className="me" href="/classroom/account"><span className="nm">{name}</span><span className="av" aria-hidden="true">{name.slice(0, 1)}</span></a>
         </div>
-      </nav>
+      </header>
+
+      <main className="wrap">
+        <section className="greet">
+          <img src="/mascot-wave-v2.png" alt="" width="74" height="74" />
+          <div>
+            <h1 className="serif">{greeting}，{name}。</h1>
+            <p>{greetingLine(model, earlyAccess)}</p>
+          </div>
+          {dateLabel && <div className="date">{dateLabel}</div>}
+        </section>
+
+        <section className="hero">
+          {hero ? (
+            <a className="poster" href={`/classroom/watch?v=${hero.video.id}`} aria-label={`${watched ? "繼續上課" : "開始上課"}：${hero.ref}${hero.no ? `　${hero.name}` : ""}`}>
+              <div className="top">
+                {hero.chapterNew && <span className="chip gold">{joinCn(hero.chapterLabel, hero.chapterNewLabel)}</span>}
+                {hero.duration && <span className="chip dark">{hero.duration}</span>}
+              </div>
+              <span className="play" aria-hidden="true"><Play /></span>
+              <div className="txt">
+                <div className="eyebrow">接著看　{hero.chapterLabel}{hero.positionInChapter ? `　第 ${hero.positionInChapter} 單元` : ""}</div>
+                <h2 className="serif">{hero.no && <span className="no num">{hero.no}</span>}{hero.name}</h2>
+                {lastWatched && lastWatched.video.id !== hero.video.id && (
+                  <div className="meta"><span>上次看到 <b>{lastWatched.no}　{lastWatched.name}</b></span><span>{lastWatched.when}</span></div>
+                )}
+                <div className="row">
+                  <span className="btn gold"><Play />{watched ? "繼續上課" : "開始上課"}</span>
+                  {hero.durationShort && <div className="prog"><span>{hero.resumeAt ? `上次停在 ${hero.resumeLabel}` : "從頭開始"}</span><div className="bar"><i style={{ width: `${hero.resumePct}%` }} /></div><span>{hero.durationShort}</span></div>}
+                </div>
+              </div>
+            </a>
+          ) : (
+            <div className="poster locked">
+              <div className="txt">
+                <div className="eyebrow">{earlyAccess === false ? "開課前" : "準備中"}</div>
+                <h2 className="serif">{earlyAccess === false ? "第一批章節 9/30 開放" : "第一堂課很快和你見面"}</h2>
+                <p>{earlyAccess === false ? "開放後從這裡接著上就可以，我們也會另外通知你。" : "影片上架後，這裡會直接接到下一個單元。"}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="side">
+            <div className="card progress">
+              <h3>學習進度</h3>
+              <div className="cap">以目前開放的單元計算</div>
+              <div className="top">
+                <div className="ring" role="img" aria-label={`已看 ${pct}%`}>
+                  <svg viewBox="0 0 100 100"><circle className="t" cx="50" cy="50" r="45" /><circle className="v" cx="50" cy="50" r="45" strokeDasharray={ringLen} strokeDashoffset={ringOff} /></svg>
+                  <div className="mid"><b className="num">{pct}%</b><small>已看</small></div>
+                </div>
+                <div>
+                  <div className="big num">{watched} <small>/ {opened}</small></div>
+                  <div className="lbl">{opened ? `已開放 ${opened} 支，看了 ${watched} 支` : earlyAccess === false ? "第一批章節 9/30 開放" : "影片上架後就會開始計算"}</div>
+                </div>
+              </div>
+              <div className="stats">
+                <div><b className="num">{weekCount}<small>課</small></b><span>最近 7 天看完</span></div>
+                {firstChapter && <div><b className="num">{firstChapter.done}<small>/{firstChapter.units}</small></b><span>第一章進度</span></div>}
+                {currentChapter && currentChapter.num !== 1
+                  ? <div><b className="num">{currentChapter.done}<small>/{currentChapter.units}</small></b><span>{currentChapter.name}進度</span></div>
+                  : <div><b className="num">{chapterCount}<small>章</small></b><span>章節總數</span></div>}
+              </div>
+              {nextOpen && (
+                <div className="nextopen"><Cal /><span>下一次開放：<b>{nextOpen.label}</b>　{nextOpen.date}{nextOpen.inDays > 0 ? `（${nextOpen.inDays} 天後）` : "（今天）"}</span></div>
+              )}
+            </div>
+
+            {latestAnn ? (
+              <a className="card anncard" href="#announcements" onClick={(e) => { e.preventDefault(); ann.openItem(latestAnn.id); }}>
+                <span className="tag"><Bell />公告　{relativeDayLabel(Date.parse(latestAnn.created_at), nowMs)}{isUnread(latestAnn, ann.readState) && <><span className="unread" aria-hidden="true" /><span className="sr">未讀</span></>}</span>
+                <h3>{latestAnn.title}</h3>
+                <p>{announcementSummary(String(latestAnn.body || "").split(/\n\s*\n/)[0], 64)}</p>
+                <span className="more">看全文 <Arrow /></span>
+                <img src="/mascot-wave-v2.png" alt="" />
+              </a>
+            ) : (
+              <div className="card plain">
+                <h3>我的資料與訂單</h3>
+                <p>學員資料、購課紀錄與帳號設定，都在這裡管理。</p>
+                <a className="more" href="/classroom/account">前往設定 <Arrow /></a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {lessons.length > 0 && currentChapter && (
+          <section className="sec" aria-labelledby="sec-lessons">
+            <div className="sec-h">
+              <h2 id="sec-lessons" className="serif">{currentChapter.name}　{currentChapter.main}</h2>
+              <span className="cap">{currentChapter.units} 個單元{currentChapter.isNew ? `／${currentChapter.newLabel}` : ""}</span>
+              <a className="more" href={currentChapter.overviewHref}>從頭看這章 <Arrow /></a>
+            </div>
+            <div className="lessons">
+              {lessons.map((l) => (
+                <a key={l.id} className={`lesson ${l.state}`} href={l.state === "locked" ? "/classroom/watch" : l.href}>
+                  <div className="cover">
+                    <span className="no num">{l.no || "—"}</span>
+                    {l.duration && <span className="dur">{l.duration}</span>}
+                    <i className="keys-tex" aria-hidden="true" />
+                    <span className="pm" aria-hidden="true">{l.state === "done" ? <Check /> : l.state === "locked" ? <Lock /> : <Play />}</span>
+                  </div>
+                  <div className="body">
+                    <h3>{l.name}</h3>
+                    <div className="meta">
+                      {l.state === "next" ? <span className="chip gold">接著看</span> : l.state === "done" ? <span className="chip">已看完</span> : l.state === "locked" ? <span className="chip lock">尚未上架</span> : <span className="chip">還沒看</span>}
+                      <span>{l.duration}</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="sec" aria-labelledby="sec-chapters">
+          <div className="sec-h">
+            <h2 id="sec-chapters" className="serif">課程章節</h2>
+            <span className="cap">{chapterCount} 章{appxCount ? `、附錄 ${appxCount} 篇` : ""}／10/31 全部開放</span>
+          </div>
+          {model.chapters.length === 0 ? (
+            <div className="card plain"><p>課程單元即將上線。</p></div>
+          ) : (
+            <div className="chapters">
+              {model.chapters.map((c) => (
+                <a key={c.id} className={`chapter ${c.isNew ? "new" : c.state}${c.isAppendix ? " appx" : ""}`} href={c.href}
+                   aria-label={`${c.name}　${c.main}${c.sub ? `：${c.sub}` : ""}，${c.state === "locked" ? c.note : c.isNew ? "新上架" : c.state === "done" ? "已看完" : c.state === "progress" ? c.note : "還沒開始"}`}>
+                  <div className="cover">
+                    <span className={`roman num${c.isAppendix ? " sm" : ""}`}>{c.label}</span>
+                    {c.state === "locked" ? <span className="chip lock"><Lock />{c.note}</span>
+                      : c.isNew ? <span className="chip new">新上架</span>
+                      : c.state === "done" ? <span className="chip">已看完</span>
+                      : c.state === "progress" ? <span className="chip gold">進行中</span>
+                      : <span className="chip">還沒開始</span>}
+                    <i className="keys-tex" aria-hidden="true" />
+                  </div>
+                  <div className="body">
+                    <h3>{c.main}{c.sub && <small>{c.sub}</small>}</h3>
+                    {(c.state === "progress" || c.state === "done" || (c.state === "ready" && c.units)) && <div className="bar"><i style={{ width: `${c.pct}%` }} /></div>}
+                    <div className="foot">
+                      <span>{c.state === "locked" ? (c.isAppendix ? "講義" : c.units ? `共 ${c.units} 單元` : "單元準備中") : c.note}</span>
+                      {c.state !== "locked" && <span className="go">{c.state === "done" ? "再看一次" : c.state === "progress" ? "接著看" : c.isNow ? "從這裡開始" : "開始"} <Arrow /></span>}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="sec" aria-labelledby="sec-games">
+          <div className="sec-h">
+            <h2 id="sec-games" className="serif">練功房</h2>
+            <span className="cap">邊玩邊複習，把剛學的變成反射動作</span>
+            <a className="more" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "全部遊戲" : "了解課程包"} <Arrow /></a>
+          </div>
+          <div className="games-wrap">
+            <div className="games">
+              {hasSubscription && games.length > 0 ? games.map((g, i) => (
+                <a key={g.name} className={`game ${g.opened ? "open" : "soon"}`} href={g.opened ? g.href : "/classroom/watch"}>
+                  <div className="tile" aria-hidden="true"><span>{GAME_GLYPH[i % GAME_GLYPH.length]}</span></div>
+                  <div className="body">
+                    <h3>{g.name}</h3>
+                    <p>{g.chapterLabel}　{g.after} 之後</p>
+                    {g.opened ? <span className="chip gold">可以玩了</span> : <span className="chip">即將上線</span>}
+                  </div>
+                </a>
+              )) : (
+                <div className="card plain" style={{ gridColumn: "1 / -1" }}>
+                  <h3>{hasSubscription ? "互動遊戲跟著章節上架" : "課程包附贈的互動練習"}</h3>
+                  <p>{hasSubscription ? "每一章的遊戲會接在對應單元後面，上架後這裡會直接列出來。" : "用互動遊戲練音感與節奏，升級課程包即可解鎖。"}</p>
+                  <a className="more" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "進入音樂教室" : "了解課程包"} <Arrow /></a>
+                </div>
+              )}
+            </div>
+            <div className="mascot-stage" aria-hidden="true">
+              <div className="bubble">練完這章的遊戲，剛學的就會變成反射動作。</div>
+              <img src="/mascot-grand-v1.webp" alt="" />
+            </div>
+          </div>
+        </section>
+
+        {ann.sorted.length > 0 && <div id="announcements"><HubAnnouncements ann={ann} /></div>}
+      </main>
 
       <div className="wrap">
-        <div className="hero">
-          <div>
-            <div className="eyebrow">Welcome back</div>
-            <h1>{greeting}，{name}。{nextVideo ? <><br />上次上到 <span>{nextVideo.title}</span>，我們繼續吧。</> : <><br />準備好，我們開始吧。</>}</h1>
-            {/* 非早鳥 9/30 前沒有任何可播單元（nextVideo 為 null、CTA 不渲染），不能再說「點下面接著」 */}
-            <p>{total > 0 ? (nextVideo || earlyAccess !== false ? <>已經完成 {pct}%（{done}/{total} 單元）了，點下面接著上次的進度。</> : <>第一批章節 9/30 開放，開放後從這裡接著上。</>) : <>課程即將上線，第一堂課很快和你見面。</>}</p>
-            {nextVideo && <a className="cta" href={`/classroom/watch?v=${nextVideo.id}`}>▶ 繼續上課 · {nextVideo.title}</a>}
-          </div>
-          <div className="ring">
-            <svg width="210" height="210" viewBox="0 0 210 210" aria-hidden="true">
-              <circle cx="105" cy="105" r="92" fill="none" stroke="var(--ring-track)" strokeWidth="14" />
-              <circle cx="105" cy="105" r="92" fill="none" stroke="var(--gold)" strokeWidth="14" strokeLinecap="round" strokeDasharray={dash} strokeDashoffset={offset} transform="rotate(-90 105 105)" />
-            </svg>
-            <div className="mid"><b className="numt">{pct}%</b><small>整體進度</small></div>
-          </div>
-        </div>
-
-        <HubAnnouncements ann={ann} />
-        <div className="sect-t">課程章節</div>
-        <div className="chapters">
-          {chapters.length === 0 && <div className="empty">課程單元即將上線 🎼</div>}
-          {chapters.map((ch, i) => {
-            const vs = videos.filter(v => v.chapter_id === ch.id);
-            const chDone = vs.filter(v => progMap[v.id]?.completed).length;
-            const firstUndone = vs.find(v => v.playable && !progMap[v.id]?.completed) || vs.find(v => v.playable) || vs[0];
-            const isNow = nextVideo && vs.some(v => v.id === nextVideo.id);
-            return (
-              <a key={ch.id} className="ch" href={firstUndone ? `/classroom/watch?v=${firstUndone.id}` : "/classroom/watch"}>
-                <div className="n">{roman[i] || i + 1}</div>
-                <div className="t">{ch.title}<small>{vs.length ? `${vs.length} 單元` : "準備中"}{vs.length ? ` · 已完成 ${chDone}/${vs.length}` : ""}</small></div>
-                <div className={"s" + (isNow ? " now" : "")}>{isNow ? "繼續 →" : chDone === vs.length && vs.length ? "已完成" : "前往 →"}</div>
-              </a>
-            );
-          })}
-        </div>
-
-        <div className="grid2">
-          <div className="tile">
-            <h4>練功房</h4>
-            <p>{hasSubscription ? "用互動遊戲練音感與節奏，把剛學的變成反射動作。" : "課程包附贈的互動練習，升級即可解鎖。"}</p>
-            <a className="link" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "進入練功房 →" : "了解課程包 →"}</a>
-          </div>
-          <div className="tile">
-            <h4>我的資料與訂單</h4>
-            <p>學員資料（鋼琴程度、練習器材）、購課紀錄與帳號設定，都在這裡管理。</p>
-            <a className="link" href="/classroom/account">前往設定 →</a>
-          </div>
+        {/* 真實鋼琴鍵：52 個白鍵＝完整 88 鍵鋼琴；黑鍵依八度落在 C#/D#/F#/G#/A#（白鍵 index%7 ∈ {0,1,3,4,5}）。窄螢幕只顯示前 3 個八度。*/}
+        <div className="keys" aria-hidden="true">{Array.from({ length: 52 }).map((_, i) => <i key={i} className={[0, 1, 3, 4, 5].includes(i % 7) ? "bk" : ""} />)}</div>
+        <div className="foot">
+          <span>InRecord 音樂刻　從零開始學鋼琴</span>
+          <span className="links"><a href="/classroom/account">帳號與訂單</a><button type="button" onClick={handleLogout}>登出</button></span>
         </div>
       </div>
-
-      {/* 真實鋼琴鍵：52 個白鍵＝完整 88 鍵鋼琴；黑鍵依八度落在 C#/D#/F#/G#/A#（白鍵 index%7 ∈ {0,1,3,4,5}）。
-          窄螢幕只顯示前 3 個八度（見 media query），避免每鍵細到看不出是鍵盤。*/}
-      <div className="keys" aria-hidden="true">{Array.from({ length: 52 }).map((_, i) => <i key={i} className={[0, 1, 3, 4, 5].includes(i % 7) ? "bk" : ""} />)}</div>
-      <button className="signout" onClick={handleLogout}>登出</button>
     </div>
   );
 }
-
-const HUB_CSS = `
-.hub{
-  --bg1:#1c2438; --bg2:#0e1118; --bg3:#090b10;
-  --ink:#ece7db; --ink-soft:#a9a496; --ink-faint:#8f8a7d;
-  --gold:#e8c583; --gold-line:rgba(232,197,131,.55);
-  --card:rgba(255,255,255,.05); --card-a:rgba(255,255,255,.07); --card-b:rgba(255,255,255,.02);
-  --line:rgba(255,255,255,.16); --line-soft:rgba(255,255,255,.15);
-  --cta-bg:#e8c583; --cta-ink:#241a08;
-  --glow:rgba(232,197,131,.16);
-  --key-a:#171b22; --key-b:#0c0e13; --key-black:#05070b; --key-line:rgba(0,0,0,.55); --keys-op:.5;
-  --ring-track:rgba(255,255,255,.11);
-  --cta-shadow:0 12px 40px -12px rgba(232,197,131,.55);
-  --av-a:#e8c583; --av-b:#b8894a; --av-ink:#2a1e0a;
-  --tgl-bg:rgba(255,255,255,.07); --tgl-line:rgba(255,255,255,.2); --tgl-ink:#e8c583;
-  --serif:"Songti TC","Noto Serif TC",Georgia,serif;
-  min-height:100vh; position:relative; overflow-x:hidden; padding-bottom:112px;
-  color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",sans-serif;
-  background:radial-gradient(120% 90% at 82% -10%,var(--bg1) 0%,var(--bg2) 46%,var(--bg3) 100%);
-  transition:background .5s ease,color .35s ease;
-}
-@media (prefers-color-scheme:light){ .hub:not([data-theme]){
-  --bg1:#ffffff; --bg2:#f7faff; --bg3:#edf3ff;
-  --ink:#15233f; --ink-soft:#4d5a72; --ink-faint:#8590a4;
-  --gold:#2563eb; --gold-line:rgba(37,99,235,.42);
-  --card:rgba(255,255,255,.72); --card-a:#ffffff; --card-b:rgba(238,244,255,.55);
-  --line:rgba(37,99,235,.2); --line-soft:rgba(30,50,95,.12);
-  --cta-bg:#2563eb; --cta-ink:#ffffff;
-  --glow:rgba(37,99,235,.13);
-  --key-a:#ffffff; --key-b:#e8f0fc; --key-black:#1a2b4d; --key-line:rgba(37,99,235,.16); --keys-op:.75;
-  --ring-track:rgba(37,99,235,.15);
-  --cta-shadow:0 14px 38px -14px rgba(37,99,235,.5);
-  --av-a:#4f8cff; --av-b:#2563eb; --av-ink:#ffffff;
-  --tgl-bg:rgba(37,99,235,.09); --tgl-line:rgba(37,99,235,.24); --tgl-ink:#2563eb;
-}}
-.hub[data-theme="light"]{
-  --bg1:#ffffff; --bg2:#f7faff; --bg3:#edf3ff;
-  --ink:#15233f; --ink-soft:#4d5a72; --ink-faint:#8590a4;
-  --gold:#2563eb; --gold-line:rgba(37,99,235,.42);
-  --card:rgba(255,255,255,.72); --card-a:#ffffff; --card-b:rgba(238,244,255,.55);
-  --line:rgba(37,99,235,.2); --line-soft:rgba(30,50,95,.12);
-  --cta-bg:#2563eb; --cta-ink:#ffffff;
-  --glow:rgba(37,99,235,.13);
-  --key-a:#ffffff; --key-b:#e8f0fc; --key-black:#1a2b4d; --key-line:rgba(37,99,235,.16); --keys-op:.75;
-  --ring-track:rgba(37,99,235,.15);
-  --cta-shadow:0 14px 38px -14px rgba(37,99,235,.5);
-  --av-a:#4f8cff; --av-b:#2563eb; --av-ink:#ffffff;
-  --tgl-bg:rgba(37,99,235,.09); --tgl-line:rgba(37,99,235,.24); --tgl-ink:#2563eb;
-}
-.hub *{box-sizing:border-box}
-.hub a{text-decoration:none; color:inherit}
-.hub .numt{font-variant-numeric:tabular-nums}
-.hub .glow{position:absolute; top:-160px; right:-120px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,var(--glow),transparent 62%); pointer-events:none}
-.hub nav{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,60px); position:relative; z-index:3}
-.hub nav .r{display:flex; align-items:center; gap:20px; font-size:14px}
-.hub nav .r a{color:var(--ink-soft); transition:.2s}
-.hub nav .r a:hover{color:var(--ink)}
-.hub .toggle{width:40px;height:40px;border-radius:50%;border:1px solid var(--tgl-line);background:var(--tgl-bg);color:var(--tgl-ink);display:grid;place-items:center;cursor:pointer;transition:.25s;font-size:16px}
-.hub .toggle:hover{transform:rotate(-18deg)}
-.hub .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--av-a),var(--av-b));display:grid;place-items:center;color:var(--av-ink);font-weight:800;font-size:14px}
-.hub .wrap{max-width:1080px; margin:0 auto; padding:14px clamp(20px,5vw,60px) 0; position:relative; z-index:2}
-.hub .eyebrow{font-size:12px; letter-spacing:.34em; text-transform:uppercase; color:var(--gold); font-weight:600}
-.hub .hero{display:grid; grid-template-columns:1.4fr .85fr; gap:34px; align-items:center; margin:20px 0 48px}
-.hub .hero h1{font-family:var(--serif); font-weight:600; font-size:clamp(28px,5vw,48px); line-height:1.14; margin:14px 0 12px; text-wrap:balance}
-.hub .hero h1 span{color:var(--gold); font-style:italic}
-.hub .hero p{color:var(--ink-soft); font-size:15px; max-width:44ch; line-height:1.72}
-.hub .cta{display:inline-flex; align-items:center; gap:10px; margin-top:24px; background:var(--cta-bg); color:var(--cta-ink); font-weight:700; padding:14px 26px; border-radius:100px; font-size:15px; box-shadow:var(--cta-shadow); transition:transform .2s}
-.hub .cta:hover{transform:translateY(-2px)}
-.hub .ring{position:relative; width:210px; height:210px; margin:0 auto}
-.hub .ring .mid{position:absolute; inset:0; display:grid; place-content:center; text-align:center}
-.hub .ring .mid b{font-family:var(--serif); font-size:46px; color:var(--ink); line-height:1}
-.hub .ring .mid small{color:var(--ink-soft); font-size:12px; letter-spacing:.1em; text-transform:uppercase; margin-top:5px; display:block}
-.hub .sect-t{font-family:var(--serif); font-size:23px; color:var(--ink); margin-bottom:16px; display:flex; align-items:baseline; gap:12px}
-.hub .sect-t::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--gold-line),transparent)}
-.hub .chapters{display:flex; flex-direction:column; gap:10px; margin-bottom:48px}
-.hub .empty{padding:22px; text-align:center; color:var(--ink-faint); border:1px dashed var(--line); border-radius:14px; font-size:14px}
-.hub .ch{display:grid; grid-template-columns:44px 1fr auto; gap:18px; align-items:center; padding:16px 20px; background:var(--card); border:1px solid var(--line-soft); border-radius:14px; transition:.2s; cursor:pointer}
-.hub .ch:hover{border-color:var(--gold-line); transform:translateX(3px)}
-.hub .ch .n{font-family:var(--serif); font-size:22px; color:var(--gold); text-align:center}
-.hub .ch .t{font-weight:600; font-size:15.5px; color:var(--ink)}
-.hub .ch .t small{display:block; color:var(--ink-faint); font-weight:400; font-size:12.5px; margin-top:2px}
-.hub .ch .s{font-size:12px; color:var(--ink-faint); white-space:nowrap}
-.hub .ch .s.now{color:var(--gold); font-weight:600}
-.hub .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
-.hub .tile{padding:24px; border-radius:16px; border:1px solid var(--line); background:linear-gradient(160deg,var(--card-a),var(--card-b))}
-.hub .tile h4{font-family:var(--serif); font-size:19px; margin-bottom:6px; color:var(--ink)}
-.hub .tile p{color:var(--ink-soft); font-size:13.5px; line-height:1.65}
-.hub .tile .link{color:var(--gold); font-weight:600; font-size:13.5px; margin-top:14px; display:inline-block}
-.hub .keys{position:absolute; bottom:0; left:0; right:0; height:88px; display:flex; opacity:.96; pointer-events:none; overflow:hidden}
-.hub .keys i{position:relative; flex:1; background:#fbfbfb; border-right:1px solid #bcbcbc; box-shadow:inset 0 -3px 4px -3px rgba(0,0,0,.25)}
-.hub .keys i.bk::after{content:""; position:absolute; top:0; right:-29%; width:58%; height:63%; z-index:2; background:linear-gradient(#2b2b2b,#0a0a0a); border-radius:0 0 2px 2px; box-shadow:0 2px 2px rgba(0,0,0,.4)}
-.hub .signout{position:fixed; bottom:16px; right:16px; z-index:5; background:var(--tgl-bg); border:1px solid var(--tgl-line); color:var(--ink-soft); font-size:12px; padding:7px 14px; border-radius:100px; cursor:pointer; font-family:inherit}
-.hub .signout:hover{color:var(--ink)}
-/* 最新公告（components/Announcements HubAnnouncements） */
-.hub .sect-t .more{font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; font-size:13px; color:var(--gold); font-weight:600; background:none; border:0; cursor:pointer; order:3; padding:0}
-.hub .ann-md{color:var(--ink-soft); font-size:13.5px; line-height:1.75; margin-top:6px}
-.hub .ann-md p{margin:0 0 8px} .hub .ann-md p:last-child{margin-bottom:0} .hub .ann-md ul{margin:4px 0 8px 18px; padding:0}
-.hub .ann-md a{color:var(--gold); text-decoration:underline; text-underline-offset:3px; word-break:break-all} .hub .ann-md strong{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){ .hub *{transition:none!important} }
-@media(max-width:760px){ .hub .hero{grid-template-columns:1fr} .hub .grid2{grid-template-columns:1fr} .hub nav .r a{display:none} .hub .ring{margin-top:8px}
-  .hub{padding-bottom:88px} .hub .keys{height:64px} .hub .keys i{flex:0 0 calc(100%/21)} }
-`;
