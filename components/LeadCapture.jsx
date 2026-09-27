@@ -48,6 +48,9 @@ export function LeadForm({ layout = "row", dark = false, cta = "立即觀看試�
         <p className={styles.doneMain}>
           {canWatch ? "試看已解鎖，現在就能看" : done.trialSent ? `試看連結已寄到 ${done.email}` : "已收到你的 Email"}
         </p>
+        {/* 刻意用按鈕而不是自動跳轉：fbq／gtag 沒有送出回呼，立刻 navigate 會讓瀏覽器
+            取消還沒送完的請求，而 Lead 是目前唯一有量的廣告優化事件。使用者多按一下，
+            換 Lead 訊號不漏。要改成自動跳轉的話，得先把 Lead 改由伺服器端 CAPI 送。 */}
         {canWatch && (
           <a className={styles.doneCta} href={done.trialPath}>立即觀看試看課程</a>
         )}
