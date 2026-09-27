@@ -69,20 +69,19 @@ export function LeadForm({ layout = "row", dark = false, cta = "立即觀看試�
         {canWatch && (
           <a className={styles.doneCta} href={done.trialPath}>立即觀看試看課程</a>
         )}
-        {/* 收不到信是最常見的客訴來源。把「去哪找」獨立成一塊、並給出可以直接搜尋的寄件人地址， */}
-        {/* 比塞在句尾的一句話有用得多。 */}
-        <p className={styles.doneHint}>
-          {canWatch ? (
-            done.trialSent
-              ? <>沒有自動開啟就點上面的按鈕。連結也寄到 <strong>{done.email}</strong>，之後想再看從信裡打開就行。</>
-              : <>沒有自動開啟就點上面的按鈕。試看信暫時沒寄成，需要補寄請來信 <strong>support@inrecordmusic.com</strong>。</>
-          ) : done.trialSent ? (
-            <>沒收到嗎？請檢查<strong>促銷</strong>與<strong>垃圾郵件</strong>分頁，
-              或在信箱搜尋 <strong>support@inrecordmusic.com</strong>。</>
-          ) : (
-            <>試看信暫時沒寄成，我們會盡快補寄；急的話直接來信 <strong>support@inrecordmusic.com</strong>。</>
-          )}
-        </p>
+        {/* 會自動跳轉時不放提示：字只閃 0.5 秒就跳走，是雜訊。
+            拿不到簽章連結（不會跳）才需要指引——收不到信是最常見的客訴來源，
+            把「去哪找」獨立成一塊、給出可直接搜尋的寄件人地址，比塞在句尾有用得多。 */}
+        {!canWatch && (
+          <p className={styles.doneHint}>
+            {done.trialSent ? (
+              <>沒收到嗎？請檢查<strong>促銷</strong>與<strong>垃圾郵件</strong>分頁，
+                或在信箱搜尋 <strong>support@inrecordmusic.com</strong>。</>
+            ) : (
+              <>試看信暫時沒寄成，我們會盡快補寄；急的話直接來信 <strong>support@inrecordmusic.com</strong>。</>
+            )}
+          </p>
+        )}
       </div>
     );
   }

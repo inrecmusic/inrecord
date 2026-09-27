@@ -48,7 +48,8 @@ describe("LeadForm（共用表單）", () => {
     expect(await screen.findByText(/試看已解鎖/)).toBeTruthy();
     // 關鍵：廣告點擊已經付過錢，不能只留一句「已寄到信箱」就把人丟在那裡
     expect(watchLink().getAttribute("href")).toBe(TRIAL_PATH);
-    expect(screen.getByText(/連結也寄到/)).toBeTruthy();
+    // 會自動跳走，不放只閃 0.5 秒的提示文字
+    expect(screen.queryByText(/垃圾郵件|連結也寄到/)).toBeNull();
     const [url, init] = global.fetch.mock.calls[0];
     expect(url).toBe("/api/newsletter/subscribe");
     expect(JSON.parse(init.body)).toEqual({ email: "a@x.com", consent: true, attribution: { utm_source: "ig" } });
@@ -57,13 +58,14 @@ describe("LeadForm（共用表單）", () => {
     expect(screen.queryByRole("button", { name: /立即觀看試看/ })).toBeNull();
   });
 
-  it("試看信沒寄成但有 trialPath → 照樣給觀看連結，文案改成現在就能看", async () => {
+  it("試看信沒寄成但有 trialPath → 照樣給觀看連結並自動跳轉（信寄不寄成不影響看得到）", async () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: false, trialPath: TRIAL_PATH }) });
     render(<LeadForm />);
     fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
-    expect(await screen.findByText(/試看信暫時沒寄成/)).toBeTruthy();
+    expect(await screen.findByText(/試看已解鎖/)).toBeTruthy();
     expect(watchLink()).toBeTruthy();
     expect(trackEvent).toHaveBeenCalled();
+    await waitFor(() => expect(assign).toHaveBeenCalledWith(TRIAL_PATH), { timeout: 3000 });
   });
 
   it("有 trialPath → 自動跳到試看頁（不用再按一次）", async () => {
