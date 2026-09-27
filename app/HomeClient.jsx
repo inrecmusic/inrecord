@@ -757,11 +757,11 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                   {/* 廣告點進來的人多半是為了試看，入口不能只放在頁尾 */}
                   {leadCapture && (
                     <a href="#subscribe" className={styles.btnOutline} onClick={scrollToTrial}>
-                      <Video size={16} />免費試看
+                      <Video size={16} />課程免費試看
                     </a>
                   )}
                   <a href="/demo" className={styles.btnOutline}>
-                    <Play size={16} />課程 Demo 體驗
+                    <Play size={16} />互動遊戲體驗
                   </a>
                 </div>
               </motion.div>
