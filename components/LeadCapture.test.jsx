@@ -2,7 +2,7 @@
 // 首頁「留下 Email 換試看」：沒勾同意送不出；成功 → 打 API、當場給觀看連結（不必去收信）、送 Lead 事件；
 // 後端沒回 trialPath 時退回原本的「去信箱找」提示；失敗可重試。
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 
 vi.mock("@/lib/track-event", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/attribution", () => ({ readAttributionCookie: () => ({ utm_source: "ig" }) }));
@@ -11,7 +11,14 @@ import LeadCapture, { LeadForm } from "./LeadCapture";
 import { trackEvent } from "@/lib/track-event";
 
 afterEach(cleanup);
-beforeEach(() => { vi.clearAllMocks(); global.fetch = vi.fn(); });
+// jsdom 沒有實作 location.assign（直接呼叫會丟 Not implemented），換成可觀測的 mock
+let assign;
+beforeEach(() => {
+  vi.clearAllMocks();
+  global.fetch = vi.fn();
+  assign = vi.fn();
+  Object.defineProperty(window, "location", { configurable: true, value: { assign, href: "http://localhost/" } });
+});
 
 const fill = (email) => fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
 const submit = () => fireEvent.click(screen.getByRole("button", { name: /立即觀看試看/ }));
@@ -54,18 +61,30 @@ describe("LeadForm（共用表單）", () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: false, trialPath: TRIAL_PATH }) });
     render(<LeadForm />);
     fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
-    expect(await screen.findByText(/現在就能直接看/)).toBeTruthy();
+    expect(await screen.findByText(/試看信暫時沒寄成/)).toBeTruthy();
     expect(watchLink()).toBeTruthy();
     expect(trackEvent).toHaveBeenCalled();
   });
 
-  it("後端沒回 trialPath → 退回原本的「去信箱找」提示，不顯示觀看連結", async () => {
+  it("有 trialPath → 自動跳到試看頁（不用再按一次）", async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: true, trialPath: TRIAL_PATH }) });
+    render(<LeadForm />);
+    fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
+    await screen.findByText(/試看已解鎖/);
+    // 廣告的優化目標是 /trial 那頁 PageView 觸發的自訂轉換，跳過去才算數，所以跳得越快越好；
+    // 仍留緩衝讓首頁的 Lead 事件盡量送得出去。
+    await waitFor(() => expect(assign).toHaveBeenCalledWith(TRIAL_PATH), { timeout: 3000 });
+  });
+
+  it("後端沒回 trialPath → 不自動跳轉，退回原本的「去信箱找」提示、不顯示觀看連結", async () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: true }) });
     render(<LeadForm />);
     fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
     expect(await screen.findByText(/試看連結已寄到 a@x.com/)).toBeTruthy();
     expect(screen.getByText(/垃圾郵件/)).toBeTruthy();
     expect(watchLink()).toBeNull();
+    await new Promise((r) => setTimeout(r, 700)); // 過了跳轉緩衝也不該跳
+    expect(assign).not.toHaveBeenCalled();
   });
 
   it("名單進了、信沒寄成又沒 trialPath → 顯示補寄提示，不當成功寄出", async () => {

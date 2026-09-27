@@ -1,10 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { readAttributionCookie } from "@/lib/attribution";
 import { trackEvent } from "@/lib/track-event";
 import styles from "./LeadCapture.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// 送出事件到真的跳頁之間留的緩衝（毫秒）。短到使用者只覺得「按了就開」，
+// 又足夠讓 fbq／gtag 的請求離開瀏覽器（兩者都是射後不理、沒有送出回呼）。
+export const REDIRECT_DELAY_MS = 500;
 
 // 共用表單：首頁深色橫幅與進站彈窗都用它。勾選同意才能送 → POST /api/newsletter/subscribe
 // → 進 Brevo 名單並寄「免費試看」信。成功後原地換成完成訊息並送 Lead 事件（Meta／GA4 可拿「名單」當廣告優化目標）。
@@ -39,18 +42,30 @@ export function LeadForm({ layout = "row", dark = false, cta = "立即觀看試�
     }
   }
 
+  // 成功後直接把人送進試看影片頁，不用再按一次。
+  // 為什麼跳轉不會吃掉廣告訊號：廣告的優化目標是 Meta 自訂轉換，它靠 /trial 這一頁的
+  // PageView（網址帶 utm_medium=lead_form）觸發——跳過去才會發生，跳得越快反而越準。
+  // 首頁這顆 Lead 事件只剩參考用途，仍留 REDIRECT_DELAY_MS 的緩衝讓它盡量送得出去。
+  useEffect(() => {
+    const path = done?.trialPath;
+    if (!path) return;
+    const t = setTimeout(() => {
+      // assign 而非 replace：使用者按上一頁還回得到首頁
+      if (typeof window !== "undefined") window.location.assign(path);
+    }, REDIRECT_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [done]);
+
   if (done) {
-    // 廣告點擊已經付過錢，不該再讓人為了看試看跑去收信——後端回了簽章連結就當場給觀看按鈕。
+    // 廣告點擊已經付過錢，不該再讓人為了看試看跑去收信——後端回了簽章連結就直接送進影片頁。
     // 信照樣寄（方便之後回來看），但不再是唯一入口。trialPath 缺值時退回原本的「去信箱找」文案。
     const canWatch = Boolean(done.trialPath);
     return (
       <div className={`${styles.done} ${dark ? styles.doneDark : ""}`} role="status">
         <p className={styles.doneMain}>
-          {canWatch ? "試看已解鎖，現在就能看" : done.trialSent ? `試看連結已寄到 ${done.email}` : "已收到你的 Email"}
+          {canWatch ? "試看已解鎖，正在為你開啟…" : done.trialSent ? `試看連結已寄到 ${done.email}` : "已收到你的 Email"}
         </p>
-        {/* 刻意用按鈕而不是自動跳轉：fbq／gtag 沒有送出回呼，立刻 navigate 會讓瀏覽器
-            取消還沒送完的請求，而 Lead 是目前唯一有量的廣告優化事件。使用者多按一下，
-            換 Lead 訊號不漏。要改成自動跳轉的話，得先把 Lead 改由伺服器端 CAPI 送。 */}
+        {/* 自動跳轉的備援：被瀏覽器擋下、或使用者等不及都能直接點 */}
         {canWatch && (
           <a className={styles.doneCta} href={done.trialPath}>立即觀看試看課程</a>
         )}
@@ -59,8 +74,8 @@ export function LeadForm({ layout = "row", dark = false, cta = "立即觀看試�
         <p className={styles.doneHint}>
           {canWatch ? (
             done.trialSent
-              ? <>連結也寄到 <strong>{done.email}</strong>，之後想再看從信裡打開就行。</>
-              : <>試看信暫時沒寄成，但你現在就能直接看；需要補寄請來信 <strong>support@inrecordmusic.com</strong>。</>
+              ? <>沒有自動開啟就點上面的按鈕。連結也寄到 <strong>{done.email}</strong>，之後想再看從信裡打開就行。</>
+              : <>沒有自動開啟就點上面的按鈕。試看信暫時沒寄成，需要補寄請來信 <strong>support@inrecordmusic.com</strong>。</>
           ) : done.trialSent ? (
             <>沒收到嗎？請檢查<strong>促銷</strong>與<strong>垃圾郵件</strong>分頁，
               或在信箱搜尋 <strong>support@inrecordmusic.com</strong>。</>
