@@ -21,7 +21,7 @@ const csp = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "frame-src 'self' https://iframe.mediadelivery.net https://player.vimeo.com https://*.vimeo.com https://*.payuni.com.tw https://www.instagram.com https://accounts.google.com https://td.doubleclick.net",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com.tw https://www.googletagmanager.com https://unpkg.com https://smpldsnds.github.io https://accounts.google.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://www.google.com.tw https://*.googleadservices.com https://*.doubleclick.net https://tr.line.me",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.payuni.com.tw https://www.googletagmanager.com https://unpkg.com https://smpldsnds.github.io https://accounts.google.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://www.google.com.tw https://*.googleadservices.com https://*.doubleclick.net https://tr.line.me https://www.facebook.com https://*.facebook.com",
 ].join("; ");
 
 const securityHeaders = [

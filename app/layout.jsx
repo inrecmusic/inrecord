@@ -124,6 +124,11 @@ export const metadata = {
     description: "10 章節 × 流行曲目實戰 × 互動遊戲",
     images: ["/hero-pianist.jpg"],
   },
+  // Meta（Facebook）網域驗證：必須由伺服器輸出在 <head> 裡，不能用 JS 動態塞，否則驗證抓不到。
+  // 驗證通過後這一行仍要留著，Meta 會定期重新檢查。
+  verification: {
+    other: { "facebook-domain-verification": "il0w6iawi3z1l0uzbwpjqcyrhiu7ct" },
+  },
 };
 
 export default async function RootLayout({ children }) {
