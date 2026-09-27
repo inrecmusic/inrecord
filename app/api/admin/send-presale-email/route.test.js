@@ -58,6 +58,23 @@ describe("POST /api/admin/send-presale-email（後台批次寄預購信）", () 
     expect(state.updates).toEqual([]); // 沒有失敗 → 不需清回旗標
   });
 
+  it("訂單指定了開通信箱 → 寄給實際上課的人，不是下單信箱", async () => {
+    // 買家可在付款成功頁指定 grant_email，課程權限就開在那裡；
+    // 通知寄回下單信箱的話，被指定的人永遠不知道自己有課（買來送人會直接踩到）。
+    fetchPendingLeads.mockResolvedValueOnce({
+      data: [{ id: "g1", email: "buyer@x.com", grant_email: "student@x.com",
+               plan: "bundle", plan_label: "課程包", mer_trade_no: "W9" }],
+      error: null,
+    });
+    await POST(req());
+    expect(sendPurchaseEmail.mock.calls.map((c) => c[0].email)).toEqual(["student@x.com"]);
+  });
+
+  it("沒指定開通信箱 → 照舊寄下單信箱", async () => {
+    await POST(req());
+    expect(sendPurchaseEmail.mock.calls.map((c) => c[0].email)).toEqual(["a@x.com", "b@x.com"]);
+  });
+
   it("併發／重試時搶不到旗標 → 跳過不寄（不會寄出第二封）", async () => {
     state.contested.add("o1");
     const body = await (await POST(req())).json();

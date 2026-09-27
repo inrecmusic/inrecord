@@ -3,6 +3,7 @@ import { serverError } from "@/lib/api-error";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { sendPurchaseEmail } from "@/lib/brevo-email";
+import { effectiveEmail } from "@/lib/refund-guard";
 import { getSaleSettings, isPresale } from "@/lib/sale";
 import { fetchPendingLeads } from "@/lib/admin-leads";
 import { logAudit } from "@/lib/audit";
@@ -19,7 +20,7 @@ export async function POST(req) {
   if (!supabase) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
   const { data: orders, error } = await fetchPendingLeads(supabase, {
-    columns: "id, email, plan, plan_label, mer_trade_no",
+    columns: "id, email, grant_email, plan, plan_label, mer_trade_no",
     flagColumn: "presale_email_sent_at",
     ids,
   });
@@ -32,7 +33,9 @@ export async function POST(req) {
   let sent = 0, failed = 0, skipped = 0;
   const errors = [];
   for (const order of orders || []) {
-    if (!order.email) { failed++; errors.push(`${order.id}: missing_email`); continue; }
+    // 收件人同 resend-email：買家指定過開通信箱就寄給實際上課的人（grantAccess 開的也是那個信箱）
+    const to = effectiveEmail(order);
+    if (!to) { failed++; errors.push(`${order.id}: missing_email`); continue; }
 
     // 先原子 claim 再寄（同 issue-invoice）：把 presale_email_sent_at NULL→now，只有搶到的請求才寄。
     // 先寄後標記的話，管理員雙擊／前端逾時重試會讓同一位顧客收到兩封預購信。
@@ -49,7 +52,7 @@ export async function POST(req) {
     if (!claimed) { skipped++; continue; } // 另一個請求已搶走（或剛寄完）
 
     const result = await sendPurchaseEmail({
-      email:      order.email,
+      email:      to,
       plan:       order.plan,
       planLabel:  order.plan_label,
       merTradeNo: order.mer_trade_no,

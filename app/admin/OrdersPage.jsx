@@ -460,6 +460,9 @@ export default function OrdersPage({showToast}){
     enrolled:o.enrolled===true,
     student:o.buyer_name||o.email?.split("@")[0]||"學員",
     email:o.email,
+    // 付款成功頁可指定「要開通到哪個 email」；權限開在這個信箱（grantAccess 用 grant_email ?? email），
+    // 後台原本完全看不到，無從確認轉對了沒。
+    grantEmail:o.grant_email||"",
     course:o.plan_label||"從零開始學鋼琴",
     amount:Number(o.amount)||0,
     method:payTypeLabel(o.pay_type),
@@ -741,7 +744,11 @@ export default function OrdersPage({showToast}){
               :pageRows.map(o=>(
                 <tr key={o.id}>
                   <td><code style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{o.id}</code></td>
-                  <td><div style={{fontWeight:700,fontSize:13}}>{o.student}</div><div style={{fontSize:12,color:"#94a3b8"}}>{o.email}</div></td>
+                  <td><div style={{fontWeight:700,fontSize:13}}>{o.student}</div><div style={{fontSize:12,color:"#94a3b8"}}>{o.email}</div>
+                    {/* 開通信箱與下單信箱不同時一眼看得出來，不用點進明細 */}
+                    {o.grantEmail&&o.grantEmail!==o.email&&(
+                      <div style={{fontSize:11.5,color:"#047857",marginTop:2}}>→ 開通至 {o.grantEmail}</div>
+                    )}</td>
                   <td className={styles.dim} style={{maxWidth:160,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{o.course}</td>
                   <td style={{fontWeight:800}}>NT$ {o.amount.toLocaleString()}</td>
                   <td className={styles.dim}>{o.method}</td>
@@ -793,6 +800,15 @@ export default function OrdersPage({showToast}){
                 ["訂單編號",<code key="id" style={{fontSize:11,background:"#f1f5f9",padding:"2px 6px",borderRadius:4}}>{detailOrder.id}</code>],
                 ["學員姓名",detailOrder.student],
                 ["Email",detailOrder.email],
+                // 買家在付款成功頁指定的開通信箱。課程權限開在這裡、不是上面的下單 Email，
+                // 所以要看得到才驗證得了；沒指定就不佔一列。
+                ...(detailOrder.grantEmail?[["開通帳號",
+                  detailOrder.grantEmail===detailOrder.email
+                    ? <span key="ge" style={{color:"#64748b"}}>{detailOrder.grantEmail}（與下單 Email 相同）</span>
+                    : <span key="ge" style={{display:"inline-flex",flexDirection:"column",gap:2}}>
+                        <strong style={{color:"#047857"}}>{detailOrder.grantEmail}</strong>
+                        <span style={{fontSize:12,color:"#64748b"}}>課程開在這個信箱，不是上面的下單 Email</span>
+                      </span>]]:[]),
                 ["課程",detailOrder.course],
                 ["金額",<strong key="a">NT$ {detailOrder.amount.toLocaleString()}</strong>],
                 ["付款方式",detailOrder.method],
