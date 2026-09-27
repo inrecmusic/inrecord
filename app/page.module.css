@@ -83,8 +83,9 @@
 .offerCountdown strong { font-family: var(--font-jetbrains), "Noto Sans TC", monospace; font-weight: 800;
   letter-spacing: .02em; font-variant-numeric: tabular-nums; color: var(--gold-hi); }
 .offerBtns { display: flex; gap: 14px; flex-wrap: wrap; }
-.offerBtns .btnPrimary { flex: 1; justify-content: center; padding: 12px 18px; font-size: 19px; font-weight: 600; background: var(--brand); }
-.offerBtns .btnOutline { font-size: 19px; background: #fff; border: 1.5px solid #2563eb; color: #2563eb; justify-content: center; }
+/* 主按鈕獨佔一排、兩顆次要按鈕各半：三顆擠一排放不下，讓第三顆自己換行會孤零零靠左。 */
+.offerBtns .btnPrimary { flex: 1 1 100%; justify-content: center; padding: 12px 18px; font-size: 19px; font-weight: 600; background: var(--brand); }
+.offerBtns .btnOutline { flex: 1 1 0; min-width: 0; white-space: nowrap; font-size: 19px; background: #fff; border: 1.5px solid #2563eb; color: #2563eb; justify-content: center; }
 .eyebrow { color: rgba(255,255,255,.6); font-size: 15.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; }
 .hero h1 { font-family: var(--font-noto-serif), "Noto Serif TC", serif; font-weight: 600; text-wrap: balance; font-size: clamp(36px,4.5vw,62px); line-height: 1.12; letter-spacing: .01em; margin: 0 0 12px; color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.5); }
 .hero h1 span { background: linear-gradient(100deg, #9ec0ff, #5786ee 55%, #2c68e7); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -394,8 +395,9 @@
   .offerPriceRow { column-gap: 10px; }   /* 換行時的行距沿用上面的 row-gap */
   .offerPrice { font-size: 36px; }                  /* 窄機：價格縮小，避免右側劃線價 $10,800 溢出卡片 */
   .offerWas { font-size: 20px; }
-  .offerBtns { flex-direction: column; }            /* 窄機：兩顆 CTA 直向堆疊全寬，避免擠壓換行 */
-  .offerBtns .btnPrimary { flex: none; }                /* 取消 flex:1（直向會撐高） */
+  .offerBtns { flex-direction: column; }            /* 窄機：CTA 直向堆疊全寬，避免擠壓換行 */
+  .offerBtns .btnPrimary,
+  .offerBtns .btnOutline { flex: none; }                /* 取消 flex 伸展（直向會撐高） */
   .videoThumb { height: 180px; }
 }
 
