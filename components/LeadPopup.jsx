@@ -72,9 +72,9 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
           <img className={styles.mascot} src="/mascot-grand-v1.webp" alt="" width="150" height="150" />
         </div>
         <div className={styles.right}>
-          <p className={styles.h}>留下 Email，試看影片連結馬上寄給你</p>
+          <p className={styles.h}>留下 Email，馬上就能開始看</p>
           <p className={styles.desc}>新章節上架與優惠也會通知你，隨時可以取消。</p>
-          <LeadForm layout="stack" cta="寄出試看影片" onDone={onDone} align="center" />
+          <LeadForm layout="stack" cta="立即觀看試看" onDone={onDone} align="center" />
           <button type="button" className={styles.skip} onClick={close}>先逛逛，晚點再說</button>
         </div>
       </div>

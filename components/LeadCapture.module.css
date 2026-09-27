@@ -65,7 +65,20 @@
 .doneHint { margin: 10px 0 0; padding: 10px 14px; border-radius: 10px; background: rgba(37, 99, 235, .07); border: 1px solid rgba(37, 99, 235, .16);
   font-size: 13.5px; font-weight: 400; line-height: 1.7; color: var(--muted); word-break: normal; line-break: strict; }
 .doneHint strong { color: var(--brand-dark); font-weight: 700; white-space: nowrap; }
+/* 完成後的主要動作：留完 Email 當場就能看，所以這顆要比提醒文字更重、是視線第一落點 */
+.doneCta {
+  display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+  height: 54px; margin: 14px 0 0; padding: 0 28px;
+  border-radius: 12px; background: var(--brand); color: #fff;
+  font-weight: 700; font-size: 16.5px; text-decoration: none; white-space: nowrap;
+  transition: transform .2s, box-shadow .2s, background .2s;
+}
+.doneCta::before { content: "▶"; font-size: 12px; }
+.doneCta:hover { transform: translateY(-1px); background: var(--brand-dark); box-shadow: var(--shadow-md); }
+.center .doneCta { display: inline-flex; }
 .doneDark { color: #fff; }
+.doneDark .doneCta { background: #fff; color: var(--brand-dark); }
+.doneDark .doneCta:hover { background: rgba(255, 255, 255, .9); }
 .doneDark .doneHint { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .18); color: rgba(255, 255, 255, .8); }
 .doneDark .doneHint strong { color: #fff; }
 
@@ -83,5 +96,7 @@
   .row .fields { flex-direction: column; gap: 10px; }
   .row .input { flex: 0 0 auto; }
   .row .btn { width: 100%; }
+  /* 手機上滿版比較好按，也避免長中文按鈕被擠到換行 */
+  .doneCta { display: flex; width: 100%; padding: 0 18px; }
 }
-@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .btn, .doneCta { transition: none; } }

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-// 首頁「留下 Email 換試看」：沒勾同意送不出；成功 → 打 API、顯示已寄出、送 Lead 事件；試看信沒寄成要提示；失敗可重試。
+// 首頁「留下 Email 換試看」：沒勾同意送不出；成功 → 打 API、當場給觀看連結（不必去收信）、送 Lead 事件；
+// 後端沒回 trialPath 時退回原本的「去信箱找」提示；失敗可重試。
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
@@ -13,7 +14,9 @@ afterEach(cleanup);
 beforeEach(() => { vi.clearAllMocks(); global.fetch = vi.fn(); });
 
 const fill = (email) => fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
-const submit = () => fireEvent.click(screen.getByRole("button", { name: /寄出試看影片/ }));
+const submit = () => fireEvent.click(screen.getByRole("button", { name: /立即觀看試看/ }));
+const TRIAL_PATH = "/trial?e=a%40x.com&t=abc123&utm_source=site&utm_medium=lead_form&utm_campaign=trial";
+const watchLink = () => screen.queryByRole("link", { name: /立即觀看試看課程/ });
 
 describe("LeadForm（共用表單）", () => {
   it("沒勾同意 → 不打 API，提示先勾選", async () => {
@@ -30,25 +33,47 @@ describe("LeadForm（共用表單）", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("成功：POST email／consent／attribution，顯示已寄到該信箱、送 Lead 事件、呼叫 onDone", async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: true }) });
+  it("成功：POST email／consent／attribution，當場給觀看連結、送 Lead 事件、呼叫 onDone", async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: true, trialPath: TRIAL_PATH }) });
     const onDone = vi.fn();
     render(<LeadForm onDone={onDone} />);
     fill(" a@x.com "); fireEvent.click(screen.getByRole("checkbox")); submit();
-    expect(await screen.findByText(/試看連結已寄到 a@x.com/)).toBeTruthy();
+    expect(await screen.findByText(/試看已解鎖/)).toBeTruthy();
+    // 關鍵：廣告點擊已經付過錢，不能只留一句「已寄到信箱」就把人丟在那裡
+    expect(watchLink().getAttribute("href")).toBe(TRIAL_PATH);
+    expect(screen.getByText(/連結也寄到/)).toBeTruthy();
     const [url, init] = global.fetch.mock.calls[0];
     expect(url).toBe("/api/newsletter/subscribe");
     expect(JSON.parse(init.body)).toEqual({ email: "a@x.com", consent: true, attribution: { utm_source: "ig" } });
     expect(trackEvent).toHaveBeenCalledWith("Lead", expect.objectContaining({ contentName: "trial" }));
     expect(onDone).toHaveBeenCalledWith("a@x.com");
-    expect(screen.queryByRole("button", { name: /寄出試看影片/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /立即觀看試看/ })).toBeNull();
   });
 
-  it("名單進了但試看信沒寄成 → 顯示補寄提示，不當成功寄出", async () => {
+  it("試看信沒寄成但有 trialPath → 照樣給觀看連結，文案改成現在就能看", async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: false, trialPath: TRIAL_PATH }) });
+    render(<LeadForm />);
+    fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
+    expect(await screen.findByText(/現在就能直接看/)).toBeTruthy();
+    expect(watchLink()).toBeTruthy();
+    expect(trackEvent).toHaveBeenCalled();
+  });
+
+  it("後端沒回 trialPath → 退回原本的「去信箱找」提示，不顯示觀看連結", async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: true }) });
+    render(<LeadForm />);
+    fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
+    expect(await screen.findByText(/試看連結已寄到 a@x.com/)).toBeTruthy();
+    expect(screen.getByText(/垃圾郵件/)).toBeTruthy();
+    expect(watchLink()).toBeNull();
+  });
+
+  it("名單進了、信沒寄成又沒 trialPath → 顯示補寄提示，不當成功寄出", async () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, trialSent: false }) });
     render(<LeadForm />);
     fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
     expect(await screen.findByText(/試看信暫時沒寄成/)).toBeTruthy();
+    expect(watchLink()).toBeNull();
     expect(trackEvent).toHaveBeenCalled();
   });
 
@@ -58,7 +83,7 @@ describe("LeadForm（共用表單）", () => {
     fill("a@x.com"); fireEvent.click(screen.getByRole("checkbox")); submit();
     expect(await screen.findByText(/暫時無法送出/)).toBeTruthy();
     expect(trackEvent).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /寄出試看影片/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /立即觀看試看/ })).toBeTruthy();
   });
 });
 

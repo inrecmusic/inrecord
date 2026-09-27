@@ -4,7 +4,7 @@ import { addLeadContact } from "@/lib/brevo-contacts";
 import { normalizeEmail } from "@/lib/unsubscribe";
 import { createDistributedLimiter, clientIp } from "@/lib/rate-limit";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
-import { buildTrialEmail } from "@/lib/trial";
+import { buildTrialEmail, buildTrialPath } from "@/lib/trial";
 
 // 公開端點：首頁「留下 Email」→ 加進 Brevo 潛客清單。單次同意：勾選（consent=true）才收，送出即進名單。
 // 名單只存 Brevo（BREVO_LIST_ID）；屬性記來源／同意時間／UTM 來源，之後看得出哪個廣告帶來多少名單。
@@ -54,15 +54,18 @@ export async function POST(req) {
   } catch (e) {
     console.error("[subscribe] unsubscribe cleanup failed:", e?.message || e);
   }
-  if (!fresh) return NextResponse.json({ ok: true, trialSent: true, deduped: true });
+  // trialPath＝當場就能看的簽章連結（相對路徑）。三種結果都回：廣告點擊已經付過錢，
+  // 不該再讓人為了看試看跑去收信；② ③ 被擋下沒寄信的更需要它，否則畫面說「已寄出」但信箱什麼都沒有。
+  const trialPath = buildTrialPath(email);
+  if (!fresh) return NextResponse.json({ ok: true, trialSent: true, deduped: true, trialPath });
   // ③ 全站每日上限：超過就不寄（名單已進），trialSent=false 讓前端提示會補寄
   if (!(await daily("all")).allowed) {
     console.error("[subscribe] daily trial-email cap reached");
-    return NextResponse.json({ ok: true, trialSent: false, capped: true });
+    return NextResponse.json({ ok: true, trialSent: false, capped: true, trialPath });
   }
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
   const { subject, html, unsubscribeUrl } = buildTrialEmail({ email, siteUrl });
   const mail = await sendNewsletterEmail({ to: email, subject, html, unsubscribeUrl, kind: "trial" });
   if (!mail.success) console.error("[subscribe] trial email failed:", mail.error);
-  return NextResponse.json({ ok: true, trialSent: mail.success === true });
+  return NextResponse.json({ ok: true, trialSent: mail.success === true, trialPath });
 }

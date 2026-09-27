@@ -51,7 +51,7 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     addLeadContact.mockResolvedValue({ ok: true });
     const r = await post({ email: " A@X.com ", consent: true, attribution: { utm_source: "ig", utm_medium: "cpc", utm_campaign: "x".repeat(200), fbclid: "zzz", hack: "1" } });
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ ok: true, trialSent: true });
+    expect(await r.json()).toEqual({ ok: true, trialSent: true, trialPath: expect.stringContaining("/trial?e=a%40x.com&t=") });
     const arg = addLeadContact.mock.calls[0][0];
     expect(arg.email).toBe("a@x.com");
     expect(arg.attributes.SOURCE).toBe("website");
@@ -102,7 +102,8 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     sendNewsletterEmail.mockResolvedValueOnce({ success: false, error: "brevo_500" });
     const r = await post({ email: "a@x.com", consent: true });
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ ok: true, trialSent: false });
+    // 信沒寄成也要給 trialPath：使用者當場還是看得到，不會卡在「等一封不會來的信」
+    expect(await r.json()).toEqual({ ok: true, trialSent: false, trialPath: expect.stringContaining("/trial?e=a%40x.com&t=") });
   });
 
   it("同一 email 一小時內再送 → 名單照進、不重寄試看信、回 200 deduped（擋信箱轟炸）", async () => {
@@ -110,7 +111,8 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     globalThis.__rl = { "rl:subscribe:email": false };
     const r = await post({ email: "a@x.com", consent: true });
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ ok: true, trialSent: true, deduped: true });
+    // deduped 這條原本最容易被誤解成「已寄出」卻查無此信；回 trialPath 後當場就看得到
+    expect(await r.json()).toEqual({ ok: true, trialSent: true, deduped: true, trialPath: expect.stringContaining("/trial?e=a%40x.com&t=") });
     expect(addLeadContact).toHaveBeenCalledTimes(1);
     expect(sendNewsletterEmail).not.toHaveBeenCalled();
   });
@@ -120,7 +122,7 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     globalThis.__rl = { "rl:subscribe:day": false };
     const r = await post({ email: "a@x.com", consent: true });
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ ok: true, trialSent: false, capped: true });
+    expect(await r.json()).toEqual({ ok: true, trialSent: false, capped: true, trialPath: expect.stringContaining("/trial?e=a%40x.com&t=") });
     expect(sendNewsletterEmail).not.toHaveBeenCalled();
   });
 
@@ -137,7 +139,7 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     expect(globalThis.__rlCalls).not.toContain("rl:subscribe:email"); // 失敗那次沒動到 per-email 額度
     addLeadContact.mockResolvedValueOnce({ ok: true });
     const r = await post({ email: "a@x.com", consent: true });
-    expect(await r.json()).toEqual({ ok: true, trialSent: true });
+    expect(await r.json()).toEqual({ ok: true, trialSent: true, trialPath: expect.stringContaining("/trial?e=a%40x.com&t=") });
     expect(globalThis.__rlCalls).toContain("rl:subscribe:email"); // 成功後才扣
     expect(sendNewsletterEmail).toHaveBeenCalledTimes(1);
   });
