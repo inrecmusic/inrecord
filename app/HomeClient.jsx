@@ -568,6 +568,12 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   function scrollToPricing() {
     document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
   }
+  // 廣告 CTA 是導向「看試看影片」，但留信箱區在頁尾——hero 給一個入口，
+  // 不然沒滑到底的人等於白點進來。block:"center" 避免被固定導覽列蓋住。
+  function scrollToTrial(e) {
+    e?.preventDefault();
+    document.getElementById("subscribe")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
 
   const fanProofOpen = sale.fanProofOpen;
@@ -748,6 +754,12 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 )}
                 <div className={styles.offerBtns}>
                   <button className={styles.btnPrimary} onClick={scrollToPricing}>{buyShort}</button>
+                  {/* 廣告點進來的人多半是為了試看，入口不能只放在頁尾 */}
+                  {leadCapture && (
+                    <a href="#subscribe" className={styles.btnOutline} onClick={scrollToTrial}>
+                      <Video size={16} />免費試看
+                    </a>
+                  )}
                   <a href="/demo" className={styles.btnOutline}>
                     <Play size={16} />課程 Demo 體驗
                   </a>
