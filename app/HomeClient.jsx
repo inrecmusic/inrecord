@@ -565,6 +565,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   }
 
   // 只賣粉絲方案：購買 CTA 一律捲動到方案區（粉絲限定方案卡）
+  const [trialIntent, setTrialIntent] = useState(false); // 按過 hero「課程免費試看」→ 不再彈進站彈窗
   function scrollToPricing() {
     document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
   }
@@ -572,6 +573,9 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   // 不然沒滑到底的人等於白點進來。block:"center" 避免被固定導覽列蓋住。
   function scrollToTrial(e) {
     e?.preventDefault();
+    // 捲下去會滿足進站彈窗的 scrollRatio 條件，彈出來剛好蓋住他要去的地方——
+    // 人都主動點「我要看試看」了，不該再推一次。
+    setTrialIntent(true);
     document.getElementById("subscribe")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -679,7 +683,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
 
       <main id="top">
         {/* 進站彈窗（LEAD_CAPTURE=on 才掛）：停留 6 秒或捲到一半才出現；已登入學員、已留過信箱、7 天內關過都不彈 */}
-        {leadCapture && <LeadPopup loggedIn={!!user} />}
+        {leadCapture && <LeadPopup loggedIn={!!user} suppressed={trialIntent} />}
         {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
           <div ref={heroPhotoRef} className={styles.heroPhoto} aria-hidden="true" />

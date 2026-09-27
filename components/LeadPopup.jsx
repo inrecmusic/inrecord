@@ -24,14 +24,25 @@ export function shouldShowPopup({ loggedIn, storage, now = Date.now(), force = f
 function safeStorage() { try { return window.localStorage; } catch { return null; } }
 function forcedByQuery() { try { return new URLSearchParams(window.location.search).get("lead") === "1"; } catch { return false; } }
 
-export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, scrollRatio = 0.5 }) {
+// suppressed：使用者已主動前往留信箱區（例如按了 hero 的「課程免費試看」）。
+// 他點按鈕就是要去填表，捲動又剛好滿足 scrollRatio 條件，再彈一次等於擋住他要去的地方，
+// 還可能被當成廣告直接關掉、連下面的表單都不填了。
+export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, scrollRatio = 0.5, suppressed = false }) {
   const [open, setOpen] = useState(false);
   const [fired, setFired] = useState(false);
   const store = storage || safeStorage();
 
+  // 已經彈出來才被抑制（捲動比計時器先觸發）就收掉。
+  // 不寫 DISMISS_KEY——這不是使用者主動關的，不該因此 7 天都不再彈。
+  useEffect(() => {
+    if (!suppressed) return;
+    setOpen(false);
+    setFired(true);
+  }, [suppressed]);
+
   useEffect(() => {
     const force = forcedByQuery();
-    if (fired || !shouldShowPopup({ loggedIn, storage: store, force })) return;
+    if (fired || suppressed || !shouldShowPopup({ loggedIn, storage: store, force })) return;
     let timer = null;
     const cleanup = () => { if (timer) clearTimeout(timer); window.removeEventListener("scroll", onScroll); };
     const show = () => { cleanup(); setFired(true); setOpen(true); };
@@ -42,7 +53,7 @@ export default function LeadPopup({ loggedIn = false, storage, delayMs = 6000, s
     timer = setTimeout(show, force ? 0 : delayMs);
     window.addEventListener("scroll", onScroll, { passive: true });
     return cleanup;
-  }, [loggedIn, store, delayMs, scrollRatio, fired]);
+  }, [loggedIn, store, delayMs, scrollRatio, fired, suppressed]);
 
   const close = useCallback(() => {
     setOpen(false);
