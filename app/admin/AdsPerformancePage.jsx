@@ -39,7 +39,7 @@ const CSS = `
   --good: #16a34a; --good-soft: #dcfce7;
   --warn: #b45309; --warn-soft: #fef3c7;
   --bad: #dc2626; --bad-soft: #fee2e2;
-  --spend: #94a3b8; --revenue: #2563eb; --grid: #e8edf3; --target: #f59e0b;
+  --spend: #94a3b8; --revenue: #2563eb; --grid: #e8edf3; --target: #f59e0b; --lead: #14b8a6;
   --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.05);
   --radius: 14px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif;
@@ -55,7 +55,7 @@ const CSS = `
     --good: #34d399; --good-soft: rgba(52,211,153,.15);
     --warn: #fbbf24; --warn-soft: rgba(251,191,36,.15);
     --bad: #f87171; --bad-soft: rgba(248,113,113,.15);
-    --spend: #64748b; --revenue: #6ea8ff; --grid: #1a2740; --target: #fbbf24;
+    --spend: #64748b; --revenue: #6ea8ff; --grid: #1a2740; --target: #fbbf24; --lead: #2dd4bf;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
   }
 }
@@ -90,9 +90,9 @@ const CSS = `
 .adsDash .kpi.hero .val { color: var(--good); font-size: 33px; }
 .adsDash .kpi.hero { background: linear-gradient(180deg, var(--good-soft), transparent 72%); }
 .adsDash .cmp { color: var(--muted); }
-.adsDash .subkpis { display: grid; grid-template-columns: repeat(6, 1fr); padding: 4px 2px; margin-bottom: 18px; }
+.adsDash .subkpis { display: grid; grid-template-columns: repeat(4, 1fr); padding: 4px 2px; margin-bottom: 18px; }
 .adsDash .mini { padding: 12px 15px; display: flex; flex-direction: column; gap: 3px; border-left: 1px solid var(--border); }
-.adsDash .mini:first-child { border-left: 0; }
+.adsDash .mini:first-child, .adsDash .mini:nth-child(4n + 1) { border-left: 0; }
 .adsDash .mini .m-label { font-size: 11px; color: var(--faint); font-weight: 600; }
 .adsDash .mini .m-val { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
 .adsDash .panel { padding: 15px 18px 12px; }
@@ -255,6 +255,9 @@ function MiniMetrics({ totals }) {
     ["點擊", nf(t.clicks)],
     ["CTR", pf(t.ctr)],
     ["轉換率 CVR", pf(t.cvr)],
+    // 廣告導到試看的成效：拿到幾個 Email、一個多少錢
+    ["試看名單", nf(t.leads)],
+    ["每名單成本", Number(t.leads) > 0 ? "NT$" + nf(t.cpl) : "—"],
   ];
   return (
     <section className="card subkpis" aria-label="漏斗與受眾指標">
@@ -275,12 +278,19 @@ function TrendChart({ series }) {
   const W = 900, H = 240, pL = 8, pR = 8, pT = 12, pB = 22, iw = W - pL - pR, ih = H - pT - pB;
   const spend = data.map((d) => Number(d.spend) || 0);
   const rev = data.map((d) => Number(d.revenue) || 0);
+  // 名單是「人數」，跟金額不同單位，不能共用 Y 軸——畫在底部、吃自己的比例尺，
+  // 只用來看「這天花的錢換到幾個名單」的相對高低。
+  const leads = data.map((d) => Number(d.leads) || 0);
+  const hasLeads = leads.some((v) => v > 0);
+  const maxLeads = Math.max(1, ...leads);
   const maxY = Math.max(1, ...spend, ...rev) * 1.08;
   const x = (i) => (N > 1 ? pL + (i / (N - 1)) * iw : pL + iw / 2);
   const y = (v) => pT + ih - (v / maxY) * ih;
   const line = (arr) => arr.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   const area = (arr) => `${line(arr)} L${x(N - 1).toFixed(1)} ${(pT + ih).toFixed(1)} L${x(0).toFixed(1)} ${(pT + ih).toFixed(1)} Z`;
   const gridYs = [0, 1, 2, 3].map((k) => pT + (ih / 3) * k);
+  const leadBandH = ih * 0.22;                                   // 名單長條最高只佔圖高的 22%
+  const leadBarW = Math.max(2, Math.min(14, (N > 1 ? iw / N : iw) * 0.5));
   const tickIdx = N <= 1 ? [0] : Array.from(new Set([0, Math.round((N - 1) / 3), Math.round(((N - 1) * 2) / 3), N - 1]));
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -306,6 +316,12 @@ function TrendChart({ series }) {
             {tickLabel(i)}
           </text>
         ))}
+        {hasLeads && leads.map((v, i) => (v > 0 ? (
+          <rect key={`lead-${i}`} x={(x(i) - leadBarW / 2).toFixed(1)}
+            y={(pT + ih - (v / maxLeads) * leadBandH).toFixed(1)}
+            width={leadBarW.toFixed(1)} height={((v / maxLeads) * leadBandH).toFixed(1)}
+            rx="2" fill="var(--lead)" opacity="0.55" />
+        ) : null))}
         <path d={area(spend)} fill="url(#adsGradSpend)" />
         <path d={line(spend)} fill="none" stroke="var(--spend)" strokeWidth="2" strokeLinejoin="round" />
         <path d={area(rev)} fill="url(#adsGradRev)" />
@@ -564,10 +580,11 @@ export default function AdsPerformancePage({ showToast }) {
 
             <section className="card panel trend" aria-label="每日趨勢">
               <div className="panel-head">
-                <span className="panel-title">每日花費 vs 真實營收</span>
+                <span className="panel-title">每日花費 vs 真實營收 vs 試看名單</span>
                 <div className="legend">
                   <span><span className="swatch" style={{ background: "var(--spend)" }} /><b>花費</b></span>
                   <span><span className="swatch" style={{ background: "var(--revenue)" }} /><b>真實營收</b></span>
+                  <span><span className="swatch" style={{ background: "var(--lead)" }} /><b>試看名單（人數）</b></span>
                 </div>
               </div>
               <TrendChart series={report.dailySeries} />
