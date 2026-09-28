@@ -23,6 +23,9 @@ CREATE POLICY service_role_all_scores ON public.scores
   FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- ── 範例資料：小蜜蜂（右手旋律，C 大調 2/4）────────────────────────────────
+-- ⚠️ 同一拍的八分音符要寫在一起不加空格（EE、CD EF），abcjs 才會畫連桿；
+--    寫成 E E 會變成一個個獨立符尾，五線譜很難讀。解析器兩種寫法結果相同，
+--    簡譜的底線分組也不受影響（groupByBeat 自己依拍點算）。
 -- 掛在第一支 1-2 單元，且優先挑「已經有影片」的那支。
 -- ⚠️ 為什麼要挑有影片的：播放頁的 handleUnitClick 對沒影片的單元不做任何事（點不進去），
 --    掛在沒影片的單元上，樂譜分頁永遠打不開。同編號可能有兩支（正課與【跟練】），
@@ -35,10 +38,10 @@ M:2/4
 L:1/8
 Q:1/4=96
 K:C
-"C" G2 E E | "G7" F2 D D | "C" C D E F | "C" G2 G2 |
-"C" G2 E E | "G7" F2 D D | "C" C E G G | "C" E4 |
-"G7" D D D D | "G7" D2 E F | "C" E E E E | "C" E2 F G |
-"C" G2 E E | "G7" F2 D D | "C" C E G G | "C" C4 |$abc$, 0, TRUE
+"C" G2 EE | "G7" F2 DD | "C" CD EF | "C" G2 G2 |
+"C" G2 EE | "G7" F2 DD | "C" CE GG | "C" E4 |
+"G7" DD DD | "G7" D2 EF | "C" EE EE | "C" E2 FG |
+"C" G2 EE | "G7" F2 DD | "C" CE GG | "C" C4 |$abc$, 0, TRUE
 FROM public.videos v
 WHERE v.title LIKE '1-2%'
   AND NOT EXISTS (SELECT 1 FROM public.scores s WHERE s.title = '小蜜蜂')
