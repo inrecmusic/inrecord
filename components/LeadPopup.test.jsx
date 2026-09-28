@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 
 vi.mock("@/lib/track-event", () => ({ trackEvent: vi.fn() }));
-vi.mock("@/lib/attribution", () => ({ readAttributionCookie: () => null }));
+vi.mock("@/lib/attribution", () => ({ readAttributionCookie: () => null, readFbCookies: () => ({}) }));
 
 import LeadPopup, { shouldShowPopup, DISMISS_KEY, DONE_KEY } from "./LeadPopup";
 

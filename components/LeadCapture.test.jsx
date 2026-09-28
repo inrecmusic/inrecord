@@ -5,7 +5,10 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 
 vi.mock("@/lib/track-event", () => ({ trackEvent: vi.fn() }));
-vi.mock("@/lib/attribution", () => ({ readAttributionCookie: () => ({ utm_source: "ig" }) }));
+vi.mock("@/lib/attribution", () => ({
+  readAttributionCookie: () => ({ utm_source: "ig" }),
+  readFbCookies: () => ({ fbp: "fb.1.100.abc", fbc: "fb.1.100.xyz" }),
+}));
 
 import LeadCapture, { LeadForm } from "./LeadCapture";
 import { trackEvent } from "@/lib/track-event";
@@ -52,8 +55,14 @@ describe("LeadForm（共用表單）", () => {
     expect(screen.queryByText(/垃圾郵件|連結也寄到/)).toBeNull();
     const [url, init] = global.fetch.mock.calls[0];
     expect(url).toBe("/api/newsletter/subscribe");
-    expect(JSON.parse(init.body)).toEqual({ email: "a@x.com", consent: true, attribution: { utm_source: "ig" } });
-    expect(trackEvent).toHaveBeenCalledWith("Lead", expect.objectContaining({ contentName: "trial" }));
+    // fbp/fbc 一起送，Meta 的比對率才高；eventId 讓伺服器端 CAPI 與這裡的 fbq 去重
+    const sent = JSON.parse(init.body);
+    expect(sent).toEqual({
+      email: "a@x.com", consent: true, attribution: { utm_source: "ig" },
+      eventId: expect.any(String), fbp: "fb.1.100.abc", fbc: "fb.1.100.xyz",
+    });
+    expect(sent.eventId).toBeTruthy();
+    expect(trackEvent).toHaveBeenCalledWith("Lead", expect.objectContaining({ contentName: "trial", eventId: sent.eventId }));
     expect(onDone).toHaveBeenCalledWith("a@x.com");
     expect(screen.queryByRole("button", { name: /立即觀看試看/ })).toBeNull();
   });

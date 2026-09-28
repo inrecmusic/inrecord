@@ -1,10 +1,16 @@
 "use client";
 import { useState, useEffect } from "react";
-import { readAttributionCookie } from "@/lib/attribution";
+import { readAttributionCookie, readFbCookies } from "@/lib/attribution";
 import { trackEvent } from "@/lib/track-event";
 import styles from "./LeadCapture.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// 事件去重用的 id。randomUUID 需要安全內容（HTTPS）且舊瀏覽器沒有，缺了就退回時間＋亂數；
+// 只要前後端拿到同一個值即可，不需要密碼學等級的隨機。
+function newEventId() {
+  try { return crypto.randomUUID(); } catch { /* 續用下面的退路 */ }
+  return `lead-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 // 送出事件到真的跳頁之間留的緩衝（毫秒）。短到使用者只覺得「按了就開」，
 // 又足夠讓 fbq／gtag 的請求離開瀏覽器（兩者都是射後不理、沒有送出回呼）。
 export const REDIRECT_DELAY_MS = 500;
@@ -25,15 +31,22 @@ export function LeadForm({ layout = "row", dark = false, cta = "立即觀看試�
     if (!consent) { setMsg("請先勾選同意，才能送出。"); return; }
     if (!EMAIL_RE.test(value)) { setMsg("Email 格式看起來不太對，請再確認一下。"); return; }
     setBusy(true); setMsg("");
+    // 前後端用同一個 eventId：瀏覽器端 fbq 與伺服器端 CAPI 各送一次，Meta 靠它去重。
+    // 瀏覽器端可能被追蹤保護／攔截器擋掉或被跳頁打斷，伺服器端那份才是保底。
+    const eventId = newEventId();
     try {
       const res = await fetch("/api/newsletter/subscribe", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: value, consent: true, attribution: readAttributionCookie() || undefined }),
+        body: JSON.stringify({
+          email: value, consent: true, eventId,
+          attribution: readAttributionCookie() || undefined,
+          ...readFbCookies(), // _fbp/_fbc：提高 Meta 的比對率
+        }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok || !d.ok) throw new Error(d.error || "failed");
       setDone({ email: value, trialSent: d.trialSent !== false, trialPath: d.trialPath || "" });
-      trackEvent("Lead", { contentName: "trial" });
+      trackEvent("Lead", { contentName: "trial", eventId });
       onDone?.(value);
     } catch {
       setMsg("暫時無法送出，請稍後再試一次。");

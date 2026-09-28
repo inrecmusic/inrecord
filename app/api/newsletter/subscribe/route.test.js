@@ -4,11 +4,13 @@ vi.mock("@/lib/rate-limit", () => ({ createDistributedLimiter: ({ prefix }) => a
 vi.mock("@/lib/brevo-contacts", () => ({ addLeadContact: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/brevo-email", () => ({ sendNewsletterEmail: vi.fn(async () => ({ success: true })) }));
+vi.mock("@/lib/meta-capi", () => ({ sendLead: vi.fn(async () => ({ ok: true })) }));
 
 import { POST } from "./route";
 import { addLeadContact } from "@/lib/brevo-contacts";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { sendNewsletterEmail } from "@/lib/brevo-email";
+import { sendLead } from "@/lib/meta-capi";
 
 const post = (body) => POST(new Request("http://x/api/newsletter/subscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
 
@@ -142,5 +144,37 @@ describe("POST /api/newsletter/subscribe（首頁留信箱）", () => {
     expect(await r.json()).toEqual({ ok: true, trialSent: true, trialPath: expect.stringContaining("/trial?e=a%40x.com&t=") });
     expect(globalThis.__rlCalls).toContain("rl:subscribe:email"); // 成功後才扣
     expect(sendNewsletterEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("送出 Meta Lead（伺服器端）：帶 eventId／fbp／fbc／ip／ua，email 正規化", async () => {
+    addLeadContact.mockResolvedValue({ ok: true });
+    await post({ email: " A@X.com ", consent: true, eventId: "evt-9", fbp: "fb.1.1.p", fbc: "fb.1.1.c" });
+    expect(sendLead).toHaveBeenCalledWith(expect.objectContaining({
+      email: "a@x.com", eventId: "evt-9", fbp: "fb.1.1.p", fbc: "fb.1.1.c", ip: "1.1.1.1",
+    }));
+  });
+
+  it("前端塞非字串／超長的 fbp/fbc/eventId → 當沒帶，不原樣轉送 Meta", async () => {
+    addLeadContact.mockResolvedValue({ ok: true });
+    await post({ email: "a@x.com", consent: true, eventId: { bad: 1 }, fbp: "x".repeat(200), fbc: 123 });
+    const arg = sendLead.mock.calls[0][0];
+    expect(arg.eventId).toBeUndefined();
+    expect(arg.fbp).toBeUndefined();
+    expect(arg.fbc).toBeUndefined();
+  });
+
+  it("CAPI 失敗不影響訂閱結果（名單已進、照樣回 trialPath）", async () => {
+    addLeadContact.mockResolvedValue({ ok: true });
+    sendLead.mockResolvedValueOnce({ ok: false, error: "capi_190" });
+    const r = await post({ email: "a@x.com", consent: true });
+    expect(r.status).toBe(200);
+    expect((await r.json()).trialPath).toContain("/trial?e=a%40x.com&t=");
+  });
+
+  it("CAPI 拋例外也不能讓留信箱失敗", async () => {
+    addLeadContact.mockResolvedValue({ ok: true });
+    sendLead.mockRejectedValueOnce(new Error("boom"));
+    const r = await post({ email: "a@x.com", consent: true });
+    expect(r.status).toBe(200);
   });
 });
