@@ -54,29 +54,6 @@ describe("LeadPopup（元件）", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
-  it("suppressed（按過 hero 的課程免費試看）→ 捲到一半也不彈，不擋住他要去的留信箱區", () => {
-    const s = mem();
-    render(<LeadPopup storage={s} suppressed />);
-    Object.defineProperty(document.documentElement, "scrollHeight", { value: 4000, configurable: true });
-    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
-    window.scrollY = 1700;
-    act(() => { window.dispatchEvent(new Event("scroll")); });
-    act(() => { vi.advanceTimersByTime(10000); });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    // 不是使用者主動關的，不該寫 7 天不再彈的記號
-    expect(s.getItem(DISMISS_KEY)).toBeNull();
-  });
-
-  it("已彈出後才被 suppressed → 收掉，同樣不寫 dismissed", () => {
-    const s = mem();
-    const { rerender } = render(<LeadPopup storage={s} />);
-    act(() => { vi.advanceTimersByTime(6000); });
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    rerender(<LeadPopup storage={s} suppressed />);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(s.getItem(DISMISS_KEY)).toBeNull();
-  });
-
   it("已登入或已留過信箱：等再久都不出現", () => {
     const s = mem(); s.setItem(DONE_KEY, "1");
     render(<LeadPopup storage={s} />);

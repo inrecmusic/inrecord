@@ -128,12 +128,14 @@ export default async function TrialPage({ searchParams }) {
             <h1 style={{ ...h1, fontSize: 24, color: "#0f172a" }}>
               {hasToken ? "這個試看連結無效或已失效" : "免費試看《從零開始學鋼琴》"}
             </h1>
+            {/* 這頁也是廣告落地頁（hero 的「課程免費試看」直接送到這裡），
+                所以文案要講「當場就能看」，不是「等信」——填完會自動帶著簽章回到這頁播放。 */}
             <p style={{ ...p, color: "#64748b", fontSize: 15 }}>
               {hasToken
-                ? "留下 Email，我們馬上再寄一次專屬的試看連結給你。"
-                : "留下 Email，我們馬上把試看影片的專屬連結寄給你，隨時都能重看。"}
+                ? "這個連結失效了。留下 Email 就能馬上重新開始看。"
+                : "留下 Email，馬上就能開始看。連結也會寄到信箱，之後隨時能重看。"}
             </p>
-            <LeadForm layout="stack" cta="寄出試看影片" />
+            <LeadForm layout="stack" />
           </div></div>
         )}
       </div>

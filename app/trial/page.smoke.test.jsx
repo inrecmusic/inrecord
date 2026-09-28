@@ -69,10 +69,12 @@ describe("試看頁四種狀態", () => {
     expect(document.querySelector("iframe")).toBeNull();
   });
 
-  it("④ 簽章無效：留信箱表單再寄一次", async () => {
+  it("④ 簽章無效：可直接重新留信箱，不是死路", async () => {
     await show({ e: "a@b.co", t: "bad" });
     expect(screen.getByText("這個試看連結無效或已失效")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "寄出試看影片" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "立即觀看試看" })).toBeTruthy();
+    // 文案講「馬上重新開始看」而不是「再寄一次」：填完會自動帶簽章回到這頁播放
+    expect(screen.getByText(/馬上重新開始看/)).toBeTruthy();
   });
 
   // 從官網導覽列「課程試看」點進來時沒有簽章參數，這種人不該看到「連結無效」

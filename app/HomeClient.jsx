@@ -565,18 +565,8 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
   }
 
   // 只賣粉絲方案：購買 CTA 一律捲動到方案區（粉絲限定方案卡）
-  const [trialIntent, setTrialIntent] = useState(false); // 按過 hero「課程免費試看」→ 不再彈進站彈窗
   function scrollToPricing() {
     document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
-  }
-  // 廣告 CTA 是導向「看試看影片」，但留信箱區在頁尾——hero 給一個入口，
-  // 不然沒滑到底的人等於白點進來。block:"center" 避免被固定導覽列蓋住。
-  function scrollToTrial(e) {
-    e?.preventDefault();
-    // 捲下去會滿足進站彈窗的 scrollRatio 條件，彈出來剛好蓋住他要去的地方——
-    // 人都主動點「我要看試看」了，不該再推一次。
-    setTrialIntent(true);
-    document.getElementById("subscribe")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
 
@@ -683,7 +673,7 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
 
       <main id="top">
         {/* 進站彈窗（LEAD_CAPTURE=on 才掛）：停留 6 秒或捲到一半才出現；已登入學員、已留過信箱、7 天內關過都不彈 */}
-        {leadCapture && <LeadPopup loggedIn={!!user} suppressed={trialIntent} />}
+        {leadCapture && <LeadPopup loggedIn={!!user} />}
         {/* HERO — 分欄：左 大標＋副標＋限時優惠卡 / 右 演奏照出血 */}
         <section ref={heroRef} className={styles.hero}>
           <div ref={heroPhotoRef} className={styles.heroPhoto} aria-hidden="true" />
@@ -759,8 +749,10 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
                 <div className={styles.offerBtns}>
                   <button className={styles.btnPrimary} onClick={scrollToPricing}>{buyShort}</button>
                   {/* 廣告點進來的人多半是為了試看，入口不能只放在頁尾 */}
+                  {/* 直接送到試看頁：廣告 CTA 就是為了看試看，捲到頁尾表單還多一步。
+                      /trial 沒帶簽章會顯示留信箱表單，填完就自動播。 */}
                   {leadCapture && (
-                    <a href="#subscribe" className={styles.btnOutline} onClick={scrollToTrial}>
+                    <a href="/trial" className={styles.btnOutline}>
                       <Video size={16} />課程免費試看
                     </a>
                   )}
