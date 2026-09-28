@@ -481,6 +481,7 @@ export default function OrdersPage({showToast}){
 
   const [sel,setSel]=useState(()=>new Set());
   const [granting,setGranting]=useState(false);
+  const [grantMail,setGrantMail]=useState(true); // 開通時一併寄通知信（預設開：不通知的話學員不知道能上課了）
   // 可開通的官網訂單：payuni + 已付款 + plan∈{course,bundle}（開通的是「課程」，game 不寫 enrollments 本就不該進名單）+ 未開通
   const ungranted=allOrders.filter(o=>o.source==="payuni"&&o.status==="paid"&&(o.plan==="course"||o.plan==="bundle")&&!o.enrolled);
   const ungrantedIds=ungranted.map(o=>o.realId);
@@ -488,14 +489,15 @@ export default function OrdersPage({showToast}){
 
   async function grantIds(ids,{all=false}={}){
     if(granting||!ids.length){if(!ids.length)showToast?.("⚠️ 沒有可開通的訂單");return;}
-    if(!window.confirm(`確定開通這 ${ids.length} 筆課程？`))return;
+    if(!window.confirm(`確定開通這 ${ids.length} 筆課程？${grantMail?"\n開通成功後會一併寄出通知信。":"\n不會寄任何通知信（學員不會知道已開通）。"}`))return;
     setGranting(true);
     try{
-      const res=await _api("/api/admin/grant-orders",{method:"POST",body:JSON.stringify(all?{}:{ids})});
+      const res=await _api("/api/admin/grant-orders",{method:"POST",body:JSON.stringify({...(all?{}:{ids}),sendEmail:grantMail})});
       const d=await res.json();
       if(!res.ok||d.ok===false)showToast?.("❌ 開通失敗："+(d.error||"unknown"));
       else{
-        showToast?.(`✅ 開通完成：成功 ${d.granted||0} 筆${d.failed?`，失敗 ${d.failed} 筆`:""}`);
+        const mail=grantMail?`，通知信 ${d.mailed||0} 封${d.mailFailed?`（${d.mailFailed} 封失敗，可到上方告警面板補寄）`:""}`:"";
+        showToast?.(`✅ 開通完成：成功 ${d.granted||0} 筆${d.failed?`，失敗 ${d.failed} 筆`:""}${mail}`);
         setSel(new Set());
         await loadOrders();
       }
@@ -728,6 +730,13 @@ export default function OrdersPage({showToast}){
             <b>待開通 {ungranted.length} 筆</b>（官網付款、尚未開通課程）
             <button className={styles.btnSmall} disabled={granting||!sel.size} onClick={grantSelected}>{granting?"開通中…":`開通勾選（${sel.size}）`}</button>
             <button className={styles.btnSmall} disabled={granting} onClick={grantAll}>{granting?"開通中…":`全部開通（${ungranted.length}）`}</button>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:13,whiteSpace:"nowrap",cursor:"pointer"}}>
+              <input type="checkbox" checked={grantMail} disabled={granting} onChange={e=>setGrantMail(e.target.checked)}/>
+              一併寄通知信
+            </label>
+            <span className={styles.dim} style={{fontSize:12}}>
+              （開課後寄「課程已開通」、預購期寄「預購成功」；買家指定過開通信箱就寄給那個信箱）
+            </span>
           </div>
         )}
         <div className={styles.tableWrap}>

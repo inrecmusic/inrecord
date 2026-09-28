@@ -4,6 +4,10 @@ vi.mock("@/lib/adminAuth", () => ({ verifyAdminToken: vi.fn(async () => ({ email
 vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/fulfillment-grant", () => ({ grantAccess: vi.fn(async () => ({ ok: true, errors: [] })) }));
 vi.mock("@/lib/audit", () => ({ logAudit: vi.fn(async () => {}) }));
+vi.mock("@/lib/brevo-email", () => ({ sendPurchaseEmail: vi.fn(async () => ({ success: true })) }));
+vi.mock("@/lib/sale", () => ({
+  getSaleSettings: vi.fn(async () => ({})), isPresale: vi.fn(() => false), purchasePhaseLabel: vi.fn(() => ""),
+}));
 // selectAll：模擬分頁查詢——執行 build() 記錄篩選條件，orders 依 .in 限縮
 vi.mock("@/lib/supabase-paginate", () => ({
   selectAll: vi.fn(async (_sb, table, build) => {
@@ -19,6 +23,7 @@ import { POST } from "./route";
 import { verifyAdminToken } from "@/lib/adminAuth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { grantAccess } from "@/lib/fulfillment-grant";
+import { sendPurchaseEmail } from "@/lib/brevo-email";
 import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
 
 // 候選：兩筆官網已付款（一筆已開通）
@@ -64,5 +69,47 @@ describe("POST /api/admin/grant-orders（後台開通官網已付款單）", () 
     const body = await (await POST(req({ ids: ["o1"] }))).json();
     expect(body).toMatchObject({ ok: true, granted: 0, failed: 1 });
     expect(body.errors[0]).toContain("a@x.com");
+  });
+
+  it("預設不寄信：沒帶 sendEmail 就只開通", async () => {
+    await POST(req({}));
+    expect(sendPurchaseEmail).not.toHaveBeenCalled();
+  });
+
+  it("sendEmail:true → 開通成功才寄，回報寄出封數", async () => {
+    const body = await (await POST(req({ sendEmail: true }))).json();
+    expect(body).toMatchObject({ granted: 1, mailed: 1, mailFailed: 0 });
+    expect(sendPurchaseEmail).toHaveBeenCalledTimes(1);
+    expect(sendPurchaseEmail.mock.calls[0][0]).toMatchObject({ email: "a@x.com", plan: "bundle" });
+  });
+
+  it("開通失敗就不寄信（免得學員收到信卻進不了教室）", async () => {
+    grantAccess.mockResolvedValueOnce({ ok: false, errors: ["boom"] });
+    const body = await (await POST(req({ sendEmail: true }))).json();
+    expect(body).toMatchObject({ granted: 0, failed: 1, mailed: 0 });
+    expect(sendPurchaseEmail).not.toHaveBeenCalled();
+  });
+
+  it("寄信失敗不影響「已開通」，計入 mailFailed 並留錯誤訊息", async () => {
+    sendPurchaseEmail.mockResolvedValueOnce({ success: false, error: "brevo_500" });
+    const body = await (await POST(req({ sendEmail: true }))).json();
+    expect(body).toMatchObject({ granted: 1, mailFailed: 1 });
+    expect(body.errors.join()).toContain("開通成功但寄信失敗");
+  });
+
+  it("寄信拋例外也不會讓整批開通失敗", async () => {
+    sendPurchaseEmail.mockRejectedValueOnce(new Error("network"));
+    const body = await (await POST(req({ sendEmail: true }))).json();
+    expect(body).toMatchObject({ ok: true, granted: 1, mailFailed: 1 });
+  });
+
+  it("買家指定過開通信箱 → 通知寄給實際上課的人", async () => {
+    ORDERS[0].grant_email = "student@x.com";
+    try {
+      await POST(req({ sendEmail: true }));
+      expect(sendPurchaseEmail.mock.calls[0][0].email).toBe("student@x.com");
+    } finally {
+      delete ORDERS[0].grant_email;
+    }
   });
 });
