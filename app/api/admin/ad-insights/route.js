@@ -21,7 +21,7 @@ export async function GET(req) {
   let insights, orders;
   try {
     [insights, orders] = await Promise.all([
-      selectAll(sb, "ad_insights", q => q.select("campaign_id, campaign_name, date, spend, impressions, clicks, reach, frequency, meta_conversions, meta_conversion_value").gte("date", sinceDate)),
+      selectAll(sb, "ad_insights", q => q.select("campaign_id, campaign_name, date, spend, impressions, clicks, reach, frequency, meta_conversions, meta_conversion_value, updated_at").gte("date", sinceDate)),
       selectAll(sb, "orders", q => q.select("amount, created_at, attribution").eq("status", "paid").gte("created_at", sinceISO)),
     ]);
   } catch (e) { return serverError(e); }
@@ -36,6 +36,8 @@ export async function GET(req) {
   }
 
   const report = buildAdReport({ insights, paidOrders: orders, leads, targetRoas });
+  // 最後一次 Meta 同步寫入的時間：前端據此顯示「資料更新於…」與過期提醒
+  const lastSyncedAt = insights.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), "") || null;
   // configured 讓前端分辨空狀態的原因：沒接 Meta（要去設 env）vs 已接但期間內沒花錢（正常）
-  return NextResponse.json({ data: report, days, targetRoas, configured: isConfigured() });
+  return NextResponse.json({ data: report, days, targetRoas, configured: isConfigured(), lastSyncedAt });
 }

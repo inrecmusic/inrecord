@@ -64,6 +64,8 @@ const CSS = `
 .adsDash .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 .adsDash .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .adsDash .h-title { font-size: 25px; font-weight: 800; letter-spacing: -.02em; margin: 0; }
+.adsDash .syncNote { margin: 0 0 14px; font-size: 12.5px; color: var(--muted); }
+.adsDash .syncNote.warn { color: var(--warn); background: var(--warn-soft); padding: 8px 12px; border-radius: 8px; }
 .adsDash .h-sub { color: var(--muted); font-size: 13px; margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adsDash .ranges { display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 4px; box-shadow: var(--shadow); }
 .adsDash .chip { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 8px; cursor: pointer; }
@@ -257,7 +259,7 @@ function MiniMetrics({ totals }) {
     ["轉換率 CVR", pf(t.cvr)],
     // 廣告導到試看的成效：拿到幾個 Email、一個多少錢
     ["試看名單", nf(t.leads)],
-    ["每名單成本", Number(t.leads) > 0 ? "NT$" + nf(t.cpl) : "—"],
+    ["每名單成本", Number(t.adLeads) > 0 ? "NT$" + nf(t.cpl) : "—"],
   ];
   return (
     <section className="card subkpis" aria-label="漏斗與受眾指標">
@@ -518,11 +520,29 @@ function CampaignTable({ campaigns, totals, targetRoas }) {
   );
 }
 
+// ── 資料同步狀態：Meta 資料由排程拉取，不是即時；超過 8 小時沒更新就提醒 ──
+function SyncStatus({ at }) {
+  const ms = at ? Date.parse(at) : NaN;
+  if (!Number.isFinite(ms)) {
+    return <p className="syncNote warn">尚未同步過 Meta 資料，請確認排程與 Meta 權杖設定。</p>;
+  }
+  const hours = Math.max(0, Math.floor((Date.now() - ms) / 3600000));
+  const when = new Date(ms).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+  const stale = hours >= 8;
+  return (
+    <p className={"syncNote" + (stale ? " warn" : "")}>
+      Meta 資料更新於 {when}（{hours < 1 ? "不到 1 小時前" : `${hours} 小時前`}）· 每 3 小時自動同步
+      {stale ? "，已超過 8 小時沒更新，可能同步失敗。" : "，當天數字為進行中。"}
+    </p>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function AdsPerformancePage({ showToast }) {
   const [days, setDays] = useState(30);
   const [report, setReport] = useState(null);
   const [targetRoas, setTargetRoas] = useState(3);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -538,6 +558,7 @@ export default function AdsPerformancePage({ showToast }) {
         if (cancelled) return;
         setReport(d?.data ? { ...d.data, configured: !!d.configured } : null);
         setTargetRoas(Number(d?.targetRoas) || 3);
+        setLastSyncedAt(d?.lastSyncedAt || null);
       })
       .catch(() => {
         if (cancelled) return;
@@ -569,6 +590,8 @@ export default function AdsPerformancePage({ showToast }) {
             ))}
           </div>
         </header>
+
+        {report?.configured && <SyncStatus at={lastSyncedAt} />}
 
         {empty ? (
           <EmptyState configured={!!report?.configured} days={days} />
