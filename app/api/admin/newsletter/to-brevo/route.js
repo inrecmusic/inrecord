@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminToken } from "@/lib/adminAuth";
-import { renderNewsletterHtml } from "@/lib/newsletter";
+import { renderNewsletterHtml, tagNewsletterLinks } from "@/lib/newsletter";
+import { substituteSaleVars } from "@/lib/newsletter-vars";
+import { getSaleSettings } from "@/lib/sale";
 import { normalizeDraftId } from "@/lib/newsletter-drafts";
 import { logAudit } from "@/lib/audit";
 
@@ -35,12 +37,15 @@ export async function POST(req) {
   if (!nl?.body_md) return NextResponse.json({ error: "draft_empty" }, { status: 404 });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
+  // Brevo 範本是靜態的：{{價格}} 這類佔位符要在推送當下代入，否則 Brevo 的範本解析器會直接報錯
+  let saleSettings = null;
+  try { saleSettings = await getSaleSettings(); } catch { saleSettings = null; }
   const html = renderNewsletterHtml({
     subject: nl.subject || id,
-    bodyMd: nl.body_md,
+    bodyMd: tagNewsletterLinks(substituteSaleVars(nl.body_md, saleSettings), siteUrl, id),
     siteUrl,
     unsubscribeUrl: "{{ unsubscribe }}",
-    reasonLine: "你收到這封信，是因為你曾在 InRecord 官網留下 Email 索取免費試看。",
+    reasonLine: "您收到這封信，是因為您曾在 InRecord 官網留下 Email 索取免費試看。",
   });
 
   const tpl = {
