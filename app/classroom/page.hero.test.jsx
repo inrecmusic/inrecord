@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // 儀表板整頁 smoke（mock supabase／bootstrap）：三種放行情境的文案與「接著看」海報，
-// 以及新版版面的骨架（進度分母＝已開放單元、章節卡狀態、練功房）。
+// 以及新版版面的骨架（進度分母＝已開放單元、章節卡狀態、遊戲間）。
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, cleanup, waitFor } from "@testing-library/react";
 

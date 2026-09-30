@@ -182,9 +182,9 @@ export default function ClassroomHubLegacy() {
 
         <div className="grid2">
           <div className="tile">
-            <h4>練功房</h4>
+            <h4>遊戲間</h4>
             <p>{hasSubscription ? "用互動遊戲練音感與節奏，把剛學的變成反射動作。" : "課程包附贈的互動練習，升級即可解鎖。"}</p>
-            <a className="link" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "進入練功房 →" : "了解課程包 →"}</a>
+            <a className="link" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "進入遊戲間 →" : "了解課程包 →"}</a>
           </div>
           <div className="tile">
             <h4>我的資料與訂單</h4>
