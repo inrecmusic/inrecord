@@ -264,6 +264,7 @@ PARTNER_ADS_LABEL       # 選填，稽核紀錄裡的操作者名稱（例：ric
 ANTHROPIC_API_KEY       # 後台「營運助理」每週週報（cron ops-report 每週一 08:00 台灣）；未設＝排程跳過、後台顯示未設定、不影響其他功能
 SHEETS_WEBHOOK_URL      # Google Apps Script 網頁應用程式 URL（後台訂單同步到試算表）；與 SHEETS_WEBHOOK_SECRET 缺一＝功能安全停用（按鈕停用、API 回 503），不影響後台其他功能
 SHEETS_WEBHOOK_SECRET   # 與 Apps Script 共用的密鑰（doPost 比對後才寫試算表）
+INTERACTIVE_SCORES      # =on 才開互動樂譜（播放頁「樂譜」分頁＋側欄 sheet 項目＋/api/classroom/scores）；未設＝當作沒有樂譜。preview 與正式站共用 DB，只能用這個開關分環境
 LEAD_CAPTURE            # =on 才開「留信箱換免費試看」（首頁橫幅＋進站彈窗＋/api/newsletter/subscribe＋/trial）；未設＝首頁顯示原 CTA 卡片、API 回 503。試看影片上傳後再開
 ```
 

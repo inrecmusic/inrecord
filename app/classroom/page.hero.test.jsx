@@ -88,7 +88,7 @@ describe("儀表板：版面骨架", () => {
     await waitFor(() => expect(document.querySelector(".ann-modal")).not.toBeNull());
   });
 
-  it("沒有遊戲存取 → 練功房顯示課程包說明；有存取且遊戲已上傳 → 標「可以玩了」", async () => {
+  it("沒有遊戲存取 → 遊戲間顯示課程包說明；有存取且遊戲已上傳 → 標「可以玩了」並可就地開啟", async () => {
     const c1 = await mount({ ...base, videos: [{ ...NONE_PLAYABLE[0], playable: true }], earlyAccess: true });
     expect(c1.textContent).toContain("課程包附贈的互動練習");
     cleanup();
@@ -98,7 +98,11 @@ describe("儀表板：版面骨架", () => {
         : { games: [{ id: "g1", title: "音名快閃" }] } })));
     const { container: c2 } = render(<ClassroomHub />);
     await waitFor(() => expect(c2.textContent).toContain("可以玩了"));
-    expect(c2.querySelector(".game.open")?.getAttribute("href")).toBe("/classroom/watch?v=v21");
     expect(c2.querySelectorAll(".game.soon").length).toBe(2);
+    // 已上傳的遊戲卡是按鈕：點了就地開遊戲視窗，不用先進播放頁
+    const open = c2.querySelector("button.game.open");
+    expect(open).not.toBeNull();
+    open.click();
+    await waitFor(() => expect(document.body.textContent).toContain("🎮 音名快閃"));
   });
 });

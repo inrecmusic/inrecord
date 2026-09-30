@@ -12,6 +12,9 @@ export async function GET(req) {
   if (gate.res) return gate.res;
   const { supabase } = gate;
 
+  // INTERACTIVE_SCORES 未設＝功能關閉（正式站先關、preview 先試）
+  if (process.env.INTERACTIVE_SCORES !== "on") return NextResponse.json({ scores: [] });
+
   const videoId = new URL(req.url).searchParams.get("video_id");
   if (videoId && !UUID_RE.test(videoId)) return NextResponse.json({ error: "invalid_video_id" }, { status: 400 });
 

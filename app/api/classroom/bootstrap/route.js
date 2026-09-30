@@ -99,7 +99,8 @@ export async function GET(req) {
       ? supabase.from("games").select("id, video_id, title").not("video_id", "is", null).not("is_active", "is", false)
       : Promise.resolve({ data: null, error: null }),
     // 互動樂譜（supabase-scores.sql；表還沒建就當作沒有樂譜，側欄照常）
-    playerMode
+    // INTERACTIVE_SCORES 未設＝不給，正式站先關、preview 先試（preview 與正式站共用 DB，擋不了資料只能擋功能）
+    playerMode && process.env.INTERACTIVE_SCORES === "on"
       ? supabase.from("scores").select("id, video_id, title").not("video_id", "is", null).eq("published", true)
       : Promise.resolve({ data: null, error: null }),
   ]);

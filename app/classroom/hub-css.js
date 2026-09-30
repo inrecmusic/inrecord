@@ -145,9 +145,10 @@ export const HUB_CSS = `
 .hub .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .hub .ring .t{fill:none;stroke:var(--chip-bg);stroke-width:9}
 .hub .ring .v{fill:none;stroke:var(--gold);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+/* 百分比要對齊圓心，「已看」另外掛在下方——整組置中會把數字往上推 */
 .hub .ring .mid{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1}
 .hub .ring .mid b{font-size:26px;color:var(--ink)}
-.hub .ring .mid small{display:block;color:var(--ink-3);font-size:11px;margin-top:5px}
+.hub .ring .mid small{position:absolute;top:50%;left:0;right:0;margin-top:15px;color:var(--ink-3);font-size:11px}
 .hub .progress .big{font-size:34px;line-height:1}
 .hub .progress .big small{font-size:18px;color:var(--ink-3);margin-left:2px}
 .hub .progress .lbl{color:var(--ink-2);font-size:14px;margin-top:6px}
@@ -233,11 +234,13 @@ export const HUB_CSS = `
 .hub .chapter .foot .muted{color:var(--ink-3)}
 .hub .chapter.appx .cover{height:64px;padding:10px 18px;align-items:center}
 
-/* 練功房 */
+/* 遊戲間 */
 .hub .games-wrap{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:22px;align-items:center}
 .hub .games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .hub .game{background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);transition:transform .15s}
 .hub .game:hover{transform:translateY(-3px)}
+/* 已上傳的遊戲卡是 button（就地開遊戲），外觀要與 a 版本一致 */
+.hub button.game{width:100%;text-align:left;color:inherit;cursor:pointer}
 .hub .game .tile{width:60px;height:60px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:26px;color:var(--gold-ink);background:linear-gradient(140deg,var(--gold-2),var(--gold-deep));font-family:var(--serif)}
 .hub .game.soon .tile{background:linear-gradient(140deg,var(--s3),var(--s2));color:var(--ink-2)}
 .hub .game h3{font-size:16px;line-height:1.4}

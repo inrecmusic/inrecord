@@ -7,6 +7,7 @@ import { announcementSummary } from "@/lib/announcement-md";
 import { isUnread } from "@/lib/announcements-view";
 import { buildHubModel, greetingLine, relativeDayLabel, joinCn } from "@/lib/hub-view";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
+import GamePlayerOverlay from "@/components/classroom/GamePlayerOverlay";
 import { HUB_CSS } from "./hub-css";
 
 const F = `var(--type-body)`;
@@ -20,6 +21,24 @@ const Bell = () => <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="
 const Arrow = () => <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 12h12m-5-6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const Check = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const GAME_GLYPH = ["♩", "♫", "⇄", "♪", "♬"];
+
+/* 遊戲卡：已上傳的就地開遊戲視窗；還沒上傳（或查不到 id）維持連到播放頁 */
+function GameCard({ g, glyph, onPlay }) {
+  const inner = (
+    <>
+      <div className="tile" aria-hidden="true"><span>{glyph}</span></div>
+      <div className="body">
+        <h3>{g.name}</h3>
+        <p>{g.chapterLabel}　{g.after} 之後</p>
+        {g.opened ? <span className="chip gold">可以玩了</span> : <span className="chip">即將上線</span>}
+      </div>
+    </>
+  );
+  if (g.opened && g.game) {
+    return <button type="button" className="game open" onClick={() => onPlay(g.game)}>{inner}</button>;
+  }
+  return <a className={`game ${g.opened ? "open" : "soon"}`} href={g.opened ? g.href : "/classroom/watch"}>{inner}</a>;
+}
 
 /* ── 音樂廳學員中心 ─────────────────────────────────────────────────────────── */
 export default function ClassroomHub() {
@@ -38,7 +57,8 @@ export default function ClassroomHub() {
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
   const [progress, setProgress]           = useState([]);
-  const [openedGames, setOpenedGames]     = useState(null); // 已上傳的遊戲標題（有遊戲存取才查；null=不知道）
+  const [openedGames, setOpenedGames]     = useState(null); // 已上傳的遊戲（有遊戲存取才查；null=不知道）
+  const [playingGame, setPlayingGame]     = useState(null); // 在儀表板直接開的遊戲
   const [nowMs, setNowMs]                 = useState(null); // 資料到齊後才定「現在」（render 不碰 Date.now，避免 hydration 不一致）
   const [theme, setTheme]                 = useState(null);   // null=跟系統；'dark'/'light'=手動
   const [sysDark, setSysDark]             = useState(true);   // 系統是否偏好深色（logo white 判斷用）
@@ -67,10 +87,10 @@ export default function ClassroomHub() {
           setAnnouncements(d.announcements || []);
           setEarlyAccess(d.earlyAccess);
           setNowMs(Date.now());
-          // 練功房卡片要知道哪些遊戲已上傳（best-effort，失敗就當不知道）
+          // 遊戲間卡片要知道哪些遊戲已上傳（best-effort，失敗就當不知道）
           if (d.hasSubscription) {
             fetch("/api/classroom/games", { headers: { Authorization: `Bearer ${accessToken}` } })
-              .then((g) => (g.ok ? g.json() : null)).then((g) => setOpenedGames((g?.games || []).map((x) => x.title || "")))
+              .then((g) => (g.ok ? g.json() : null)).then((g) => setOpenedGames(g?.games || []))
               .catch(() => {});
           }
         } catch {
@@ -332,14 +352,7 @@ export default function ClassroomHub() {
           <div className="games-wrap">
             <div className="games">
               {hasSubscription && games.length > 0 ? games.map((g, i) => (
-                <a key={g.name} className={`game ${g.opened ? "open" : "soon"}`} href={g.opened ? g.href : "/classroom/watch"}>
-                  <div className="tile" aria-hidden="true"><span>{GAME_GLYPH[i % GAME_GLYPH.length]}</span></div>
-                  <div className="body">
-                    <h3>{g.name}</h3>
-                    <p>{g.chapterLabel}　{g.after} 之後</p>
-                    {g.opened ? <span className="chip gold">可以玩了</span> : <span className="chip">即將上線</span>}
-                  </div>
-                </a>
+                <GameCard key={g.name} g={g} glyph={GAME_GLYPH[i % GAME_GLYPH.length]} onPlay={setPlayingGame} />
               )) : (
                 <div className="card plain" style={{ gridColumn: "1 / -1" }}>
                   <h3>{hasSubscription ? "互動遊戲跟著章節上架" : "課程包附贈的互動練習"}</h3>
@@ -357,6 +370,8 @@ export default function ClassroomHub() {
 
         {ann.sorted.length > 0 && <div id="announcements"><HubAnnouncements ann={ann} /></div>}
       </main>
+
+      {playingGame && <GamePlayerOverlay game={playingGame} token={token} onClose={() => setPlayingGame(null)} />}
 
       <div className="wrap">
         {/* 真實鋼琴鍵：52 個白鍵＝完整 88 鍵鋼琴；黑鍵依八度落在 C#/D#/F#/G#/A#（白鍵 index%7 ∈ {0,1,3,4,5}）。窄螢幕只顯示前 3 個八度。*/}
