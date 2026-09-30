@@ -42,7 +42,8 @@ async function mount(bootstrap) {
 beforeEach(async () => {
   vi.stubGlobal("localStorage", memoryStorage());
   window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
-  ClassroomHub = (await import("./page.jsx")).default;
+  // 直接測新版元件：page.jsx 只是依 HUB_V3 決定要渲染哪一版的薄殼
+  ClassroomHub = (await import("./HubV3.jsx")).default;
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
