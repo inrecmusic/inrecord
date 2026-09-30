@@ -325,7 +325,7 @@ export default function ClassroomHub() {
 
         <section className="sec" aria-labelledby="sec-games">
           <div className="sec-h">
-            <h2 id="sec-games" className="serif">練功房</h2>
+            <h2 id="sec-games" className="serif">遊戲間</h2>
             <span className="cap">邊玩邊複習，把剛學的變成反射動作</span>
             <a className="more" href={hasSubscription ? "/classroom/watch" : "/#pricing"}>{hasSubscription ? "全部遊戲" : "了解課程包"} <Arrow /></a>
           </div>
