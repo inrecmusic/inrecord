@@ -10,11 +10,14 @@ export default function GamePlayerOverlay({ game, token, onClose, cache }) {
   const [error, setError]     = useState("");
 
   const gameId = game?.id;
-  const isUrlGame = game?.game_type === "url";
+  // 從側欄點進來時只有 { id, title }，type 要等抓回內容才知道 → 以抓回的為準
+  const resolved = content || game;
+  const isUrlGame = resolved?.game_type === "url";
+  const knownUrlGame = game?.game_type === "url";
 
   useEffect(() => {
     if (!gameId) return;
-    if (isUrlGame) { setError(""); setContent(game); return; }
+    if (knownUrlGame) { setError(""); setContent(game); return; }
     if (cache?.current[gameId]) { setError(""); setContent(cache.current[gameId]); return; }
 
     let cancelled = false; // 避免快速切換遊戲時，較慢回來的舊請求覆蓋新選遊戲的內容
@@ -41,7 +44,7 @@ export default function GamePlayerOverlay({ game, token, onClose, cache }) {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意只依 id／token 等穩定值觸發，避免物件參考變動造成重跑（2026-08-25 影片每小時重載的教訓）
-  }, [gameId, isUrlGame, token]);
+  }, [gameId, knownUrlGame, token]);
 
   if (!game) return null;
 
@@ -74,7 +77,7 @@ export default function GamePlayerOverlay({ game, token, onClose, cache }) {
         /* 外部遊戲頁一律沙箱隔離：不給 allow-same-origin（避免存取本站同源資料）、
            不給 allow-top-navigation（避免把學員導去外部頁面）。 */
         <iframe
-          src={game.external_url}
+          src={resolved.external_url}
           allow="autoplay; fullscreen"
           sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="no-referrer"

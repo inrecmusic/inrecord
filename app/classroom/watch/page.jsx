@@ -7,6 +7,7 @@ import { isProfileCoreComplete } from "@/lib/student-profile";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
 import NotesTab from "@/components/classroom/NotesTab";
 import GamesTab from "@/components/classroom/GamesTab";
+import GamePlayerOverlay from "@/components/classroom/GamePlayerOverlay";
 import ScoreTab from "@/components/classroom/ScoreTab";
 import AssignmentTab from "@/components/classroom/AssignmentTab";
 import RatingTab from "@/components/classroom/RatingTab";
@@ -118,6 +119,7 @@ export default function ClassroomPage() {
   const [contentItems, setContentItems]   = useState({});
   const [contentStats, setContentStats]   = useState(null);
   const [pendingGameId, setPendingGameId] = useState(null);
+  const [sidebarGame, setSidebarGame] = useState(null); // 影片未上架的單元，從側欄直接開的遊戲
   const [itemErr, setItemErr]             = useState("");
   const [videos, setVideos]               = useState([]);
   const [currentVideo, setCurrentVideo]   = useState(null);
@@ -362,9 +364,14 @@ export default function ClassroomPage() {
   // 點展開清單裡的項目：講義樂譜直接下載，遊戲與作業切到對應分頁。
   async function handleItemClick(e, v, item) {
     e.stopPropagation();
-    if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
+    const unitPlayable = !!(v.bunny_video_id || v.vimeo_id);
+    if (unitPlayable) handleSelect(v);
     if (item.kind === "sheet") { setTab("score"); return; }
-    if (item.kind === "game") { setPendingGameId(item.id); setTab("games"); return; }
+    if (item.kind === "game") {
+      // 影片還沒上架的單元也可能掛了遊戲：切不到那個單元的分頁，就直接開遊戲視窗
+      if (!unitPlayable) { setSidebarGame({ id: item.id, title: item.title }); return; }
+      setPendingGameId(item.id); setTab("games"); return;
+    }
     if (item.kind === "assignment") { setTab("assignment"); return; }
     setItemErr("");
     const ok = await openMaterialById(token, item.id);
@@ -819,8 +826,9 @@ export default function ClassroomPage() {
                     const isWatching = !done && watchPct > 0;
                     const items      = contentItems[v.id] || [];
                     const playable   = !!(v.bunny_video_id || v.vimeo_id);
-                    // 沒影片的單元只列可下載項目（遊戲/作業要切分頁、會綁到別的單元）
-                    const visibleItems = playable ? items : items.filter(i => i.kind === "handout" || i.kind === "score");
+                    // 沒影片的單元：講義樂譜可下載，遊戲也照列（遊戲不依賴影片，點了就地開視窗）；
+                    // 只有作業要擋，它得在播放頁的分頁裡交。
+                    const visibleItems = playable ? items : items.filter(i => i.kind !== "assignment");
                     // 規劃中的互動遊戲：接在對應單元下方（灰色列）。
                     // 同編號可能有兩支單元（「1-2 尋找起始音 Do」與「1-2 【跟練】Do 之歌」），只讓第一支認領，否則會各印一次。
                     const no = unitNo(v.title);
@@ -929,6 +937,10 @@ export default function ClassroomPage() {
           </div>
         </div>
       </div>
+
+      {sidebarGame && (
+        <GamePlayerOverlay game={sidebarGame} token={token} cache={gameCacheRef} onClose={() => setSidebarGame(null)} />
+      )}
     </div>
   );
 }
