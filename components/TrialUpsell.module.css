@@ -59,6 +59,8 @@
 .title {
   margin: 16px 0 10px; font-family: var(--type-display); font-weight: 600; font-size: clamp(24px, 4.4vw, 31px);
   line-height: 1.2; letter-spacing: .01em; word-break: keep-all; line-break: strict;
+  /* 標題字型預設是舊式數字（10 看起來像 ıo）；成績「8 / 10」要一眼看清楚 */
+  font-variant-numeric: lining-nums;
 }
 .body { margin: 0 0 18px; color: rgba(255, 255, 255, .72); font-size: 15.5px; line-height: 1.75; word-break: keep-all; line-break: strict; }
 .facts { margin: 0 0 20px; padding: 0; list-style: none; display: grid; gap: 8px; }
@@ -72,6 +74,10 @@
 .was { font-family: var(--type-numeric); font-size: 19px; font-weight: 500; color: rgba(255, 255, 255, .45); text-decoration: line-through; }
 .countdown { margin: 0 0 20px; color: rgba(255, 255, 255, .68); font-size: 14px; line-height: 1.7; word-break: keep-all; line-break: strict; }
 .countdown strong { font-family: var(--font-jetbrains), monospace; font-weight: 700; color: #fff; letter-spacing: .02em; }
+/* 「10/8 23:59 前 NT$4,549，之後 NT$4,799」：截止與之後價寫明，比只有倒數更有急迫感；每段不拆行 */
+.deadline { display: block; margin-bottom: 2px; color: #fff; font-size: 15px; font-weight: 700; }
+.deadline span { white-space: nowrap; }
+.deadline .after { color: rgba(255, 255, 255, .68); font-weight: 500; }
 .cta {
   display: flex; align-items: center; justify-content: center; min-height: 56px; padding: 17px 28px;
   background: var(--brand); color: #fff; border-radius: 10px; font-size: 18px; font-weight: 700; text-decoration: none;

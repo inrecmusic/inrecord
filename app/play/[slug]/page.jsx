@@ -32,5 +32,5 @@ export default async function PlayPage({ params }) {
   const g = publicGame(params?.slug);
   if (!g) notFound();
   const offer = await readOffer();
-  return <PlayTrial slug={String(params.slug).toLowerCase()} name={g.name} blurb={g.blurb} chapter={g.chapter} offer={offer} />;
+  return <PlayTrial slug={String(params.slug).toLowerCase()} name={g.name} blurb={g.blurb} game={g} offer={offer} />;
 }

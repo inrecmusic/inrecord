@@ -108,7 +108,13 @@ export default function UpsellPanel({
                 <p className={styles.countdown}>
                   {mode === "fan"
                     ? <>距離 {offer.deadlineLabel} 截止還有 <strong>{fmtCountdown(leftMs)}</strong>，截止後調漲</>
-                    : <>距離下次調漲（{offer.deadlineLabel}）還有 <strong>{fmtCountdown(leftMs)}</strong></>}
+                    : <>
+                        <span className={styles.deadline}>
+                          <span>{offer.deadlineLabel} 前 NT${nt(offer.price)}</span>
+                          {offer.nextPrice ? <>，<span className={styles.after}>之後 NT${nt(offer.nextPrice)}</span></> : null}
+                        </span>
+                        距離調漲還有 <strong>{fmtCountdown(leftMs)}</strong>
+                      </>}
                 </p>
               )}
             </>

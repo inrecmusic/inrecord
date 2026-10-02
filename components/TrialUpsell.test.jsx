@@ -7,7 +7,7 @@ import { LICENSE_TERM_TEXT } from "@/lib/terms-version";
 
 const FAN_DEADLINE = Date.parse("2026-09-16T15:59:00Z"); // 9/16 23:59 台灣
 const fanOffer = { mode: "fan", price: 3999, originalPrice: 13800, deadlineMs: FAN_DEADLINE, deadlineLabel: "9/16 23:59" };
-const waveOffer = { mode: "wave", price: 4299, originalPrice: 13800, deadlineMs: Date.parse("2026-09-25T16:00:00Z"), deadlineLabel: "9/26 00:00" };
+const waveOffer = { mode: "wave", price: 4299, originalPrice: 13800, nextPrice: 4799, deadlineMs: Date.parse("2026-09-25T16:00:00Z"), deadlineLabel: "9/25 23:59" };
 
 let handlers;
 function installPlayerjs() {
@@ -203,7 +203,10 @@ describe("三種價格狀態（全部由 props 帶入，不寫死）", () => {
     await renderReady(waveOffer);
     await emit("ended");
     expect(screen.getByText("NT$4,299")).toBeTruthy();
-    expect(screen.getByText(/距離下次調漲（9\/26 00:00）還有/)).toBeTruthy();
+    // 截止與之後價寫明（「9/25 23:59 前 NT$4,299，之後 NT$4,799」），再接倒數
+    expect(screen.getByText("9/25 23:59 前 NT$4,299")).toBeTruthy();
+    expect(screen.getByText("之後 NT$4,799")).toBeTruthy();
+    expect(screen.getByText(/距離調漲還有/)).toBeTruthy();
   });
 
   it("都不符：不顯示任何價格，只留方案連結", async () => {
