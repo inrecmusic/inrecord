@@ -75,8 +75,10 @@ const S = {
   brand: { color: "#f3efe6", textDecoration: "none", fontWeight: 700, fontSize: 16, letterSpacing: ".02em" },
   tag: { fontSize: 12, fontWeight: 700, color: "#2a1e08", background: "#e8c583", borderRadius: 999, padding: "3px 10px" },
   stage: { position: "relative", flex: 1, minHeight: 0, margin: "0 12px", borderRadius: 16, overflow: "hidden",
-           border: "1px solid rgba(255,255,255,.1)", background: "#000" },
-  frame: { width: "100%", height: "100%", border: 0, display: "block" },
+           border: "1px solid rgba(255,255,255,.1)", background: "#fff" },
+  // 絕對定位撐滿 stage：iframe 的 height:100% 在 flex 子層沒有確定高度可依，
+  // 會掉回瀏覽器預設的 150px（實測過），所以不用百分比高度。
+  frame: { position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" },
   overlay: { position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 20,
              background: "rgba(8,10,16,.82)", backdropFilter: "blur(6px)" },
   card: { maxWidth: 420, textAlign: "center" },
