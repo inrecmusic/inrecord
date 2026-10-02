@@ -63,7 +63,10 @@ export async function POST(req) {
     try { saleSettings = await getSaleSettings(); } catch { saleSettings = null; }
     const filled = substituteSaleVars(body_md, saleSettings);
     const tagged = tagNewsletterLinks(filled, siteUrl, nlId);
-    sendOne = (to, kind) => sendNewsletterEmail({ to, subject, html: renderNewsletterHtml({ subject, bodyMd: tagged, siteUrl, unsubscribeUrl: unsubUrl(to), reasonLine }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
+    // 主旨也代入：折數／價格寫在主旨又忘了改，是最容易把過期數字寄出去的地方。
+    // 去重指紋（下面的 contentHash）仍用未代入的原稿，價格變動不會讓同一封信被當成新信重寄。
+    const subj = substituteSaleVars(subject, saleSettings);
+    sendOne = (to, kind) => sendNewsletterEmail({ to, subject: subj, html: renderNewsletterHtml({ subject: subj, bodyMd: tagged, siteUrl, unsubscribeUrl: unsubUrl(to), reasonLine }), unsubscribeUrl: unsubUrl(to), ...(kind ? { kind } : {}) });
   }
 
   // 測試信：可自訂多個收件人（去重正規化、上限 10）；未填則寄管理員自己。
