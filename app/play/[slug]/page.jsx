@@ -18,5 +18,5 @@ export function generateMetadata({ params }) {
 export default function PlayPage({ params }) {
   const g = publicGame(params?.slug);
   if (!g) notFound();
-  return <PlayTrial slug={String(params.slug).toLowerCase()} name={g.name} blurb={g.blurb} />;
+  return <PlayTrial slug={String(params.slug).toLowerCase()} name={g.name} blurb={g.blurb} chapter={g.chapter} />;
 }

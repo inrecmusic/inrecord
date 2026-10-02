@@ -6,9 +6,9 @@ import { END_SIGNAL } from "@/lib/public-games";
 // 結束訊號來自注入 iframe 的 MutationObserver（lib/public-games.js）；
 // 遊戲改版導致訊號沒來時，用時間保底（FALLBACK_MS）仍會跳 CTA，不會讓人玩到忘記這是試玩。
 const FALLBACK_MS = 150_000;
-const BUY = "/?utm_source=game&utm_medium=trial&utm_campaign=play-do#pricing";
+const buyUrl = (slug) => `/?utm_source=game&utm_medium=trial&utm_campaign=play-${slug}#pricing`;
 
-export default function PlayTrial({ slug, name, blurb }) {
+export default function PlayTrial({ slug, name, blurb, chapter }) {
   const [done, setDone] = useState(false);
   const frameRef = useRef(null);
 
@@ -49,13 +49,13 @@ export default function PlayTrial({ slug, name, blurb }) {
           <div style={S.overlay} role="dialog" aria-label="試玩結束">
             <div style={S.card}>
               <p style={S.kicker}>玩完一局了</p>
-              <h2 style={S.h2}>這只是第一章的其中一個遊戲</h2>
+              <h2 style={S.h2}>這只是{chapter || "課程"}的其中一個遊戲</h2>
               <p style={S.p}>
                 《從零開始學鋼琴》每一章都配了這樣的互動練習，<br />
                 先玩出手感，再回頭把樂理弄懂。
               </p>
               <div style={S.row}>
-                <a href={BUY} style={S.primary}>查看課程</a>
+                <a href={buyUrl(slug)} style={S.primary}>查看課程</a>
                 <button type="button" onClick={again} style={S.ghost}>再玩一次</button>
               </div>
             </div>
