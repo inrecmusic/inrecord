@@ -5,7 +5,10 @@ import { freshToken, getDeviceId, F } from "./shared";
 // 全螢幕遊戲視窗。播放頁的遊戲分頁與學員中心「遊戲間」共用，
 // 學員從哪裡點進來都是同一套載入、裝置上限與沙箱設定。
 export default function GamePlayerOverlay({ game, token, onClose, cache }) {
-  const [content, setContent] = useState(null);
+  // 快取命中時第一次 render 就直接拿到內容：先畫「即將上線」的 srcdoc 再換成遊戲，
+  // 沙箱 iframe 在 Chrome 會停在黑畫面（2026-10-03 實測：返回後再開同一款遊戲就黑掉）。
+  const [content, setContent] = useState(() =>
+    game?.game_type === "url" ? game : (game?.id && cache?.current[game.id]) || null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
 
@@ -92,8 +95,10 @@ export default function GamePlayerOverlay({ game, token, onClose, cache }) {
           }} />
         </div>
       ) : (
+        /* key 綁內容：內容一變就換一個全新的 iframe，不在同一個 iframe 上改 srcdoc（理由見上方 useState） */
         <iframe
-          srcDoc={content?.html_content || "<div style='display:grid;place-items:center;height:100vh;font-family:system-ui;color:#64748b'>遊戲內容即將上線</div>"}
+          key={content?.html_content ? `game-${gameId}` : "empty"}
+          srcDoc={content?.html_content || "<div style='display:grid;place-items:center;height:100vh;font-family:system-ui;color:#cbd5e1'>遊戲內容即將上線</div>"}
           sandbox="allow-scripts allow-forms"
           style={{ flex: 1, border: 0, display: "block", width: "100%" }}
           title={game.title}
