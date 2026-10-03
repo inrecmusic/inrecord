@@ -47,7 +47,9 @@ export async function POST(req) {
     bodyMd: tagNewsletterLinks(substituteSaleVars(nl.body_md, saleSettings), siteUrl, id),
     siteUrl,
     unsubscribeUrl: "{{ unsubscribe }}",
-    reasonLine: "您收到這封信，是因為您曾在 InRecord 官網留下 Email 索取免費試看。",
+    // 收信理由要對得上收件人：預設是潛客（自動化流程多半接留信箱的人）；
+    // 寄給學員的範本（例：音樂教室使用教學）傳 audience:"buyers"，改用學員／會員的預設句。
+    reasonLine: body?.audience === "buyers" ? undefined : "您收到這封信，是因為您曾在 InRecord 官網留下 Email 索取免費試看。",
   });
 
   const tpl = {

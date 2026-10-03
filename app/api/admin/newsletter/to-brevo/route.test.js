@@ -52,5 +52,19 @@ describe("POST /api/admin/newsletter/to-brevo", () => {
     expect(tpl.htmlContent).toContain("限時優惠 3.2 折</h1>");
     expect(tpl.htmlContent).toContain("NT$4,549");
     expect(tpl.templateName).toBe("InRecord｜promo");
+    expect(tpl.htmlContent).toContain("索取免費試看");   // 預設：潛客的收信理由
+  });
+
+  it("audience:\"buyers\" → 收信理由改學員版（寄給已購課學員的範本）", async () => {
+    const calls = [];
+    vi.stubGlobal("fetch", vi.fn(async (url, init) => {
+      calls.push({ url, init });
+      if (!init?.method) return { ok: true, status: 200, json: async () => ({ templates: [] }) };
+      return { ok: true, status: 201, json: async () => ({ id: 100 }) };
+    }));
+    await POST(new Request("http://x/api/admin/newsletter/to-brevo", { method: "POST", body: JSON.stringify({ id: "guide", audience: "buyers" }) }));
+    const tpl = JSON.parse(calls.find((c) => c.init?.method === "POST").init.body);
+    expect(tpl.htmlContent).toContain("你是 InRecord 的學員／註冊會員");
+    expect(tpl.htmlContent).not.toContain("索取免費試看");
   });
 });
