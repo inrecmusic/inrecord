@@ -40,8 +40,10 @@ export async function POST(req) {
   // Brevo 範本是靜態的：{{價格}} 這類佔位符要在推送當下代入，否則 Brevo 的範本解析器會直接報錯
   let saleSettings = null;
   try { saleSettings = await getSaleSettings(); } catch { saleSettings = null; }
+  // 主旨也要代入（例「限時優惠 {{折數}}」）：沒代入的話範本主旨與信件頁首都會露出 {{折數}}，Brevo 解析器也可能拒收
+  const subject = substituteSaleVars(nl.subject || id, saleSettings);
   const html = renderNewsletterHtml({
-    subject: nl.subject || id,
+    subject,
     bodyMd: tagNewsletterLinks(substituteSaleVars(nl.body_md, saleSettings), siteUrl, id),
     siteUrl,
     unsubscribeUrl: "{{ unsubscribe }}",
@@ -50,7 +52,7 @@ export async function POST(req) {
 
   const tpl = {
     templateName: NAME(id),
-    subject: nl.subject || id,
+    subject,
     htmlContent: html,
     sender: { email: sender, name: process.env.BREVO_SENDER_NAME || "InRecord 音樂刻" },
     replyTo: process.env.BREVO_REPLY_TO || "support@inrecordmusic.com",
