@@ -647,7 +647,6 @@ export default function OrdersPage({showToast}){
         </div>
       )}
       <ManualGrantCard reload={loadOrders} showToast={showToast}/>
-      <WordpressLeadsPanel rows={rows} reload={loadOrders} showToast={showToast}/>
       <div className={styles.panel} style={{marginBottom:16}}>
         <div className={styles.panelHead} style={{flexWrap:"wrap",gap:10}}>
           <h3 style={{margin:0}}>對帳彙整（依日期區間）</h3>
@@ -800,6 +799,8 @@ export default function OrdersPage({showToast}){
           </div>
         )}
       </div>
+      {/* 外部購買名單（現場／演奏會）：不常看，放在訂單列表下方 */}
+      <div style={{marginTop:16}}><WordpressLeadsPanel rows={rows} reload={loadOrders} showToast={showToast}/></div>
       {detailOrder&&(
         <div className={styles.modalOverlay} onClick={()=>setDetailOrder(null)}>
           <div className={styles.modalCard} style={{width:"min(520px,100%)"}} onClick={e=>e.stopPropagation()}>
