@@ -9,7 +9,7 @@ import { extractTransferInfo, PAY_TYPE_LABEL } from "@/lib/payment-events";
 import { summarizeOrders } from "@/lib/reconciliation";
 import { PLAN_CATALOG } from "@/lib/plans";
 import { ExternalLink, DollarSign, CheckCircle2, CreditCard, BarChart2, AlertTriangle, X } from "lucide-react";
-import { excludeManual } from "@/lib/order-stats";
+import { excludeManual, supersededPendingIds, paidEmailSet } from "@/lib/order-stats";
 
 // 同步到 Google 試算表的錯誤碼 → 人話（後端只回固定代碼，細節只進 server log）
 const SHEET_SYNC_ERRORS={
@@ -521,16 +521,19 @@ export default function OrdersPage({showToast}){
   const pageRows=filtered.slice((tablePage-1)*PER,tablePage*PER);
 
   // 批次追單對象：目前篩選結果中「未付款／付款失敗」的去重信箱
+  // 「後來已付款」的舊單與已付過款的信箱不追（買家第一次付款失敗、重新下單付成功很常見）。
+  const supersededIds=useMemo(()=>supersededPendingIds(rows),[rows]);
+  const paidEmails=useMemo(()=>paidEmailSet(rows),[rows]);
   const followupTargets=useMemo(()=>Array.from(new Set(
-    filtered.filter(o=>o.status==="pending"||o.status==="failed").map(o=>(o.email||"").trim().toLowerCase()).filter(Boolean)
-  )),[filtered]);
+    filtered.filter(o=>(o.status==="pending"||o.status==="failed")&&!supersededIds.has(o.realId)).map(o=>(o.email||"").trim().toLowerCase()).filter(e=>e&&!paidEmails.has(e))
+  )),[filtered,supersededIds,paidEmails]);
 
   // 對帳彙整：以原始 rows 只套日期區間（忽略狀態/搜尋），確保營收與退款都涵蓋
   const dateRangeRows=useMemo(()=>rows.filter(o=>inDateRange(o.created_at||o.updated_at,dateFrom,dateTo)),[rows,dateFrom,dateTo]);
-  const report=useMemo(()=>summarizeOrders(dateRangeRows,PLAN_CATALOG),[dateRangeRows]);
+  const report=useMemo(()=>summarizeOrders(dateRangeRows,PLAN_CATALOG,{superseded:supersededIds}),[dateRangeRows,supersededIds]);
   const needsAttention=allOrders.filter(o=>o.status==="paid"&&(o.needInvoice||o.invoiceError||o.emailError));
   const paid=allOrders.filter(o=>o.status==="paid");
-  const pending=allOrders.filter(o=>o.status==="pending");
+  const pending=allOrders.filter(o=>o.status==="pending"&&!supersededIds.has(o.realId)); // 後來已付款的舊單不算待處理
   const refunded=allOrders.filter(o=>o.status==="refunded");
   const totalRev=paid.reduce((s,o)=>s+o.amount,0);
 

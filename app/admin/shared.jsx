@@ -134,7 +134,7 @@ export function BulkFollowupModal({ open, recipients = [], onClose, showToast })
       setResult(d);
       // skipped＝同樣主旨內文已寄過而跳過；unsubscribed＝已退訂未寄。兩者都不是失敗，但不顯示的話
       // 管理員會看到「已寄出 0/50」而以為系統壞了。
-      showToast?.(`✅ 已寄出 ${d.sent}/${d.total}${d.skipped ? `，已寄過跳過 ${d.skipped}` : ""}${d.unsubscribed ? `，已退訂 ${d.unsubscribed}` : ""}${d.failed?.length ? `，失敗 ${d.failed.length}` : ""}`);
+      showToast?.(`✅ 已寄出 ${d.sent}/${d.total}${d.skipped ? `，已寄過跳過 ${d.skipped}` : ""}${d.unsubscribed ? `，已退訂 ${d.unsubscribed}` : ""}${d.alreadyPaid ? `，已付款略過 ${d.alreadyPaid}` : ""}${d.failed?.length ? `，失敗 ${d.failed.length}` : ""}`);
     } catch (e) { showToast?.("❌ 批次寄送失敗：" + e.message); }
     finally { setBusy(false); }
   }

@@ -7,6 +7,7 @@ import { sendNewsletterEmail } from "@/lib/brevo-email";
 import { buildUnsubscribeUrl, excludeUnsubscribed } from "@/lib/unsubscribe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { logAudit } from "@/lib/audit";
+import { paidEmailSet } from "@/lib/order-stats";
 
 export const maxDuration = 300;
 
@@ -70,6 +71,22 @@ export async function POST(req) {
   }
   const unsubscribed = list.length - recipients.length;
 
+  // 已經付款成功的人不寄「訂單還沒完成付款」：前端名單是開頁當下算的，之後他才付款也會被擋下。
+  // 以下單信箱與開通信箱（grant_email）各查一次；查不到就照原名單寄（寧可多寄，也不能整批擋住）。
+  let alreadyPaid = 0;
+  if (supabase && recipients.length) {
+    const cols = "email, grant_email, status, source, amount, created_at";
+    const [byEmail, byGrant] = await Promise.all([
+      supabase.from("orders").select(cols).eq("status", "paid").in("email", recipients).limit(2000),
+      supabase.from("orders").select(cols).eq("status", "paid").in("grant_email", recipients).limit(2000),
+    ]);
+    if (byEmail.error || byGrant.error) console.error("[bulk-followup] paid lookup", byEmail.error?.message || byGrant.error?.message);
+    const paid = paidEmailSet([...(byEmail.data || []), ...(byGrant.data || [])]);
+    const before = recipients.length;
+    recipients = recipients.filter((e) => !paid.has(e));
+    alreadyPaid = before - recipients.length;
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://inrecordmusic.com";
   const unsubUrl = (to) => buildUnsubscribeUrl(to, siteUrl);
   // 內容指紋（與電子報共用 newsletter_sends，前綴自成命名空間、不與電子報互相蓋掉）：
@@ -96,15 +113,15 @@ export async function POST(req) {
     }
   }
 
-  console.log(`[bulk-followup] 已寄 ${sent}/${list.length}，失敗 ${failed.length}，已退訂 ${unsubscribed}，跳過 ${skipped}`);
+  console.log(`[bulk-followup] 已寄 ${sent}/${list.length}，失敗 ${failed.length}，已退訂 ${unsubscribed}，已付款 ${alreadyPaid}，跳過 ${skipped}`);
   await logAudit(supabase, {
     actor: payload.email,
     action: "email.bulk_followup",
     targetType: "email",
     targetId: `${list.length} 位收件人`,
-    meta: { subject: subj, total: list.length, sent, failed: failed.length, unsubscribed, skipped },
+    meta: { subject: subj, total: list.length, sent, failed: failed.length, unsubscribed, alreadyPaid, skipped },
     req,
   });
 
-  return NextResponse.json({ ok: true, total: list.length, sent, failed, unsubscribed, skipped });
+  return NextResponse.json({ ok: true, total: list.length, sent, failed, unsubscribed, alreadyPaid, skipped });
 }

@@ -45,7 +45,21 @@ export async function GET(req) {
     .limit(1000);
   if (recentErr) { console.error("[cron abandoned-recovery] recent", recentErr.message); return NextResponse.json({ error: "server_error" }, { status: 500 }); }
 
-  const candidates = selectRecoveryCandidates(rows, now, { minHours, maxHours, recentEmails: (recent || []).map((r) => r.email) });
+  // 這批買家後來有沒有付款成功：以下單信箱與付款成功頁指定的開通信箱（grant_email）各查一次。
+  // 查不到就當沒有（寧可多寄一封提醒，也不能因為查詢失敗整批不寄）。
+  const emails = [...new Set((rows || []).map((o) => String(o.email || "").trim().toLowerCase()).filter(Boolean))];
+  let paidOrders = [];
+  if (emails.length) {
+    const cols = "id, email, grant_email, status, source, amount, created_at";
+    const [byEmail, byGrant] = await Promise.all([
+      supabase.from("orders").select(cols).eq("status", "paid").in("email", emails).limit(1000),
+      supabase.from("orders").select(cols).eq("status", "paid").in("grant_email", emails).limit(1000),
+    ]);
+    if (byEmail.error || byGrant.error) console.error("[cron abandoned-recovery] paid lookup", byEmail.error?.message || byGrant.error?.message);
+    paidOrders = [...(byEmail.data || []), ...(byGrant.data || [])];
+  }
+
+  const candidates = selectRecoveryCandidates(rows, now, { minHours, maxHours, recentEmails: (recent || []).map((r) => r.email), paidOrders });
 
   let sent = 0;
   let failed = 0;
