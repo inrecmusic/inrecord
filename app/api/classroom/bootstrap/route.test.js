@@ -87,6 +87,21 @@ describe("GET /api/classroom/bootstrap（教室進場一次取回）", () => {
     expect(body.contentItems).toBeDefined();
   });
 
+  it("rated：已評分 → true；未評分 → false（儀表板評分推力用）", async () => {
+    expect((await (await GET(req())).json()).rated).toBe(false); // makeDb 的 ratings 回 count undefined
+    const rated = makeSupabaseMock((table, ops) => table === "ratings" ? { count: 1, error: null } : makeDb().from(table) && { data: [], error: null });
+    requireClassroomAuth.mockResolvedValueOnce({ user: USER, supabase: rated });
+    expect((await (await GET(req())).json()).rated).toBe(true);
+    const q = rated.calls.find((c) => c.table === "ratings");
+    expect(q.ops).toContainEqual({ m: "eq", args: ["user_id", "u1"] });
+  });
+
+  it("rated：ratings 查詢失敗 → true（fail-safe，不彈推力卡）", async () => {
+    const broken = makeSupabaseMock((table) => table === "ratings" ? { count: null, error: { message: "boom" } } : { data: [], error: null });
+    requireClassroomAuth.mockResolvedValueOnce({ user: USER, supabase: broken });
+    expect((await (await GET(req())).json()).rated).toBe(true);
+  });
+
   it("裝置數超限 → 回 enforceDeviceLimit 的錯誤與狀態碼", async () => {
     enforceDeviceLimit.mockResolvedValueOnce({ error: "device_limit", status: 403 });
     const res = await GET(req("?player=1&device_id=d9"));

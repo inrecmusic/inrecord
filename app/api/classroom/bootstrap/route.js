@@ -79,7 +79,7 @@ export async function GET(req) {
   // 購課者：章節 + 影片 + 進度 + 已發布單元總數（播放頁另加公告）。並行。
   // 播放頁需要 bunny_video_id/vimeo_id（判斷播放來源）與作業欄位，故回完整列。
   const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, duration, bunny_video_id, vimeo_id";
-  const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes, scoreRes] = await Promise.all([
+  const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes, scoreRes, ratedRes] = await Promise.all([
     supabase.from("chapters").select("*").order("sort_order", { ascending: true }),
     supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
     supabase.from("progress").select("video_id, watched_seconds, total_seconds, completed, watched_at").eq("user_id", user.id),
@@ -103,6 +103,8 @@ export async function GET(req) {
     playerMode && process.env.INTERACTIVE_SCORES === "on"
       ? supabase.from("scores").select("id, video_id, title").not("video_id", "is", null).eq("published", true)
       : Promise.resolve({ data: null, error: null }),
+    // 儀表板「給課程評分」推力：已評分就不再邀請。head count 一筆，與其他查詢並行。
+    supabase.from("ratings").select("id", { count: "exact", head: true }).eq("user_id", user.id),
   ]);
   // 兩種模式都要給：儀表板的「最新公告」區與播放頁的鈴鐺共用同一份資料
   if (annRes.error) console.error("[bootstrap] announcements:", annRes.error.message);
@@ -141,6 +143,9 @@ export async function GET(req) {
   out.completedCount = completedCount;
   out.totalCount = totalCount;
   out.percentage = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+  // 查詢失敗視為已評分（fail-safe：寧可不邀請，也不要一直彈卡撞 already_rated）
+  if (ratedRes.error) console.error("[bootstrap] rated:", ratedRes.error.message);
+  out.rated = ratedRes.error ? true : (ratedRes.count || 0) > 0;
 
   if (playerMode) {
     // 讀取失敗不讓側欄壞掉：記 log、明細退回空物件，icon 不顯示而已（與本檔既有容錯一致）
