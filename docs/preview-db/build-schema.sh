@@ -28,6 +28,7 @@ ORDER=(
   supabase-payment-events.sql
   supabase-classroom-rls-tighten.sql
   supabase-progress-lock.sql
+  supabase-ratings-featured.sql
   supabase-hardening.sql
 )
 {
