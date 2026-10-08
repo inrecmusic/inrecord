@@ -8,6 +8,7 @@ import { isUnread } from "@/lib/announcements-view";
 import { buildHubModel, greetingLine, relativeDayLabel, joinCn } from "@/lib/hub-view";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
 import GamePlayerOverlay from "@/components/classroom/GamePlayerOverlay";
+import RatingNudge from "@/components/classroom/RatingNudge";
 import { HUB_CSS } from "./hub-css";
 
 const F = `var(--type-body)`;
@@ -53,6 +54,7 @@ export default function ClassroomHubV3() {
   const [loadError, setLoadError]         = useState(false); // bootstrap 載入失敗→顯示重試，不誤判未購買
   const [announcements, setAnnouncements] = useState([]);
   const [earlyAccess, setEarlyAccess]     = useState(undefined); // bootstrap 帶回：false=非早鳥（9/30 前無正課可播）；完整上架後不再回傳
+  const [rated, setRated]                 = useState(true); // bootstrap 帶回；預設 true＝資料未到前不彈評分邀請
   const ann = useAnnouncements(announcements); // 最新公告區＋重要卡片
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
@@ -85,6 +87,7 @@ export default function ClassroomHubV3() {
           setProgress(d.progress || []);
           setProfile(d.profile || d.prefill || {});
           setAnnouncements(d.announcements || []);
+          setRated(d.rated !== false); // 只有明確 false 才邀請
           setEarlyAccess(d.earlyAccess);
           setNowMs(Date.now());
           // 遊戲間卡片要知道哪些遊戲已上傳（best-effort，失敗就當不知道）
@@ -369,6 +372,7 @@ export default function ClassroomHubV3() {
         </section>
 
         {ann.sorted.length > 0 && <div id="announcements"><HubAnnouncements ann={ann} /></div>}
+        <div className="wrap"><RatingNudge token={token} rated={rated} chapters={chapters} videos={videos} progress={progress} /></div>
       </main>
 
       {playingGame && <GamePlayerOverlay game={playingGame} token={token} onClose={() => setPlayingGame(null)} />}

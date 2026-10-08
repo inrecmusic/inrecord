@@ -4,6 +4,7 @@ import { useAnnouncements, HubAnnouncements, ImportantDialog } from "@/component
 import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete } from "@/lib/student-profile";
 import ProfileOnboarding from "@/components/ProfileOnboarding";
+import RatingNudge from "@/components/classroom/RatingNudge";
 
 const F = `var(--type-body)`;
 
@@ -20,6 +21,7 @@ export default function ClassroomHubLegacy() {
   const [loadError, setLoadError]         = useState(false); // bootstrap 載入失敗→顯示重試，不誤判未購買
   const [announcements, setAnnouncements] = useState([]);
   const [earlyAccess, setEarlyAccess]     = useState(undefined); // bootstrap 帶回：false=非早鳥（9/30 前無正課可播）；完整上架後不再回傳
+  const [rated, setRated]                 = useState(true); // bootstrap 帶回；預設 true＝資料未到前不彈評分邀請
   const ann = useAnnouncements(announcements); // 最新公告區＋重要卡片
   const [chapters, setChapters]           = useState([]);
   const [videos, setVideos]               = useState([]);
@@ -56,6 +58,7 @@ export default function ClassroomHubLegacy() {
           setProfile(d.profile || d.prefill || {});
           setAnnouncements(d.announcements || []);
           setEarlyAccess(d.earlyAccess);
+          setRated(d.rated !== false); // 只有明確 false 才邀請
         } catch {
           setLoadError(true); // 網路/逾時失敗→重試，別誤判未購買
         } finally {
@@ -162,6 +165,7 @@ export default function ClassroomHubLegacy() {
         </div>
 
         <HubAnnouncements ann={ann} />
+        <RatingNudge token={token} rated={rated} chapters={chapters} videos={videos} progress={progress} />
         <div className="sect-t">課程章節</div>
         <div className="chapters">
           {chapters.length === 0 && <div className="empty">課程單元即將上線 🎼</div>}
