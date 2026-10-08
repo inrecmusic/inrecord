@@ -35,5 +35,6 @@ export default function RatingNudge({ token, rated, chapters = [], videos = [], 
   );
 }
 
-const wrap = { margin: "0 0 24px", padding: "18px 20px", borderRadius: 16, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.05)", color: "inherit" };
+// 底色／框線走儀表板主題變數（hub-css.js 兩版都有 --card／--line），淺色主題才看得到容器；沒有變數時退回深色半透明
+const wrap = { margin: "0 0 24px", padding: "18px 20px", borderRadius: 16, border: "1px solid var(--line, rgba(255,255,255,.14))", background: "var(--card, rgba(255,255,255,.05))", color: "inherit" };
 const ghost = { background: "none", border: 0, cursor: "pointer", color: "inherit", opacity: .7, fontSize: 14, padding: "2px 4px", whiteSpace: "nowrap" };

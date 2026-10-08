@@ -8,9 +8,12 @@ const Stars = ({ score, className }) => (
   <span className={className} aria-label={`${score} 顆星`} role="img">{STAR.repeat(Math.max(0, Math.min(5, Math.round(score))))}</span>
 );
 
-function Card({ c }) {
+// dup：補圈多出來的重複卡（fillLoop 超過原始張數的部分）——視覺上補滿循環，但對輔助科技隱藏、
+// reduced-motion 時由 CSS 整張不顯示，讓螢幕閱讀器與不跑動畫的人只看到一份。
+function Card({ c, dup = false }) {
   return (
-    <article className={styles.card} data-testid="review-card" data-has-text={c.text ? "true" : "false"}>
+    <article className={styles.card} data-testid="review-card" data-has-text={c.text ? "true" : "false"}
+      {...(dup ? { "data-dup": "true", "aria-hidden": "true" } : {})}>
       <Stars score={c.score} className={styles.cardStars} />
       {c.text && <p className={styles.text}>{c.text}</p>}
       <div className={styles.meta}><b>{c.name}</b> · {c.date}</div>
@@ -40,10 +43,10 @@ export default function ReviewMarquee({ cards = [], rating = null, ratingCount =
       </div>
       <div className={styles.viewport}>
         <div className={styles.track} style={{ "--marquee-duration": duration }}>
-          {loop.map((c, i) => <Card key={`a-${c.id}-${i}`} c={c} />)}
+          {loop.map((c, i) => <Card key={`a-${c.id}-${i}`} c={c} dup={i >= cards.length} />)}
           {/* 第二份只為無縫循環，對輔助科技隱藏；reduced-motion 時 CSS 直接 display:none */}
           <div className={styles.clone} data-track="clone" aria-hidden="true">
-            {loop.map((c, i) => <Card key={`b-${c.id}-${i}`} c={c} />)}
+            {loop.map((c, i) => <Card key={`b-${c.id}-${i}`} c={c} dup />)}
           </div>
         </div>
       </div>

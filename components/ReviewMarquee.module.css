@@ -34,14 +34,14 @@
   .hint { display: none; }
   .card { width: 250px; min-height: 156px; padding: 18px; }
   .text { font-size: 15px; }
-  .track { gap: 12px; padding-left: 16px; }
+  .track { gap: 12px; padding-left: 12px; } /* padding-left 必須等於 gap：track 寬 = 2×一輪，-50% 才剛好一輪、循環無跳動 */
   .viewport::before, .viewport::after { width: 40px; }
 }
 
-/* 減少動態：不跑、改橫向可滑；第二份 track 整個隱藏 */
+/* 減少動態：不跑、改橫向可滑；第二份 track 與補圈的重複卡整個隱藏，只剩原始那一份；暫停提示也拿掉 */
 @media (prefers-reduced-motion: reduce) {
   .track { animation: none; width: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-right: 20px; scroll-snap-type: x proximity; }
   .card { scroll-snap-align: start; }
-  .clone { display: none; }
+  .clone, .card[data-dup="true"], .hint { display: none; }
   .viewport::before, .viewport::after { display: none; }
 }

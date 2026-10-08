@@ -28,6 +28,13 @@ describe("RatingNudge（看完第 1 章後的評分邀請）", () => {
     await waitFor(() => expect(screen.getByText("看完第 1 章了，給這堂課一個評分吧")).toBeTruthy());
     expect(screen.getByRole("button", { name: "送出評分" })).toBeTruthy();
   });
+  it("卡片底色／框線用儀表板主題變數（淺色主題也看得到容器）", async () => {
+    render(<RatingNudge {...props} />);
+    await waitFor(() => screen.getByText("先不用"));
+    const style = screen.getByLabelText("給課程評分").getAttribute("style") || "";
+    expect(style).toContain("var(--card");
+    expect(style).toContain("var(--line");
+  });
   it("已評分不顯示", () => {
     const { container } = render(<RatingNudge {...props} rated={true} />);
     expect(container.innerHTML).toBe("");

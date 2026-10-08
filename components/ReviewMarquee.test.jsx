@@ -32,6 +32,16 @@ describe("ReviewMarquee（首頁課程評價跑馬燈）", () => {
     expect(screen.getAllByLabelText("5 顆星").length).toBeGreaterThan(0);
   });
 
+  it("補圈的重複卡片標 data-dup 且對輔助科技隱藏；原始 3 張不隱藏（reduced-motion／螢幕閱讀器只看到一份）", () => {
+    const { container } = render(<ReviewMarquee cards={[card(1), card(2), card(3)]} rating={5} ratingCount={3} />);
+    const originals = container.querySelectorAll('[data-testid="review-card"]:not([data-dup])');
+    expect(originals).toHaveLength(3);
+    originals.forEach((el) => expect(el.getAttribute("aria-hidden")).toBeNull());
+    const dups = container.querySelectorAll('[data-testid="review-card"][data-dup="true"]');
+    expect(dups).toHaveLength(15); // 第一份 track 補到 9 張多出 6 張 ＋ 第二份 track 整份 9 張
+    dups.forEach((el) => expect(el.getAttribute("aria-hidden")).toBe("true"));
+  });
+
   it("rating 為 null（hero 不顯示星等）時只顯示標題，不出現 NaN", () => {
     const { container } = render(<ReviewMarquee cards={[card(1), card(2), card(3)]} rating={null} ratingCount={0} />);
     expect(container.textContent).not.toContain("NaN");
