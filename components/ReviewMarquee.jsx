@@ -25,8 +25,8 @@ export default function ReviewMarquee({ cards = [], rating = null, ratingCount =
   if (!shouldShowMarquee(cards)) return null;
   const loop = fillLoop(cards);
   const showRating = rating != null && Number.isFinite(Number(rating)) && ratingCount >= 3;
-  // 每張約 4 秒；兩份 track 平移 -50% 就是一輪
-  const duration = `${Math.max(24, loop.length * 4)}s`;
+  // 每張約 7 秒（4 秒被經營者嫌太快）；兩份 track 平移 -50% 就是一輪
+  const duration = `${Math.max(40, loop.length * 7)}s`;
 
   return (
     <section id="reviews" className={styles.section} aria-label="課程評價">
@@ -39,7 +39,6 @@ export default function ReviewMarquee({ cards = [], rating = null, ratingCount =
             <span className={styles.count}>{ratingCount} 則學員評價</span>
           </>
         )}
-        <span className={styles.hint}>滑鼠移上暫停</span>
       </div>
       <div className={styles.viewport}>
         <div className={styles.track} style={{ "--marquee-duration": duration }}>
@@ -50,7 +49,6 @@ export default function ReviewMarquee({ cards = [], rating = null, ratingCount =
           </div>
         </div>
       </div>
-      <p className={styles.foot}>評價皆由已購課學員在教室內留下，未經改寫。</p>
     </section>
   );
 }

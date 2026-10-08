@@ -5,7 +5,6 @@
 .avg { font-size: 22px; font-weight: 800; color: #fff; font-family: var(--type-numeric); }
 .stars { color: var(--gold-mid); font-size: 15px; letter-spacing: 1px; }
 .count { font-size: 14px; color: #94a3b8; }
-.hint { margin-left: auto; font-size: 13px; color: #64748b; }
 
 .viewport { position: relative; margin-top: 24px; }
 .viewport::before, .viewport::after { content: ""; position: absolute; top: 0; bottom: 0; width: 72px; pointer-events: none; z-index: 1; }
@@ -26,22 +25,20 @@
 .text { margin: 0; font-size: 16px; line-height: 1.7; color: #fff; flex: 1; overflow-wrap: anywhere; }
 .meta { font-size: 13px; color: #94a3b8; margin-top: auto; }
 .meta b { color: #e2e8f0; font-weight: 600; }
-.foot { max-width: var(--container-max); margin: 20px auto 0; padding: 0 var(--container-pad); font-size: 13px; color: #64748b; }
 
 @media (max-width: 600px) {
   .section { padding: 32px 0 36px; }
   .title { font-size: 22px; } .avg { font-size: 18px; }
-  .hint { display: none; }
   .card { width: 250px; min-height: 156px; padding: 18px; }
   .text { font-size: 15px; }
   .track { gap: 12px; padding-left: 12px; } /* padding-left 必須等於 gap：track 寬 = 2×一輪，-50% 才剛好一輪、循環無跳動 */
   .viewport::before, .viewport::after { width: 40px; }
 }
 
-/* 減少動態：不跑、改橫向可滑；第二份 track 與補圈的重複卡整個隱藏，只剩原始那一份；暫停提示也拿掉 */
+/* 減少動態：不跑、改橫向可滑；第二份 track 與補圈的重複卡整個隱藏，只剩原始那一份 */
 @media (prefers-reduced-motion: reduce) {
   .track { animation: none; width: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-right: 20px; scroll-snap-type: x proximity; }
   .card { scroll-snap-align: start; }
-  .clone, .card[data-dup="true"], .hint { display: none; }
+  .clone, .card[data-dup="true"] { display: none; }
   .viewport::before, .viewport::after { display: none; }
 }
