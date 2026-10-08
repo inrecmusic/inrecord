@@ -19,6 +19,7 @@ import PointCarousel from "@/components/PointCarousel";
 import LeadCapture from "@/components/LeadCapture";
 import LeadPopup from "@/components/LeadPopup";
 import InstructorBioCarousel from "@/components/InstructorBioCarousel";
+import ReviewMarquee from "@/components/ReviewMarquee";
 import styles from "./page.module.css";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/track-event";
@@ -406,7 +407,7 @@ function StatItem({ value, suffix, en, label, decimals = 0 }) {
   );
 }
 
-export default function HomeClient({ sale, termsVersion = null, leadCapture = false, initialStats = null }) {
+export default function HomeClient({ sale, termsVersion = null, leadCapture = false, initialStats = null, reviews = [] }) {
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -764,6 +765,9 @@ export default function HomeClient({ sale, termsVersion = null, leadCapture = fa
             </motion.div>
           </div>
         </section>
+
+        {/* 課程評價跑馬燈：hero 正下方、同底色；精選未滿 3 則元件自己回 null */}
+        <ReviewMarquee cards={reviews} rating={stats?.rating ?? null} ratingCount={stats?.ratingCount ?? 0} />
 
         {/* INTRO — editorial "polished symmetric" */}
         <RevealSection id="intro" className={styles.introSection}>
