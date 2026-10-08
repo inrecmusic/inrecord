@@ -86,6 +86,20 @@ export default function CourseRatingsPage({ showToast }) {
     finally { setSavingId(null); }
   }
 
+  async function toggleFeatured(rating) {
+    setSavingId(rating.id);
+    try {
+      const r = await api("/api/admin/ratings", {
+        method: "PATCH",
+        body: JSON.stringify({ id: rating.id, featured: !rating.featured }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error);
+      showToast(rating.featured ? "✅ 已從首頁移除" : "✅ 已加入首頁精選");
+      fetchRatings();
+    } catch (e) { showToast("❌ " + e.message); }
+    finally { setSavingId(null); }
+  }
+
   function openReply(r) {
     if (replyingId === r.id) { setReplyingId(null); return; }
     setReplyingId(r.id); setReplyText("");
@@ -180,12 +194,22 @@ export default function CourseRatingsPage({ showToast }) {
                             {r.status === "replied" ? "已回覆" : "待回覆"}
                           </span>
                           {r.hidden && <span className={styles.pill} style={{ background: "#fee2e2", color: "#991b1b" }}>已隱藏</span>}
+                          {r.featured && !r.hidden && <span className={styles.pill} style={{ background: "#dbeafe", color: "#1e40af" }}>首頁精選</span>}
                         </div>
                       </td>
                       <td>
                         <div className={styles.rowActions}>
                           <button className={styles.btnSmall} onClick={() => openReply(r)}>
                             {replyingId === r.id ? "收起" : "回覆"}
+                          </button>
+                          <button
+                            className={styles.btnSmall}
+                            style={r.featured ? { background: "#dbeafe", color: "#1e40af", borderColor: "#bfdbfe" } : {}}
+                            onClick={() => toggleFeatured(r)}
+                            disabled={savingId === r.id || r.hidden}
+                            title={r.hidden ? "已隱藏的評價不能精選" : "勾選後出現在首頁跑馬燈"}
+                          >
+                            {r.featured ? "取消精選" : "首頁精選"}
                           </button>
                           <button
                             className={`${styles.btnSmall} ${r.hidden ? "" : styles.btnDanger}`}

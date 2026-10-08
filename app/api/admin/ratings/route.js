@@ -29,8 +29,9 @@ export async function PATCH(req) {
   const body = await req.json();
   const { id } = body;
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
-  const updates = {}; // 白名單：後台只切換 hidden（顯示/隱藏評價），防 mass-assignment
+  const updates = {}; // 白名單：後台只切換 hidden（顯示/隱藏）與 featured（首頁精選），防 mass-assignment
   if (body.hidden !== undefined) updates.hidden = !!body.hidden;
+  if (body.featured !== undefined) updates.featured = !!body.featured;
   const { data, error } = await db.from("ratings").update(updates).eq("id", id).select().single();
   if (error) return serverError(error);
   return NextResponse.json({ ok: true, data });
