@@ -30,7 +30,7 @@
 
 - `getFeaturedReviews(db, { adminEmail, limit = 12 })`：查 `ratings` where `featured = true and hidden = false`，依 `created_at desc` 取 `limit` 則，欄位 `id, score, content, user_name, user_email, created_at`；排除 `user_email` 等於 `ADMIN_EMAIL`（大小寫不敏感，與 `getSiteStats` 同口徑）。查詢失敗回 `[]`（fail-open：首頁不因此掛）。
 - `toReviewCards(rows)`（純函式，有測試）：轉成前端用的卡片 `{ id, score, text, name, date }`
-  - `text`：`content` 去頭尾空白；空字串 → `null`（前端顯示「給了 N 顆星」）；超過 **120 字**截斷加「…」。
+  - `text`：`content` 去頭尾空白；空字串 → `null`（前端留空白，只放星星、暱稱、日期）；超過 **120 字**截斷加「…」。
   - `name`：`user_name` 去空白，空 → 「學員」。**不輸出 email。**
   - `date`：台灣時區 `YYYY/MM/DD`。
 - `shouldShowMarquee(cards)`：`cards.length >= 3`。
@@ -42,7 +42,7 @@
 
 - 位置：`HomeClient.jsx` 的 `<section className={styles.hero}>` 結束後、`#intro` 之前；`id="reviews"`。
 - 外觀：背景與 hero 同色（`#05070b`），與 hero 連成一片；上方標題列「課程評價」＋ `stats.rating`／`stats.ratingCount`（沿用 hero 那組，`showRating` 為 false 時只顯示標題）；下方一排卡片；底部一行「評價皆由已購課學員在教室內留下，未經改寫。」
-- 卡片：星星（金色 `--gold-mid`）、文字（無文字 → 灰字「給了 N 顆星」）、暱稱、日期。桌機寬 320、手機 250；固定最小高度讓有無文字的卡等高。
+- 卡片：星星（金色 `--gold-mid`）、文字（無文字 → 該區留空白，不補字）、暱稱、日期。桌機寬 320、手機 250；固定最小高度讓有無文字的卡等高。
 - 動態：純 CSS `@keyframes` 平移整條 track 的 −50%（track = `fillLoop` 結果重複兩份，接縫無感）；速度依卡數換算，約每張 4 秒。`:hover` 與 `:active`／touch 時 `animation-play-state: paused`。
 - `prefers-reduced-motion: reduce`：關閉動畫，track 改 `overflow-x: auto` 可左右滑，只放一份卡片。
 - 卡片本身不是連結（避免整條跑馬燈變成誤觸區）；整段不加 CTA 按鈕，hero 已有。
@@ -71,7 +71,7 @@
 
 - `lib/featured-reviews.test.js`：`toReviewCards`（截斷 120 字、空文字 → null、無暱稱 → 學員、不含 email、日期台灣時區）、`shouldShowMarquee`（2 → false、3 → true）、`fillLoop`（4 張 → 8 張且順序循環；0 → []）。
 - `lib/rating-nudge.test.js`：`shouldNudge` 四個條件各一個反例＋一個正例；試看單元不計入第 1 章完成判定。
-- `components/ReviewMarquee.test.jsx`：`cards` 不足 3 張不渲染；足夠時渲染標題、每張卡的暱稱／日期、無文字卡顯示「給了 5 顆星」、不出現任何 email。
+- `components/ReviewMarquee.test.jsx`：`cards` 不足 3 張不渲染；足夠時渲染標題、每張卡的暱稱／日期、無文字卡沒有文字段落、不出現任何 email。
 - `app/api/admin/ratings` PATCH：`featured` 可更新、其他欄位仍被白名單擋下（補到既有測試或新增）。
 - 既有 `page.hero.test.jsx` 與 HomeClient 測試不受影響（`reviews` 預設 `[]`）。
 
