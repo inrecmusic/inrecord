@@ -1,6 +1,7 @@
 /* components/ReviewMarquee.module.css — hero 正下方的評價跑馬燈，底色與 .hero 同（#05070b）連成一片 */
 .section { background: #05070b; color: #f8fafc; padding: 40px 0 44px; overflow: hidden; }
-.head { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--container-pad); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+/* 標題列左緣對齊 hero 的文案／CTA 卡（.heroGrid 的 padding-left：桌機 clamp(24px,11vw,200px)、≤980px 為 20px），不是置中容器 */
+.head { padding: 0 20px 0 clamp(24px, 11vw, 200px); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 .title { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.01em; color: #fff; font-family: var(--type-heading); }
 .avg { font-size: 22px; font-weight: 800; color: #fff; font-family: var(--type-numeric); }
 .stars { color: var(--gold-mid); font-size: 15px; letter-spacing: 1px; }
@@ -25,6 +26,10 @@
 .text { margin: 0; font-size: 16px; line-height: 1.7; color: #fff; flex: 1; overflow-wrap: anywhere; }
 .meta { font-size: 13px; color: #94a3b8; margin-top: auto; }
 .meta b { color: #e2e8f0; font-weight: 600; }
+
+@media (max-width: 980px) {
+  .head { padding: 0 20px; }
+}
 
 @media (max-width: 600px) {
   .section { padding: 32px 0 36px; }
