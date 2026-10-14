@@ -11,6 +11,7 @@ import GamePlayerOverlay from "@/components/classroom/GamePlayerOverlay";
 import ScoreTab from "@/components/classroom/ScoreTab";
 import AssignmentTab from "@/components/classroom/AssignmentTab";
 import RatingTab from "@/components/classroom/RatingTab";
+import RatingPrompt from "@/components/classroom/RatingPrompt";
 import CommentsSection from "@/components/classroom/CommentsSection";
 import MaterialsSection from "@/components/classroom/MaterialsSection";
 import { freshToken, openMaterialById, getDeviceId, F } from "@/components/classroom/shared";
@@ -126,6 +127,11 @@ export default function ClassroomPage() {
   const [embedSrc, setEmbedSrc] = useState("");
   const [progress, setProgress]           = useState([]);
   const [tab, setTab]                     = useState("rating");
+  // 課程評價：rated 預設 true＝bootstrap 還沒回來前不彈評分邀請；rating 是本人那筆（分頁補寫心得用）
+  const [rated, setRated]                 = useState(true);
+  const [rating, setRating]               = useState(null);
+  const [endedUnit, setEndedUnit]         = useState(null); // 剛播到結尾的單元 → RatingPrompt 判斷要不要邀請
+  const handleRated = useCallback((row) => { setRating(row); setRated(true); }, []);
 
   // 這個單元有沒有掛互動樂譜（bootstrap 帶回的 contentItems）
   const hasSheet = (contentItems[currentVideo?.id] || []).some((it) => it.kind === "sheet");
@@ -180,6 +186,8 @@ export default function ClassroomPage() {
           setEarlyAccess(d.earlyAccess);
           setContentItems(d.contentItems || {});
           setContentStats(d.contentStats || null);
+          setRated(d.rated !== false); // 只有明確 false 才邀請
+          setRating(d.rating || null);
           const vids = d.videos || [];
           if (vids.length) {
             const pm = Object.fromEntries((d.progress || []).map(p => [p.video_id, p]));
@@ -312,6 +320,7 @@ export default function ClassroomPage() {
           const i = prev.findIndex(p => p.video_id === videoId);
           return i >= 0 ? prev.map((p, j) => j === i ? data : p) : [...prev, data];
         });
+        return data;
       } catch {}
     }
 
@@ -336,7 +345,13 @@ export default function ClassroomPage() {
           if (step > 0 && step < 2) pendingViewed += step;
           lastSeconds = sec; lastDuration = d?.duration || 0;
         });
-        player.on("ended", () => { if (lastDuration) { lastSeconds = lastDuration; postProgress(); } });
+        player.on("ended", async () => {
+          if (!lastDuration) return;
+          lastSeconds = lastDuration;
+          const data = await postProgress();
+          // 播到結尾 → 交給 RatingPrompt 決定要不要跳評分邀請（completed 以後端判定為準，用拖的不算）
+          if (!cancelled) setEndedUnit({ video: currentVideo, completed: !!data?.completed, at: Date.now() });
+        });
         interval = setInterval(postProgress, 10000);
       });
     }
@@ -697,7 +712,7 @@ export default function ClassroomPage() {
 
           {/* Tab content */}
           <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
-            {tab === "rating"     && <RatingTab token={token} />}
+            {tab === "rating"     && <RatingTab token={token} rating={rating} onRated={handleRated} />}
             {tab === "assignment" && currentVideo?.assignment_desc?.trim() && <AssignmentTab video={currentVideo} token={token} />}
             {tab === "score"      && hasSheet && <ScoreTab token={token} video={currentVideo} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} pendingGameId={pendingGameId} onPendingConsumed={() => setPendingGameId(null)} />}
@@ -941,6 +956,8 @@ export default function ClassroomPage() {
       {sidebarGame && (
         <GamePlayerOverlay game={sidebarGame} token={token} cache={gameCacheRef} onClose={() => setSidebarGame(null)} />
       )}
+
+      <RatingPrompt token={token} rated={rated} ended={endedUnit} onRated={handleRated} />
     </div>
   );
 }

@@ -87,19 +87,26 @@ describe("GET /api/classroom/bootstrap（教室進場一次取回）", () => {
     expect(body.contentItems).toBeDefined();
   });
 
-  it("rated：已評分 → true；未評分 → false（儀表板評分推力用）", async () => {
-    expect((await (await GET(req())).json()).rated).toBe(false); // makeDb 的 ratings 回 count undefined
-    const rated = makeSupabaseMock((table, ops) => table === "ratings" ? { count: 1, error: null } : makeDb().from(table) && { data: [], error: null });
+  it("rated／rating：已評分 → true 並帶回本人那筆（星數、心得、建立時間）；未評分 → false／null", async () => {
+    const none = await (await GET(req())).json(); // makeDb 的 ratings 回 data null
+    expect(none.rated).toBe(false);
+    expect(none.rating).toBeNull();
+    const mine = { score: 5, content: null, created_at: "2026-10-11T07:00:00Z" };
+    const rated = makeSupabaseMock((table) => table === "ratings" ? { data: [mine], error: null } : { data: [], error: null });
     requireClassroomAuth.mockResolvedValueOnce({ user: USER, supabase: rated });
-    expect((await (await GET(req())).json()).rated).toBe(true);
+    const out = await (await GET(req())).json();
+    expect(out.rated).toBe(true);
+    expect(out.rating).toEqual(mine);
     const q = rated.calls.find((c) => c.table === "ratings");
     expect(q.ops).toContainEqual({ m: "eq", args: ["user_id", "u1"] });
   });
 
   it("rated：ratings 查詢失敗 → true（fail-safe，不彈推力卡）", async () => {
-    const broken = makeSupabaseMock((table) => table === "ratings" ? { count: null, error: { message: "boom" } } : { data: [], error: null });
+    const broken = makeSupabaseMock((table) => table === "ratings" ? { data: null, error: { message: "boom" } } : { data: [], error: null });
     requireClassroomAuth.mockResolvedValueOnce({ user: USER, supabase: broken });
-    expect((await (await GET(req())).json()).rated).toBe(true);
+    const out = await (await GET(req())).json();
+    expect(out.rated).toBe(true);
+    expect(out.rating).toBeNull();
   });
 
   it("裝置數超限 → 回 enforceDeviceLimit 的錯誤與狀態碼", async () => {

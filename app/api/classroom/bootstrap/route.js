@@ -103,8 +103,8 @@ export async function GET(req) {
     playerMode && process.env.INTERACTIVE_SCORES === "on"
       ? supabase.from("scores").select("id, video_id, title").not("video_id", "is", null).eq("published", true)
       : Promise.resolve({ data: null, error: null }),
-    // 儀表板「給課程評分」推力：已評分就不再邀請。head count 一筆，與其他查詢並行。
-    supabase.from("ratings").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    // 評分邀請（儀表板推力卡／播放頁彈窗）：已評分就不再邀請。撈本人那一筆，與其他查詢並行。
+    supabase.from("ratings").select("score, content, created_at").eq("user_id", user.id).limit(1),
   ]);
   // 兩種模式都要給：儀表板的「最新公告」區與播放頁的鈴鐺共用同一份資料
   if (annRes.error) console.error("[bootstrap] announcements:", annRes.error.message);
@@ -145,7 +145,9 @@ export async function GET(req) {
   out.percentage = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
   // 查詢失敗視為已評分（fail-safe：寧可不邀請，也不要一直彈卡撞 already_rated）
   if (ratedRes.error) console.error("[bootstrap] rated:", ratedRes.error.message);
-  out.rated = ratedRes.error ? true : (ratedRes.count || 0) > 0;
+  // rating：本人那筆評價（星數／心得／建立時間），播放頁「課程評價」分頁據此決定顯示表單、補寫心得或感謝
+  out.rating = ratedRes.error ? null : (ratedRes.data?.[0] || null);
+  out.rated = ratedRes.error ? true : !!out.rating;
 
   if (playerMode) {
     // 讀取失敗不讓側欄壞掉：記 log、明細退回空物件，icon 不顯示而已（與本檔既有容錯一致）

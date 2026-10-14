@@ -1,5 +1,5 @@
 // components/classroom/RatingNudge.jsx — 儀表板「看完第 1 章，給課程評分」推力卡片。
-// 顯示條件在 lib/rating-nudge.js（純函式）；關閉／送出後記在本裝置 localStorage，不再出現。
+// 顯示條件在 lib/rating-nudge.js（純函式）；關閉／點星存好後記在本裝置 localStorage，不再出現。
 "use client";
 import { useEffect, useState } from "react";
 import RatingForm from "./RatingForm";
@@ -10,10 +10,12 @@ const storage = () => (typeof window !== "undefined" ? window.localStorage : nul
 export default function RatingNudge({ token, rated, chapters = [], videos = [], progress = [] }) {
   const [dismissed, setDismissed] = useState(true); // SSR／首次 render 先當作關閉，mount 後再讀 localStorage，避免 hydration 不一致
   const [thanks, setThanks] = useState(false);
+  const [ratedHere, setRatedHere] = useState(false); // 這張卡上剛點星存好：卡片留著問心得，不受 dismissed 影響
 
   useEffect(() => { setDismissed(readNudgeDismissed(storage())); }, []);
 
   const close = () => { writeNudgeDismissed(storage()); setDismissed(true); };
+  const onRated = () => { writeNudgeDismissed(storage()); setRatedHere(true); };
   const onDone = () => { writeNudgeDismissed(storage()); setThanks(true); };
 
   if (thanks) return (
@@ -22,15 +24,15 @@ export default function RatingNudge({ token, rated, chapters = [], videos = [], 
       <p style={{ margin: "4px 0 0", fontSize: 14, opacity: .75 }}>你的回饋對我們非常重要</p>
     </section>
   );
-  if (!shouldNudge({ rated, chapters, videos, progress, dismissed })) return null;
+  if (!ratedHere && !shouldNudge({ rated, chapters, videos, progress, dismissed })) return null;
 
   return (
     <section aria-label="給課程評分" style={wrap}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <h2 style={{ margin: "0 0 10px", fontSize: 17, fontWeight: 700 }}>看完第 1 章了，給這堂課一個評分吧</h2>
-        <button type="button" onClick={close} style={ghost}>先不用</button>
+        {!ratedHere && <button type="button" onClick={close} style={ghost}>先不用</button>}
       </div>
-      <RatingForm token={token} onDone={onDone} compact />
+      <RatingForm token={token} onRated={onRated} onDone={onDone} compact />
     </section>
   );
 }

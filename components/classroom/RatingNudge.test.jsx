@@ -26,7 +26,7 @@ describe("RatingNudge（看完第 1 章後的評分邀請）", () => {
   it("條件成立顯示卡片與表單", async () => {
     render(<RatingNudge {...props} />);
     await waitFor(() => expect(screen.getByText("看完第 1 章了，給這堂課一個評分吧")).toBeTruthy());
-    expect(screen.getByRole("button", { name: "送出評分" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "5 星" })).toBeTruthy();
   });
   it("卡片底色／框線用儀表板主題變數（淺色主題也看得到容器）", async () => {
     render(<RatingNudge {...props} />);
@@ -50,13 +50,16 @@ describe("RatingNudge（看完第 1 章後的評分邀請）", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(r2.container.innerHTML).toBe("");
   });
-  it("送出成功 → 顯示感謝並寫 localStorage", async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+  it("點星存好 →「先不用」收掉（表單自己有「跳過」）、寫 localStorage；跳過 → 顯示感謝", async () => {
+    const row = { id: "r1", score: 5, content: null, created_at: new Date().toISOString() };
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, data: row }) });
     render(<RatingNudge {...props} />);
     await waitFor(() => screen.getByRole("button", { name: "5 星" }));
     fireEvent.click(screen.getByRole("button", { name: "5 星" }));
-    fireEvent.click(screen.getByRole("button", { name: "送出評分" }));
-    await waitFor(() => expect(screen.getByText("感謝你的評價！")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("願意多寫一句心得嗎？")).toBeTruthy());
+    expect(screen.queryByText("先不用")).toBeNull();
     expect(window.localStorage.getItem("inrec_rating_nudge_dismissed")).toBe("1");
+    fireEvent.click(screen.getByRole("button", { name: "跳過" }));
+    expect(screen.getByText("感謝你的評價！")).toBeTruthy();
   });
 });

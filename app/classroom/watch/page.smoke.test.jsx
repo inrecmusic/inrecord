@@ -128,3 +128,56 @@ describe("播放頁（非早鳥，9/30 前）", () => {
     expect(text).not.toContain("請從右側選擇課程單元");
   });
 });
+
+// 播完一個單元 → 評分邀請彈窗（components/classroom/RatingPrompt）。這裡釘的是播放頁的接線：
+// Bunny player 的 ended → 回報進度 → 後端回 completed → 彈窗；以及 bootstrap 的 rated／rating 有沒有傳下去。
+describe("播放頁（播完單元的評分邀請）", () => {
+  // 假的 Bunny player.js：記下播放頁掛的事件，讓測試自己觸發 ready／timeupdate／ended
+  let handlers;
+  const emit = (ev, d) => handlers[ev]?.(d);
+  const mockApi = ({ bootstrap = {}, completed = true } = {}) => vi.stubGlobal("fetch", vi.fn((url) => {
+    const u = String(url);
+    if (u.includes("/api/classroom/bootstrap")) return json({ ...BOOTSTRAP, rated: false, rating: null, ...bootstrap });
+    if (u.includes("/api/classroom/video-embed")) return json({ src: "https://iframe.mediadelivery.net/embed/1/bunny-1?token=t" });
+    if (u.includes("/api/classroom/progress")) return json({ data: { video_id: "v11", watched_seconds: 100, total_seconds: 100, completed } });
+    return json({});
+  }));
+  async function playToEnd() {
+    await waitFor(() => expect(handlers.ready).toBeTruthy());
+    emit("ready");
+    emit("timeupdate", { seconds: 100, duration: 100 });
+    await emit("ended");
+  }
+
+  beforeEach(() => {
+    handlers = {};
+    window.playerjs = { Player: function Player() { this.on = (ev, cb) => { handlers[ev] = cb; }; this.setCurrentTime = () => {}; this.pause = () => {}; this.play = () => {}; } };
+  });
+  afterEach(() => { delete window.playerjs; });
+
+  it("未評分的學員把單元播到結尾且達完成 → 跳出「願意留下您的課程評價嗎？」", async () => {
+    mockApi();
+    const { findByRole } = render(<ClassroomPage />);
+    await playToEnd();
+    const dlg = await findByRole("dialog");
+    expect(dlg.textContent).toContain("願意留下您的課程評價嗎？");
+  });
+
+  it("播到結尾但後端判定還沒完成（例如用拖的）→ 不跳", async () => {
+    mockApi({ completed: false });
+    const { queryByRole } = render(<ClassroomPage />);
+    await playToEnd();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(queryByRole("dialog")).toBeNull();
+  });
+
+  it("已評分且寫過心得 → 播完不跳；「課程評價」分頁顯示感謝而不是表單", async () => {
+    mockApi({ bootstrap: { rated: true, rating: { score: 5, content: "很棒", created_at: "2026-10-01T00:00:00Z" } } });
+    const { container, queryByRole } = render(<ClassroomPage />);
+    await waitFor(() => expect(container.textContent).toContain("感謝你的評價！"));
+    expect(queryByRole("button", { name: "5 星" })).toBeNull();
+    await playToEnd();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(queryByRole("dialog")).toBeNull();
+  });
+});
