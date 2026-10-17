@@ -153,6 +153,35 @@ describe("POST /api/payuni/notify（付款背景通知）", () => {
     expect(grantAccess).toHaveBeenCalledWith(sb, expect.objectContaining({ id: "o1", email: "a@x.com" }));
   });
 
+  // 後台「客戶查詢」與付款名單的小欄位靠 orders.access_granted_at 顯示「已開通」；自動開通也要寫，不然永遠顯示未開通
+  const grantedUpd = () => sb.calls.find((c) => c.table === "orders" && sb.has(c, "update") && "access_granted_at" in sb.arg(c, "update"));
+
+  it("AUTO_GRANT_ACCESS=on 且開通成功 → orders.access_granted_at 寫成現在時間（只更新這張訂單）", async () => {
+    vi.stubEnv("AUTO_GRANT_ACCESS", "on");
+    const before = Date.now();
+    await POST(notifyReq(PAID));
+    const upd = grantedUpd();
+    expect(upd).toBeTruthy();
+    const ts = Date.parse(sb.arg(upd, "update").access_granted_at);
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(Date.now());
+    expect(upd.ops.some((o) => o.m === "eq" && o.args[0] === "id" && o.args[1] === "o1")).toBe(true);
+  });
+
+  it("AUTO_GRANT_ACCESS=on 但 grantAccess 失敗 → 不寫 access_granted_at（名單才會列為待開通可手動補）", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("AUTO_GRANT_ACCESS", "on");
+    grantAccess.mockResolvedValueOnce({ ok: false, errors: ["enrollments: boom"] });
+    await POST(notifyReq(PAID));
+    expect(grantedUpd()).toBeUndefined();
+    spy.mockRestore();
+  });
+
+  it("AUTO_GRANT_ACCESS 關閉 → 不寫 access_granted_at", async () => {
+    await POST(notifyReq(PAID));
+    expect(grantedUpd()).toBeUndefined();
+  });
+
   it("重送的 notify：fulfilled_at 已被搶走 → 不重複寄信", async () => {
     sb = makeDb({ claimed: false }); getSupabaseAdmin.mockReturnValue(sb);
     const res = await POST(notifyReq(PAID));

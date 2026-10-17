@@ -180,7 +180,15 @@ export async function POST(req) {
         // 設 AUTO_GRANT_ACCESS=on 才恢復付款即開通。開關 off 時本段整段跳過。
         if (autoGrantEnabled() && order?.email) {
           const grant = await grantAccess(supabase, order);
-          if (!grant.ok) console.error("[payuni notify] grantAccess error", grant.errors.join("; "));
+          if (grant.ok) {
+            // 後台「客戶查詢」與付款名單的小欄位靠 access_granted_at 顯示「已開通」（與後台手動開通同一旗標）；
+            // 主列表仍以 enrollments 為權威。開通失敗不寫，名單才會把它列為待開通、可手動補。
+            const { error: flagError } = await supabase
+              .from("orders").update({ access_granted_at: new Date().toISOString() }).eq("id", order.id);
+            if (flagError) console.error("[payuni notify] access_granted_at 寫入失敗（已開通，不影響付款）", params.MerTradeNo, flagError.message);
+          } else {
+            console.error("[payuni notify] grantAccess error", grant.errors.join("; "));
+          }
         }
 
         // 一次性履約（優惠券累計 + 寄開課信）：以 fulfilled_at 作為去重旗標。

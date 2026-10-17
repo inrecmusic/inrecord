@@ -133,6 +133,7 @@ CREATE POLICY "service_role_subscriptions" ON subscriptions
 
 > **⚠️ 2026-08 起「自動開通」「自動開票」皆改 fail-safe 開關、預設關**（官網 payuni 直購改人工處理，與 concert/WordPress 一致）：
 > - **`autoGrantEnabled()`（`lib/order-fulfillment.js`，`AUTO_GRANT_ACCESS==="on"` 才開、未設＝關）** gate 上面的開通分流——開關關時 notify **不寫 enrollments/subscriptions**，訂單只轉 `paid` ＋ 寄「預購成功」信（`presale` 恆 true）；開通改由後台「訂單管理→付款名單」三顆按鈕（逐筆/勾選/全數）人工處理（`POST /api/admin/grant-orders`，只開 `source=payuni`＋`course/bundle`＋未開通）。開通權威＝`enrollments`；判定純函式 `markEnrolled`/`pickUngrantedPayuni`（`lib/order-enrolled.js`），orders API 以 `selectAll` 分頁 join enrollments 帶 `enrolled`。
+> - **開關開（`AUTO_GRANT_ACCESS=on`，2026-10-17 起）時的兩個補強**：notify 開通成功會一併寫 `orders.access_granted_at`（後台「客戶查詢」與付款名單小欄位靠它顯示「已開通」；主列表仍以 enrollments 為權威，開通失敗不寫、名單會列為待開通）。買家在成功頁把開通信箱改成與付款信箱不同時，`/api/order/grant-email` 寫入 `grant_email` 後會以它重呼叫 `grantAccess` 把課程開到新信箱，成功後才收回付款信箱上由此單建立的 enrollments（付款信箱名下還有其他有效課程訂單就保留，同 `lib/refund-guard`），並把該單 `subscriptions` 那列的 email 搬到新信箱（`uniq_sub_purchase_order` 以 `payuni_order_id` 唯一，對新信箱再 insert 會被當成已開通）。
 > - **`autoInvoiceEnabled()`（同檔，`AUTO_INVOICE==="on"` 才開）** gate notify 的 Amego 開票——關時付款後不自動開票、發票人工開立（見 `docs/superpowers/specs/2026-08-06-*`）。
 > - 兩開關**各自獨立**；恢復自動＝Vercel 設對應 env＝`on` 後重部署。**CAPI／優惠券累計／寄信不受兩開關影響、照跑。**
 
