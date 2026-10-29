@@ -21,8 +21,7 @@ const VIDEOS = [
 ];
 const ANN = [{ id: "a1", title: "公告", body: "內容", pinned: false, important: true, published: true, created_at: "2026-09-04T00:00:00Z" }];
 
-function makeDb() {
-  return makeSupabaseMock((table, ops) => {
+function makeDbResolver(table, ops) {
     const sel = ops.find((o) => o.m === "select");
     if (table === "videos" && sel?.args[1]?.count) return { count: VIDEOS.length, error: null };
     switch (table) {
@@ -33,7 +32,9 @@ function makeDb() {
       case "materials": case "games": return { data: [], error: null };
       default: return { data: null, error: null }; // subscriptions / student_profiles / orders → 無資料
     }
-  });
+}
+function makeDb() {
+  return makeSupabaseMock(makeDbResolver);
 }
 
 const req = (qs = "") => new Request("http://x/api/classroom/bootstrap" + qs, { headers: { "user-agent": "vitest" } });
@@ -85,6 +86,29 @@ describe("GET /api/classroom/bootstrap（教室進場一次取回）", () => {
     expect(body.videos[0].bunny_video_id).toBe("bunny-1");
     expect(body.announcements).toEqual([expect.objectContaining({ id: "a1", important: true })]);
     expect(body.contentItems).toBeDefined();
+  });
+
+  it("互動樂譜：側欄合併舊 ABC 與 v2 曲目；v2 表還沒建時只剩舊 ABC", async () => {
+    process.env.INTERACTIVE_SCORES = "on";
+    try {
+      const withV2 = (scoreUnits) => makeSupabaseMock((table, ops) => {
+        if (table === "scores") return { data: [{ id: "a1", video_id: "v2", title: "小蜜蜂" }], error: null };
+        if (table === "score_units") return scoreUnits;
+        return makeDbResolver(table, ops);
+      });
+      sb = withV2({ data: [{ video_id: "v1", scores: { id: "s1", title: "雙手" } }], error: null });
+      requireClassroomAuth.mockResolvedValue({ user: USER, supabase: sb });
+      let body = await (await GET(req("?player=1&device_id=d1"))).json();
+      expect(body.contentItems.v1).toEqual([{ kind: "sheet", id: "s1", title: "雙手" }]);
+      expect(body.contentItems.v2).toEqual([{ kind: "sheet", id: "a1", title: "小蜜蜂" }]);
+      sb = withV2({ data: null, error: { code: "42P01", message: 'relation "score_units" does not exist' } });
+      requireClassroomAuth.mockResolvedValue({ user: USER, supabase: sb });
+      body = await (await GET(req("?player=1&device_id=d1"))).json();
+      expect(body.contentItems.v1).toBeUndefined();
+      expect(body.contentItems.v2).toEqual([{ kind: "sheet", id: "a1", title: "小蜜蜂" }]);
+    } finally {
+      delete process.env.INTERACTIVE_SCORES;
+    }
   });
 
   it("rated／rating：已評分 → true 並帶回本人那筆（星數、心得、建立時間）；未評分 → false／null", async () => {

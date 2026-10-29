@@ -6,6 +6,7 @@ import { enforceDeviceLimit } from "@/lib/game-devices";
 import { buildContentItems, summarizeContent } from "@/lib/unit-content";
 import { resolveEarlyAccess } from "@/lib/early-access-server";
 import { stripPlayback, chapterSortMap, SECOND_RELEASE_MS } from "@/lib/early-access";
+import { sidebarScores, isMissingRelation } from "@/lib/score/unit-scores";
 
 // 教室入口一次載入：驗 JWT 一次，之後並行撈 購課 / 遊戲存取 / 學員資料(+預填) /（購課者）章節+影片+進度，
 // 單一往返取代原本 verify-purchase + verify-subscription + course + progress + profile 五支
@@ -79,7 +80,7 @@ export async function GET(req) {
   // 購課者：章節 + 影片 + 進度 + 已發布單元總數（播放頁另加公告）。並行。
   // 播放頁需要 bunny_video_id/vimeo_id（判斷播放來源）與作業欄位，故回完整列。
   const videoCols = playerMode ? "*" : "id, chapter_id, title, sort_order, duration, bunny_video_id, vimeo_id";
-  const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes, scoreRes, ratedRes] = await Promise.all([
+  const [chapRes, vidRes, progRes, countRes, annRes, matRes, gameRes, scoreRes, scoreLinkRes, ratedRes] = await Promise.all([
     supabase.from("chapters").select("*").order("sort_order", { ascending: true }),
     supabase.from("videos").select(videoCols).eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
     supabase.from("progress").select("video_id, watched_seconds, total_seconds, completed, watched_at").eq("user_id", user.id),
@@ -101,7 +102,11 @@ export async function GET(req) {
     // 互動樂譜（supabase-scores.sql；表還沒建就當作沒有樂譜，側欄照常）
     // INTERACTIVE_SCORES 未設＝不給，正式站先關、preview 先試（preview 與正式站共用 DB，擋不了資料只能擋功能）
     playerMode && process.env.INTERACTIVE_SCORES === "on"
-      ? supabase.from("scores").select("id, video_id, title").not("video_id", "is", null).eq("published", true)
+      ? supabase.from("scores").select("id, video_id, title").not("video_id", "is", null).not("abc", "is", null).eq("published", true)
+      : Promise.resolve({ data: null, error: null }),
+    // v2 雙手曲目掛在 score_units（多對多；supabase-scores-v2.sql 還沒跑就降級成只有舊 ABC）
+    playerMode && process.env.INTERACTIVE_SCORES === "on"
+      ? supabase.from("score_units").select("video_id, scores!inner(id, title)").eq("scores.published", true).eq("scores.format", "musicxml")
       : Promise.resolve({ data: null, error: null }),
     // 評分邀請（儀表板推力卡／播放頁彈窗）：已評分就不再邀請。撈本人那一筆，與其他查詢並行。
     supabase.from("ratings").select("score, content, created_at").eq("user_id", user.id).limit(1),
@@ -154,10 +159,11 @@ export async function GET(req) {
     if (matRes.error) console.error("[bootstrap] materials:", matRes.error.message);
     if (gameRes.error) console.error("[bootstrap] games:", gameRes.error.message);
     if (scoreRes.error) console.error("[bootstrap] scores:", scoreRes.error.message);
+    if (scoreLinkRes.error) console.error(`[bootstrap] score_units${isMissingRelation(scoreLinkRes.error) ? "（v2 尚未建表）" : ""}:`, scoreLinkRes.error.message);
     out.contentItems = buildContentItems({
       materials: matRes.data || [],
       games: gameRes.data || [],
-      scores: scoreRes.data || [],
+      scores: sidebarScores(scoreRes, scoreLinkRes),
       videos: out.videos,
     });
     out.contentStats = summarizeContent(out.contentItems, totalCount);
