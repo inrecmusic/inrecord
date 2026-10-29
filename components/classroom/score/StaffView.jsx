@@ -7,7 +7,7 @@
 // 否則重畫後舊元素已不在畫面上，高亮會亮錯或不亮。
 import { useEffect, useRef, useState } from "react";
 import { prepareStaffXml, matchStaffNotes } from "@/lib/score/staff-xml";
-import { collectOsmdNotes } from "./osmd-notes";
+import { collectOsmdNotes, OSMD_OPTIONS } from "./osmd-notes";
 
 export default function StaffView({ xml, model, rightHandOnly = false, chordMode = "name", showChords = true, activeIds, onNoteHover }) {
   const hostRef = useRef(null);
@@ -56,16 +56,7 @@ export default function StaffView({ xml, model, rightHandOnly = false, chordMode
         const { OpenSheetMusicDisplay } = await import("opensheetmusicdisplay");
         if (cancelled || !hostRef.current) return;
         if (!osmdRef.current) {
-          osmdRef.current = new OpenSheetMusicDisplay(hostRef.current, {
-            backend: "svg",
-            autoResize: false,
-            drawTitle: false,
-            drawSubtitle: false,
-            drawComposer: false,
-            drawLyricist: false,
-            drawPartNames: false,
-            drawingParameters: "compacttight",
-          });
+          osmdRef.current = new OpenSheetMusicDisplay(hostRef.current, OSMD_OPTIONS);
         }
         await osmdRef.current.load(prepareStaffXml(xml, model, { rightHandOnly, chordMode, showChords }));
         if (cancelled) return;

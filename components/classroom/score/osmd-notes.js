@@ -33,3 +33,18 @@ export function collectOsmdNotes(graphic) {
   });
   return out;
 }
+
+// OSMD 設定（StaffView 用）。連桿不用 OSMD 的 autoBeam（它把拍號分母當一拍，6/8 的八分音符連不起來），
+// 改由 lib/score/staff-xml.js 的 prepareStaffXml 依樂理補 <beam>；原檔寫好的連桿照原檔。
+// autoResize 關掉：寬度改變由 StaffView 自己重畫並重建音符對照表。
+export const OSMD_OPTIONS = {
+  backend: "svg",
+  autoResize: false,
+  autoBeam: false,
+  drawTitle: false,
+  drawSubtitle: false,
+  drawComposer: false,
+  drawLyricist: false,
+  drawPartNames: false,
+  drawingParameters: "compacttight",
+};

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { collectOsmdNotes, OSMD_HALFTONE_TO_MIDI } from "./osmd-notes.js";
+import { collectOsmdNotes, OSMD_HALFTONE_TO_MIDI, OSMD_OPTIONS } from "./osmd-notes.js";
 
 // 假的 OSMD GraphicSheet：兩小節 × 兩行譜，含一個和弦、一個休止、一個裝飾音
 const note = (halfTone, el, { rest = false, grace = false } = {}) => ({
@@ -40,4 +40,14 @@ describe("collectOsmdNotes", () => {
     expect(collectOsmdNotes(g)[0].midi).toBe(67);
   });
   it("壞資料不丟例外", () => expect(collectOsmdNotes(null)).toEqual([]));
+});
+
+describe("OSMD_OPTIONS", () => {
+  it("不用 OSMD 的 autoBeam（6/8 會連錯），連桿由 prepareStaffXml 補", () => {
+    expect(OSMD_OPTIONS.autoBeam).toBe(false);
+  });
+  it("關掉 OSMD 自己的 autoResize（由 StaffView 重畫並重建對照表）", () => {
+    expect(OSMD_OPTIONS.autoResize).toBe(false);
+    expect(OSMD_OPTIONS.backend).toBe("svg");
+  });
 });
