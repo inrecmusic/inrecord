@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>上課頁草圖 v4（鍵盤配色）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<style>
+:root{
+  --page:#EEF1F6; --panel:#FFFFFF; --sunk:#F5F7FA; --line:#DCE1EA; --line-2:#C7CEDB;
+  --ink:#18203A; --ink-2:#4A5370; --ink-3:#7B839A;
+  --gold:#B98A2E; --gold-soft:#FBF1DC; --gold-line:#E6C987;
+  --ok:#1F8A5B; --ok-soft:#E3F4EB; --bad:#C8443A; --bad-soft:#FBE7E4;
+  --rh:#3557C8; --lh:#C96A24;
+  --serif:"Noto Serif TC","Songti TC",serif;
+  --sans:"Noto Sans TC",-apple-system,"PingFang TC",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#E4E8EF;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible{outline:2px solid var(--rh);outline-offset:2px}
+.page{max-width:1240px;margin:0 auto;padding:28px 16px 56px;display:grid;gap:32px}
+.cap{margin:0 0 10px;color:var(--ink-2);font-size:14px;max-width:72ch}
+.cap strong{font-family:var(--serif);font-size:17px;color:var(--ink);margin-right:10px}
+
+/* ---------- app shell ---------- */
+.app{background:var(--page);border-radius:20px;overflow:hidden;border:1px solid var(--line-2);box-shadow:0 30px 60px -36px rgba(24,32,58,.45)}
+.top{display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+.back{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;font-size:18px;color:var(--ink-2)}
+.ttl{min-width:0}
+.ttl .ch{font-size:12px;color:var(--ink-3)}
+.ttl h1{margin:0;font-family:var(--serif);font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grow{flex:1}
+.steps{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.steps .dots{display:flex;gap:4px}
+.steps .dots i{width:22px;height:6px;border-radius:3px;background:var(--line)}
+.steps .dots i.d{background:var(--ok)}
+.steps .dots i.c{background:var(--gold)}
+.dev{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.dev i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.gear{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.tg{width:30px;height:18px;border-radius:999px;background:var(--ok);position:relative;flex:none}
+.tg::after{content:"";position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+
+.stage{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:16px;padding:16px 20px 0}
+
+/* video */
+.vcol{display:grid;gap:10px;align-content:start}
+.video{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:linear-gradient(165deg,#5b6476 0%,#2b3142 60%,#1d2230 100%)}
+.video .lamp{position:absolute;inset:0;background:radial-gradient(380px 240px at 36% 28%,rgba(255,236,200,.35),transparent 70%)}
+.video .who{position:absolute;left:13%;bottom:0;width:25%;height:70%;border-radius:140px 140px 0 0;background:linear-gradient(#7a8296,#3c4356)}
+.video .gp{position:absolute;left:33%;right:8%;bottom:6%;height:30%;border-radius:10px 60px 10px 10px;background:linear-gradient(#1b1e26,#0b0d12)}
+.video .gp::after{content:"";position:absolute;left:4%;right:20%;bottom:16%;height:18%;background:repeating-linear-gradient(90deg,#f6f3ea 0 10px,#9c978c 10px 11px);border-radius:2px}
+.vstate{position:absolute;inset:0;display:grid;place-items:center;background:rgba(24,32,58,.28)}
+.vstate span{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.94);font-weight:700;font-size:14px;color:var(--ink)}
+.vstate span b{width:10px;height:10px;border-radius:2px;background:var(--gold);box-shadow:5px 0 0 var(--gold)}
+.sub{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:4px 12px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font-size:15px;white-space:nowrap}
+
+/* lesson rail */
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px 10px}
+.rtrack{position:relative;height:8px;border-radius:4px;background:var(--sunk);border:1px solid var(--line)}
+.rtrack .fill{position:absolute;left:0;top:0;bottom:0;width:41%;border-radius:4px;background:var(--ink)}
+.rtrack .knob{position:absolute;left:41%;top:50%;width:14px;height:14px;border-radius:50%;background:var(--ink);transform:translate(-50%,-50%);box-shadow:0 0 0 3px #fff}
+.cues{position:relative;height:34px;margin-top:6px}
+.cue{position:absolute;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;white-space:nowrap;border:1px solid var(--line);background:var(--panel);color:var(--ink-3)}
+.cue::before{content:"";position:absolute;left:50%;top:-11px;width:1px;height:10px;background:var(--line-2)}
+.cue.d{color:var(--ok);border-color:#bfe3cf;background:var(--ok-soft)}
+.cue.c{color:#7a5a17;border-color:var(--gold-line);background:var(--gold-soft);font-weight:700}
+.rmeta{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ctrls{display:flex;align-items:center;gap:6px}
+.ctrls button{padding:4px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+
+/* side panel */
+.side{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-height:0}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.tabs button{padding:11px 0 10px;font-size:14px;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--ink);font-weight:700;border-bottom-color:var(--ink)}
+.tabs em{font-style:normal;font-size:12px;color:var(--ink-3);margin-left:4px;font-weight:500}
+.sbody{padding:14px;display:grid;gap:12px;align-content:start}
+.shead{display:flex;align-items:center;gap:10px}
+.shead h3{margin:0;font-family:var(--serif);font-size:17px}
+.shead .k{font-size:12px;color:var(--ink-3)}
+.seg{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{padding:4px 10px;font-size:12px;color:var(--ink-2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff}
+.score{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.bar{padding:8px 10px 10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);position:relative}
+.bar:nth-child(2n){border-right:0}
+.bar:nth-last-child(-n+2){border-bottom:0}
+.bar .n{position:absolute;right:8px;top:6px;font-size:11px;color:var(--ink-3)}
+.bar .cd{font-size:13px;font-weight:700;color:var(--ink-2)}
+.bar .r{font-family:var(--serif);font-size:21px;font-weight:700;letter-spacing:.28em;color:var(--rh);line-height:1.3}
+.bar .l{font-family:var(--serif);font-size:14px;letter-spacing:.3em;color:var(--lh)}
+.bar.now{background:var(--gold-soft);box-shadow:inset 3px 0 0 var(--gold)}
+.hands{display:flex;gap:14px;font-size:12px;color:var(--ink-3)}
+.hands span::before{content:"";display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px;background:currentColor}
+.point{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--sunk)}
+.point .chd{flex:none;width:56px;height:56px;border-radius:12px;background:var(--ink);color:#fff;display:grid;place-items:center;align-content:center;line-height:1.1}
+.point .chd b{font-family:var(--serif);font-size:24px}
+.point .chd small{font-size:10px;color:#c9cfdd}
+.point p{margin:0;font-size:13px;color:var(--ink-2)}
+
+/* ---------- practice deck ---------- */
+.deck{margin-top:16px;background:var(--panel);border-top:1px solid var(--line);padding:14px 20px 16px}
+.strip{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:16px;padding:10px 12px 10px 16px;border-radius:14px;border:1px solid var(--gold-line);background:var(--gold-soft)}
+.strip.ok{border-color:#bfe3cf;background:var(--ok-soft)}
+.strip.bad{border-color:#efc2bc;background:var(--bad-soft)}
+.who2{font-size:12px;color:#7a5a17;font-weight:700}
+.strip.ok .who2{color:var(--ok)} .strip.bad .who2{color:var(--bad)}
+.task h2{margin:0;font-family:var(--serif);font-size:21px;font-weight:700}
+.task p{margin:0;font-size:13px;color:var(--ink-2)}
+.live{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);min-width:220px}
+.live .lb{font-size:12px;color:var(--ink-3)}
+.live .nt{display:flex;gap:4px}
+.live .nt span{padding:2px 7px;border-radius:6px;font-size:12px;font-weight:700;background:var(--ok-soft);color:var(--ok)}
+.live .nt span.x{background:var(--bad-soft);color:var(--bad)}
+.live .nt span.w{background:var(--sunk);color:var(--ink-3)}
+.live .rs{margin-left:auto;font-weight:700;font-size:13px;color:var(--ok)}
+.live .rs.x{color:var(--bad)} .live .rs.w{color:var(--ink-3)}
+.act{display:flex;gap:8px}
+.btn{padding:9px 14px;border-radius:10px;font-size:14px;font-weight:500;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-2)}
+.btn.main{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700;padding:9px 18px}
+.btn kbd{font-family:var(--sans);font-size:11px;padding:0 5px;border-radius:4px;border:1px solid rgba(255,255,255,.4);margin-left:6px;opacity:.85}
+
+.lane{position:relative;height:52px;margin-top:12px;border-radius:10px 10px 0 0;background:linear-gradient(180deg,rgba(185,138,46,0),rgba(185,138,46,.07))}
+.lane .b{position:absolute;bottom:0;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,rgba(185,138,46,.2),var(--gold))}
+.lane .b.nx{background:linear-gradient(180deg,rgba(53,87,200,.08),rgba(53,87,200,.45))}
+.piano{position:relative;height:150px;background:#1b1e26;border-radius:4px 4px 12px 12px;padding:6px 3px 3px}
+.keys{position:relative;height:100%}
+.k{position:absolute;top:0}
+.k.w{height:100%;background:linear-gradient(180deg,#f1f2f4,#fff 12%,#fff 92%,#e9ebef);border:1px solid #b7bcc7;border-top:0;border-radius:0 0 7px 7px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;padding-bottom:8px;z-index:1}
+.k.b{height:60%;background:linear-gradient(180deg,#2a2e38,#0e1016 85%,#3a3f4b);border-radius:0 0 4px 4px;z-index:2}
+.k .nm{font-size:11px;color:#8d93a3}
+.k .nm.c{color:var(--ink);font-weight:700}
+.k.w.tg2{background:linear-gradient(180deg,#f5e6c4,#fbf1dc 70%,#f0d9a4)}
+.k.w.ok{background:linear-gradient(180deg,#cfeedd,#e3f4eb 70%,#bfe3cf)}
+.k.w.x{background:linear-gradient(180deg,#f6d3ce,#fbe7e4 70%,#efc2bc)}
+.fg{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--ink);color:#fff}
+.k.ok .fg{background:var(--ok)}
+.ktools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--ink-3)}
+.ktools .grp{display:inline-flex;align-items:center;gap:8px}
+.chk{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);color:var(--ink-2)}
+.chk.on{border-color:var(--ink);color:var(--ink);font-weight:500}
+.chk.on::before{content:"✓";font-size:11px}
+.key{display:flex;gap:12px;margin-left:auto}
+.key span{display:inline-flex;align-items:center;gap:6px}
+.key i{width:14px;height:14px;border-radius:4px;border:1px solid var(--line-2)}
+
+/* ---------- notes & states ---------- */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.panel h4{margin:0 0 12px;font-family:var(--serif);font-size:17px}
+.flow{margin:0;padding:0;list-style:none;display:grid;gap:12px;counter-reset:f}
+.flow li{display:grid;grid-template-columns:28px 1fr;gap:10px;font-size:14px;color:var(--ink-2)}
+.flow li::before{counter-increment:f;content:counter(f);width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.flow b{color:var(--ink)}
+.states{display:grid;gap:10px}
+.states .strip{grid-template-columns:auto minmax(0,1fr) auto;padding:8px 12px}
+.states .task h2{font-size:16px}
+.rules{display:grid;gap:8px;margin-top:14px;font-size:13px;color:var(--ink-2)}
+.rules div{display:flex;gap:10px;align-items:center}
+.rules i{width:16px;height:16px;border-radius:4px;flex:none}
+
+/* ---------- phone ---------- */
+.phones{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.phone{width:360px;border:10px solid #1b1e26;border-radius:44px;overflow:hidden;background:var(--page)}
+.phone .top{padding:10px 12px;gap:10px}
+.phone .ttl h1{font-size:15px}
+.phone .pb{padding:10px;display:grid;gap:10px}
+.phone .video{border-radius:12px}
+.phone .rail{padding:10px}
+.phone .cues{height:30px}
+.phone .deck{margin:0;padding:10px}
+.phone .strip{grid-template-columns:1fr auto;gap:8px;padding:8px 10px}
+.phone .task h2{font-size:17px}
+.phone .lane{height:36px}
+.phone .piano{height:118px}
+.phone .fg{width:20px;height:20px;font-size:12px}
+.pnote{max-width:320px;display:grid;gap:12px;font-size:14px;color:var(--ink-2)}
+.pnote b{color:var(--ink)}
+@media (max-width:900px){.stage,.two{grid-template-columns:1fr}.strip{grid-template-columns:1fr}}
+
+/* ===== v4 鍵盤配色：琴鍵維持乾淨的白與黑，按下才上「手的顏色」 ===== */
+:root{--lk:#E2773A;--lk-2:#C9601F;--lk-3:#EC9157;--rk:#3E63D6;--rk-2:#2C4DB5;--rk-3:#5B7CE3;--xk:#D4483E;--xk-2:#B53A31}
+.k.w{background:linear-gradient(180deg,#e9ebef 0%,#fbfbfc 7%,#fff 60%,#f3f4f6 100%)}
+.k.w.L{background:linear-gradient(180deg,var(--lk-2) 0%,var(--lk) 9%,var(--lk-3) 100%);border-color:var(--lk-2);box-shadow:inset 0 4px 6px -2px rgba(0,0,0,.25)}
+.k.w.R{background:linear-gradient(180deg,var(--rk-2) 0%,var(--rk) 9%,var(--rk-3) 100%);border-color:var(--rk-2);box-shadow:inset 0 4px 6px -2px rgba(0,0,0,.25)}
+.k.w.X{background:linear-gradient(180deg,var(--xk-2) 0%,var(--xk) 9%,#DD5E55 100%);border-color:var(--xk-2);box-shadow:inset 0 4px 6px -2px rgba(0,0,0,.25)}
+.k.b.L{background:linear-gradient(180deg,var(--lk-2),var(--lk))}
+.k.b.R{background:linear-gradient(180deg,var(--rk-2),var(--rk))}
+.k.L .nm,.k.R .nm,.k.X .nm{color:rgba(255,255,255,.9);font-weight:700}
+.fg{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.k.L .fg{color:var(--lk-2)} .k.R .fg{color:var(--rk-2)} .k.X .fg{color:var(--xk-2)}
+.ring{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--gold);background:#fff;color:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:700;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(185,138,46,.18)}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+.lane{background:linear-gradient(180deg,rgba(24,32,58,0),rgba(24,32,58,.04))}
+.lane .b{border-radius:7px 7px 3px 3px}
+.lane .b.L{background:linear-gradient(180deg,rgba(226,119,58,.25),var(--lk))}
+.lane .b.R{background:linear-gradient(180deg,rgba(62,99,214,.25),var(--rk))}
+.lane .b.nx{opacity:.4}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px}
+/* 配色比較 */
+.cmp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px}
+.opt.pick{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.opt h5{margin:0;font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px}
+.opt h5 small{font-family:var(--sans);font-size:12px;font-weight:700;color:#fff;background:var(--ink);padding:1px 8px;border-radius:999px}
+.opt p{margin:0;font-size:13px;color:var(--ink-2)}
+.opt .piano{height:120px}
+.opt .lane{height:34px;margin-top:0}
+.optB{--lk:#3E63D6;--lk-2:#2C4DB5;--lk-3:#5B7CE3}
+.optC{--lk:#C99A3E;--lk-2:#A97E2A;--lk-3:#D9AF5C;--rk:#C99A3E;--rk-2:#A97E2A}
+@media (max-width:900px){.cmp{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<section>
+  <p class="cap"><strong>電腦版／平板橫放</strong>影片在左上，右側是樂譜和輔助內容，鍵盤橫跨最下方。畫面停在「影片播到 2:10，老師請你彈 C 和弦，你剛好彈對」的那一刻。</p>
+  <div class="app">
+    <header class="top">
+      <button class="back" aria-label="回到課程">‹</button>
+      <div class="ttl"><div class="ch">第二章 和弦入門</div><h1>2-3 用 C 和 G 和弦伴奏《小蜜蜂》</h1></div>
+      <div class="grow"></div>
+      <div class="steps">本單元練習 <span class="dots"><i class="d"></i><i class="c"></i><i></i><i></i></span> 2 / 4</div>
+      <div class="dev"><i></i>Yamaha P-125 已連接</div>
+      <div class="gear"><span class="tg"></span>練習時自動暫停</div>
+    </header>
+
+    <div class="stage">
+      <div class="vcol">
+        <div class="video">
+          <div class="lamp"></div><div class="who"></div><div class="gp"></div>
+          <div class="vstate"><span><b></b>影片已暫停，換你在下方鍵盤彈</span></div>
+          <div class="sub">好，現在換你，左手按住 Do、Mi、Sol</div>
+        </div>
+        <div class="rail">
+          <div class="rtrack"><div class="fill"></div><div class="knob"></div></div>
+          <div class="cues">
+            <span class="cue d" style="left:15%">✓ 找到 Do</span>
+            <span class="cue c" style="left:41%">C 和弦</span>
+            <span class="cue" style="left:63%">C 換 G</span>
+            <span class="cue" style="left:85%">跟彈 1–4 小節</span>
+          </div>
+          <div class="rmeta"><span>2:10 / 5:18</span><span class="ctrls"><button>倒退 5 秒</button><button>1.0×</button><button>字幕</button></span></div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="tabs"><button class="on">樂譜</button><button>重點</button><button>練習<em>2/4</em></button></div>
+        <div class="sbody">
+          <div class="shead"><h3>小蜜蜂</h3><span class="k">1=C　4/4</span>
+            <div class="seg"><button class="on">簡譜</button><button>五線譜</button><button>對照</button></div></div>
+          <div class="score">
+            <div class="bar now"><span class="n">1</span><div class="cd">C</div><div class="r">533–</div><div class="l">135</div></div>
+            <div class="bar"><span class="n">2</span><div class="cd">G</div><div class="r">422–</div><div class="l">572</div></div>
+            <div class="bar"><span class="n">3</span><div class="cd">C</div><div class="r">1234</div><div class="l">135</div></div>
+            <div class="bar"><span class="n">4</span><div class="cd">G</div><div class="r">555–</div><div class="l">572</div></div>
+          </div>
+          <div class="hands"><span style="color:var(--rh)">右手旋律</span><span style="color:var(--lh)">左手和弦</span><span style="color:var(--gold)">老師正在講</span></div>
+          <div class="point"><div class="chd"><b>C</b><small>Do Mi Sol</small></div><p>左手小指放 Do、中指放 Mi、大拇指放 Sol，三個音一起按下去，聽起來是明亮的和聲。</p></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="deck">
+      <div class="strip ok">
+        <div class="who2">換你彈</div>
+        <div class="task"><h2>左手按出 C 和弦</h2><p>Do、Mi、Sol 一起按，指法 5、3、1</p></div>
+        <div class="live"><span class="lb">你按的</span><span class="nt"><span>Do</span><span>Mi</span><span>Sol</span></span><span class="rs">✓ 正確</span></div>
+        <div class="act"><button class="btn">再看一次示範</button><button class="btn main">繼續上課<kbd>空白鍵</kbd></button></div>
+      </div>
+      <div class="lane" id="lane"></div>
+      <div class="piano"><div class="keys" id="kb"></div></div>
+      <div class="ktools">
+        <span class="grp">琴鍵上顯示 <span class="chk on">音名</span><span class="chk">簡譜數字</span><span class="chk on">指法</span></span>
+        <span class="grp"><span class="chk">示範聲音</span></span>
+        <span class="key"><span><span class="ring" style="width:16px;height:16px;border-width:2px;animation:none"></span>要按的鍵</span><span><i class="swatch" style="background:var(--lk)"></i>左手按下</span><span><i class="swatch" style="background:var(--rk)"></i>右手按下</span><span><i class="swatch" style="background:var(--xk)"></i>按錯</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="cap"><strong>鍵盤配色比較</strong>三種配色畫的是同一個瞬間：左手彈 C 和弦，Do、Mi 按對，Sol 誤按成 Fa，Sol 還在等你按。</p>
+  <div class="cmp">
+    <div class="opt pick"><h5>A　左右手分色 <small>建議</small></h5><p>按下的鍵用「手的顏色」，跟樂譜的右手藍、左手橘一致。雙手合彈時一眼分得出哪隻手彈了什麼。</p><div class="lane" id="la"></div><div class="piano"><div class="keys" id="ka"></div></div></div>
+    <div class="opt optB"><h5>B　單色藍</h5><p>不分左右手，按下一律是品牌藍。畫面最乾淨，但雙手合彈時看不出是哪隻手。</p><div class="lane" id="lb"></div><div class="piano"><div class="keys" id="kb3"></div></div></div>
+    <div class="opt optC"><h5>C　金色</h5><p>按下用 InRecord 金色，最有品牌感。但跟「要按的鍵」同一個色系，對錯的對比比較弱。</p><div class="lane" id="lc"></div><div class="piano"><div class="keys" id="kc"></div></div></div>
+  </div>
+</section>
+
+<section class="two">
+  <div class="panel">
+    <h4>學員的一輪練習</h4>
+    <ol class="flow">
+      <li><span><b>看影片</b>：老師講解，右側樂譜跟著亮到正在講的小節。</span></li>
+      <li><span><b>停下來出題</b>：播到互動點自動暫停，題目出現在鍵盤正上方，要按的鍵亮金色。</span></li>
+      <li><span><b>自己彈</b>：「你按的」即時顯示按到哪些音；按錯的音變紅，告訴你差在哪。</span></li>
+      <li><span><b>彈對就繼續</b>：整條變綠，按「繼續上課」或空白鍵，影片接著播。沒接琴的人按「我彈好了」。</span></li>
+    </ol>
+    <div class="rules">
+      <div><i style="background:var(--gold)"></i>金色只代表「現在要做的事」：要按的鍵（金色圓圈）、目前這題、老師正在講的小節。</div>
+      <div><i style="background:var(--lk)"></i>琴鍵按下去才上色，顏色跟樂譜一致：左手橘、右手藍；按錯是紅色。</div>
+      <div><i style="background:var(--ok)"></i>綠色只代表「完成／正確」。紅色只代表「要修正」。</div>
+      <div><i style="background:var(--ink)"></i>主按鈕永遠在題目條右側同一個位置，文字說清楚會發生什麼事。</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h4>題目條的三種狀態</h4>
+    <div class="states">
+      <div class="strip"><div class="who2">換你彈</div><div class="task"><h2>左手按出 C 和弦</h2><p>還沒按，金色的鍵就是要按的</p></div><div class="act"><button class="btn">我彈好了</button></div></div>
+      <div class="strip bad"><div class="who2">差一點</div><div class="task"><h2>Mi 按成了 Fa</h2><p>往左移一個白鍵就對了</p></div><div class="act"><button class="btn">看示範</button></div></div>
+      <div class="strip ok"><div class="who2">換你彈</div><div class="task"><h2>正確！C 和弦</h2><p>影片 3 秒後自動繼續</p></div><div class="act"><button class="btn main">繼續上課</button></div></div>
+    </div>
+    <div class="rules">
+      <div><i style="background:var(--line-2)"></i>沒接琴：同樣的題目條，主按鈕是「我彈好了」，琴鍵可以用滑鼠點或電腦鍵盤彈。</div>
+      <div><i style="background:var(--line-2)"></i>不想被打斷：關掉右上「練習時自動暫停」，題目條改成提示，不會停影片。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="cap"><strong>手機版</strong>直放時影片在上、鍵盤固定在最下方，樂譜收在中間的分頁；鍵盤約一個半八度，會自動捲到要彈的位置。</p>
+  <div class="phones">
+    <div class="phone">
+      <header class="top"><button class="back">‹</button><div class="ttl"><div class="ch">2-3 · 練習 2/4</div><h1>用 C 和 G 和弦伴奏</h1></div></header>
+      <div class="pb">
+        <div class="video"><div class="lamp"></div><div class="who"></div><div class="gp"></div><div class="vstate"><span style="font-size:12px;padding:6px 12px"><b></b>換你彈</span></div></div>
+        <div class="rail"><div class="rtrack"><div class="fill"></div><div class="knob"></div></div>
+          <div class="cues"><span class="cue d" style="left:12%">✓</span><span class="cue c" style="left:41%">C 和弦</span><span class="cue" style="left:66%">C 換 G</span><span class="cue" style="left:88%">跟彈</span></div></div>
+        <div class="side"><div class="tabs"><button class="on">樂譜</button><button>重點</button><button>練習</button></div>
+          <div class="sbody" style="padding:10px"><div class="score">
+            <div class="bar now"><span class="n">1</span><div class="cd">C</div><div class="r">533–</div><div class="l">135</div></div>
+            <div class="bar"><span class="n">2</span><div class="cd">G</div><div class="r">422–</div><div class="l">572</div></div></div></div></div>
+      </div>
+      <div class="deck">
+        <div class="strip ok"><div class="task"><h2>正確！C 和弦</h2><p>Do、Mi、Sol</p></div><button class="btn main">繼續</button></div>
+        <div class="lane" id="lane2"></div>
+        <div class="piano"><div class="keys" id="kb2"></div></div>
+      </div>
+    </div>
+    <div class="pnote">
+      <div><b>題目條和鍵盤黏在畫面底部</b>：往上滑看樂譜時，鍵盤和主按鈕不會跑掉。</div>
+      <div><b>iPhone／iPad</b>：瀏覽器不能接琴，改用點琴鍵或「我彈好了」，一樣會停下來出題。</div>
+      <div><b>橫放手機</b>：自動切成左右兩欄，接近電腦版。</div>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+// 琴鍵：L/R＝左右手按下（白鍵 index）、X＝按錯、ring＝等你按（{index:指法}）、fingers＝按下的鍵上顯示的指法
+function piano(el,{from=3,whites=21,L=[],R=[],X=[],ring={},fingers={},names=true}){
+  const n=['C','D','E','F','G','A','B'], w=100/whites;
+  for(let i=0;i<whites;i++){
+    const k=document.createElement('div');
+    k.className='k w'+(L.includes(i)?' L':R.includes(i)?' R':X.includes(i)?' X':'');
+    k.style.left=(i*w)+'%';k.style.width=w+'%';
+    if(ring[i]!=null){const r=document.createElement('span');r.className='ring';r.textContent=ring[i];k.appendChild(r);}
+    else if(fingers[i]!=null){const f=document.createElement('span');f.className='fg';f.textContent=fingers[i];k.appendChild(f);}
+    if(names){const s=document.createElement('span');s.className='nm'+(i%7===0?' c':'');s.textContent=n[i%7]+(i%7===0?(from+Math.floor(i/7)):'');k.appendChild(s);}
+    el.appendChild(k);
+  }
+  for(let i=0;i<whites-1;i++){
+    if([2,6].includes(i%7))continue;
+    const b=document.createElement('div');b.className='k b';
+    b.style.left=((i+1)*w-w*0.31)+'%';b.style.width=(w*0.62)+'%';el.appendChild(b);
+  }
+  return w;
+}
+function lane(el,w,bars){bars.forEach(([i,h,c])=>{const b=document.createElement('div');b.className='b '+c;b.style.left=(i*w+w*.18)+'%';b.style.width=(w*.64)+'%';b.style.height=h+'px';el.appendChild(b);});}
+const $=id=>document.getElementById(id);
+// 主畫面：左手 C 和弦全部按對（C3 E3 G3）；下一個 G 和弦在落下中
+const w1=piano($('kb'),{whites:21,L:[0,2,4],fingers:{0:5,2:3,4:1}});
+lane($('lane'),w1,[[0,52,'L'],[2,52,'L'],[4,52,'L'],[4,20,'L nx'],[6,20,'L nx'],[8,20,'L nx']]);
+const w2=piano($('kb2'),{whites:11,L:[0,2,4],fingers:{0:5,2:3,4:1}});
+lane($('lane2'),w2,[[0,36,'L'],[2,36,'L'],[4,36,'L']]);
+// 比較：Do、Mi 對，Fa 錯，Sol 等你按
+const st={whites:10,L:[0,2],X:[3],ring:{4:1},fingers:{0:5,2:3}};
+[['ka','la'],['kb3','lb'],['kc','lc']].forEach(([k,l])=>{const w=piano($(k),st);lane($(l),w,[[0,34,'L'],[2,34,'L'],[4,34,'L']]);});
+</script>
+</body>
+</html>
