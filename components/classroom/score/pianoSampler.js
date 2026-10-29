@@ -25,10 +25,17 @@ export function createPianoSampler({ base = "/score-piano/" } = {}) {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
-      ctx = new AC();
-      master = ctx.createGain();
-      master.gain.value = 0.85;
-      master.connect(ctx.destination);
+      try {
+        ctx = new AC(); // Safari 有同時存在的 AudioContext 數量上限，建立可能丟例外
+        master = ctx.createGain();
+        master.gain.value = 0.85;
+        master.connect(ctx.destination);
+      } catch (e) {
+        console.warn("[pianoSampler] 無法建立 AudioContext", e?.message || e);
+        ctx = null;
+        master = null;
+        return null;
+      }
     }
     return ctx;
   }
@@ -127,5 +134,19 @@ export function createPianoSampler({ base = "/score-piano/" } = {}) {
     live.clear();
   }
 
-  return { ensure, load, play, click, stopAll, get context() { return ctx; } };
+  // 元件卸載時關掉 AudioContext（每次切分頁都會重建，不關會一直累積）
+  function close() {
+    stopAll();
+    const c = ctx;
+    ctx = null;
+    master = null;
+    buffers.clear(); // 解碼中的 Promise 綁著舊的 context
+    try {
+      c?.close?.()?.catch?.(() => {});
+    } catch {
+      /* 已關閉 */
+    }
+  }
+
+  return { ensure, load, play, click, stopAll, close, get context() { return ctx; } };
 }

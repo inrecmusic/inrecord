@@ -1,10 +1,11 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parseAbc } from "@/lib/score/abc";
 import { renderJianpu } from "@/lib/score/jianpu";
 import { buildTimeline, noteAt } from "@/lib/score/playback";
 import { createScorePlayer } from "./scorePlayer";
-import InteractiveScore from "./score/InteractiveScore";
+// v2 互動樂譜（OSMD、xmldom、取樣播放）按需載入：沒開 INTERACTIVE_SCORES 的正式站學員不必下載
+const InteractiveScore = lazy(() => import("./score/InteractiveScore"));
 
 const F = `var(--type-body)`;
 const VIEW_KEY = "inrec-score-view";
@@ -46,7 +47,11 @@ export default function ScoreTab({ token, video }) {
         </div>
       )}
       {current.format === "musicxml"
-        ? <InteractiveScore key={current.id} xml={current.musicxml} title={current.title} subtitle={current.subtitle} />
+        ? (
+          <Suspense fallback={<p style={{ color: "#64748b", fontSize: 14 }}>樂譜載入中…</p>}>
+            <InteractiveScore key={current.id} xml={current.musicxml} title={current.title} subtitle={current.subtitle} />
+          </Suspense>
+        )
         : <LegacyAbcScore key={current.id} current={current} />}
     </div>
   );

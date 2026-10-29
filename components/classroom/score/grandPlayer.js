@@ -12,6 +12,7 @@ export function createGrandPlayer(sampler) {
   let timer = null;
   let startedAt = 0;
   let nextStart = null;
+  let gen = 0; // 每次 stop() 加 1：play() 等待載入期間被停止或重按，就放棄這一次
   const tickFns = new Set();
   const endFns = new Set();
 
@@ -47,6 +48,7 @@ export function createGrandPlayer(sampler) {
   }
 
   function stop() {
+    gen++;
     const was = playing;
     playing = false;
     clearInterval(timer);
@@ -66,8 +68,11 @@ export function createGrandPlayer(sampler) {
       const ctx = sampler.ensure();
       if (!ctx || !pb) return false;
       stop();
+      const my = gen;
       if (ctx.state === "suspended") await ctx.resume().catch(() => {});
+      if (my !== gen) return false;
       await sampler.load([...new Set(pb.events.map((e) => e.midi))]);
+      if (my !== gen) return false;
       startedAt = ctx.currentTime + 0.1;
       schedulePass(startedAt, 0);
       playing = true;
@@ -87,6 +92,7 @@ export function createGrandPlayer(sampler) {
       stop();
       tickFns.clear();
       endFns.clear();
+      sampler.close?.();
     },
     get playing() {
       return playing;
