@@ -1,9 +1,9 @@
 // components/classroom/score/osmd-notes.js — 從 OSMD 畫好的 GraphicSheet 收集每個音符的 (小節, staff, onset, midi, SVG 元素)
 // 交給 lib/score/staff-xml.js 的 matchStaffNotes 對回模型 id。純函式（只讀物件屬性），可用假物件測試。
 //
-// OSMD 的 Note.halfTone ＝ Pitch.getHalfTone()，以 OSMD 的八度記法（中央 C 所在八度＝1）計，
-// 換成 MIDI 要加 48：小蜜蜂第一個音 G4 → halfTone 19 → MIDI 67（在瀏覽器實測校正）。
-export const OSMD_HALFTONE_TO_MIDI = 48;
+// OSMD 的 Note.halfTone 以 C4＝48 計（比 MIDI 少一個八度）。2026-10-29 在瀏覽器用小蜜蜂第一個音校正：
+// G4 → halfTone 55 → MIDI 67，所以加 12。
+export const OSMD_HALFTONE_TO_MIDI = 12;
 
 export function collectOsmdNotes(graphic) {
   const out = [];

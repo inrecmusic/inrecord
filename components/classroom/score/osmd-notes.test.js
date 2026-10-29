@@ -35,5 +35,9 @@ describe("collectOsmdNotes", () => {
     expect(lh.every((n) => n.onset === 0 && n.measure === 0)).toBe(true);
   });
   it("休止 midi 為 null", () => expect(out[5]).toEqual({ measure: 1, staff: 1, onset: 0, midi: null, el: "rest" }));
+  it("OSMD 實際的 halfTone：G4＝55（瀏覽器實測）→ MIDI 67", () => {
+    const g = { MeasureList: [[{ staffEntries: [entry(0, [note(55, "x")])] }]] };
+    expect(collectOsmdNotes(g)[0].midi).toBe(67);
+  });
   it("壞資料不丟例外", () => expect(collectOsmdNotes(null)).toEqual([]));
 });

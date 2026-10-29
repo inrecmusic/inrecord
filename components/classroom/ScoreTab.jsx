@@ -4,6 +4,7 @@ import { parseAbc } from "@/lib/score/abc";
 import { renderJianpu } from "@/lib/score/jianpu";
 import { buildTimeline, noteAt } from "@/lib/score/playback";
 import { createScorePlayer } from "./scorePlayer";
+import InteractiveScore from "./score/InteractiveScore";
 
 const F = `var(--type-body)`;
 const VIEW_KEY = "inrec-score-view";
@@ -13,9 +14,46 @@ const RATES = [0.6, 0.8, 1];
 // （^ _ @ < > 開頭的引號內容是註記位置，不是和弦，保留）
 const stripChords = (abc) => String(abc || "").replace(/"(?![\^_@<>])[^"\n]*"/g, "");
 
+// 外層：讀這個單元的樂譜，依 format 分流——'musicxml'＝v2 雙手互動樂譜，其餘（'abc'）＝第一階段的舊畫面（原封不動）
 export default function ScoreTab({ token, video }) {
   const [scores, setScores] = useState(null);   // null=載入中、[]=這個單元沒有樂譜
   const [pick, setPick] = useState(0);
+
+  /* 讀取這個單元的樂譜 */
+  useEffect(() => {
+    if (!token || !video?.id) return;
+    let alive = true;
+    setScores(null); setPick(0);
+    fetch(`/api/classroom/scores?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : { scores: [] }))
+      .then((d) => { if (alive) setScores(d.scores || []); })
+      .catch(() => { if (alive) setScores([]); });
+    return () => { alive = false; };
+  }, [token, video?.id]);
+
+  if (scores === null) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>樂譜載入中…</p>;
+  if (!scores.length) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>這個單元還沒有樂譜。</p>;
+
+  const current = scores[pick] || scores[0];
+  return (
+    <div style={{ fontFamily: F }} className="score-tab">
+      <style>{SCORE_CSS}</style>
+      {scores.length > 1 && (
+        <div className="sc-pickers">
+          {scores.map((s, i) => (
+            <button key={s.id} type="button" onClick={() => setPick(i)} className={"sc-pick" + (i === pick ? " on" : "")}>{s.title}</button>
+          ))}
+        </div>
+      )}
+      {current.format === "musicxml"
+        ? <InteractiveScore key={current.id} xml={current.musicxml} title={current.title} subtitle={current.subtitle} />
+        : <LegacyAbcScore key={current.id} current={current} />}
+    </div>
+  );
+}
+
+// 第一階段的 ABC 單聲部樂譜畫面（新版確認前不改行為）
+function LegacyAbcScore({ current }) {
   const [view, setView] = useState("staff");
   const [chords, setChords] = useState(true);
   const [rate, setRate] = useState(1);
@@ -29,18 +67,6 @@ export default function ScoreTab({ token, video }) {
   const staffRef = useRef(null);
   const abcjsRef = useRef(null);
   const playerRef = useRef(null);
-
-  /* 讀取這個單元的樂譜 */
-  useEffect(() => {
-    if (!token || !video?.id) return;
-    let alive = true;
-    setScores(null); setPick(0); setErr("");
-    fetch(`/api/classroom/scores?video_id=${video.id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : { scores: [] }))
-      .then((d) => { if (alive) setScores(d.scores || []); })
-      .catch(() => { if (alive) setScores([]); });
-    return () => { alive = false; };
-  }, [token, video?.id]);
 
   /* 記住上次選的譜別；abcjs 只在真的要畫五線譜時才載入（約 0.5MB，不進首屏） */
   useEffect(() => {
@@ -60,9 +86,8 @@ export default function ScoreTab({ token, video }) {
     ro.observe(el);
     setWidth(el.clientWidth || 720);
     return () => ro.disconnect();
-  }, [scores]);
+  }, []);
 
-  const current = scores?.[pick] || null;
   const model = useMemo(() => {
     if (!current) return null;
     try { return parseAbc(current.abc); } catch (e) { setErr(e.message || "樂譜讀取失敗"); return null; }
@@ -99,8 +124,8 @@ export default function ScoreTab({ token, video }) {
     p.onTick((t) => setCursor(noteAt(timeline.events, t)));
     p.onEnd(() => { setPlaying(false); setCursor(-1); });
   }, [timeline]);
-  // 換譜、換檢視、換速度都先停下來，不然聲音會和畫面對不上
-  useEffect(() => { playerRef.current?.stop(); setPlaying(false); setCursor(-1); }, [pick, rate]);
+  // 換譜、換檢視、換速度都先停下來，不然聲音會和畫面對不上（換譜時外層以 key 重建本元件）
+  useEffect(() => { playerRef.current?.stop(); setPlaying(false); setCursor(-1); }, [rate]);
 
   const togglePlay = useCallback(async () => {
     const p = playerRef.current;
@@ -126,21 +151,8 @@ export default function ScoreTab({ token, video }) {
 
   const setViewPersist = (v) => { setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch {} };
 
-  if (scores === null) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>樂譜載入中…</p>;
-  if (!scores.length) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>這個單元還沒有樂譜。</p>;
-
   return (
-    <div style={{ fontFamily: F }} className="score-tab">
-      <style>{SCORE_CSS}</style>
-
-      {scores.length > 1 && (
-        <div className="sc-pickers">
-          {scores.map((s, i) => (
-            <button key={s.id} type="button" onClick={() => setPick(i)} className={"sc-pick" + (i === pick ? " on" : "")}>{s.title}</button>
-          ))}
-        </div>
-      )}
-
+    <>
       <div className="sc-bar">
         <div className="sc-title">
           {current?.title}
@@ -173,7 +185,7 @@ export default function ScoreTab({ token, video }) {
         {view === "jianpu" && <div className="sc-jp" dangerouslySetInnerHTML={{ __html: jianpu?.svg || "" }} />}
         {view === "staff" && !abcReady && <p style={{ color: "#94a3b8", fontSize: 13 }}>五線譜載入中…</p>}
       </div>
-    </div>
+    </>
   );
 }
 
