@@ -6,6 +6,7 @@ import AssignmentsPage from "./AssignmentsPage";
 import UnitCommentsPage from "./UnitCommentsPage";
 import CourseRatingsPage from "./CourseRatingsPage";
 import GamesManagePage from "./GamesManagePage";
+import ScoresManagePage from "./ScoresManagePage";
 import QuizzesPage from "./QuizzesPage";
 
 // ── Course Detail Page (classroom sub-pages) ──────────────────────────────
@@ -15,6 +16,7 @@ export const COURSE_TABS = [
   { id:"unitcomments", label:"單元評論",       icon:MessageSquare },
   { id:"ratings",      label:"課程評價",       icon:Star },
   { id:"games",        label:"互動遊戲",        icon:Gamepad2 },
+  { id:"scores",       label:"曲目",            icon:Music },
   // 測驗管理：學員端 UI 尚未做（播放頁沒有測驗、bootstrap 不帶測驗），先藏起入口避免以為已上線；
   // API（/api/classroom/quiz*、/api/admin/quizzes）與資料表保留，要開放時把這行放回來即可。
   // { id:"quizzes",      label:"測驗管理",       icon:ListChecks },
@@ -81,6 +83,7 @@ export default function CourseDetailPage({ course, onBack, showToast, unreadUnit
       {tab==="unitcomments" && <UnitCommentsPage   showToast={showToast} courseId={course.id} onUnreadChange={onUnreadChange}/>}
       {tab==="ratings"      && <CourseRatingsPage  showToast={showToast} courseId={course.id}/>}
       {tab==="games"        && <GamesManagePage    showToast={showToast} courseId={course.id}/>}
+      {tab==="scores"       && <ScoresManagePage   showToast={showToast} courseId={course.id}/>}
       {tab==="quizzes"      && <QuizzesPage        showToast={showToast} courseId={course.id}/>}
     </div>
   );
