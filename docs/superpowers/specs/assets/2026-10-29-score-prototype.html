@@ -1,0 +1,1265 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}</style>
+</head>
+<body>
+<title>小蜜蜂</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: chapter tabs → control strip → score "paper" → keyboard dock with chord detector → admin + phase-2 notes */
+:root{
+  --bg:#EEF1EE; --paper:#FFFFFF; --ink:#1B201D; --muted:#5F6964; --staff:#3E4541; --rule:#D5DCD7;
+  --accent:#0E6B57; --accent-soft:#DCEEE8; --on-accent:#FFFFFF;
+  --rh:#2D6CB0; --lh:#C45A22; --ok:#23904B; --bad:#D03535; --cursor:#F1C24B;
+  --key-w:#FCFCFA; --key-w-edge:#BFC6C1; --key-b:#1E2220; --key-label:#8A938E;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1211; --paper:#181C1A; --ink:#E6EBE8; --muted:#9AA5A0; --staff:#A9B3AE; --rule:#2B322F;
+  --accent:#45B595; --accent-soft:#1C362F; --on-accent:#08201A;
+  --rh:#72AAEA; --lh:#F0935F; --ok:#52C27F; --bad:#F06A6A; --cursor:#C99A2E;
+  --key-w:#DCE1DE; --key-w-edge:#8E9893; --key-b:#0B0D0C; --key-label:#5F6964; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0F1211; --paper:#181C1A; --ink:#E6EBE8; --muted:#9AA5A0; --staff:#A9B3AE; --rule:#2B322F;
+  --accent:#45B595; --accent-soft:#1C362F; --on-accent:#08201A;
+  --rh:#72AAEA; --lh:#F0935F; --ok:#52C27F; --bad:#F06A6A; --cursor:#C99A2E;
+  --key-w:#DCE1DE; --key-w-edge:#8E9893; --key-b:#0B0D0C; --key-label:#5F6964; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:grid;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted)}
+h1{font-family:var(--serif);font-size:28px;line-height:1.2;margin:2px 0 0;text-wrap:balance}
+.lede{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.units{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.unit{display:grid;gap:2px;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--paper)}
+.unit b{font-size:13px;color:var(--accent)}
+.unit span{font-size:13px;font-weight:500;line-height:1.35}
+.unit[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+@media (max-width:720px){.units{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:flex-start;padding:12px 14px;background:var(--paper);border:1px solid var(--rule);border-radius:12px}
+.group{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.glabel{font-size:12px;color:var(--muted);letter-spacing:.06em;margin-right:2px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:5px 10px;font-size:13px;border-right:1px solid var(--rule);white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.tog{border:1px solid var(--rule);background:transparent;border-radius:8px;padding:5px 10px;font-size:13px;white-space:nowrap}
+.tog[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.tog.rh[aria-pressed="true"]{border-color:var(--rh)}
+.tog.lh[aria-pressed="true"]{border-color:var(--lh)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dot.rh{background:var(--rh)} .dot.lh{background:var(--lh)}
+.play{border:0;background:var(--accent);color:var(--on-accent);border-radius:8px;padding:6px 14px;font-weight:700;min-width:86px}
+.tempo{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-variant-numeric:tabular-nums}
+.tempo input{width:110px;accent-color:var(--accent)}
+select{border:1px solid var(--rule);background:var(--paper);border-radius:6px;padding:3px 4px;font-size:13px}
+.midi{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.midi i{width:8px;height:8px;border-radius:50%;background:var(--rule);display:inline-block}
+.midi.on i{background:var(--ok)} .midi.wait i{background:var(--cursor)}
+
+/* paper */
+.paper{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px 14px 8px}
+.scorehead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:6px;padding:0 4px}
+.scorehead h2{font-family:var(--serif);font-size:20px;margin:0}
+.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.status{font-size:13px;font-weight:500;color:var(--accent);min-height:20px;font-variant-numeric:tabular-nums}
+.status.bad{color:var(--bad)}
+#score{min-width:0}
+#score svg{display:block;width:100%;overflow:visible;user-select:none;-webkit-user-select:none}
+.sl{stroke:var(--staff);stroke-width:1}
+.bl{stroke:var(--staff);stroke-width:1.2}
+.blk{stroke:var(--staff);stroke-width:4}
+.ink{fill:var(--ink)}
+.ev{color:var(--ink);cursor:pointer}
+.ev .head{fill:currentColor}
+.ev .head.hollow{fill:var(--paper);stroke:currentColor;stroke-width:1.6}
+.ev .head.whole{stroke-width:2.2}
+.ev .stem{stroke:currentColor;stroke-width:1.3}
+.ev .led{stroke:var(--staff);stroke-width:1.2}
+.ev .g, .ev text{fill:currentColor}
+.ev .ul{stroke:currentColor;stroke-width:1.4}
+.ev .dash{stroke:currentColor;stroke-width:2}
+.beam{fill:var(--ink)}
+.jp{font-family:var(--serif);font-weight:700}
+.hit{fill:transparent}
+.ev.R.hl,.ev.R.on{color:var(--rh)}
+.ev.L.hl,.ev.L.on{color:var(--lh)}
+.ev.target{color:var(--accent)}
+.ev.done{color:var(--ok)}
+.ev.bad{color:var(--bad)}
+.chord{font-family:var(--sans);font-weight:700;font-size:15px;fill:var(--accent);cursor:pointer}
+.chord .rn{font-family:var(--serif);font-weight:600;fill:var(--muted)}
+.barno{font-size:10px;fill:var(--muted);cursor:pointer}
+.barno:hover{fill:var(--accent)}
+.rowlab{font-size:11px;fill:var(--muted)}
+.cursor{fill:var(--cursor);opacity:.38}
+.chordg{cursor:pointer}
+.diag .wk{fill:var(--key-w);stroke:var(--staff);stroke-width:.7}
+.diag .bk{fill:var(--key-b);stroke:var(--staff);stroke-width:.5}
+.diag .on{fill:var(--accent)}
+.diag .bs{fill:var(--lh)}
+.ev .sh{fill:currentColor;stroke:currentColor;stroke-width:1.2;stroke-linejoin:round}
+.ev .sh.hollow{fill:var(--paper);stroke-width:1.6}
+.sline{stroke:var(--rule);stroke-width:1}
+.loopband{fill:var(--accent);opacity:.06}
+
+/* keyboard */
+.kbdzone{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:12px;align-items:stretch}
+@media (max-width:820px){.kbdzone{grid-template-columns:minmax(0,1fr)}}
+.kbd-wrap{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:10px}
+.kbd{position:relative;height:130px;min-width:680px;touch-action:none;user-select:none;-webkit-user-select:none}
+.key{position:absolute;top:0;border-radius:0 0 5px 5px}
+.key.w{height:100%;background:var(--key-w);border:1px solid var(--key-w-edge);z-index:1}
+.key.b{height:62%;background:var(--key-b);z-index:2;border-radius:0 0 4px 4px}
+.key .lab{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:10px;color:var(--key-label)}
+.key.w.rh{background:var(--rh)} .key.w.lh{background:var(--lh)}
+.key.b.rh{background:var(--rh)} .key.b.lh{background:var(--lh)}
+.key.press{background:var(--accent)!important}
+.key.hint{box-shadow:inset 0 -14px 0 0 var(--cursor)}
+.key.ok{background:var(--ok)!important}
+.key.bad{background:var(--bad)!important}
+.key.hov{box-shadow:inset 0 0 0 2px var(--accent)}
+.detect{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;display:grid;gap:6px;align-content:start}
+.detect .lbl{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.detect .big{font-family:var(--serif);font-size:30px;line-height:1.1;font-weight:700;color:var(--accent);min-height:34px}
+.detect .sub{font-size:13px}
+.detect .tones{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.detect .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.hint-line{margin:0;font-size:12px;color:var(--muted)}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--paper)}
+
+/* tooltip */
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.16);padding:8px 12px 10px;display:grid;gap:4px;min-width:150px}
+.tip .pair{display:flex;align-items:center;gap:10px}
+.tip .pair svg{display:block}
+.tip .tn{font-weight:700;font-size:14px}
+.tip .ts{font-size:12px;color:var(--muted)}
+.tip .lbls{display:flex;gap:10px;font-size:10px;color:var(--muted)}
+
+/* admin + phase 2 */
+.admin{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;display:grid;gap:12px}
+.admin-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.admin-head h3,.phase2 h3{margin:0;font-size:16px;font-family:var(--serif)}
+.admin-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+@media (max-width:820px){.admin-body{grid-template-columns:minmax(0,1fr)}}
+.field{display:grid;gap:4px}
+.field label{font-size:12px;color:var(--muted)}
+textarea,input[type=text]{width:100%;border:1px solid var(--rule);border-radius:8px;background:var(--bg);padding:8px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+textarea{resize:vertical}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--rule);background:var(--paper);border-radius:8px;padding:5px 12px;font-size:13px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.msg{font-size:12px;color:var(--muted)} .msg.err{color:var(--bad)} .msg.ok{color:var(--ok)}
+.syntax{font-size:12px;color:var(--muted);margin:0}
+.syntax code{font-family:ui-monospace,Menlo,monospace;background:var(--bg);border-radius:4px;padding:0 4px;color:var(--ink)}
+.phase2{display:grid;gap:10px}
+.phase2 p{margin:0;color:var(--muted);font-size:13px}
+.p2grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:820px){.p2grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.p2grid{grid-template-columns:minmax(0,1fr)}}
+.p2{border:1px dashed var(--rule);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
+.p2 b{font-size:13px}
+.p2 span{font-size:12px;color:var(--muted)}
+.tag{justify-self:start;font-size:11px;border-radius:99px;padding:0 8px;margin-top:4px;border:1px solid var(--rule);color:var(--muted)}
+.tag.try{border-color:var(--accent);color:var(--accent)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* ===== Apple-style theme ===== */
+:root{
+  --bg:#F5F5F7; --paper:#FFFFFF; --ink:#1D1D1F; --muted:#6E6E73; --staff:#3A3A3C; --rule:#E5E5EA; --fill:#EFEFF4;
+  --accent:#007AFF; --accent-soft:rgba(0,122,255,.12); --on-accent:#FFFFFF;
+  --rh:#5856D6; --lh:#FF9500; --ok:#34C759; --bad:#FF3B30; --cursor:#FFCC00;
+  --key-w:#FFFFFF; --key-w-edge:#D1D1D6; --key-b:#1D1D1F; --key-label:#8E8E93;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --serif:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#000000; --paper:#1C1C1E; --ink:#F5F5F7; --muted:#98989D; --staff:#AEAEB2; --rule:#38383A; --fill:#2C2C2E;
+  --accent:#0A84FF; --accent-soft:rgba(10,132,255,.2); --on-accent:#FFFFFF;
+  --rh:#7D7AFF; --lh:#FF9F0A; --ok:#30D158; --bad:#FF453A; --cursor:#FFD60A;
+  --key-w:#E5E5EA; --key-w-edge:#8E8E93; --key-b:#000000; --key-label:#636366;
+  --shadow:0 0 0 1px rgba(255,255,255,.06); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#000000; --paper:#1C1C1E; --ink:#F5F5F7; --muted:#98989D; --staff:#AEAEB2; --rule:#38383A; --fill:#2C2C2E;
+  --accent:#0A84FF; --accent-soft:rgba(10,132,255,.2); --on-accent:#FFFFFF;
+  --rh:#7D7AFF; --lh:#FF9F0A; --ok:#30D158; --bad:#FF453A; --cursor:#FFD60A;
+  --key-w:#E5E5EA; --key-w-edge:#8E8E93; --key-b:#000000; --key-label:#636366;
+  --shadow:0 0 0 1px rgba(255,255,255,.06); color-scheme:dark }
+body{-webkit-font-smoothing:antialiased;letter-spacing:.01em}
+.wrap{gap:14px;padding-block:24px 48px}
+.ic{width:17px;height:17px;flex:none;display:block}
+.controls,.paper,.kbd-wrap,.detect{border:0;border-radius:18px;box-shadow:var(--shadow);background:var(--paper)}
+.controls{padding:14px 16px;gap:12px 20px}
+.glabel{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--muted)}
+.seg{background:var(--fill);border:0;border-radius:10px;padding:2px;gap:2px}
+.seg button{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:500;color:var(--ink);transition:background .15s}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.tog,.btn{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--fill);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;color:var(--ink);transition:background .15s,color .15s}
+.tog[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.tog.rh[aria-pressed="true"]{background:var(--accent-soft);color:var(--rh)}
+.tog.lh[aria-pressed="true"]{background:var(--accent-soft);color:var(--lh)}
+.tog.rh,.tog.lh{border:0}
+.play{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;padding:7px 18px;font-weight:600;font-size:14px;min-width:96px;background:var(--accent)}
+.play .ic{width:14px;height:14px}
+.tempo{color:var(--ink)}
+.tempo [data-icon]{display:inline-flex;color:var(--muted)}
+select{border:0;background:var(--fill);border-radius:8px;padding:5px 8px}
+.paper{padding:22px 18px 10px}
+.scorehead{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:12px;padding:0 6px;margin-bottom:2px}
+.scorehead h2{font-size:26px;font-weight:600;letter-spacing:.06em;text-align:center;margin:0;grid-column:2}
+.sh-left{grid-column:1;font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}
+.sh-left .keysig{font-weight:600}
+.sh-left .bpm{color:var(--muted);font-size:13px}
+.sh-right{grid-column:3;text-align:right;font-size:12px;color:var(--muted);align-self:end}
+.status{text-align:center;font-size:12px;color:var(--accent);min-height:18px;margin:4px 0 2px}
+.chord{font-family:var(--sans);font-weight:600;fill:var(--accent)}
+.kbd-wrap{padding:12px}
+.key.w{border-color:var(--key-w-edge)}
+.key.press{background:var(--accent)!important}
+.detect{padding:14px 16px}
+.detect .lbl{font-size:11px;font-weight:600;letter-spacing:.04em}
+.detect .big{font-family:var(--sans);font-weight:700;color:var(--ink)}
+.detect .row .tog,.detect .row .btn{font-size:12px;padding:5px 11px}
+.tip{border:0;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06)}
+@media (max-width:560px){.scorehead{grid-template-columns:1fr 1fr}.scorehead h2{grid-column:1/-1;grid-row:1}.sh-left{grid-row:2}.sh-right{grid-row:2;grid-column:2}}
+</style>
+
+<div class="wrap">
+  <nav class="units" id="units" aria-label="課程單元" hidden></nav>
+
+  <section class="controls" aria-label="琴譜設定">
+    <div class="group"><span class="glabel">譜面</span>
+      <div class="seg" id="viewSeg">
+        <button type="button" id="v-staff" data-v="staff" data-icon="staff">五線譜</button><button type="button" id="v-jianpu" data-v="jianpu" data-icon="jianpu">簡譜</button><button type="button" id="v-both" data-v="both" data-icon="both">對照</button>
+      </div>
+    </div>
+    <div class="group"><span class="glabel">Lead Sheet</span>
+      <button type="button" class="tog" id="showLhBtn" data-icon="eye">顯示左手</button>
+      <button type="button" class="tog" id="slashBtn" data-icon="slash">節奏斜線</button>
+    </div>
+    <div class="group"><span class="glabel">和弦標示</span>
+      <div class="seg" id="labelSeg">
+        <button type="button" id="l-name" data-v="name" data-icon="cname">和弦名</button><button type="button" id="l-roman" data-v="roman" data-icon="roman">級數</button><button type="button" id="l-both" data-v="both" data-icon="cboth">兩者</button>
+      </div>
+    </div>
+    <div class="group"><span class="glabel">左手伴奏</span><div class="seg" id="patSeg"></div></div>
+    <div class="group"><span class="glabel">播放</span>
+      <button type="button" class="play" id="playBtn"></button>
+      <label class="tempo"><span data-icon="gauge"></span>速度 <input type="range" id="tempo" min="40" max="140" step="2" value="80"> <span id="tempoVal">80</span></label>
+      <button type="button" class="tog" id="metroBtn" data-icon="metro">節拍器</button>
+      <button type="button" class="tog" id="countBtn" data-icon="timer">預備拍</button>
+      <button type="button" class="tog rh" id="rhBtn" data-icon="speaker">右手</button>
+      <button type="button" class="tog lh" id="lhBtn" data-icon="speaker">左手</button>
+    </div>
+    <div class="group"><span class="glabel">A-B 循環</span>
+      <button type="button" class="tog" id="loopBtn" data-icon="repeat">循環</button>
+      <select id="loopA" aria-label="循環起點小節"></select><span>到</span><select id="loopB" aria-label="循環終點小節"></select>
+    </div>
+    <div class="group" hidden><span class="glabel">練習</span>
+      <button type="button" class="tog" id="waitBtn">等待模式跟彈</button>
+      <div class="seg" id="waitSeg">
+        <button type="button" id="w-R" data-v="R">右手</button><button type="button" id="w-L" data-v="L">左手</button><button type="button" id="w-RL" data-v="RL">雙手</button>
+      </div>
+      <button type="button" class="btn" id="midiBtn">連接 MIDI 鍵盤</button>
+      <span class="midi" id="midiStat"><i></i><span>未連接</span></span>
+    </div>
+  </section>
+
+  <section class="paper" aria-label="琴譜">
+    <div class="scorehead">
+      <div class="sh-left"><div class="keysig" id="keyMeta">1=C　4/4</div><div class="bpm" id="tempoMeta">♩ = 80</div></div>
+      <h2 id="songTitle"></h2>
+      <div class="sh-right" id="credit"></div>
+    </div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div id="score"></div>
+  </section>
+
+  <section class="kbdzone">
+    <div class="kbd-wrap" id="kbdWrap"><div class="kbd" id="kbd" aria-label="虛擬鋼琴鍵盤"></div></div>
+    <aside class="detect" aria-live="polite">
+      <div class="lbl">和弦辨識</div>
+      <div class="big" id="detBig">—</div>
+      <div class="sub" id="detSub">按下鍵盤上的和弦，這裡會顯示是哪個和弦。</div>
+      <div class="tones" id="detTones"></div>
+      <div class="row">
+        <button type="button" class="tog" id="latchBtn" data-icon="pointer">用滑鼠點選組和弦</button>
+        <button type="button" class="btn" id="clearBtn" data-icon="xmark">清除</button>
+      </div>
+    </aside>
+  </section>
+  <p class="hint-line" hidden>電腦鍵盤：<kbd>Z</kbd><kbd>S</kbd><kbd>X</kbd><kbd>D</kbd><kbd>C</kbd><kbd>V</kbd><kbd>G</kbd><kbd>B</kbd><kbd>H</kbd><kbd>N</kbd><kbd>J</kbd><kbd>M</kbd> 從 C3 開始，<kbd>Q</kbd><kbd>2</kbd><kbd>W</kbd><kbd>3</kbd><kbd>E</kbd><kbd>R</kbd><kbd>5</kbd><kbd>T</kbd><kbd>6</kbd><kbd>Y</kbd><kbd>7</kbd><kbd>U</kbd><kbd>I</kbd> 從 C4 開始。點音符或和弦可以試聽。</p>
+
+  <section class="admin" aria-label="後台改譜" hidden>
+    <div class="admin-head">
+      <h3>後台改譜</h3>
+      <button type="button" class="btn" id="adminBtn" aria-expanded="false">打開後台</button>
+    </div>
+    <div class="admin-body" id="adminBody" hidden>
+      <div class="field-col" style="display:grid;gap:10px;min-width:0">
+        <div class="field"><label for="edTitle">曲名</label><input type="text" id="edTitle"></div>
+        <div class="field"><label for="edMel">右手旋律（簡譜）</label><textarea id="edMel" rows="4" spellcheck="false"></textarea></div>
+        <p class="syntax"><code>1</code>–<code>7</code> 音名、<code>0</code> 休止、<code>-</code> 延長一拍、<code>'</code> 高八度、<code>,</code> 低八度、<code>_</code> 八分音符、<code>.</code> 附點、<code>#</code> 升記號、<code>|</code> 小節線。每小節 4 拍。</p>
+        <div class="field"><label for="edCh">和弦（系統依和弦自動產生左手伴奏）</label><input type="text" id="edCh" spellcheck="false"></div>
+        <p class="syntax">用 <code>|</code> 分小節，同一小節可放 2 或 4 個和弦（平均分配拍數）。支援 <code>C</code> <code>Am</code> <code>G7</code> <code>Cmaj7</code> <code>Dm7</code> <code>Bdim</code> <code>Csus4</code>。一律使用原位和弦。</p>
+        <div class="btnrow"><button type="button" class="btn primary" id="edApply">套用到琴譜</button><button type="button" class="btn" id="edReset">還原這個單元</button><span class="msg" id="edMsg"></span></div>
+      </div>
+      <div class="field-col" style="display:grid;gap:10px;min-width:0">
+        <div class="field"><label for="xmlOut">MusicXML</label><textarea id="xmlOut" rows="9" spellcheck="false" placeholder="按「匯出」產生這份譜的 MusicXML，或匯入 MuseScore / Sibelius 匯出的 .musicxml 檔"></textarea></div>
+        <div class="btnrow">
+          <button type="button" class="btn" id="xmlExport">匯出 MusicXML</button>
+          <button type="button" class="btn" id="xmlCopy">複製</button>
+          <label class="btn" for="xmlFile" style="cursor:pointer">匯入檔案</label><input type="file" id="xmlFile" accept=".xml,.musicxml,application/xml,text/xml" hidden>
+          <button type="button" class="btn" id="xmlFromText">匯入上方文字</button>
+        </div>
+        <span class="msg" id="xmlMsg">Demo 版的修改只存在這個瀏覽器分頁裡；正式版會存到後台資料庫。</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const GL = {"gClef":{"d":"M541 -598C539 -615 541 -616 550 -625C706 -770 824 -953 824 -1174C824 -1299 789 -1423 730 -1509C708 -1541 671 -1581 655 -1581C635 -1581 590 -1544 562 -1512C455 -1394 420 -1214 420 -1064C420 -981 431 -887 441 -828C444 -811 445 -808 428 -793C220 -622 0 -416 0 -125C0 125 171 363 524 363C557 363 595 360 624 354C639 351 642 350 645 367C662 464 684 589 684 657C684 870 540 896 455 896C377 896 340 873 340 854C340 844 353 840 386 829C431 816 482 778 482 694C482 615 432 547 344 547C248 547 190 624 190 713C190 806 246 948 464 948C560 948 747 904 747 660C747 577 721 441 706 351C703 334 704 336 724 327C870 269 966 147 966 -16C966 -200 831 -363 619 -363C582 -363 582 -363 577 -389ZM677 -1358C724 -1358 763 -1319 763 -1240C763 -1080 626 -950 513 -851C503 -842 497 -844 494 -863C488 -900 485 -949 485 -995C485 -1220 589 -1358 677 -1358ZM520 -377C524 -350 524 -351 498 -343C372 -300 289 -186 289 -63C289 66 357 158 455 192C467 196 484 200 494 200C505 200 511 193 511 184C511 174 500 170 490 166C429 140 386 78 386 12C386 -71 442 -132 530 -157C553 -163 556 -161 559 -145L631 284C634 300 632 300 611 304C588 308 559 311 530 311C278 311 115 171 115 -29C115 -114 130 -228 249 -363C336 -459 402 -513 469 -567C484 -579 487 -577 490 -562ZM619 -148C616 -166 618 -170 635 -168C752 -158 848 -60 848 66C848 157 793 230 713 271C696 279 693 279 690 262Z"},"fClef":{"d":"M363 -377C112 -377 0 -194 0 -56C0 59 60 158 177 158C268 158 330 95 330 6C330 -86 262 -144 192 -144C153 -144 138 -134 120 -134C101 -134 96 -145 96 -160C96 -217 183 -323 330 -323C482 -323 549 -173 549 53C549 455 350 680 14 871C1 878 -7 886 -7 897C-7 906 -1 914 12 914C19 914 27 912 36 907C390 734 765 478 765 40C765 -210 612 -377 363 -377ZM906 -259C861 -259 827 -225 827 -180C827 -135 861 -101 906 -101C950 -101 985 -135 985 -180C985 -225 950 -259 906 -259ZM907 102C863 102 829 135 829 180C829 225 863 258 907 258C952 258 985 225 985 180C985 135 952 102 907 102Z"},"restWhole":{"d":"M406 157L406 24C406 3 389 -13 369 -13L37 -13C16 -13 0 3 0 24L0 157C0 177 16 194 37 194L369 194C389 194 406 177 406 157Z"},"restHalf":{"d":"M406 -35L406 -167C406 -189 389 -204 369 -204L37 -204C16 -204 0 -189 0 -167L0 -35C0 -14 16 3 37 3L369 3C389 3 406 -14 406 -35Z"},"restQuarter":{"d":"M112 55C135 84 156 111 174 141C177 147 183 158 183 161C183 163 183 166 181 167C179 173 173 174 166 174C160 174 148 171 143 170C141 170 138 170 137 170L125 166C50 166 1 233 1 304C1 376 63 446 168 527C180 536 194 540 206 540C216 540 226 537 228 531C229 527 230 524 230 521C230 508 219 497 207 487C189 487 173 448 170 435C166 423 164 410 164 397C164 338 194 292 255 292C297 292 344 308 369 317L370 318C376 320 379 320 382 320C386 320 389 318 389 314C389 297 351 249 336 232C281 166 236 112 236 32C236 30 236 29 236 27L238 17C238 16 238 14 238 13C243 -71 295 -140 333 -199C337 -206 338 -213 338 -220C338 -235 333 -248 333 -248C333 -248 120 -501 95 -526C88 -533 78 -537 69 -537C55 -537 40 -527 40 -507C40 -500 42 -492 46 -484C52 -468 134 -395 134 -291C134 -238 112 -176 48 -108C33 -94 27 -78 27 -66C27 -46 42 -32 42 -32Z"},"rest8th":{"d":"M193 -154C193 -207 150 -251 96 -251C43 -251 0 -207 0 -154C0 -124 17 -98 39 -81C62 -65 89 -56 117 -56C137 -56 157 -60 173 -66C193 -72 206 -78 225 -88C228 -89 230 -89 232 -89C238 -89 239 -84 239 -76C239 -72 239 -66 238 -60C233 -39 130 248 104 343C104 360 137 361 145 361C161 361 181 359 196 347C200 344 341 -161 341 -161C347 -187 354 -210 356 -217C356 -232 341 -239 338 -240C336 -240 331 -240 323 -235C312 -226 240 -140 193 -140Z"},"accidentalSharp":{"d":"M341 -170C351 -174 359 -186 359 -194L359 -297C359 -304 354 -308 348 -308C346 -308 344 -308 341 -307C341 -307 312 -295 305 -294C295 -294 285 -301 285 -312L285 -488C285 -497 276 -504 265 -504C251 -504 242 -497 242 -488L242 -301C240 -287 236 -268 223 -259C206 -249 157 -229 132 -223C120 -223 115 -240 115 -252L115 -425C115 -433 105 -441 95 -441C81 -441 72 -433 72 -425L72 -230C72 -210 63 -196 55 -192C46 -187 17 -176 17 -176C7 -173 0 -161 0 -153L0 -50C0 -42 4 -37 13 -37L16 -39C17 -39 39 -48 50 -53L52 -55C63 -55 72 -40 72 -29L72 114C72 130 65 143 56 147C48 150 17 163 17 163C7 166 0 177 0 186L0 288C0 297 4 301 13 301L16 300C17 300 37 291 50 287C52 285 53 285 55 285C65 285 72 301 72 308L72 485C72 494 81 501 91 501C105 501 115 494 115 485L115 285C115 266 122 256 130 253L217 217C217 217 219 217 219 217L222 216C235 216 242 233 242 242L242 422C242 431 251 438 261 438C276 438 285 431 285 422L285 217C285 206 291 189 301 184C311 180 341 168 341 168C351 164 359 153 359 144L359 42C359 35 354 30 348 30C346 30 344 30 341 32L304 46C295 46 285 37 285 20L285 -114C285 -124 292 -151 304 -156ZM242 65C233 94 166 122 132 122C124 122 117 120 115 115C112 109 111 78 111 43C111 -1 112 -52 115 -63C118 -88 184 -118 220 -118C230 -118 239 -115 242 -109C245 -102 248 -66 248 -27C248 12 245 52 242 65Z"},"accidentalFlat":{"d":"M17 245C22 251 26 252 30 252C35 252 39 249 39 249C82 225 117 186 153 161C281 72 325 -16 325 -82C325 -164 262 -216 196 -220C171 -220 137 -209 117 -196C108 -189 92 -176 85 -176C82 -176 81 -176 78 -177C68 -181 62 -192 62 -202C63 -233 72 -579 72 -608C72 -624 59 -632 45 -632C24 -632 1 -618 0 -592C0 -592 6 230 17 245ZM68 117C68 117 63 30 63 -27C63 -50 65 -68 66 -73C76 -102 134 -144 167 -144C209 -144 226 -96 226 -60C226 17 160 95 98 134C92 137 88 138 84 138C71 138 68 124 68 117Z"},"flag8thUp":{"d":"M343 1138C343 1138 380 1001 380 888C380 708 305 539 215 395C141 281 81 157 58 19C53 -4 42 -13 27 -13C12 -13 0 -9 0 9L0 353C95 370 232 566 284 688C305 737 318 819 318 904C318 969 308 1037 284 1102C281 1110 279 1117 279 1123C279 1146 294 1159 302 1165C311 1171 336 1162 343 1138Z"},"flag8thDown":{"d":"M346 -1094C366 -1034 376 -962 376 -897C376 -812 340 -691 318 -642C265 -521 193 -405 0 -340L0 -1C0 13 12 20 23 20C36 20 55 12 58 -12C82 -148 189 -274 262 -387C353 -530 441 -701 441 -881C441 -994 412 -1096 400 -1142C396 -1158 387 -1164 377 -1164C356 -1164 331 -1136 346 -1094Z"},"timeSig4":{"d":"M521 107L521 -202C521 -213 520 -226 504 -226C491 -226 484 -223 475 -213L338 -48C333 -40 325 -32 325 -14L325 107L131 107C246 9 477 -318 481 -336L482 -340C482 -353 472 -361 461 -361C448 -361 389 -359 363 -359C337 -359 272 -361 261 -361C248 -361 228 -357 228 -334C228 -156 86 45 43 105L35 117C35 117 35 118 35 118L33 120C30 127 29 132 29 137C29 151 40 161 58 161L325 161L325 252C325 291 294 302 268 302C245 302 235 315 235 330C235 344 240 360 262 360L569 360C583 360 598 350 598 330C598 310 580 301 566 301C552 301 521 292 521 246L521 161L626 161C641 161 648 151 648 134C648 117 642 107 626 107Z"}};
+(function(){
+"use strict";
+/* ---------- icons ---------- */
+const F='fill="currentColor" stroke="none"';
+const ICONS={
+ staff:'<path d="M3 5.5h18M3 9.5h18M3 13.5h18M3 17.5h18"/><ellipse cx="14" cy="15.5" rx="2.7" ry="2" '+F+'/><path d="M16.6 15.3V4"/>',
+ jianpu:'<text x="12" y="16.3" text-anchor="middle" font-size="13" font-weight="700" letter-spacing="-0.5" font-family="-apple-system,system-ui,sans-serif" '+F+'>123</text>',
+ both:'<rect x="4" y="3.5" width="16" height="7" rx="2"/><rect x="4" y="13.5" width="16" height="7" rx="2"/>',
+ eye:'<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+ slash:'<path d="M4 18L8 6M10.5 18l4-12M17 18l4-12"/>',
+ cname:'<text x="12" y="18.5" text-anchor="middle" font-size="19" font-weight="700" font-family="-apple-system,system-ui,sans-serif" '+F+'>C</text>',
+ roman:'<text x="12" y="17.5" text-anchor="middle" font-size="15" font-weight="700" font-family="Georgia,serif" '+F+'>IV</text>',
+ cboth:'<text x="12" y="16.5" text-anchor="middle" font-size="12" letter-spacing="-0.5" font-weight="700" font-family="-apple-system,system-ui,sans-serif" '+F+'>C·I</text>',
+ 'pat-block':'<circle cx="12" cy="6" r="2.4" '+F+'/><circle cx="12" cy="12" r="2.4" '+F+'/><circle cx="12" cy="18" r="2.4" '+F+'/>',
+ 'pat-bass':'<circle cx="5" cy="18" r="2.2" '+F+'/><circle cx="12" cy="8" r="2.2" '+F+'/><circle cx="12" cy="13.5" r="2.2" '+F+'/><circle cx="19" cy="18" r="2.2" '+F+'/>',
+ 'pat-broken':'<circle cx="4" cy="18" r="2.2" '+F+'/><circle cx="9.3" cy="7" r="2.2" '+F+'/><circle cx="14.7" cy="12.5" r="2.2" '+F+'/><circle cx="20" cy="7" r="2.2" '+F+'/>',
+ 'pat-arp':'<path d="M3 19l4.5-5 4.5-6 4.5 6 4.5 5"/><circle cx="12" cy="7.5" r="1.8" '+F+'/>',
+ play:'<path d="M7.5 4.5v15l12-7.5z" '+F+'/>',
+ stop:'<rect x="6" y="6" width="12" height="12" rx="2.5" '+F+'/>',
+ restart:'<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4v4.5H9"/>',
+ gauge:'<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/>',
+ metro:'<path d="M8.5 3h7l3.5 18H5z"/><path d="M12 15l5-9"/><path d="M6.5 16h11"/>',
+ timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>',
+ speaker:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/>',
+ repeat:'<path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H19l-3-3M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H5l3 3"/>',
+ pointer:'<path d="M6 3.5l12 7-5.3 1.6L9.8 17.5z"/>',
+ xmark:'<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'
+};
+function icon(n){return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[n]||'')+'</svg>';}
+document.querySelectorAll('[data-icon]').forEach(el=>el.insertAdjacentHTML('afterbegin',icon(el.dataset.icon)));
+
+/* ---------- data ---------- */
+const UNITS_DEF=[
+ {ch:'',title:'小蜜蜂',song:'小蜜蜂',credit:'德國民謠',mel:"5 3 3 - | 4 2 2 - | 1 2 3 4 | 5 5 5 - | 5 3 3 - | 4 2 2 - | 1 3 5 5 | 3 - - - | 2 2 2 2 | 2 3 4 - | 3 3 3 3 | 3 4 5 - | 5 3 3 - | 4 2 2 - | 1 3 5 5 | 1 - - -",chords:"C | G | C | G | C | G | C | C | G | G | C | C | C | G | C G | C",pattern:'block',label:'both'}
+];
+const UNITS=UNITS_DEF.map(u=>Object.assign({},u));
+// gen(chord, lengthInBeats) → [[offset, dur, pitches]]
+const PATTERNS={
+ block:{label:'柱式',gen:(c,L)=>[[0,L,c.slash?[c.low].concat(c.tones):c.tones]]},
+ bass:{label:'根音＋和弦',gen:(c,L)=>{
+   const b=c.low>=48?c.low-12:c.low;
+   if(L<2)return [[0,L,[b].concat(c.tones)]];
+   const o=[];for(let k=0;k<L;k++)o.push(k%2?[k,1,c.tones]:[k,1,[k===2&&!c.slash?b+7:b]]);return o;}},
+ broken:{label:'分解',gen:(c,L)=>{
+   const up=p=>p<=c.low?p+12:p, seq=[c.low,up(c.f),up(c.t),up(c.f)];
+   return seq.slice(0,Math.max(1,L)).map((p,i)=>[i,1,[p]]);}},
+ arp:{label:'琶音',gen:(c,L)=>{
+   const a=c.low>=48?c.low-12:c.low, rr=c.r>=48?c.r-12:c.r, d=c.t-c.r;
+   const seq=[a,rr+7,rr+12,rr+12+d,rr+19,rr+12+d,rr+12,rr+7];
+   return seq.slice(0,Math.max(1,L*2)).map((p,i)=>[i*0.5,0.5,[p]]);}}
+};
+const S={unit:0,view:'both',label:'both',pattern:'block',tempo:80,metro:true,countIn:true,handR:true,handL:true,loop:false,loopA:1,loopB:2,wait:false,waitHands:'R',latch:false,showLH:false,diag:false,slash:true};
+let song=null;
+
+/* ---------- pitch helpers ---------- */
+const SPELL=[[0,0],[0,1],[1,0],[1,1],[2,0],[3,0],[3,1],[4,0],[4,1],[5,0],[5,1],[6,0]];
+const LET='CDEFGAB', SOL=['Do','Re','Mi','Fa','Sol','La','Si'], PCN=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const MAJ=[0,2,4,5,7,9,11];
+function spell(m){const pc=((m%12)+12)%12,oct=Math.floor(m/12)-1,[st,acc]=SPELL[pc];return{m,st,acc,oct,dia:oct*7+st};}
+function noteName(m){const s=spell(m);return LET[s.st]+(s.acc?'♯':'')+s.oct;}
+function jpNum(m){const s=spell(m);return (s.acc?'♯':'')+(s.st+1);}
+function durName(d){return {0.5:'八分音符',1:'四分音符',1.5:'附點四分音符',2:'二分音符',3:'附點二分音符',4:'全音符'}[d]||(d+' 拍');}
+const isBlack=m=>[1,3,6,8,10].includes(((m%12)+12)%12);
+
+/* ---------- parsing ---------- */
+function parseMelody(text){
+  const bars=text.split('|').map(s=>s.trim()).filter(Boolean);
+  if(!bars.length) throw new Error('旋律是空的');
+  const evs=[];
+  bars.forEach((b,bi)=>{
+    let t=0,last=null;
+    for(const tk of b.split(/\s+/)){
+      if(tk==='-'){ if(!last) throw new Error('第 '+(bi+1)+' 小節開頭不能是「-」'); last.dur+=1; t+=1; continue; }
+      const m=tk.match(/^(_?)(#?)([0-7])([',]*)(\.?)$/);
+      if(!m) throw new Error('看不懂「'+tk+'」（第 '+(bi+1)+' 小節）');
+      let dur=m[1]?0.5:1; if(m[5]) dur*=1.5;
+      let pitches=[];
+      if(m[3]!=='0'){ let p=60+MAJ[+m[3]-1]+(m[2]?1:0); for(const c of m[4]) p+=c==="'"?12:-12; pitches=[p]; }
+      last={bar:bi,start:bi*4+t,dur,pitches,hand:'R'}; evs.push(last); t+=dur;
+    }
+    if(Math.abs(t-4)>0.001) throw new Error('第 '+(bi+1)+' 小節有 '+t+' 拍，需要剛好 4 拍');
+  });
+  return {events:evs,bars:bars.length};
+}
+const CQ={'':{iv:[0,4,7],zh:'大三和弦',xml:'major'},'m':{iv:[0,3,7],zh:'小三和弦',xml:'minor'},'7':{iv:[0,4,7,10],zh:'屬七和弦',xml:'dominant'},
+ 'maj7':{iv:[0,4,7,11],zh:'大七和弦',xml:'major-seventh'},'m7':{iv:[0,3,7,10],zh:'小七和弦',xml:'minor-seventh'},'dim':{iv:[0,3,6],zh:'減三和弦',xml:'diminished'},
+ 'aug':{iv:[0,4,8],zh:'增三和弦',xml:'augmented'},'sus2':{iv:[0,2,7],zh:'掛二和弦',xml:'suspended-second'},'sus4':{iv:[0,5,7],zh:'掛四和弦',xml:'suspended-fourth'}};
+function pcOf(letter,acc){let pc=MAJ['CDEFGAB'.indexOf(letter)];if(acc==='#'||acc==='♯')pc++;if(acc==='b'||acc==='♭')pc--;return (pc+12)%12;}
+function accSym(a){return a==='#'||a==='♯'?'♯':a==='b'||a==='♭'?'♭':'';}
+function lhRoot(pc){let r=36+pc;if(r<41)r+=12;return r;}
+function makeChord(tk){
+  const m=tk.match(/^([A-G])([#b♯♭]?)(maj7|m7|m|7|dim|aug|sus2|sus4)?(?:\/([A-G])([#b♯♭]?))?$/);
+  if(!m) throw new Error('看不懂和弦「'+tk+'」，請用 C、Am、G7 這種寫法');
+  if(m[4]) throw new Error('「'+tk+'」是轉位和弦，請改用原位寫法（例如 '+tk.split('/')[0]+'）');
+  const pc=pcOf(m[1],m[2]), q=m[3]||'', iv=CQ[q].iv, r=lhRoot(pc);
+  let tones=iv.map(i=>r+i), low=r, slash=false, bassPc=pc;
+  if(m[4]){
+    bassPc=pcOf(m[4],m[5]);
+    if(bassPc!==pc){slash=true;low=lhRoot(bassPc);if(low>=r)low-=12;if(low<36)low+=12;tones=tones.map(t=>t<=low?t+12:t).sort((a,b)=>a-b);}
+  }
+  const name=m[1]+accSym(m[2])+q+(m[4]?'/'+m[4]+accSym(m[5]):'');
+  return {pc,q,bassPc,slash,name,r,t:r+iv[1],f:r+iv[2],low,tones,zh:CQ[q].zh,
+    letter:m[1],alter:accSym(m[2])==='♯'?1:accSym(m[2])==='♭'?-1:0,bLetter:m[4],bAlter:accSym(m[5])==='♯'?1:accSym(m[5])==='♭'?-1:0};
+}
+// returns array of bars, each an array of chords (split evenly across the bar)
+function parseChords(text){
+  const t=text.trim();if(!t) throw new Error('和弦是空的');
+  const bars=t.includes('|')?t.split('|').map(s=>s.trim()).filter(Boolean).map(s=>s.split(/\s+/)):t.split(/\s+/).map(x=>[x]);
+  return bars.map((toks,bi)=>{
+    if(![1,2,4].includes(toks.length)) throw new Error('第 '+(bi+1)+' 小節有 '+toks.length+' 個和弦，一小節請放 1、2 或 4 個');
+    return toks.map(makeChord);
+  });
+}
+const ROMAN={0:'I',2:'II',4:'III',5:'IV',7:'V',9:'VI',11:'VII'};
+const SUP={'6':'⁶','4':'⁴','5':'⁵','3':'³','2':'²','7':'⁷'};
+function roman(c){
+  const R=ROMAN[c.pc];if(!R)return '?';
+  const lower=['m','m7','dim'].includes(c.q);
+  let s=lower?R.toLowerCase():R;
+  if(c.q==='dim')s+='°';if(c.q==='aug')s+='+';
+  const seventh=['7','maj7','m7'].includes(c.q);
+  if(c.slash){
+    const d=(c.bassPc-c.pc+12)%12;
+    let fig=null;
+    if(d===3||d===4)fig=seventh?'65':'6';else if(d===7||d===6||d===8)fig=seventh?'43':'64';else if(d===10||d===11)fig='42';
+    if(fig)return s+(c.q==='maj7'?'maj':'')+fig.split('').map(x=>SUP[x]).join('');
+    return s+(seventh?(c.q==='maj7'?'maj7':'7'):'')+'/'+jpNum(c.bassPc+60);
+  }
+  if(c.q==='7'||c.q==='m7')s+='7';if(c.q==='maj7')s+='maj7';if(c.q==='sus2')s+='sus2';if(c.q==='sus4')s+='sus4';
+  return s;
+}
+function chordTones(c){return c.slash?[c.low].concat(c.tones):c.tones;}
+
+function build(){
+  const u=UNITS[S.unit];
+  const mel=parseMelody(u.mel), cb=parseChords(u.chords);
+  const bars=mel.bars, chords=[];
+  for(let i=0;i<bars;i++){const list=cb[i%cb.length],L=4/list.length;list.forEach((c,k)=>chords.push({bar:i,start:i*4+k*L,len:L,c}));}
+  const lh=[];
+  chords.forEach(seg=>{for(const [s,d,p] of PATTERNS[S.pattern].gen(seg.c,seg.len)) lh.push({bar:seg.bar,start:seg.start+s,dur:d,pitches:p,hand:'L'});});
+  const events=mel.events.concat(lh).sort((a,b)=>a.start-b.start||(a.hand<b.hand?1:-1));
+  events.forEach((e,i)=>e.id=i);
+  song={bars,chords,events,title:u.song};
+  S.loopA=Math.min(S.loopA,bars); S.loopB=Math.min(Math.max(S.loopB,S.loopA),bars);
+}
+
+/* ---------- glyph helper ---------- */
+function gly(name,x,y,sp,cls){return '<path class="'+(cls||'g')+'" d="'+GL[name].d+'" transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') scale('+(sp/360)+')"/>';}
+
+/* ---------- rendering ---------- */
+const scoreEl=document.getElementById('score');
+let LAY=null; // layout info
+function yOf(dia,clef,top){return clef==='T'?top+40-(dia-30)*5:top+40-(dia-18)*5;}
+function ledgerDias(dia,clef){const lo=clef==='T'?30:18,hi=lo+8,o=[];if(dia<lo)for(let d=lo-2;d>=dia;d-=2)o.push(d);if(dia>hi)for(let d=hi+2;d<=dia;d+=2)o.push(d);return o;}
+function isDotted(d){return d===1.5||d===3||d===0.75;}
+
+function render(){
+  const W=Math.max(320,Math.floor(scoreEl.clientWidth));
+  const bpl=W>=720?4:2, lines=Math.ceil(song.bars/bpl);
+  const showStaff=S.view!=='jianpu', showJp=S.view!=='staff', lh=S.showLH, slash=!lh&&S.slash;
+  const LM=showStaff?72:30, barW=(W-LM-6)/bpl, beatW=(barW-26)/4;
+  const L={barNoY:10,chordY:24};
+  let y=32;
+  if(lh){
+    if(showStaff&&showJp){L.tTop=y+26;L.jR=L.tTop+80;L.bTop=L.jR+44;L.jL=L.bTop+76;L.h=L.jL+84;}
+    else if(showStaff){L.tTop=y+26;L.bTop=L.tTop+106;L.h=L.bTop+74;}
+    else {L.jR=y+26;L.jL=L.jR+22;L.h=L.jL+84;}
+  } else {
+    if(showStaff&&showJp){L.tTop=y+26;L.jR=L.tTop+80;if(slash){L.sl=L.jR+52;L.h=L.sl+22;}else L.h=L.jR+30;}
+    else if(showStaff){L.tTop=y+26;if(slash){L.sl=L.tTop+40+46;L.h=L.sl+22;}else L.h=L.tTop+40+34;}
+    else {L.jR=y+26;if(slash){L.sl=L.jR+50;L.h=L.sl+22;}else L.h=L.jR+30;}
+  }
+  const xOfBeat=b=>{const bar=Math.floor(b/4),col=bar%bpl;return LM+col*barW+16+(b-bar*4)*beatW+7;};
+  LAY={W,bpl,lines,LM,barW,beatW,L,showStaff,showJp,xOfBeat};
+  const rowTop=showStaff?L.tTop:L.jR-18;
+  let rowBot;
+  if(slash)rowBot=L.sl+8;
+  else if(lh)rowBot=L.jL!=null?L.jL+72:L.bTop+40;
+  else rowBot=showJp?L.jR+18:L.tTop+40;
+  const staffBot=lh?L.bTop+40:L.tTop+40;
+  let html='';
+  for(let li=0;li<lines;li++){
+    const b0=li*bpl, nb=Math.min(bpl,song.bars-b0), xEnd=LM+nb*barW;
+    let s='<svg viewBox="0 0 '+W+' '+L.h+'" height="'+L.h+'" data-line="'+li+'" role="img" aria-label="第 '+(b0+1)+'–'+(b0+nb)+' 小節">';
+    if(S.loop){const a=S.loopA-1,bb=S.loopB-1;for(let c=0;c<nb;c++){const bar=b0+c;if(bar>=a&&bar<=bb)s+='<rect class="loopband" x="'+(LM+c*barW)+'" y="'+(rowTop-30)+'" width="'+barW+'" height="'+(rowBot-rowTop+34)+'"/>';}}
+    s+='<rect class="cursor" data-cur="'+li+'" x="-50" y="'+(rowTop-10)+'" width="16" height="'+(rowBot-rowTop+20)+'" rx="4" visibility="hidden"/>';
+    if(showStaff){
+      const tops=lh?[L.tTop,L.bTop]:[L.tTop];
+      for(const top of tops) for(let i=0;i<5;i++) s+='<line class="sl" x1="4" x2="'+xEnd+'" y1="'+(top+i*10)+'" y2="'+(top+i*10)+'"/>';
+      s+=gly('gClef',10,L.tTop+30,10,'ink');
+      if(lh)s+=gly('fClef',10,L.bTop+10,10,'ink');
+      if(li===0){for(const top of tops)s+=gly('timeSig4',46,top+10,10,'ink')+gly('timeSig4',46,top+30,10,'ink');}
+      s+='<line class="bl" x1="4" x2="4" y1="'+L.tTop+'" y2="'+staffBot+'"/>';
+    } else {
+      s+='<text class="rowlab" x="2" y="'+(L.jR+5)+'">右</text>';
+      if(lh)s+='<text class="rowlab" x="2" y="'+(L.jL+3*22-10)+'">左</text>';
+    }
+    if(showStaff&&showJp){s+='<text class="rowlab" x="46" y="'+(L.jR+5)+'">右</text>';if(lh)s+='<text class="rowlab" x="46" y="'+(L.jL+3*22-10)+'">左</text>';}
+    if(slash){s+='<text class="rowlab" x="'+(showStaff?40:2)+'" y="'+(L.sl+4)+'">節奏</text><line class="sline" x1="'+LM+'" x2="'+xEnd+'" y1="'+L.sl+'" y2="'+L.sl+'"/>';}
+    for(let c=0;c<nb;c++){
+      const bar=b0+c, xb=LM+c*barW, xe=xb+barW, last=bar===song.bars-1;
+      if(last){s+='<line class="bl" x1="'+(xe-7)+'" x2="'+(xe-7)+'" y1="'+rowTop+'" y2="'+rowBot+'"/><line class="blk" x1="'+(xe-2)+'" x2="'+(xe-2)+'" y1="'+rowTop+'" y2="'+rowBot+'"/>';}
+      else s+='<line class="bl" x1="'+xe+'" x2="'+xe+'" y1="'+rowTop+'" y2="'+rowBot+'"/>';
+      s+='<text class="barno" data-barno="'+bar+'" x="'+(xb+3)+'" y="'+L.barNoY+'">'+(bar+1)+'</text>';
+    }
+    song.chords.forEach((seg,ci)=>{
+      if(seg.bar<b0||seg.bar>=b0+nb)return;
+      const ch=seg.c, cx=xOfBeat(seg.start)-5, room=seg.len*beatW-6;
+      let lab='';
+      if(S.label==='name')lab=esc(ch.name);
+      else if(S.label==='roman')lab='<tspan class="rn">'+roman(ch)+'</tspan>';
+      else lab=esc(ch.name)+'<tspan class="rn" dx="5" font-size="13">'+roman(ch)+'</tspan>';
+      s+='<g class="chordg" data-chord="'+ci+'"><text class="chord" x="'+cx+'" y="'+L.chordY+'">'+lab+'</text>';
+      s+='<rect class="hit" x="'+cx+'" y="'+(L.chordY-16)+'" width="'+Math.max(30,Math.min(60,room))+'" height="22"/></g>';
+    });
+    const evs=song.events.filter(e=>e.bar>=b0&&e.bar<b0+nb);
+    const shown=lh?evs:evs.filter(e=>e.hand==='R');
+    if(showStaff) s+=staffSVG(shown,xOfBeat,L);
+    if(showJp) s+=jianpuSVG(shown,xOfBeat,L,beatW);
+    if(slash) s+=slashSVG(evs.filter(e=>e.hand==='L'),xOfBeat,L.sl);
+    s+='</svg>';
+    html+=s;
+  }
+  scoreEl.innerHTML=html;
+  indexEls();
+  refreshStates();
+}
+// hover popup: two-octave keyboard (C4–B5) with the root-position chord marked
+function chordTip(c){
+  const ps=CQ[c.q].iv.map(i=>60+c.pc+i), on=new Set(ps), root=60+c.pc;
+  const kw=17,nW=14,w=kw*nW,h=74,bh=44;
+  let s='<svg width="'+(w+2)+'" height="'+(h+2)+'" viewBox="-1 -1 '+(w+2)+' '+(h+2)+'" aria-hidden="true" class="diag">';
+  let wi=0;const blacks=[];
+  for(let m=60;m<84;m++){
+    if(isBlack(m)){blacks.push([m,wi]);continue;}
+    const x=wi*kw;s+='<rect class="wk" x="'+x+'" y="0" width="'+kw+'" height="'+h+'" rx="2"/>';
+    if(on.has(m))s+='<circle class="'+(m===root?'bs':'on')+'" cx="'+(x+kw/2)+'" cy="'+(h-12)+'" r="6"/><text x="'+(x+kw/2)+'" y="'+(h-8)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">'+jpNum(m).replace('♯','')+'</text>';
+    wi++;
+  }
+  for(const [m,i] of blacks){
+    const x=i*kw-kw*0.32;s+='<rect class="bk" x="'+x+'" y="0" width="'+(kw*0.64)+'" height="'+bh+'" rx="1.5"/>';
+    if(on.has(m))s+='<circle class="'+(m===root?'bs':'on')+'" cx="'+(i*kw)+'" cy="'+(bh-8)+'" r="4.6"/>';
+  }
+  s+='</svg>';
+  return '<div class="tn">'+esc(c.name)+' '+esc(c.zh)+' · '+esc(roman(c))+'</div>'+s+
+    '<div class="ts">原位：'+ps.map(noteName).join(' ')+' · 簡譜 '+ps.map(jpNum).join(' ')+'　<span style="color:var(--lh)">●</span> 根音</div>';
+}
+function chordDiag(x,y,w,c){
+  const kw=w/7,h=Math.round(w*0.36),pcs=new Set(c.tones.map(t=>t%12));
+  let s='<g class="diag">';
+  const WH=[0,2,4,5,7,9,11],BL=[[1,1],[3,2],[6,4],[8,5],[10,6]];
+  WH.forEach((pc,i)=>{s+='<rect class="wk" x="'+(x+i*kw).toFixed(1)+'" y="'+y+'" width="'+kw.toFixed(1)+'" height="'+h+'"/>';});
+  BL.forEach(([pc,i])=>{s+='<rect class="bk" x="'+(x+i*kw-kw*0.32).toFixed(1)+'" y="'+y+'" width="'+(kw*0.64).toFixed(1)+'" height="'+(h*0.6).toFixed(1)+'"/>';});
+  const r=Math.max(1.6,kw*0.27);
+  WH.forEach((pc,i)=>{if(pcs.has(pc)||(c.slash&&pc===c.bassPc))s+='<circle class="'+(c.slash&&pc===c.bassPc?'bs':'on')+'" cx="'+(x+i*kw+kw/2).toFixed(1)+'" cy="'+(y+h-r-1.5).toFixed(1)+'" r="'+r.toFixed(1)+'"/>';});
+  BL.forEach(([pc,i])=>{if(pcs.has(pc)||(c.slash&&pc===c.bassPc))s+='<circle class="'+(c.slash&&pc===c.bassPc?'bs':'on')+'" cx="'+(x+i*kw).toFixed(1)+'" cy="'+(y+h*0.6-r-1).toFixed(1)+'" r="'+(r*0.85).toFixed(1)+'"/>';});
+  return s+'</g>';
+}
+function slashSVG(evs,xOf,y){
+  let s='',beams='';
+  const groups=[];let cur=null;
+  for(const e of evs){
+    if(e.dur===0.5){const bt=Math.floor(e.start);if(cur&&cur.bt===bt&&Math.abs(cur.end-e.start)<1e-6){cur.items.push(e);cur.end+=0.5;}else{cur={bt,items:[e],end:e.start+0.5};groups.push(cur);}}
+    else cur=null;
+  }
+  const single=new Set(groups.filter(g=>g.items.length===1).map(g=>g.items[0].id));
+  for(const e of evs){
+    const x=xOf(e.start), hollow=e.dur>=2;
+    s+='<g class="ev L" data-ev="'+e.id+'"><polygon class="sh'+(hollow?' hollow':'')+'" points="'+(x-6)+','+(y+5)+' '+(x-2)+','+(y+5)+' '+(x+6)+','+(y-5)+' '+(x+2)+','+(y-5)+'"/>';
+    if(e.dur<4){s+='<line class="stem" x1="'+(x+5.6)+'" x2="'+(x+5.6)+'" y1="'+(y-4)+'" y2="'+(y-28)+'"/>';if(single.has(e.id))s+=gly('flag8thUp',x+5,y-28,10);}
+    if(isDotted(e.dur))s+='<circle class="g" cx="'+(x+10)+'" cy="'+(y+2)+'" r="1.8"/>';
+    s+='<rect class="hit" x="'+(x-9)+'" y="'+(y-30)+'" width="18" height="38"/></g>';
+  }
+  for(const g of groups){if(g.items.length<2)continue;const x1=xOf(g.items[0].start)+5,x2=xOf(g.items[g.items.length-1].start)+6.2;beams+='<rect class="beam" x="'+x1+'" y="'+(y-28)+'" width="'+(x2-x1)+'" height="4.5"/>';}
+  return s+beams;
+}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);}
+
+function staffSVG(evs,xOf,L){
+  const infos=[];
+  for(const ev of evs){
+    const clef=ev.hand==='R'?'T':'B', top=clef==='T'?L.tTop:L.bTop, mid=clef==='T'?34:22, x=xOf(ev.start);
+    const inf={ev,clef,top,x,mid};
+    if(ev.pitches.length){
+      inf.ps=ev.pitches.map(spell).sort((a,b)=>a.dia-b.dia);
+      inf.ys=inf.ps.map(p=>yOf(p.dia,clef,top));
+      const lowD=inf.ps[0].dia, hiD=inf.ps[inf.ps.length-1].dia;
+      inf.up=(mid-lowD)>(hiD-mid);
+      inf.minY=Math.min(...inf.ys); inf.maxY=Math.max(...inf.ys); inf.midY=yOf(mid,clef,top);
+      if(ev.dur<4){
+        let tip=inf.up?inf.minY-34:inf.maxY+34;
+        if(inf.up&&tip>inf.midY)tip=inf.midY; if(!inf.up&&tip<inf.midY)tip=inf.midY;
+        inf.tip=tip;
+      }
+    }
+    infos.push(inf);
+  }
+  // beam groups (eighths within one beat)
+  let beams='';
+  const groups=[];
+  for(const h of ['R','L']){
+    let cur=null;
+    for(const inf of infos.filter(i=>i.ev.hand===h)){
+      const e=inf.ev;
+      if(e.dur===0.5&&e.pitches.length){
+        const bt=Math.floor(e.start);
+        if(cur&&cur.bt===bt&&Math.abs(cur.end-e.start)<1e-6){cur.items.push(inf);cur.end=e.start+e.dur;}
+        else{cur={bt,items:[inf],end:e.start+e.dur};groups.push(cur);}
+      } else cur=null;
+    }
+  }
+  for(const g of groups){
+    if(g.items.length<2){g.items[0].flag=true;continue;}
+    const avg=g.items.reduce((a,i)=>a+(i.mid-(i.ps[0].dia+i.ps[i.ps.length-1].dia)/2),0)/g.items.length;
+    const up=avg>0;
+    const tip=up?Math.min(...g.items.map(i=>i.minY))-30:Math.max(...g.items.map(i=>i.maxY))+30;
+    g.items.forEach(i=>{i.up=up;i.tip=tip;});
+    const x1=g.items[0].x+(up?5.2:-5.2), x2=g.items[g.items.length-1].x+(up?5.2:-5.2);
+    beams+='<rect class="beam" x="'+(x1-0.65)+'" y="'+(up?tip:tip-4.5)+'" width="'+(x2-x1+1.3)+'" height="4.5"/>';
+  }
+  let s='';
+  for(const inf of infos){
+    const e=inf.ev,x=inf.x;
+    s+='<g class="ev '+e.hand+'" data-ev="'+e.id+'">';
+    if(!e.pitches.length){
+      const nm=e.dur>=4?'restWhole':e.dur>=2?'restHalf':e.dur>=1?'restQuarter':'rest8th';
+      s+=gly(nm,x-5,nm==='restWhole'?inf.top+10:inf.top+20,10);
+      if(isDotted(e.dur))s+='<circle class="g" cx="'+(x+9)+'" cy="'+(inf.top+15)+'" r="1.8"/>';
+      s+='<rect class="hit" x="'+(x-10)+'" y="'+(inf.top-4)+'" width="20" height="48"/></g>';continue;
+    }
+    const led=new Set();inf.ps.forEach(p=>ledgerDias(p.dia,inf.clef).forEach(d=>led.add(d)));
+    led.forEach(d=>{const y=yOf(d,inf.clef,inf.top);s+='<line class="led" x1="'+(x-9.5)+'" x2="'+(x+9.5)+'" y1="'+y+'" y2="'+y+'"/>';});
+    inf.ps.forEach((p,i)=>{
+      const y=inf.ys[i];
+      if(p.acc)s+=gly('accidentalSharp',x-19,y,10);
+      if(e.dur>=4)s+='<ellipse class="head hollow whole" cx="'+x+'" cy="'+y+'" rx="6.6" ry="4.3"/>';
+      else s+='<ellipse class="head'+(e.dur>=2?' hollow':'')+'" cx="'+x+'" cy="'+y+'" rx="5.7" ry="4.1" transform="rotate(-20 '+x+' '+y+')"/>';
+      if(isDotted(e.dur))s+='<circle class="g" cx="'+(x+10)+'" cy="'+(p.dia%2===0?y-5:y)+'" r="1.8"/>';
+    });
+    if(e.dur<4){
+      const sx=x+(inf.up?5.2:-5.2), y0=inf.up?inf.maxY:inf.minY;
+      s+='<line class="stem" x1="'+sx+'" x2="'+sx+'" y1="'+y0+'" y2="'+inf.tip+'"/>';
+      if(inf.flag)s+=gly(inf.up?'flag8thUp':'flag8thDown',sx-0.6,inf.tip,10);
+    }
+    const hy1=Math.min(inf.minY,inf.tip??inf.minY)-6,hy2=Math.max(inf.maxY,inf.tip??inf.maxY)+6;
+    s+='<rect class="hit" x="'+(x-9)+'" y="'+hy1+'" width="18" height="'+(hy2-hy1)+'"/></g>';
+  }
+  return s+beams;
+}
+
+function jpDigit(p,x,base,size){
+  // returns svg for a jianpu numeral with octave dots; p=null → rest "0"
+  if(p==null)return '<text class="jp" x="'+x+'" y="'+base+'" font-size="'+size+'" text-anchor="middle">0</text>';
+  const sp=spell(p), n=sp.st+1, d=sp.oct-4, r=size*0.1;
+  let s='';
+  if(sp.acc)s+='<text class="jp" x="'+(x-size*0.42)+'" y="'+(base-size*0.42)+'" font-size="'+(size*0.55)+'" text-anchor="middle">♯</text>';
+  s+='<text class="jp" x="'+x+'" y="'+base+'" font-size="'+size+'" text-anchor="middle">'+n+'</text>';
+  for(let k=0;k<Math.abs(d);k++){
+    const cy=d>0?base-size*0.92-k*size*0.27:base+size*0.27+k*size*0.27;
+    s+='<circle cx="'+x+'" cy="'+cy.toFixed(1)+'" r="'+r.toFixed(2)+'"/>';
+  }
+  return s;
+}
+function lowDots(p){if(p==null)return 0;const d=spell(p).oct-4;return d<0?-d:0;}
+
+function jianpuSVG(evs,xOf,L,beatW){
+  let s='';
+  const groups=[];
+  for(const h of ['R','L']){
+    let cur=null;
+    for(const e of evs.filter(e=>e.hand===h)){
+      if(e.dur===0.5){const bt=Math.floor(e.start);if(cur&&cur.bt===bt&&Math.abs(cur.end-e.start)<1e-6){cur.items.push(e);cur.end+=0.5;}else{cur={bt,items:[e],end:e.start+0.5,h};groups.push(cur);}}
+      else cur=null;
+    }
+  }
+  for(const e of evs){
+    const x=xOf(e.start);
+    s+='<g class="ev '+e.hand+'" data-ev="'+e.id+'">';
+    let dashY, y1, y2;
+    if(e.hand==='R'){
+      const base=L.jR+6;
+      s+=jpDigit(e.pitches[0]??null,x,base,19);
+      dashY=base-6; y1=L.jR-22; y2=L.jR+20;
+    } else {
+      const lb=L.jL+3*22-6, ps=e.pitches.slice().sort((a,b)=>a-b);
+      if(!ps.length)s+=jpDigit(null,x,lb,16);
+      ps.forEach((p,i)=>{s+=jpDigit(p,x,lb-i*22,16);});
+      dashY=lb-5; y1=lb-ps.length*22-4; y2=lb+12;
+    }
+    const extra=Math.round(e.dur>=2?e.dur-1:0);
+    for(let k=1;k<=extra;k++){const dx=xOf(e.start+k);s+='<line class="dash" x1="'+(dx-5)+'" x2="'+(dx+5)+'" y1="'+dashY+'" y2="'+dashY+'"/>';}
+    if(e.dur===1.5){s+='<circle cx="'+(x+10)+'" cy="'+(dashY+2)+'" r="1.9"/>';}
+    s+='<rect class="hit" x="'+(x-10)+'" y="'+y1+'" width="20" height="'+(y2-y1)+'"/></g>';
+  }
+  for(const g of groups){
+    const base=g.h==='R'?L.jR+6:L.jL+3*22-6;
+    const ld=Math.max(...g.items.map(e=>lowDots(e.pitches[0]??null)));
+    const yy=base+4+ld*(g.h==='R'?5.2:4.4);
+    const x1=xOf(g.items[0].start)-6,x2=xOf(g.items[g.items.length-1].start)+6;
+    // underline belongs to the first event's group for colouring simplicity
+    s+='<line class="ul" style="stroke:var(--ink)" x1="'+x1+'" x2="'+x2+'" y1="'+yy+'" y2="'+yy+'"/>';
+  }
+  return s;
+}
+
+/* ---------- element index & state classes ---------- */
+let EL={}, CUR=[];
+function indexEls(){
+  EL={};
+  scoreEl.querySelectorAll('[data-ev]').forEach(n=>{(EL[n.dataset.ev]||(EL[n.dataset.ev]=[])).push(n);});
+  CUR=[...scoreEl.querySelectorAll('[data-cur]')];
+}
+const evClass={}; // id -> Set of classes
+function setEvClass(id,cls,on){
+  const set=evClass[id]||(evClass[id]=new Set());
+  if(on)set.add(cls);else set.delete(cls);
+  (EL[id]||[]).forEach(n=>n.classList.toggle(cls,on));
+}
+function clearEvClass(cls){for(const id in evClass){if(evClass[id].has(cls))setEvClass(id,cls,false);}}
+function refreshStates(){for(const id in evClass)for(const c of evClass[id])(EL[id]||[]).forEach(n=>n.classList.add(c));}
+function showCursor(beat){
+  if(beat==null){CUR.forEach(c=>c.setAttribute('visibility','hidden'));return;}
+  const bar=Math.floor(beat/4), li=Math.floor(bar/LAY.bpl);
+  CUR.forEach((c,i)=>{
+    if(i===li){c.setAttribute('x',(LAY.xOfBeat(beat)-8).toFixed(1));c.setAttribute('visibility','visible');}
+    else c.setAttribute('visibility','hidden');
+  });
+  if(li!==showCursor.last){showCursor.last=li;const svg=CUR[li]&&CUR[li].ownerSVGElement;if(svg){const r=svg.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)svg.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}}
+}
+
+/* ---------- audio ---------- */
+let ctx=null, master=null;
+function ensureAudio(){
+  if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;ctx=new AC();const comp=ctx.createDynamicsCompressor();master=ctx.createGain();master.gain.value=0.42;master.connect(comp);comp.connect(ctx.destination);}
+  if(ctx.state==='suspended')ctx.resume();
+  return true;
+}
+function voice(m,t,vel){
+  vel=vel==null?0.55:vel;
+  const f=440*Math.pow(2,(m-69)/12), g=ctx.createGain(), lp=ctx.createBiquadFilter();
+  lp.type='lowpass';lp.frequency.value=Math.min(9000,f*7);lp.Q.value=0.3;
+  const o1=ctx.createOscillator();o1.type='triangle';o1.frequency.value=f;
+  const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=f*2;const g2=ctx.createGain();g2.gain.value=0.22;
+  const o3=ctx.createOscillator();o3.type='sine';o3.frequency.value=f;o3.detune.value=5;const g3=ctx.createGain();g3.gain.value=0.5;
+  o1.connect(lp);o2.connect(g2);g2.connect(lp);o3.connect(g3);g3.connect(lp);lp.connect(g);g.connect(master);
+  const decay=Math.max(1.1,3.2-(m-36)/22);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vel,t+0.005);g.gain.exponentialRampToValueAtTime(vel*0.32,t+0.28);g.gain.exponentialRampToValueAtTime(0.0006,t+decay);
+  const os=[o1,o2,o3];os.forEach(o=>{o.start(t);o.stop(t+decay+0.05);});
+  return {stop(at){at=Math.max(at,t+0.03);try{if(g.gain.cancelAndHoldAtTime)g.gain.cancelAndHoldAtTime(at);else g.gain.cancelScheduledValues(at);g.gain.setTargetAtTime(0,at,0.07);os.forEach(o=>{try{o.stop(at+0.5);}catch(_){}});}catch(_){}}};
+}
+function playPitches(ps,dur,vel){if(!ensureAudio())return;const t=ctx.currentTime+0.01;ps.forEach(p=>voice(p,t,vel).stop(t+(dur||0.9)));}
+function click(t,accent){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=accent?1760:1180;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.5:0.3,t+0.002);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);o.connect(g);g.connect(master);o.start(t);o.stop(t+0.06);}
+
+/* ---------- playback ---------- */
+let P=null;
+function range(){return S.loop?[(S.loopA-1)*4,S.loopB*4]:[0,song.bars*4];}
+function startPlay(fromBeat,noCount){
+  if(!ensureAudio())return;
+  stopPlay();
+  const [rs,re]=range(); let start=fromBeat==null?rs:fromBeat; if(start<rs||start>=re)start=rs;
+  const spb=60/S.tempo, cnt=(S.countIn&&!noCount)?4:0, now=ctx.currentTime+0.1;
+  for(let i=0;i<cnt;i++)click(now+i*spb,i===0);
+  P={t0:now+cnt*spb,spb,rs,re,start,L0:re-start,Lr:re-rs,schedP:0,active:new Set(),keys:new Map()};
+  P.timer=setInterval(schedule,25);schedule();
+  P.raf=requestAnimationFrame(frame);
+  setPlayBtn();
+}
+function timelineToSong(p){if(p<P.L0)return P.start+p;if(!S.loop)return null;return P.rs+((p-P.L0)%P.Lr);}
+function schedule(){
+  if(!P)return;
+  const horizon=(ctx.currentTime+0.2-P.t0)/P.spb;
+  if(horizon<=P.schedP)return;
+  const a=P.schedP,b=horizon;
+  // cycles
+  const segs=[];
+  if(a<P.L0)segs.push({off:0,base:P.start,from:a,to:Math.min(b,P.L0)});
+  if(S.loop&&b>P.L0){
+    let k=Math.max(0,Math.floor((a-P.L0)/P.Lr));
+    for(;;k++){const off=P.L0+k*P.Lr;if(off>=b)break;const from=Math.max(a,off),to=Math.min(b,off+P.Lr);if(to>from)segs.push({off,base:P.rs,from,to});}
+  }
+  for(const sg of segs){
+    const sFrom=sg.base+(sg.from-sg.off), sTo=sg.base+(sg.to-sg.off);
+    for(const e of song.events){
+      if(e.start>=sFrom-1e-9&&e.start<sTo-1e-9&&e.pitches.length&&(e.hand==='R'?S.handR:S.handL)){
+        const t=P.t0+(sg.off+(e.start-sg.base))*P.spb;
+        e.pitches.forEach(p=>voice(p,t,e.hand==='R'?0.6:0.42).stop(t+e.dur*P.spb*0.96));
+      }
+    }
+    if(S.metro){for(let bt=Math.ceil(sFrom-1e-9);bt<sTo-1e-9;bt++){const t=P.t0+(sg.off+(bt-sg.base))*P.spb;click(t,bt%4===0);}}
+  }
+  P.schedP=b;
+}
+function frame(){
+  if(!P)return;
+  const p=(ctx.currentTime-P.t0)/P.spb;
+  if(p<0){setStatus('預備 '+Math.ceil(-p)+'…');showCursor(P.start);}
+  else{
+    const sb=timelineToSong(p);
+    if(sb==null){ if(p>P.L0+0.6){stopPlay();setStatus('播放完畢');return;} }
+    else{
+      const bar=Math.floor(sb/4);
+      setStatus('第 '+(bar+1)+' 小節 · 第 '+(Math.floor(sb%4)+1)+' 拍');
+      showCursor(sb);
+      const now=new Set();
+      for(const e of song.events){if(e.pitches.length&&sb>=e.start-1e-6&&sb<e.start+e.dur-0.02)now.add(e.id);}
+      for(const id of P.active)if(!now.has(id))setEvClass(id,'on',false);
+      for(const id of now)if(!P.active.has(id))setEvClass(id,'on',true);
+      P.active=now;
+      const kR=new Set(),kL=new Set();
+      for(const id of now){const e=song.events[id];if(e.hand==='R'&&S.handR)e.pitches.forEach(x=>kR.add(x));if(e.hand==='L'&&S.handL)e.pitches.forEach(x=>kL.add(x));}
+      setKeyClass('rh',kR);setKeyClass('lh',kL);
+    }
+  }
+  P.raf=requestAnimationFrame(frame);
+}
+function stopPlay(){
+  if(!P)return;
+  clearInterval(P.timer);cancelAnimationFrame(P.raf);
+  if(ctx){try{master.gain.setTargetAtTime(0,ctx.currentTime,0.03);const g=master;setTimeout(()=>{g.gain.setTargetAtTime(0.42,ctx.currentTime,0.01);},160);}catch(_){}}
+  P=null;clearEvClass('on');setKeyClass('rh',new Set());setKeyClass('lh',new Set());
+  if(!W)showCursor(null);
+  setPlayBtn();
+}
+function currentBeat(){if(!P)return null;const p=(ctx.currentTime-P.t0)/P.spb;return p<0?P.start:timelineToSong(p);}
+function setPlayBtn(){const b=document.getElementById('playBtn');if(S.wait){b.innerHTML=icon('restart')+'重來';return;}b.innerHTML=P?icon('stop')+'停止':icon('play')+'播放';}
+function setStatus(t,bad){const s=document.getElementById('status');s.textContent=t;s.classList.toggle('bad',!!bad);}
+
+/* ---------- keyboard ---------- */
+const KLO=36,KHI=84, kbd=document.getElementById('kbd'), KEY={};
+(function buildKbd(){
+  const whites=[];for(let m=KLO;m<=KHI;m++)if(!isBlack(m))whites.push(m);
+  const ww=100/whites.length, bw=ww*0.6;
+  let wi=0,h='';
+  for(let m=KLO;m<=KHI;m++){
+    if(!isBlack(m)){h+='<div class="key w" data-m="'+m+'" style="left:'+(wi*ww)+'%;width:'+ww+'%">'+(m%12===0?'<span class="lab">'+noteName(m)+'</span>':'')+'</div>';wi++;}
+    else h+='<div class="key b" data-m="'+m+'" style="left:'+(wi*ww-bw/2)+'%;width:'+bw+'%"></div>';
+  }
+  kbd.innerHTML=h;
+  kbd.querySelectorAll('.key').forEach(k=>KEY[k.dataset.m]=k);
+})();
+const keyState={rh:new Set(),lh:new Set(),hint:new Set()};
+function setKeyClass(cls,set){
+  const old=keyState[cls];
+  for(const m of old)if(!set.has(m)&&KEY[m])KEY[m].classList.remove(cls);
+  for(const m of set)if(KEY[m])KEY[m].classList.add(cls);
+  keyState[cls]=new Set(set);
+}
+function flashKey(m,cls){const k=KEY[m];if(!k)return;k.classList.add(cls);setTimeout(()=>k.classList.remove(cls),260);}
+
+/* ---------- note input (MIDI / computer keys / mouse) ---------- */
+const held=new Map(); // midi -> voice handle|null
+function noteOn(m,vel){
+  if(!ensureAudio())return;
+  if(held.has(m))return;
+  held.set(m,voice(m,ctx.currentTime+0.005,vel==null?0.6:0.25+vel*0.6));
+  if(KEY[m])KEY[m].classList.add('press');
+  detect();
+  if(W)waitInput(m);
+}
+function noteOff(m){
+  const v=held.get(m);if(v)v.stop(ctx.currentTime);
+  held.delete(m);if(KEY[m])KEY[m].classList.remove('press');
+  detect();
+}
+// mouse / touch on the on-screen keyboard
+const ptr=new Map();
+kbd.addEventListener('pointerdown',e=>{
+  const k=e.target.closest('.key');if(!k)return;e.preventDefault();
+  const m=+k.dataset.m;
+  if(S.latch){
+    if(held.has(m)){noteOff(m);}else{ensureAudio();playPitches([m],0.9);held.set(m,null);k.classList.add('press');detect();if(W)waitInput(m);}
+    return;
+  }
+  ptr.set(e.pointerId,m);noteOn(m);
+});
+const ptrEnd=e=>{const m=ptr.get(e.pointerId);if(m!=null){ptr.delete(e.pointerId);noteOff(m);}};
+kbd.addEventListener('pointerup',ptrEnd);kbd.addEventListener('pointercancel',ptrEnd);kbd.addEventListener('pointerleave',ptrEnd);
+// computer keyboard
+const KMAP={};
+'zsxdcvgbhnjm,'.split('').forEach((c,i)=>KMAP[c]=48+i);
+'q2w3er5t6y7ui'.split('').forEach((c,i)=>KMAP[c]=60+i);
+'9o0p'.split('').forEach((c,i)=>KMAP[c]=73+i);
+window.addEventListener('keydown',e=>{
+  if(e.repeat||e.metaKey||e.ctrlKey||e.altKey)return;
+  const tg=e.target;if(tg&&(tg.tagName==='TEXTAREA'||tg.tagName==='INPUT'||tg.tagName==='SELECT'))return;
+  if(e.key===' '&&tg===document.body){e.preventDefault();togglePlay();return;}
+  const m=KMAP[e.key.toLowerCase()];if(m==null)return;
+  e.preventDefault();noteOn(m);
+});
+window.addEventListener('keyup',e=>{const m=KMAP[(e.key||'').toLowerCase()];if(m!=null)noteOff(m);});
+window.addEventListener('blur',()=>{[...held.keys()].forEach(noteOff);});
+
+/* ---------- MIDI ---------- */
+const midiStat=document.getElementById('midiStat');
+function setMidi(state,text){midiStat.className='midi '+state;midiStat.querySelector('span').textContent=text;}
+function onMidi(ev){const [st,d1,d2]=ev.data,cmd=st&0xf0;if(cmd===0x90&&d2>0)noteOn(d1,d2/127);else if(cmd===0x80||(cmd===0x90&&d2===0))noteOff(d1);}
+async function connectMidi(){
+  if(!navigator.requestMIDIAccess){setMidi('','這個瀏覽器不支援 MIDI，請改用 Chrome 或 Edge');return;}
+  try{
+    const acc=await navigator.requestMIDIAccess();
+    const bind=()=>{const names=[];acc.inputs.forEach(inp=>{inp.onmidimessage=onMidi;names.push(inp.name);});setMidi(names.length?'on':'wait',names.length?'已連接：'+names.join('、'):'已啟用，請插上 MIDI 鍵盤');};
+    bind();acc.onstatechange=bind;
+  }catch(err){setMidi('','無法啟用 MIDI：目前的頁面環境擋住了 MIDI，請下載 HTML 檔用 Chrome 開啟');}
+}
+
+/* ---------- chord recognition ---------- */
+const QUAL=[
+ {iv:[0,4,7],n:'',zh:'大三和弦',st:'4 + 3 個半音'},{iv:[0,3,7],n:'m',zh:'小三和弦',st:'3 + 4 個半音'},
+ {iv:[0,3,6],n:'dim',zh:'減三和弦',st:'3 + 3 個半音'},{iv:[0,4,8],n:'aug',zh:'增三和弦',st:'4 + 4 個半音'},
+ {iv:[0,4,7,10],n:'7',zh:'屬七和弦'},{iv:[0,4,7,11],n:'maj7',zh:'大七和弦'},{iv:[0,3,7,10],n:'m7',zh:'小七和弦'},
+ {iv:[0,2,7],n:'sus2',zh:'掛二和弦'},{iv:[0,5,7],n:'sus4',zh:'掛四和弦'}
+];
+function recognize(notes){
+  const pcs=[...new Set(notes.map(m=>m%12))];
+  if(pcs.length<3)return null;
+  const bass=Math.min(...notes)%12;
+  for(const q of QUAL){
+    if(q.iv.length!==pcs.length)continue;
+    for(const r of pcs){
+      const rel=pcs.map(p=>(p-r+12)%12).sort((a,b)=>a-b);
+      if(rel.join()===q.iv.join()){
+        let inv='原位';
+        if(bass!==r){const d=(bass-r+12)%12;inv=(d===3||d===4)?'第一轉位':(d===7||d===6||d===8)?'第二轉位':'第三轉位';}
+        const name=PCN[r]+q.n;
+        let rn='';if(!q.n||q.n==='m'){const R=ROMAN[r];if(R)rn=q.n==='m'?R.toLowerCase():R;}
+        return {name,q,inv,root:r,rn};
+      }
+    }
+  }
+  return null;
+}
+function detect(){
+  const notes=[...held.keys()].sort((a,b)=>a-b);
+  const big=document.getElementById('detBig'),sub=document.getElementById('detSub'),tones=document.getElementById('detTones');
+  if(!notes.length){big.textContent='—';sub.textContent='按下鍵盤上的和弦，這裡會顯示是哪個和弦。';tones.textContent='';return;}
+  const nameList=notes.map(noteName).join(' '), jpList=notes.map(jpNum).join(' ');
+  if(notes.length===1){const s=spell(notes[0]);big.textContent=noteName(notes[0]);sub.textContent=SOL[s.st]+(s.acc?'（升）':'')+' · 簡譜 '+jpNum(notes[0]);tones.textContent='';return;}
+  const r=recognize(notes);
+  if(r){big.textContent=r.name;sub.textContent=r.q.zh+' · '+r.inv+(r.rn?' · C 大調 '+r.rn+' 級':'');tones.textContent=nameList+'　簡譜 '+jpList+(r.q.st?'　'+r.q.st:'');}
+  else{big.textContent='?';sub.textContent=notes.length===2?'再加一個音就能組成和弦':'這組音不是常見的三和弦或七和弦';tones.textContent=nameList+'　簡譜 '+jpList;}
+}
+
+/* ---------- wait mode ---------- */
+let W=null;
+function waitStart(){
+  stopPlay();clearEvClass('done');clearEvClass('target');
+  const [rs,re]=range(), hands=S.waitHands;
+  const evs=song.events.filter(e=>hands.includes(e.hand)&&e.pitches.length&&e.start>=rs&&e.start<re);
+  const steps=[...new Set(evs.map(e=>e.start))].sort((a,b)=>a-b);
+  W={steps,i:0,got:new Set(),ok:0,bad:0,rs,re,hands};
+  waitShow();
+}
+function waitEvsAt(b){return song.events.filter(e=>W.hands.includes(e.hand)&&e.pitches.length&&Math.abs(e.start-b)<1e-6);}
+function waitExpected(){const s=new Set();waitEvsAt(W.steps[W.i]).forEach(e=>e.pitches.forEach(p=>s.add(p)));return s;}
+function waitStatus(){const tot=W.steps.length;setStatus('等待模式 · 第 '+Math.min(W.i+1,tot)+' / '+tot+' 步 · 正確 '+W.ok+' · 彈錯 '+W.bad,false);}
+function waitShow(){
+  clearEvClass('target');
+  if(W.i>=W.steps.length){
+    setKeyClass('hint',new Set());
+    const acc=W.ok+W.bad?Math.round(W.ok/(W.ok+W.bad)*100):100;
+    setStatus('完成！正確 '+W.ok+' 步、彈錯 '+W.bad+' 次，正確率 '+acc+'%。按「重來」再練一次。');
+    showCursor(null);return;
+  }
+  const b=W.steps[W.i];
+  waitEvsAt(b).forEach(e=>setEvClass(e.id,'target',true));
+  setKeyClass('hint',waitExpected());
+  showCursor(b);waitStatus();
+}
+function waitInput(m){
+  if(!W||W.i>=W.steps.length)return;
+  const exp=waitExpected();
+  if(exp.has(m)){
+    W.got.add(m);flashKey(m,'ok');
+    if([...exp].every(p=>W.got.has(p))){
+      const b=W.steps[W.i], nb=W.i+1<W.steps.length?W.steps[W.i+1]:W.re, spb=60/S.tempo, t0=ctx.currentTime+0.02;
+      waitEvsAt(b).forEach(e=>{setEvClass(e.id,'target',false);setEvClass(e.id,'done',true);});
+      song.events.filter(e=>!W.hands.includes(e.hand)&&e.pitches.length&&e.start>=b-1e-6&&e.start<nb-1e-6&&(e.hand==='R'?S.handR:S.handL))
+        .forEach(e=>{const t=t0+(e.start-b)*spb;e.pitches.forEach(p=>voice(p,t,0.38).stop(t+e.dur*spb*0.95));});
+      W.ok++;W.i++;W.got.clear();waitShow();
+    }
+  } else {
+    W.bad++;flashKey(m,'bad');
+    waitEvsAt(W.steps[W.i]).forEach(e=>{setEvClass(e.id,'bad',true);setTimeout(()=>setEvClass(e.id,'bad',false),260);});
+    waitStatus();
+  }
+}
+function waitStop(){W=null;clearEvClass('target');clearEvClass('done');setKeyClass('hint',new Set());showCursor(null);setStatus('');}
+
+/* ---------- tooltip ---------- */
+const tip=document.getElementById('tip');
+function miniStaff(ps,forceClef){
+  const sp=7, top=30, w=82, h=92;
+  const avg=ps.reduce((a,b)=>a+b,0)/ps.length;
+  const clef=forceClef||(avg>=58?'T':'B'), ref=clef==='T'?30:18;
+  const yy=d=>top+4*sp-(d-ref)*sp/2;
+  let s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true">';
+  for(let i=0;i<5;i++)s+='<line x1="2" x2="'+(w-2)+'" y1="'+(top+i*sp)+'" y2="'+(top+i*sp)+'" stroke="var(--staff)" stroke-width="1"/>';
+  s+=clef==='T'?gly('gClef',6,top+3*sp,sp,'ink'):gly('fClef',6,top+sp,sp,'ink');
+  const x=54, sps=ps.map(spell);
+  const led=new Set();sps.forEach(p=>ledgerDias(p.dia,clef).forEach(d=>led.add(d)));
+  led.forEach(d=>{s+='<line x1="'+(x-7)+'" x2="'+(x+7)+'" y1="'+yy(d)+'" y2="'+yy(d)+'" stroke="var(--staff)" stroke-width="1"/>';});
+  sps.forEach(p=>{const y=yy(p.dia);if(p.acc)s+=gly('accidentalSharp',x-15,y,sp,'ink');s+='<ellipse cx="'+x+'" cy="'+y+'" rx="4.3" ry="3.1" transform="rotate(-20 '+x+' '+y+')" fill="var(--ink)"/>';});
+  return s+'</svg>';
+}
+function miniJp(ps){
+  const n=ps.length, h=Math.max(60,n*30+22), w=40, s0=ps.slice().sort((a,b)=>a-b);
+  let s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true" style="fill:var(--ink)">';
+  const base=h/2+(n-1)*15+8;
+  s0.forEach((p,i)=>{s+=jpDigit(p,w/2,base-i*30,24);});
+  return s+'</svg>';
+}
+function tipHTML(ps,title,sub,forceClef){
+  return '<div class="pair">'+miniStaff(ps,forceClef)+miniJp(ps)+'</div><div class="lbls"><span>五線譜</span><span style="margin-left:auto">簡譜</span></div><div class="tn">'+esc(title)+'</div><div class="ts">'+esc(sub)+'</div>';
+}
+function showTip(html,rect){
+  tip.innerHTML=html;tip.hidden=false;
+  const tw=tip.offsetWidth,th=tip.offsetHeight;
+  let x=rect.left+rect.width/2-tw/2, y=rect.top-th-10;
+  if(y<8)y=rect.bottom+10;
+  x=Math.max(8,Math.min(x,innerWidth-tw-8));
+  tip.style.left=x+'px';tip.style.top=y+'px';
+}
+function hideTip(){tip.hidden=true;}
+let hovEv=null,hovKeys=[];
+function setHoverKeys(ps){hovKeys.forEach(m=>KEY[m]&&KEY[m].classList.remove('hov'));hovKeys=ps||[];hovKeys.forEach(m=>KEY[m]&&KEY[m].classList.add('hov'));}
+function evTip(e){
+  const ps=e.pitches;
+  if(!ps.length)return tipHTML([e.hand==='R'?71:50],'休止符','簡譜寫作 0 · '+durName(e.dur));
+  const hand=e.hand==='R'?'右手':'左手';
+  if(ps.length===1){const s=spell(ps[0]);return tipHTML(ps,noteName(ps[0])+' · '+SOL[s.st]+' · '+jpNum(ps[0]),hand+' · '+durName(e.dur),e.hand==='R'?'T':'B');}
+  const r=recognize(ps);
+  return tipHTML(ps,(r?r.name+' '+r.q.zh:'和弦')+' · '+ps.map(jpNum).join(' '),hand+' · '+ps.map(noteName).join(' ')+' · '+durName(e.dur),'B');
+}
+scoreEl.addEventListener('pointerover',ev=>{
+  const g=ev.target.closest('[data-ev]');
+  if(g){
+    const id=g.dataset.ev;if(hovEv===id)return;
+    if(hovEv!=null)setEvClass(hovEv,'hl',false);
+    hovEv=id;setEvClass(id,'hl',true);
+    const e=song.events[id];setHoverKeys(e.pitches);
+    showTip(evTip(e),g.getBoundingClientRect());return;
+  }
+  const c=ev.target.closest('[data-chord]');
+  if(c){
+    const ch=song.chords[+c.dataset.chord].c, ps=chordTones(ch);
+    clearHover();setHoverKeys(ps);
+    showTip(chordTip(ch),c.getBoundingClientRect());
+  }
+});
+function clearHover(){if(hovEv!=null){setEvClass(hovEv,'hl',false);hovEv=null;}setHoverKeys([]);}
+scoreEl.addEventListener('pointerout',ev=>{
+  const to=ev.relatedTarget;
+  const from=ev.target.closest('[data-ev],[data-chord]');
+  if(from&&to&&from.contains(to))return;
+  if(to&&to.closest&&to.closest('[data-ev],[data-chord]'))return;
+  clearHover();hideTip();
+});
+scoreEl.addEventListener('click',ev=>{
+  const g=ev.target.closest('[data-ev]');
+  if(g){const e=song.events[g.dataset.ev];if(e.pitches.length)playPitches(e.pitches,Math.min(1.6,e.dur*60/S.tempo));return;}
+  const c=ev.target.closest('[data-chord]');
+  if(c){playPitches(chordTones(song.chords[+c.dataset.chord].c),1.2);return;}
+  const n=ev.target.closest('[data-barno]');
+  if(n&&!S.wait){startPlay(+n.dataset.barno*4,true);}
+});
+kbd.addEventListener('pointerover',ev=>{
+  const k=ev.target.closest('.key');if(!k)return;
+  const m=+k.dataset.m, s=spell(m);
+  showTip(tipHTML([m],noteName(m)+' · '+SOL[s.st]+(s.acc?'（升）':'')+' · '+jpNum(m),'電腦鍵盤或 MIDI 也能彈這個音',m>=60?'T':'B'),k.getBoundingClientRect());
+});
+kbd.addEventListener('pointerout',ev=>{if(!ev.relatedTarget||!ev.relatedTarget.closest||!ev.relatedTarget.closest('.key'))hideTip();});
+
+/* ---------- UI wiring ---------- */
+const $=id=>document.getElementById(id);
+function pressSeg(segId,val){$(segId).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===val)));}
+function pressTog(id,on){$(id).setAttribute('aria-pressed',String(!!on));}
+function renderUnits(){
+  $('units').innerHTML=UNITS.map((u,i)=>'<button type="button" class="unit" id="unit-'+i+'" data-i="'+i+'" aria-pressed="'+(i===S.unit)+'"><b>'+u.ch+'</b><span>'+esc(u.title)+'</span></button>').join('');
+}
+function renderPatSeg(){
+  $('patSeg').innerHTML=Object.entries(PATTERNS).map(([k,v])=>'<button type="button" id="p-'+k+'" data-v="'+k+'">'+icon('pat-'+k)+v.label+'</button>').join('');
+  pressSeg('patSeg',S.pattern);
+}
+function renderLoopSel(){
+  const opts=n=>Array.from({length:song.bars},(_,i)=>'<option value="'+(i+1)+'"'+(i+1===n?' selected':'')+'>第 '+(i+1)+' 小節</option>').join('');
+  $('loopA').innerHTML=opts(S.loopA);$('loopB').innerHTML=opts(S.loopB);
+}
+function syncHead(){
+  $('songTitle').textContent=song.title;
+  $('keyMeta').textContent='1=C　4/4';
+  $('tempoMeta').textContent='♩ = '+S.tempo;
+  $('credit').textContent=UNITS[S.unit].credit||'';
+}
+function syncEditors(){const u=UNITS[S.unit];$('edTitle').value=u.song;$('edMel').value=u.mel;$('edCh').value=u.chords;}
+function full(){
+  if(S.wait){W=null;}
+  build();renderLoopSel();syncHead();
+  for(const id in evClass)evClass[id].clear();
+  render();
+  if(S.wait)waitStart();
+}
+function selectUnit(i){
+  stopPlay();S.unit=i;const u=UNITS[i];S.pattern=u.pattern;S.label=u.label;S.loopA=1;S.loopB=2;
+  renderUnits();pressSeg('patSeg',S.pattern);pressSeg('labelSeg',S.label);syncEditors();full();
+}
+$('units').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b)selectUnit(+b.dataset.i);});
+$('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.view=b.dataset.v;pressSeg('viewSeg',S.view);hideTip();render();if(W)waitShow();else if(P)showCursor.last=-1;});
+$('labelSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.label=b.dataset.v;pressSeg('labelSeg',S.label);render();if(W)waitShow();});
+$('patSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;stopPlay();S.pattern=b.dataset.v;pressSeg('patSeg',S.pattern);full();});
+function togglePlay(){if(S.wait){waitStart();return;}if(P)stopPlay();else{startPlay();}}
+$('playBtn').addEventListener('click',togglePlay);
+$('tempo').addEventListener('input',e=>{S.tempo=+e.target.value;$('tempoVal').textContent=S.tempo;syncHead();if(P){const b=currentBeat();startPlay(b==null?null:b,true);}});
+$('metroBtn').addEventListener('click',()=>{S.metro=!S.metro;pressTog('metroBtn',S.metro);});
+$('countBtn').addEventListener('click',()=>{S.countIn=!S.countIn;pressTog('countBtn',S.countIn);});
+$('rhBtn').addEventListener('click',()=>{S.handR=!S.handR;pressTog('rhBtn',S.handR);});
+$('lhBtn').addEventListener('click',()=>{S.handL=!S.handL;pressTog('lhBtn',S.handL);});
+$('loopBtn').addEventListener('click',()=>{S.loop=!S.loop;pressTog('loopBtn',S.loop);stopPlay();render();if(W)waitStart();});
+function loopSel(){let a=+$('loopA').value,b=+$('loopB').value;if(b<a){b=a;$('loopB').value=b;}S.loopA=a;S.loopB=b;if(S.loop){stopPlay();render();if(W)waitStart();}}
+$('loopA').addEventListener('change',loopSel);$('loopB').addEventListener('change',loopSel);
+$('waitBtn').addEventListener('click',()=>{S.wait=!S.wait;pressTog('waitBtn',S.wait);if(S.wait){waitStart();}else waitStop();setPlayBtn();});
+$('waitSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.waitHands=b.dataset.v;pressSeg('waitSeg',S.waitHands);if(S.wait)waitStart();});
+$('midiBtn').addEventListener('click',connectMidi);
+function rerender(){hideTip();clearHover();render();if(W)waitShow();}
+$('showLhBtn').addEventListener('click',()=>{S.showLH=!S.showLH;pressTog('showLhBtn',S.showLH);syncHead();rerender();});
+$('slashBtn').addEventListener('click',()=>{S.slash=!S.slash;pressTog('slashBtn',S.slash);rerender();});
+$('latchBtn').addEventListener('click',()=>{S.latch=!S.latch;pressTog('latchBtn',S.latch);if(!S.latch)[...held.keys()].forEach(noteOff);});
+$('clearBtn').addEventListener('click',()=>{[...held.keys()].forEach(noteOff);});
+
+/* admin */
+$('adminBtn').addEventListener('click',()=>{const b=$('adminBody');b.hidden=!b.hidden;$('adminBtn').textContent=b.hidden?'打開後台':'收起後台';$('adminBtn').setAttribute('aria-expanded',String(!b.hidden));});
+function msg(id,t,kind){const m=$(id);m.textContent=t;m.className='msg'+(kind?' '+kind:'');}
+$('edApply').addEventListener('click',()=>{
+  const mel=$('edMel').value.trim(),ch=$('edCh').value.trim(),title=$('edTitle').value.trim()||'未命名';
+  try{parseMelody(mel);parseChords(ch);}catch(err){msg('edMsg',err.message,'err');return;}
+  const u=UNITS[S.unit];u.mel=mel;u.chords=ch;u.song=title;stopPlay();full();msg('edMsg','已套用，左手伴奏已依和弦重新產生','ok');
+});
+$('edReset').addEventListener('click',()=>{Object.assign(UNITS[S.unit],UNITS_DEF[S.unit]);syncEditors();stopPlay();full();msg('edMsg','已還原','ok');});
+$('xmlExport').addEventListener('click',()=>{$('xmlOut').value=toMusicXML();msg('xmlMsg','已產生 MusicXML，可貼到 MuseScore 或存成 .musicxml 檔','ok');});
+$('xmlCopy').addEventListener('click',()=>{
+  const t=$('xmlOut');if(!t.value){msg('xmlMsg','請先按「匯出 MusicXML」','err');return;}
+  const fallback=()=>{t.focus();t.select();msg('xmlMsg','已選取全文，請按 Ctrl/⌘ + C 複製');};
+  try{navigator.clipboard.writeText(t.value).then(()=>msg('xmlMsg','已複製','ok'),fallback);}catch(_){fallback();}
+});
+function importXML(text){
+  try{const r=fromMusicXML(text);const u=UNITS[S.unit];u.mel=r.mel;if(r.chords)u.chords=r.chords;if(r.title)u.song=r.title;syncEditors();stopPlay();full();msg('xmlMsg','匯入成功：'+r.bars+' 小節'+(r.chords?'，含和弦':'，沿用原本的和弦'),'ok');}
+  catch(err){msg('xmlMsg','匯入失敗：'+err.message,'err');}
+}
+$('xmlFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>importXML(String(rd.result));rd.readAsText(f);e.target.value='';});
+$('xmlFromText').addEventListener('click',()=>{const t=$('xmlOut').value.trim();if(!t){msg('xmlMsg','請先貼上 MusicXML 文字','err');return;}importXML(t);});
+
+/* ---------- MusicXML ---------- */
+const TYPE={0.5:['eighth',0],0.75:['eighth',1],1:['quarter',0],1.5:['quarter',1],2:['half',0],3:['half',1],4:['whole',0]};
+function noteXML(e,staff,voice){
+  const [type,dot]=TYPE[e.dur]||['quarter',0], d=Math.round(e.dur*2);
+  if(!e.pitches.length)return '<note><rest/><duration>'+d+'</duration><voice>'+voice+'</voice><type>'+type+'</type>'+(dot?'<dot/>':'')+'<staff>'+staff+'</staff></note>';
+  return e.pitches.map((p,i)=>{const s=spell(p);return '<note>'+(i?'<chord/>':'')+'<pitch><step>'+LET[s.st]+'</step>'+(s.acc?'<alter>1</alter>':'')+'<octave>'+s.oct+'</octave></pitch><duration>'+d+'</duration><voice>'+voice+'</voice><type>'+type+'</type>'+(dot?'<dot/>':'')+'<staff>'+staff+'</staff></note>';}).join('');
+}
+function toMusicXML(){
+  let x='<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n<score-partwise version="4.0">\n<work><work-title>'+esc(song.title)+'</work-title></work>\n<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>\n<part id="P1">\n';
+  for(let b=0;b<song.bars;b++){
+    x+='<measure number="'+(b+1)+'">';
+    if(b===0)x+='<attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>';
+    song.chords.filter(sg=>sg.bar===b).forEach(sg=>{const c=sg.c;
+      x+='<harmony><root><root-step>'+c.letter+'</root-step>'+(c.alter?'<root-alter>'+c.alter+'</root-alter>':'')+'</root><kind text="'+esc(c.q)+'">'+CQ[c.q].xml+'</kind>'+(c.slash?'<bass><bass-step>'+c.bLetter+'</bass-step>'+(c.bAlter?'<bass-alter>'+c.bAlter+'</bass-alter>':'')+'</bass>':'')+(sg.start>b*4?'<offset>'+Math.round((sg.start-b*4)*2)+'</offset>':'')+'</harmony>';});
+    song.events.filter(e=>e.bar===b&&e.hand==='R').forEach(e=>x+=noteXML(e,1,1));
+    x+='<backup><duration>8</duration></backup>';
+    song.events.filter(e=>e.bar===b&&e.hand==='L').forEach(e=>x+=noteXML(e,2,5));
+    x+='</measure>\n';
+  }
+  return x+'</part>\n</score-partwise>\n';
+}
+function midiToTok(p){
+  if(p==null)return '0';
+  const s=spell(p);let t=(s.acc?'#':'')+(s.st+1);const d=s.oct-4;t+=d>0?"'".repeat(d):",".repeat(-d);return t;
+}
+function fromMusicXML(text){
+  const doc=new DOMParser().parseFromString(text,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('不是有效的 XML');
+  const part=doc.getElementsByTagName('part')[0];if(!part)throw new Error('找不到 <part>');
+  const title=(doc.getElementsByTagName('work-title')[0]||doc.getElementsByTagName('movement-title')[0]||{}).textContent;
+  let div=1;const bars=[],chords=[];let anyChord=false;
+  const STEP={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+  [...part.children].filter(n=>n.tagName==='measure').forEach(meas=>{
+    const dv=meas.querySelector('attributes divisions');if(dv)div=+dv.textContent||1;
+    let voice=null,toks=[],t=0,chord=[];
+    for(const el of meas.children){
+      if(el.tagName==='harmony'){const st=el.querySelector('root-step'),al=el.querySelector('root-alter'),kd=el.querySelector('kind'),bs=el.querySelector('bass-step'),ba=el.querySelector('bass-alter');
+        if(st){const k=kd?kd.textContent.trim():'major';const KQ={'major':'','minor':'m','dominant':'7','major-seventh':'maj7','minor-seventh':'m7','diminished':'dim','augmented':'aug','suspended-second':'sus2','suspended-fourth':'sus4'};
+          const acc=a=>a?(+a.textContent>0?'#':+a.textContent<0?'b':''):'';
+          chord.push(st.textContent.trim()+acc(al)+(KQ[k]!=null?KQ[k]:'')+(bs?'/'+bs.textContent.trim()+acc(ba):''));}}
+      if(el.tagName!=='note')continue;
+      if(el.querySelector('grace')||el.querySelector('chord'))continue;
+      const stf=el.querySelector('staff');if(stf&&stf.textContent.trim()!=='1')continue;
+      const vc=(el.querySelector('voice')||{}).textContent||'1';if(voice==null)voice=vc;if(vc!==voice)continue;
+      const durEl=el.querySelector('duration');if(!durEl)continue;
+      let d=Math.round((+durEl.textContent/div)*2)/2;if(d<=0)continue;if(t+d>4)d=4-t;if(d<=0)continue;
+      let p=null;const pt=el.querySelector('pitch');
+      if(pt){p=(+pt.querySelector('octave').textContent+1)*12+STEP[pt.querySelector('step').textContent.trim()]+(pt.querySelector('alter')?Math.round(+pt.querySelector('alter').textContent):0);}
+      const tok=midiToTok(p);
+      if(d===0.5)toks.push('_'+tok);else if(d===1.5)toks.push(tok+'.');
+      else{toks.push(tok);for(let k=1;k<Math.floor(d);k++)toks.push('-');if(d%1)toks.push('_0');}
+      t+=d;
+    }
+    while(t<4-1e-6){if(4-t>=1){toks.push('0');t+=1;}else{toks.push('_0');t+=0.5;}}
+    bars.push(toks.join(' '));if(chord.length>4)chord=chord.slice(0,4);if(chord.length===3)chord=chord.slice(0,2);chords.push(chord.join(' '));if(chord.length)anyChord=true;
+  });
+  if(!bars.length)throw new Error('沒有找到小節');
+  let ch=null;if(anyChord){let last='C';ch=chords.map(c=>(last=c||last)).join(' | ');}
+  return {mel:bars.join(' | '),chords:ch,bars:bars.length,title:title&&title.trim()};
+}
+
+/* ---------- init ---------- */
+renderUnits();renderPatSeg();setPlayBtn();pressSeg('viewSeg',S.view);pressSeg('labelSeg',S.label);pressSeg('waitSeg',S.waitHands);
+pressTog('metroBtn',S.metro);pressTog('countBtn',S.countIn);pressTog('rhBtn',S.handR);pressTog('lhBtn',S.handL);pressTog('loopBtn',S.loop);pressTog('waitBtn',S.wait);pressTog('latchBtn',S.latch);pressTog('showLhBtn',S.showLH);pressTog('slashBtn',S.slash);
+syncEditors();full();
+let lastW=scoreEl.clientWidth;
+new ResizeObserver(()=>{const w=scoreEl.clientWidth;if(Math.abs(w-lastW)>2){lastW=w;render();if(W)waitShow();}}).observe(scoreEl);
+// center keyboard around middle C on narrow screens
+const kw=$('kbdWrap');kw.scrollLeft=(kw.scrollWidth-kw.clientWidth)/2;
+})();
+</script>
+
+</body>
+</html>
