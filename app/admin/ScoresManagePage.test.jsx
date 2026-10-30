@@ -48,13 +48,21 @@ describe("ScoresManagePage（後台曲目）", () => {
     expect(within(v2Row).getByText("入門")).toBeTruthy();
   });
 
-  it("選單行譜：顯示需要大譜表的錯誤、儲存鈕停用", async () => {
+  it("選三行以上的譜：顯示錯誤、儲存鈕停用", async () => {
     render(<ScoresManagePage showToast={() => {}} />);
     fireEvent.click(await screen.findByRole("button", { name: "新增曲目" }));
     fireEvent.change(screen.getByLabelText("曲名"), { target: { value: "x" } });
-    pickFile("single.musicxml", fx("single-staff.musicxml"));
-    expect(await screen.findByText(/需要鋼琴大譜表兩行/)).toBeTruthy();
+    pickFile("three.musicxml", fx("twinkle-grand.musicxml").replace("<staves>2</staves>", "<staves>3</staves>"));
+    expect(await screen.findByText(/最多兩行/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "儲存" }).disabled).toBe(true);
+  });
+
+  it("選只有右手的譜：可以儲存，並提示左手會自動產生", async () => {
+    render(<ScoresManagePage showToast={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: "新增曲目" }));
+    pickFile("melody.musicxml", fx("twinkle-melody.musicxml"));
+    expect((await screen.findByTestId("score-warnings")).textContent).toMatch("自動");
+    expect(screen.getByRole("button", { name: "儲存" }).disabled).toBe(false);
   });
 
   it("選壓力測試檔：列出略過的記號", async () => {

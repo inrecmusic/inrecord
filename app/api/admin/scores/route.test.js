@@ -52,10 +52,9 @@ describe("/api/admin/scores", () => {
     ]);
   });
 
-  it("POST 檔案不是兩行譜 → 400", async () => {
+  it("POST 三行以上的譜 → 400", async () => {
     getSupabaseAdmin.mockReturnValue(makeSupabaseMock(() => ({ data: null, error: null })));
-    const single = readFileSync(new URL("../../../../lib/score/fixtures/single-staff.musicxml", import.meta.url), "utf8");
-    const res = await POST(req("POST", { title: "x", musicxml: single }));
+    const res = await POST(req("POST", { title: "x", musicxml: BEE.replace("<staves>2</staves>", "<staves>3</staves>") }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("not_grand_staff");
   });

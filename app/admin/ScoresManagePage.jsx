@@ -14,7 +14,7 @@ import InteractiveScore from "@/components/classroom/score/InteractiveScore";
 const DIFF = { 1: "入門", 2: "初級", 3: "中級" };
 const KEY_NAMES = ["C♭", "G♭", "D♭", "A♭", "E♭", "B♭", "F", "C", "G", "D", "A", "E", "B", "F♯", "C♯"];
 const ERR_TEXT = {
-  not_grand_staff: "需要鋼琴大譜表兩行（上右手、下左手）。請在打譜軟體確認是鋼琴譜再匯出。",
+  not_grand_staff: "鋼琴譜最多兩行（上右手、下左手）。請在打譜軟體確認是鋼琴譜再匯出。",
   empty: "檔案是空的，或樂譜裡沒有任何小節。",
   no_part: "樂譜裡沒有任何聲部。",
 };
