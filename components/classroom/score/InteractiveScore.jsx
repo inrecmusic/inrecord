@@ -248,7 +248,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
   const first = model.measures[0];
   const firstFull = model.measures.find((m) => !m.implicit) || first;
   const keyLabel = `1=${KEY_NAMES[first.key.fifths + 7]}　${firstFull.time.beats}/${firstFull.time.beatType}`;
-  const credit = subtitle || model.composer || "";
+  const credit = subtitle || ""; // 只顯示後台「作者／出處」；檔案裡的作曲者（Sibelius 範本常是 [COMPOSER]）不用
   const hasLH = !!model.hasLeftHand;
   const rightHandOnly = !showLH || !hasLH;
   const toggleLH = () =>
