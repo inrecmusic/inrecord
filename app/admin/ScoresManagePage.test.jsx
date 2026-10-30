@@ -168,4 +168,30 @@ describe("ScoresManagePage：直接打簡譜、伴奏設定、刪除", () => {
     expect(screen.getByLabelText("調號").value).toBe("G");
     expect(screen.getByLabelText("拍號").value).toBe("3/4");
   });
+  it("上傳的曲目可以改和弦：只送新的 MusicXML（音符不變）、版本加 1", async () => {
+    const xml = fx("twinkle-melody.musicxml");
+    adminFetch.mockImplementation((path, opts) => {
+      if (path === "/api/admin/scores?id=s1") return json({ data: { ...ROWS[1], musicxml: xml, file_name: "bee.musicxml", meta: {}, units: [] } });
+      if (path === "/api/admin/scores" && !opts?.method) return json({ data: ROWS });
+      if (path === "/api/admin/chapters") return json({ data: [] });
+      if (path === "/api/admin/videos") return json({ data: [] });
+      return json({ ok: true, version: 3 });
+    });
+    render(<ScoresManagePage showToast={() => {}} />);
+    const v2Row = (await screen.findByText("小蜜蜂雙手")).closest("tr");
+    fireEvent.click(within(v2Row).getByRole("button", { name: "編輯" }));
+    const box = await screen.findByLabelText(/^和弦（每小節用 \| 分開；只會改/);
+    const bars = box.value.split("|");
+    bars[0] = " Am ";
+    fireEvent.change(box, { target: { value: bars.join("|") } });
+    expect(screen.getByText(/儲存後變成 v3/)).toBeTruthy();
+    fireEvent.change(box, { target: { value: bars.map((b, i) => (i === 1 ? "Hm" : b)).join("|") } });
+    expect((await screen.findByRole("alert")).textContent).toContain("第 2 小節");
+    fireEvent.change(box, { target: { value: bars.join("|") } });
+    fireEvent.click(screen.getByRole("button", { name: "儲存" }));
+    await waitFor(() => expect(adminFetch.mock.calls.some(([, o]) => o?.method === "PATCH")).toBe(true));
+    const body = JSON.parse(adminFetch.mock.calls.find(([, o]) => o?.method === "PATCH")[1].body);
+    expect(body.musicxml).toContain("<kind>minor</kind>");
+    expect(body.musicxml).not.toBe(xml);
+  });
 });

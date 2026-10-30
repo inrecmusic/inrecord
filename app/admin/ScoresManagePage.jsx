@@ -6,12 +6,14 @@
 // 也可在掛單元時逐一指定該單元固定用哪一種（學員端就不能切換）。設定都存在 scores.meta。
 // 新建一律草稿（後端強制 published:false），按「發布」學員才看得到（且要 INTERACTIVE_SCORES=on 的站台）。
 // 刪除：草稿、已發布、舊版 ABC 都能刪，刪前跳確認框。
+// 上傳的曲目可隨時改和弦（lib/score/chord-edit.js）：只重寫改過的小節，音符不動，存檔即成新版。
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./admin.module.css";
 import { adminFetch as api } from "@/lib/admin-client";
 import { readScoreFile } from "@/lib/score/mxl";
 import { parseMusicXml, ScoreError } from "@/lib/score/musicxml";
 import { jianpuToMusicXml } from "@/lib/score/jianpu-input";
+import { chordText, applyChordText } from "@/lib/score/chord-edit";
 import { ACCOMPANIMENTS } from "@/lib/score/accompaniment";
 import InteractiveScore from "@/components/classroom/score/InteractiveScore";
 
@@ -30,6 +32,7 @@ const EMPTY_JP = { key: "C", beats: 4, beatType: 4, tempo: 84, melody: "", chord
 const EMPTY = {
   id: null, title: "", subtitle: "", difficulty: "", musicxml: "", file_name: "", unitIds: [], version: 1, published: false,
   fileChanged: false, source: "file", jp: EMPTY_JP, defaultAcc: "", unitAcc: {},
+  baseXml: "", chords: "", uploadedNew: false, // 改和弦：baseXml＝上傳／讀進來的原檔，chords＝和弦文字框
 };
 
 async function readBytes(file) {
@@ -135,8 +138,10 @@ export default function ScoresManagePage({ showToast = () => {} }) {
         unitAcc: Object.fromEntries(Object.entries(meta.unitAccompaniment || {}).filter(([, v]) => ACC_IDS.has(v))),
       };
       try {
-        setModel(parseMusicXml(data.musicxml));
+        const m = parseMusicXml(data.musicxml);
+        setModel(m);
         setFileErr("");
+        if (!meta.jianpu) Object.assign(next, { baseXml: data.musicxml, chords: chordText(m) });
       } catch (e) {
         setModel(null);
         setFileErr(errText(e));
@@ -157,12 +162,29 @@ export default function ScoresManagePage({ showToast = () => {} }) {
       const m = parseMusicXml(xml);
       setModel(m);
       setFileErr("");
-      setForm((f) => ({ ...f, musicxml: xml, file_name: file.name, fileChanged: true, title: f.title || m.title || "" }));
+      setForm((f) => ({ ...f, musicxml: xml, file_name: file.name, fileChanged: true, uploadedNew: true, baseXml: xml, chords: chordText(m), title: f.title || m.title || "" }));
     } catch (err) {
       setModel(null);
       setFileErr(errText(err));
-      setForm((f) => ({ ...f, musicxml: "", fileChanged: true }));
+      setForm((f) => ({ ...f, musicxml: "", fileChanged: true, uploadedNew: true, baseXml: "", chords: "" }));
     }
+  };
+
+  // 改和弦：每次改字都從原檔重算（只動改過的小節），錯誤即時顯示第幾小節
+  const setChords = (chords) => {
+    setPreview(false);
+    setForm((f) => {
+      try {
+        const xml = applyChordText(f.baseXml, parseMusicXml(f.baseXml), chords);
+        setModel(parseMusicXml(xml));
+        setFileErr("");
+        return { ...f, chords, musicxml: xml, fileChanged: f.uploadedNew || xml !== f.baseXml };
+      } catch (e) {
+        setModel(null);
+        setFileErr(e.message || "和弦讀不出來");
+        return { ...f, chords, musicxml: "" };
+      }
+    });
   };
 
   const toggleUnit = (id) =>
@@ -283,6 +305,12 @@ export default function ScoresManagePage({ showToast = () => {} }) {
               <label htmlFor="score-file">樂譜檔（.musicxml／.mxl，右手一行或雙手兩行）{form.id ? "：選新檔＝替換新版" : ""}</label>
               <input id="score-file" type="file" accept=".musicxml,.mxl,.xml" onChange={onFile} />
               {form.file_name && !fileErr && <span style={{ fontSize: 12, color: "#64748b" }}>{form.file_name}{form.id && form.fileChanged ? `　→ 儲存後變成 v${form.version + 1}` : ""}</span>}
+              {form.baseXml && (
+                <>
+                  <label htmlFor="score-file-chords" style={{ marginTop: 8 }}>和弦（每小節用 | 分開；只會改你動到的小節，音符不變）</label>
+                  <input id="score-file-chords" style={ta} spellCheck={false} value={form.chords} onChange={(e) => setChords(e.target.value)} />
+                </>
+              )}
             </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
