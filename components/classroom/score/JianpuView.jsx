@@ -4,12 +4,12 @@
 import { useEffect, useMemo, useRef } from "react";
 import { renderGrandJianpu } from "@/lib/score/jianpu-grand";
 
-export default function JianpuView({ model, width = 760, chordMode = "name", showChords = true, rightHandOnly = false, activeIds, onNoteHover, onChordHover }) {
+export default function JianpuView({ model, width = 760, chordMode = "name", showChords = true, rightHandOnly = false, slashes = false, activeIds, onNoteHover, onChordHover }) {
   const ref = useRef(null);
   const lit = useRef([]);
   const { svg } = useMemo(
-    () => renderGrandJianpu(model, { width: Math.max(300, Math.round(width)), chordMode, showChords, rightHandOnly }),
-    [model, width, chordMode, showChords, rightHandOnly],
+    () => renderGrandJianpu(model, { width: Math.max(300, Math.round(width)), chordMode, showChords, rightHandOnly, slashes }),
+    [model, width, chordMode, showChords, rightHandOnly, slashes],
   );
 
   useEffect(() => {

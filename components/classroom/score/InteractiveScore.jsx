@@ -4,11 +4,14 @@
 // 單一來源：parseMusicXml 出的模型同時餵給五線譜（OSMD）、雙行簡譜、播放時間軸，三處共用音符 id，
 // 播放時 activeIdsAt 算出的 id 同時亮五線譜、簡譜與鍵盤。版面、控制列分組、圖示照原型
 // （docs/superpowers/specs/assets/2026-10-29-score-prototype.html）；拿掉「左手伴奏」「節奏斜線」，
-// 「顯示左手」改成「只看右手」。任何設定改變都先停止播放，聲音與畫面才不會對不上。
+// 預設 Lead Sheet（只顯示右手），按「顯示左手」才出現左手；左手可選原譜或依和弦自動產生的伴奏
+// （柱式／根音＋和弦／分解／琶音，lib/score/accompaniment.js），單元可在後台鎖定一種。
+// 任何設定改變都先停止播放，聲音與畫面才不會對不上。
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parseMusicXml } from "@/lib/score/musicxml";
 import { buildPlayback, DEFAULT_BPM } from "@/lib/score/timeline";
 import { chordAt } from "@/lib/score/chords";
+import { ACCOMPANIMENTS, withAccompaniment, accompanimentXml } from "@/lib/score/accompaniment";
 import StaffView from "./StaffView";
 import JianpuView from "./JianpuView";
 import ScoreTip from "./ScoreTip";
@@ -18,6 +21,7 @@ import { createGrandPlayer } from "./grandPlayer";
 import { SCORE_V2_CSS } from "./score-css";
 
 const VIEW_KEY = "inrec-score2-view";
+const LH_KEY = "inrec-score2-lh";
 const KEY_NAMES = ["C♭", "G♭", "D♭", "A♭", "E♭", "B♭", "F", "C", "G", "D", "A", "E", "B", "F♯", "C♯"];
 
 const F = 'fill="currentColor" stroke="none"';
@@ -35,6 +39,7 @@ const ICONS = {
   metro: '<path d="M8.5 3h7l3.5 18H5z"/><path d="M12 15l5-9"/><path d="M6.5 16h11"/>',
   timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>',
   speaker: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/>',
+  slash: '<path d="M4 18L8 6M10.5 18l4-12M17 18l4-12"/>',
   repeat: '<path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H19l-3-3M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H5l3 3"/>',
   print: '<path d="M7 8V3.5h10V8"/><rect x="3.5" y="8" width="17" height="8" rx="2"/><path d="M7 13.5h10v7H7z"/>',
 };
@@ -57,7 +62,7 @@ const Tog = ({ on, onClick, icon, className = "", children }) => (
 );
 const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
 
-export default function InteractiveScore({ xml, title, subtitle }) {
+export default function InteractiveScore({ xml, title, subtitle, defaultAccompaniment = null, lockedAccompaniment = null }) {
   const parsed = useMemo(() => {
     try {
       return { model: parseMusicXml(xml), error: null };
@@ -65,10 +70,23 @@ export default function InteractiveScore({ xml, title, subtitle }) {
       return { model: null, error: e };
     }
   }, [xml]);
-  const model = parsed.model;
+  const base = parsed.model;
+  const accOptions = useMemo(() => {
+    if (!base) return [];
+    const opts = base.hasChords ? ACCOMPANIMENTS.map((a) => ({ value: a.id, label: a.label })) : [];
+    return base.hasLeftHand ? [{ value: "original", label: "原譜左手" }, ...opts] : opts;
+  }, [base]);
+  const pickAcc = (want) => (accOptions.some((o) => o.value === want) ? want : accOptions[0]?.value || "original");
+  const initialAcc = () => pickAcc(lockedAccompaniment || (base?.hasLeftHand ? "original" : defaultAccompaniment || "block"));
+  const [accStyle, setAccStyle] = useState(initialAcc);
+  useEffect(() => setAccStyle(initialAcc()), [base, lockedAccompaniment, defaultAccompaniment]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 左手換成自動伴奏時，模型與給 OSMD 的 XML 一起換（同一批音符、同一組 id）
+  const model = useMemo(() => (base && accStyle !== "original" && base.hasChords ? withAccompaniment(base, accStyle) : base), [base, accStyle]);
+  const staffXml = useMemo(() => (model && model !== base ? accompanimentXml(xml, model) : xml), [xml, model, base]);
 
   const [view, setView] = useState("staff");
-  const [rightHandOnly, setRightHandOnly] = useState(false);
+  const [showLH, setShowLH] = useState(false); // Lead Sheet：預設只顯示右手
+  const [slashes, setSlashes] = useState(true);
   const [chordMode, setChordMode] = useState("name");
   const [showChords, setShowChords] = useState(true);
   const [bpm, setBpm] = useState(() => Math.max(40, Math.min(160, Math.round(model?.tempo ?? DEFAULT_BPM))));
@@ -92,6 +110,7 @@ export default function InteractiveScore({ xml, title, subtitle }) {
     try {
       const v = localStorage.getItem(VIEW_KEY);
       if (v === "staff" || v === "jianpu" || v === "both") setView(v);
+      if (localStorage.getItem(LH_KEY) === "1") setShowLH(true);
     } catch {
       /* 無痕模式等 */
     }
@@ -105,13 +124,13 @@ export default function InteractiveScore({ xml, title, subtitle }) {
     }
   };
 
-  // 換曲時速度與循環範圍回到該曲預設
+  // 換曲時速度與循環範圍回到該曲預設（換伴奏不算換曲）
   useEffect(() => {
-    if (!model) return;
-    setBpm(Math.max(40, Math.min(160, Math.round(model.tempo ?? DEFAULT_BPM))));
+    if (!base) return;
+    setBpm(Math.max(40, Math.min(160, Math.round(base.tempo ?? DEFAULT_BPM))));
     setLoopFrom(0);
-    setLoopTo(Math.max(0, model.measures.length - 1));
-  }, [model]);
+    setLoopTo(Math.max(0, base.measures.length - 1));
+  }, [base]);
 
   useEffect(() => {
     const el = paperRef.current;
@@ -156,7 +175,7 @@ export default function InteractiveScore({ xml, title, subtitle }) {
     playerRef.current?.stop();
     setPlaying(false);
     setActiveIds(new Set());
-  }, [playback, view, rightHandOnly]);
+  }, [playback, view, showLH]);
 
   const togglePlay = useCallback(async () => {
     const p = playerRef.current;
@@ -230,6 +249,17 @@ export default function InteractiveScore({ xml, title, subtitle }) {
   const firstFull = model.measures.find((m) => !m.implicit) || first;
   const keyLabel = `1=${KEY_NAMES[first.key.fifths + 7]}　${firstFull.time.beats}/${firstFull.time.beatType}`;
   const credit = subtitle || model.composer || "";
+  const hasLH = !!model.hasLeftHand;
+  const rightHandOnly = !showLH || !hasLH;
+  const toggleLH = () =>
+    setShowLH((v) => {
+      try {
+        localStorage.setItem(LH_KEY, v ? "0" : "1");
+      } catch {
+        /* 無痕模式等 */
+      }
+      return !v;
+    });
   const chordProps = { rightHandOnly, chordMode, showChords: model.hasChords && showChords, activeIds };
   const measureOptions = model.measures.map((m) => (
     <option key={m.index} value={m.index}>
@@ -245,8 +275,21 @@ export default function InteractiveScore({ xml, title, subtitle }) {
         <div className="group">
           <span className="glabel">譜面</span>
           <Seg value={view} onChange={setViewPersist} items={[["staff", "五線譜", "staff"], ["jianpu", "簡譜", "jianpu"], ["both", "對照", "both"]]} />
-          <Tog on={rightHandOnly} onClick={() => setRightHandOnly((v) => !v)} icon="eye">只看右手</Tog>
         </div>
+        <div className="group">
+          <span className="glabel">Lead Sheet</span>
+          {hasLH && <Tog on={showLH} onClick={toggleLH} icon="eye">顯示左手</Tog>}
+          <Tog on={slashes} onClick={() => setSlashes((v) => !v)} icon="slash">節奏斜線</Tog>
+        </div>
+        {accOptions.length > 0 && (
+          <div className="group">
+            <label className="glabel" htmlFor="sv2-acc">左手伴奏</label>
+            <select id="sv2-acc" value={accStyle} disabled={!!lockedAccompaniment} onChange={(e) => setAccStyle(e.target.value)}>
+              {accOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {lockedAccompaniment && <span className="glabel">（本單元指定）</span>}
+          </div>
+        )}
         {model.hasChords && (
           <div className="group">
             <span className="glabel">和弦標示</span>
@@ -300,12 +343,12 @@ export default function InteractiveScore({ xml, title, subtitle }) {
         <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg}</div>
         {(view === "staff" || view === "both") && (
           <div className="sv2-section">
-            <StaffView xml={xml} model={model} {...chordProps} onNoteHover={onNoteHover} />
+            <StaffView xml={staffXml} model={model} {...chordProps} onNoteHover={onNoteHover} />
           </div>
         )}
         {(view === "jianpu" || view === "both") && (
           <div className="sv2-section">
-            <JianpuView model={model} width={width - 36} {...chordProps} onNoteHover={onNoteHover} onChordHover={onChordHover} />
+            <JianpuView model={model} width={width - 36} {...chordProps} slashes={slashes} onNoteHover={onNoteHover} onChordHover={onChordHover} />
           </div>
         )}
         <p className="sv2-credit">鋼琴音色：FluidR3_GM（Frank Wen），CC BY 3.0</p>
