@@ -41,6 +41,7 @@ describe("ScoresManagePage（後台曲目）", () => {
     const abcRow = (await screen.findByText("右手旋律")).closest("tr");
     expect(within(abcRow).getByText("舊版 ABC")).toBeTruthy();
     expect(within(abcRow).queryByRole("button", { name: "編輯" })).toBe(null);
+    expect(within(abcRow).getByRole("button", { name: "刪除" })).toBeTruthy();
     expect(within(abcRow).getByRole("button", { name: "下架" })).toBeTruthy();
     const v2Row = screen.getByText("小蜜蜂雙手").closest("tr");
     expect(within(v2Row).getByRole("button", { name: "編輯" })).toBeTruthy();
@@ -99,5 +100,72 @@ describe("ScoresManagePage（後台曲目）", () => {
     await waitFor(() => expect(adminFetch.mock.calls.some(([p, o]) => o?.method === "PATCH")).toBe(true));
     const [, opts] = adminFetch.mock.calls.find(([, o]) => o?.method === "PATCH");
     expect(JSON.parse(opts.body)).toEqual({ id: "s1", published: true });
+  });
+});
+
+describe("ScoresManagePage：直接打簡譜、伴奏設定、刪除", () => {
+  const lastCall = (method) => {
+    const c = adminFetch.mock.calls.filter(([p, o]) => p.startsWith("/api/admin/scores") && o?.method === method).pop();
+    return c && { path: c[0], body: c[1].body ? JSON.parse(c[1].body) : null };
+  };
+
+  it("直接打簡譜：即時檢查、送出簡譜來源（不送 musicxml）", async () => {
+    render(<ScoresManagePage showToast={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: "新增曲目" }));
+    fireEvent.click(screen.getByRole("tab", { name: "直接打簡譜" }));
+    fireEvent.change(screen.getByLabelText("曲名"), { target: { value: "小蜜蜂" } });
+    fireEvent.change(screen.getByLabelText("右手旋律（簡譜）"), { target: { value: "5 3 3 - | 4 2 2" } });
+    expect(await screen.findByText(/第 2 小節有 3 拍/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("右手旋律（簡譜）"), { target: { value: "5 3 3 - | 4 2 2 -" } });
+    fireEvent.change(screen.getByLabelText("和弦（每小節用 | 分開）"), { target: { value: "C | G7" } });
+    expect(await screen.findByText(/2 小節/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "儲存" }));
+    await waitFor(() => expect(lastCall("POST")).toBeTruthy());
+    const { body } = lastCall("POST");
+    expect(body.jianpu).toMatchObject({ key: "C", beats: 4, beatType: 4, melody: "5 3 3 - | 4 2 2 -", chords: "C | G7" });
+    expect("musicxml" in body).toBe(false);
+  });
+
+  it("預設伴奏與每個單元指定伴奏", async () => {
+    render(<ScoresManagePage showToast={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: "新增曲目" }));
+    pickFile("melody.musicxml", fx("twinkle-melody.musicxml"));
+    await screen.findByTestId("score-warnings");
+    fireEvent.change(screen.getByLabelText("預設伴奏"), { target: { value: "arp" } });
+    fireEvent.click(screen.getByLabelText("1-2【跟練】Do 之歌"));
+    fireEvent.change(screen.getByLabelText("1-2【跟練】Do 之歌 的伴奏"), { target: { value: "bass" } });
+    fireEvent.click(screen.getByRole("button", { name: "儲存" }));
+    await waitFor(() => expect(lastCall("POST")).toBeTruthy());
+    const { body } = lastCall("POST");
+    expect(body.default_accompaniment).toBe("arp");
+    expect(body.unit_accompaniment).toEqual({ [V1]: "bass" });
+    expect(body.unitIds).toEqual([V1]);
+  });
+
+  it("已發布的曲目也能刪（先確認）", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<ScoresManagePage showToast={() => {}} />);
+    const abcRow = (await screen.findByText("右手旋律")).closest("tr");
+    fireEvent.click(within(abcRow).getByRole("button", { name: "刪除" }));
+    await waitFor(() => expect(lastCall("DELETE")).toBeTruthy());
+    expect(lastCall("DELETE").path).toBe("/api/admin/scores?id=a1");
+    expect(window.confirm.mock.calls[0][0]).toMatch("已發布");
+  });
+
+  it("用簡譜建立的曲目可以再打開編輯簡譜", async () => {
+    const jianpu = { key: "G", beats: 3, beatType: 4, tempo: 90, melody: "1 2 3", chords: "G" };
+    adminFetch.mockImplementation((path, opts) => {
+      if (path === "/api/admin/scores?id=s1") return json({ data: { ...ROWS[1], musicxml: fx("twinkle-melody.musicxml"), meta: { jianpu }, units: [] } });
+      if (path === "/api/admin/scores" && !opts?.method) return json({ data: ROWS });
+      if (path === "/api/admin/chapters") return json({ data: [] });
+      if (path === "/api/admin/videos") return json({ data: [] });
+      return json({ ok: true });
+    });
+    render(<ScoresManagePage showToast={() => {}} />);
+    const v2Row = (await screen.findByText("小蜜蜂雙手")).closest("tr");
+    fireEvent.click(within(v2Row).getByRole("button", { name: "編輯" }));
+    expect((await screen.findByLabelText("右手旋律（簡譜）")).value).toBe("1 2 3");
+    expect(screen.getByLabelText("調號").value).toBe("G");
+    expect(screen.getByLabelText("拍號").value).toBe("3/4");
   });
 });

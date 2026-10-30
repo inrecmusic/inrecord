@@ -102,16 +102,51 @@ describe("/api/admin/scores", () => {
     expect(logAudit).toHaveBeenCalledWith(sb, expect.objectContaining({ action: "score.unpublish" }));
   });
 
-  it("DELETE 已發布 → 409；舊 ABC → 409；草稿可刪", async () => {
+  it("DELETE：草稿、已發布、舊 ABC 都能刪；找不到 → 404", async () => {
     const row = { current: { id: "s1", format: "musicxml", published: true } };
     const sb = makeSupabaseMock((table, ops) => (isOp(ops, "maybeSingle") ? { data: row.current, error: null } : { data: null, error: null }));
     getSupabaseAdmin.mockReturnValue(sb);
-    expect((await DELETE(req("DELETE", null, "?id=s1"))).status).toBe(409);
-    row.current = { id: "a1", format: "abc", published: false };
-    expect((await DELETE(req("DELETE", null, "?id=a1"))).status).toBe(409);
-    row.current = { id: "s2", format: "musicxml", published: false };
-    expect((await DELETE(req("DELETE", null, "?id=s2"))).status).toBe(200);
-    expect(sb.calls.some((c) => c.table === "scores" && sb.has(c, "delete"))).toBe(true);
+    expect((await DELETE(req("DELETE", null, "?id=s1"))).status).toBe(200);
+    row.current = { id: "a1", format: "abc", published: true };
+    expect((await DELETE(req("DELETE", null, "?id=a1"))).status).toBe(200);
+    expect(logAudit).toHaveBeenCalledWith(sb, expect.objectContaining({ action: "score.delete", meta: expect.objectContaining({ published: true }) }));
+    row.current = null;
+    expect((await DELETE(req("DELETE", null, "?id=zz"))).status).toBe(404);
+  });
+
+  it("POST 用簡譜建立：伺服器轉 MusicXML，meta 帶簡譜來源與預設伴奏", async () => {
+    const sb = makeSupabaseMock((table, ops) => (isOp(ops, "insert") ? { data: { id: "s1" }, error: null } : { data: null, error: null }));
+    getSupabaseAdmin.mockReturnValue(sb);
+    const jianpu = { key: "C", beats: 4, beatType: 4, tempo: 96, melody: "5 3 3 - | 4 2 2 -", chords: "C | G7" };
+    const res = await POST(req("POST", { title: "小蜜蜂", jianpu, default_accompaniment: "bass" }));
+    expect(res.status).toBe(200);
+    const row = sb.arg(sb.calls.find((c) => c.table === "scores" && sb.has(c, "insert")), "insert");
+    expect(row.musicxml).toContain("<score-partwise");
+    expect(row.meta).toMatchObject({ measureCount: 2, hasLeftHand: false, jianpu, defaultAccompaniment: "bass" });
+  });
+
+  it("PATCH 單元伴奏：保留原本 meta、只留還掛著的單元", async () => {
+    const sb = makeSupabaseMock((table, ops) =>
+      isOp(ops, "maybeSingle")
+        ? { data: { id: "s1", format: "musicxml", version: 1, published: true, musicxml: BEE, meta: { measureCount: 8, jianpu: { melody: "1" } } }, error: null }
+        : { data: null, error: null });
+    getSupabaseAdmin.mockReturnValue(sb);
+    await PATCH(req("PATCH", { id: "s1", unitIds: [U1], unit_accompaniment: { [U1]: "arp", [U2]: "bass" } }));
+    const upd = sb.arg(sb.calls.find((c) => c.table === "scores" && sb.has(c, "update")), "update");
+    expect(upd.meta).toEqual({ measureCount: 8, jianpu: { melody: "1" }, unitAccompaniment: { [U1]: "arp" } });
+  });
+
+  it("PATCH 換上傳檔：簡譜來源移除（內容已不是簡譜打的）", async () => {
+    const sb = makeSupabaseMock((table, ops) =>
+      isOp(ops, "maybeSingle")
+        ? { data: { id: "s1", format: "musicxml", version: 1, published: false, musicxml: "<old/>", meta: { jianpu: { melody: "1" }, defaultAccompaniment: "arp" } }, error: null }
+        : { data: null, error: null });
+    getSupabaseAdmin.mockReturnValue(sb);
+    await PATCH(req("PATCH", { id: "s1", musicxml: BEE }));
+    const upd = sb.arg(sb.calls.find((c) => c.table === "scores" && sb.has(c, "update")), "update");
+    expect(upd.meta.jianpu).toBe(undefined);
+    expect(upd.meta.defaultAccompaniment).toBe("arp");
+    expect(upd.meta.measureCount).toBe(8);
   });
 
   it("GET 列表不帶 musicxml 全文、附上單元", async () => {

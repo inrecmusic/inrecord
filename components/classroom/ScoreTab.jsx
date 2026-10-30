@@ -49,7 +49,8 @@ export default function ScoreTab({ token, video }) {
       {current.format === "musicxml"
         ? (
           <Suspense fallback={<p style={{ color: "#64748b", fontSize: 14 }}>樂譜載入中…</p>}>
-            <InteractiveScore key={current.id} xml={current.musicxml} title={current.title} subtitle={current.subtitle} />
+            <InteractiveScore key={current.id} xml={current.musicxml} title={current.title} subtitle={current.subtitle}
+              defaultAccompaniment={current.defaultAccompaniment} lockedAccompaniment={current.lockedAccompaniment} />
           </Suspense>
         )
         : <LegacyAbcScore key={current.id} current={current} />}

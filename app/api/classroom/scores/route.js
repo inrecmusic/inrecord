@@ -9,7 +9,7 @@ import { mergeUnitScores, isMissingRelation } from "@/lib/score/unit-scores";
 // 表還沒建（尚未執行 supabase-scores.sql）時回 200 ＋ 空清單；v2 欄位／表還沒建（supabase-scores-v2.sql）
 // 時只回舊 ABC——舊查詢刻意只選舊欄位（不選 format），以 abc 非空認定舊版。
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const V2_COLS = "id, title, subtitle, format, musicxml, version, sort_order, published";
+const V2_COLS = "id, title, subtitle, format, musicxml, version, sort_order, published, meta";
 
 export async function GET(req) {
   const gate = await requireClassroomAuth(req);
@@ -47,7 +47,7 @@ export async function GET(req) {
         .map((r) => (videoId ? r.scores && { ...r.scores, sort_order: r.sort_order ?? r.scores.sort_order } : r))
         .filter((s) => s && s.published === true && s.format === "musicxml");
     }
-    return NextResponse.json({ scores: mergeUnitScores(data, linked) });
+    return NextResponse.json({ scores: mergeUnitScores(data, linked, videoId) });
   } catch (err) {
     return serverError(err);
   }

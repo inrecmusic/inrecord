@@ -1,25 +1,35 @@
 "use client";
-// 後台「課程管理 → 曲目」：上傳打譜軟體匯出的 MusicXML（.musicxml／.mxl）、驗證並列出警告、
-// 用學員端同一個元件預覽、掛到一或多個單元、發布／下架、替換新版、刪除草稿。
-// 檔案在瀏覽器端讀取與驗證（readScoreFile＋parseMusicXml），送給 /api/admin/scores 的是 XML 文字；
+// 後台「課程管理 → 曲目」：新增／編輯／刪除互動樂譜。
+// 右手旋律兩種放法：上傳打譜軟體匯出的 MusicXML（.musicxml／.mxl，右手一行或雙手兩行），或在這裡直接打簡譜
+// （送簡譜來源給 API，由伺服器轉 MusicXML；來源存在 meta.jianpu，之後可再打開修改）。
+// 只有右手的曲子，左手依和弦自動產生（柱式／根音＋和弦／分解／琶音）；可設全曲預設伴奏，
+// 也可在掛單元時逐一指定該單元固定用哪一種（學員端就不能切換）。設定都存在 scores.meta。
 // 新建一律草稿（後端強制 published:false），按「發布」學員才看得到（且要 INTERACTIVE_SCORES=on 的站台）。
-// 舊版 ABC 小蜜蜂只能發布／下架。
+// 刪除：草稿、已發布、舊版 ABC 都能刪，刪前跳確認框。
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./admin.module.css";
 import { adminFetch as api } from "@/lib/admin-client";
 import { readScoreFile } from "@/lib/score/mxl";
 import { parseMusicXml, ScoreError } from "@/lib/score/musicxml";
+import { jianpuToMusicXml } from "@/lib/score/jianpu-input";
+import { ACCOMPANIMENTS } from "@/lib/score/accompaniment";
 import InteractiveScore from "@/components/classroom/score/InteractiveScore";
 
 const DIFF = { 1: "入門", 2: "初級", 3: "中級" };
 const KEY_NAMES = ["C♭", "G♭", "D♭", "A♭", "E♭", "B♭", "F", "C", "G", "D", "A", "E", "B", "F♯", "C♯"];
+const KEYS = ["C", "G", "D", "A", "E", "F", "Bb", "Eb", "Ab"];
+const TIMES = ["4/4", "3/4", "2/4", "6/8"];
 const ERR_TEXT = {
   not_grand_staff: "鋼琴譜最多兩行（上右手、下左手）。請在打譜軟體確認是鋼琴譜再匯出。",
   empty: "檔案是空的，或樂譜裡沒有任何小節。",
   no_part: "樂譜裡沒有任何聲部。",
 };
 const errText = (e) => (e instanceof ScoreError ? ERR_TEXT[e.code] || e.message : "檔案讀不出來，請確認是 .musicxml 或 .mxl。");
-const EMPTY = { id: null, title: "", subtitle: "", difficulty: "", musicxml: "", file_name: "", unitIds: [], version: 1, published: false, fileChanged: false };
+const EMPTY_JP = { key: "C", beats: 4, beatType: 4, tempo: 84, melody: "", chords: "" };
+const EMPTY = {
+  id: null, title: "", subtitle: "", difficulty: "", musicxml: "", file_name: "", unitIds: [], version: 1, published: false,
+  fileChanged: false, source: "file", jp: EMPTY_JP, defaultAcc: "", unitAcc: {},
+};
 
 async function readBytes(file) {
   if (typeof file.arrayBuffer === "function") return new Uint8Array(await file.arrayBuffer());
@@ -73,6 +83,34 @@ export default function ScoresManagePage({ showToast = () => {} }) {
     return out;
   }, [chapters, videos]);
 
+  // 簡譜分頁：每次改字就重新轉換與檢查（錯誤即時顯示第幾小節）
+  const applyJianpu = (f) => {
+    if (!f.jp.melody.trim()) {
+      setModel(null);
+      setFileErr("");
+      return { ...f, musicxml: "" };
+    }
+    try {
+      const xml = jianpuToMusicXml({ ...f.jp, title: f.title });
+      setModel(parseMusicXml(xml));
+      setFileErr("");
+      return { ...f, musicxml: xml };
+    } catch (e) {
+      setModel(null);
+      setFileErr(e.message || "簡譜讀不出來");
+      return { ...f, musicxml: "" };
+    }
+  };
+  const setJp = (patch) => setForm((f) => applyJianpu({ ...f, jp: { ...f.jp, ...patch } }));
+  const switchSource = (source) => {
+    setPreview(false);
+    setForm((f) => (source === "jianpu" ? applyJianpu({ ...f, source }) : { ...f, source, musicxml: "" }));
+    if (source === "file") {
+      setModel(null);
+      setFileErr("");
+    }
+  };
+
   const openCreate = () => {
     setForm({ ...EMPTY });
     setModel(null);
@@ -84,11 +122,15 @@ export default function ScoresManagePage({ showToast = () => {} }) {
       const r = await api(`/api/admin/scores?id=${row.id}`);
       const { data } = await r.json();
       if (!r.ok || !data) throw new Error();
-      setForm({
+      const meta = data.meta || {};
+      const next = {
+        ...EMPTY,
         id: data.id, title: data.title || "", subtitle: data.subtitle || "", difficulty: data.difficulty ?? "",
         musicxml: data.musicxml || "", file_name: data.file_name || "", unitIds: (data.units || []).map((u) => u.video_id),
-        version: data.version || 1, published: !!data.published, fileChanged: false,
-      });
+        version: data.version || 1, published: !!data.published,
+        source: meta.jianpu ? "jianpu" : "file", jp: meta.jianpu ? { ...EMPTY_JP, ...meta.jianpu } : EMPTY_JP,
+        defaultAcc: meta.defaultAccompaniment || "", unitAcc: meta.unitAccompaniment || {},
+      };
       try {
         setModel(parseMusicXml(data.musicxml));
         setFileErr("");
@@ -96,6 +138,7 @@ export default function ScoresManagePage({ showToast = () => {} }) {
         setModel(null);
         setFileErr(errText(e));
       }
+      setForm(next);
       setPreview(false);
     } catch {
       showToast("❌ 讀取曲目失敗");
@@ -121,23 +164,40 @@ export default function ScoresManagePage({ showToast = () => {} }) {
 
   const toggleUnit = (id) =>
     setForm((f) => ({ ...f, unitIds: f.unitIds.includes(id) ? f.unitIds.filter((x) => x !== id) : [...f.unitIds, id] }));
+  const setUnitAcc = (id, value) =>
+    setForm((f) => {
+      const unitAcc = { ...f.unitAcc };
+      if (value) unitAcc[id] = value;
+      else delete unitAcc[id];
+      return { ...f, unitAcc };
+    });
+
+  // 伴奏選項：有原譜左手才多「原譜左手」；沒有和弦就無法自動配
+  const accOptions = [
+    ...(model?.hasLeftHand ? [{ value: "original", label: "原譜左手" }] : []),
+    ...(model?.hasChords ? ACCOMPANIMENTS.map((a) => ({ value: a.id, label: a.label })) : []),
+  ];
 
   const canSave = !!form && !!form.title.trim() && !!form.musicxml && !!model && !fileErr && !saving;
 
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
+    const unitAcc = Object.fromEntries(Object.entries(form.unitAcc).filter(([k]) => form.unitIds.includes(k)));
     const body = {
       title: form.title.trim(),
       subtitle: form.subtitle.trim() || null,
       difficulty: form.difficulty === "" ? null : Number(form.difficulty),
       unitIds: form.unitIds,
+      default_accompaniment: form.defaultAcc || null,
+      unit_accompaniment: unitAcc,
     };
-    if (!form.id || form.fileChanged) Object.assign(body, { musicxml: form.musicxml, file_name: form.file_name || null });
+    if (form.source === "jianpu") body.jianpu = form.jp;
+    else if (!form.id || form.fileChanged) Object.assign(body, { musicxml: form.musicxml, file_name: form.file_name || null });
     try {
       const r = await api("/api/admin/scores", { method: form.id ? "PATCH" : "POST", body: JSON.stringify(form.id ? { id: form.id, ...body } : body) });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(ERR_TEXT[d.error] || d.error || "save_failed");
+      if (!r.ok) throw new Error(d.message || ERR_TEXT[d.error] || d.error || "save_failed");
       showToast(form.id ? `✅ 已儲存${d.version ? `（v${d.version}）` : ""}` : "✅ 已建立草稿，確認沒問題再按「發布」");
       setForm(null);
       setModel(null);
@@ -157,26 +217,32 @@ export default function ScoresManagePage({ showToast = () => {} }) {
     } else showToast("❌ 更新失敗");
   };
   const remove = async (row) => {
-    if (typeof window !== "undefined" && !window.confirm(`確定刪除草稿「${row.title}」？`)) return;
+    const q = row.published ? `「${row.title}」已發布，刪除後學員會立刻看不到，而且無法復原。確定刪除？` : `確定刪除「${row.title}」？刪除後無法復原。`;
+    if (typeof window !== "undefined" && !window.confirm(q)) return;
     const r = await api(`/api/admin/scores?id=${row.id}`, { method: "DELETE" });
     if (r.ok) {
       showToast("已刪除");
+      if (form?.id === row.id) setForm(null);
       fetchAll();
-    } else showToast("❌ 刪除失敗（已發布的曲目要先下架）");
+    } else showToast("❌ 刪除失敗");
   };
 
+  const firstFull = model ? model.measures.find((m) => !m.implicit) || model.measures[0] : null;
   const summary = model
-    ? `${model.measures.length} 小節 · 1=${KEY_NAMES[model.measures[0].key.fifths + 7]} · ${(model.measures.find((m) => !m.implicit) || model.measures[0]).time.beats}/${(model.measures.find((m) => !m.implicit) || model.measures[0]).time.beatType} · ${model.tempo ? `♩=${Math.round(model.tempo)}` : "沒寫速度"} · ${model.hasChords ? `和弦 ${model.chords.length} 個` : "沒有和弦名"}`
+    ? `${model.measures.length} 小節 · 1=${KEY_NAMES[model.measures[0].key.fifths + 7]} · ${firstFull.time.beats}/${firstFull.time.beatType} · ${model.tempo ? `♩=${Math.round(model.tempo)}` : "沒寫速度"} · ${model.hasChords ? `和弦 ${model.chords.length} 個` : "沒有和弦名"} · ${model.hasLeftHand ? "雙手" : "只有右手"}`
     : "";
   const td = { padding: "10px 14px", verticalAlign: "top" };
   const tag = (bg, color) => ({ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "1px 8px", borderRadius: 999, background: bg, color });
+  const tabBtn = (on) => ({ border: 0, borderBottom: on ? "2px solid #2563eb" : "2px solid transparent", background: "none", padding: "6px 12px", fontWeight: on ? 700 : 500, color: on ? "#2563eb" : "#475569", cursor: "pointer" });
+  const ta = { width: "100%", fontFamily: "ui-monospace,Menlo,monospace", fontSize: 13, padding: 8, border: "1px solid #d5dce6", borderRadius: 8 };
+  const accLabel = (v) => accOptions.find((o) => o.value === v)?.label;
 
   return (
     <div>
       <div className={styles.pageHeader}>
         <div>
           <h1>曲目管理</h1>
-          <p>上傳 MuseScore 等打譜軟體匯出的雙手 MusicXML，預覽後發布到單元的「樂譜」分頁</p>
+          <p>上傳打譜軟體匯出的 MusicXML，或直接打簡譜；只有右手的曲子左手會依和弦自動配</p>
         </div>
         <div className={styles.pageActions}>
           <button className={styles.btnSmall} onClick={fetchAll}>重新整理</button>
@@ -205,11 +271,49 @@ export default function ScoresManagePage({ showToast = () => {} }) {
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="score-file">樂譜檔（.musicxml／.mxl）{form.id ? "：選新檔＝替換新版" : ""}</label>
-            <input id="score-file" type="file" accept=".musicxml,.mxl,.xml" onChange={onFile} />
-            {form.file_name && !fileErr && <span style={{ fontSize: 12, color: "#64748b" }}>{form.file_name}{form.id && form.fileChanged ? `　→ 儲存後變成 v${form.version + 1}` : ""}</span>}
+          <div role="tablist" aria-label="右手旋律來源" style={{ display: "flex", gap: 4, borderBottom: "1px solid #e2e8f0" }}>
+            <button type="button" role="tab" aria-selected={form.source === "file"} style={tabBtn(form.source === "file")} onClick={() => switchSource("file")}>上傳檔案</button>
+            <button type="button" role="tab" aria-selected={form.source === "jianpu"} style={tabBtn(form.source === "jianpu")} onClick={() => switchSource("jianpu")}>直接打簡譜</button>
           </div>
+
+          {form.source === "file" ? (
+            <div className={styles.formGroup}>
+              <label htmlFor="score-file">樂譜檔（.musicxml／.mxl，右手一行或雙手兩行）{form.id ? "：選新檔＝替換新版" : ""}</label>
+              <input id="score-file" type="file" accept=".musicxml,.mxl,.xml" onChange={onFile} />
+              {form.file_name && !fileErr && <span style={{ fontSize: 12, color: "#64748b" }}>{form.file_name}{form.id && form.fileChanged ? `　→ 儲存後變成 v${form.version + 1}` : ""}</span>}
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <label style={{ fontSize: 13 }}>調號{" "}
+                  <select aria-label="調號" value={form.jp.key} onChange={(e) => setJp({ key: e.target.value })}>
+                    {KEYS.map((k) => <option key={k} value={k}>1={k.replace("b", "♭")}</option>)}
+                  </select>
+                </label>
+                <label style={{ fontSize: 13 }}>拍號{" "}
+                  <select aria-label="拍號" value={`${form.jp.beats}/${form.jp.beatType}`} onChange={(e) => { const [b, t] = e.target.value.split("/").map(Number); setJp({ beats: b, beatType: t }); }}>
+                    {TIMES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </label>
+                <label style={{ fontSize: 13 }}>速度 ♩={" "}
+                  <input aria-label="速度" type="number" min="40" max="200" value={form.jp.tempo ?? ""} style={{ width: 64 }} onChange={(e) => setJp({ tempo: e.target.value ? Number(e.target.value) : null })} />
+                </label>
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="score-melody">右手旋律（簡譜）</label>
+                <textarea id="score-melody" rows={4} style={ta} spellCheck={false} value={form.jp.melody} onChange={(e) => setJp({ melody: e.target.value })} placeholder="5 3 3 - | 4 2 2 - | 1 2 3 4 | 5 5 5 -" />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="score-chords">和弦（每小節用 | 分開）</label>
+                <input id="score-chords" style={ta} spellCheck={false} value={form.jp.chords} onChange={(e) => setJp({ chords: e.target.value })} placeholder="C | G7 | C | G7" />
+              </div>
+              <p style={{ margin: 0, fontSize: 12, color: "#64748b", lineHeight: 1.7 }}>
+                旋律：<code>1</code>–<code>7</code> 唱名、<code>0</code> 休止、<code>-</code> 延長一拍、<code>&apos;</code> 高八度、<code>,</code> 低八度、<code>_</code> 八分（<code>__</code> 十六分）、<code>.</code> 附點、<code>#</code>／<code>b</code> 升降、<code>|</code> 小節線；以四分音符為一拍，第一小節拍數不足視為弱起。
+                和弦：每小節 1、2 或 4 個，例如 <code>C</code> <code>Am</code> <code>G7</code> <code>Cmaj7</code> <code>Dm7</code> <code>F#m</code> <code>Bb</code> <code>G7/B</code>；空白小節沿用前一個。
+              </p>
+            </div>
+          )}
+
           {fileErr && <div role="alert" style={{ color: "#b91c1c", fontSize: 13, fontWeight: 600 }}>⚠️ {fileErr}</div>}
           {model && (
             <div style={{ fontSize: 13, color: "#334155" }}>
@@ -222,19 +326,40 @@ export default function ScoresManagePage({ showToast = () => {} }) {
             </div>
           )}
 
+          {accOptions.length > 0 && (
+            <div className={styles.formGroup}>
+              <label htmlFor="score-acc">預設伴奏</label>
+              <select id="score-acc" className={styles.selectInput} value={form.defaultAcc} onChange={(e) => setForm({ ...form, defaultAcc: e.target.value })}>
+                <option value="">自動（{model?.hasLeftHand ? "原譜左手" : "柱式"}）</option>
+                {accOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          )}
+
           <div className={styles.formGroup}>
-            <label>掛到哪些單元（可多選）</label>
-            <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+            <label>掛到哪些單元（可多選；可逐一指定該單元固定用哪種伴奏）</label>
+            <div style={{ display: "grid", gap: 8, maxHeight: 260, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
               {unitsByChapter.map(({ chapter, units }) => (
                 <div key={chapter.id}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>{chapter.title}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px" }}>
-                    {units.map((v) => (
-                      <label key={v.id} style={{ fontSize: 13, display: "inline-flex", gap: 4, alignItems: "center" }}>
-                        <input type="checkbox" checked={form.unitIds.includes(v.id)} onChange={() => toggleUnit(v.id)} />
-                        {v.title}
-                      </label>
-                    ))}
+                  <div style={{ display: "grid", gap: 4 }}>
+                    {units.map((v) => {
+                      const on = form.unitIds.includes(v.id);
+                      return (
+                        <div key={v.id} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <label style={{ fontSize: 13, display: "inline-flex", gap: 4, alignItems: "center" }}>
+                            <input type="checkbox" checked={on} onChange={() => toggleUnit(v.id)} />
+                            {v.title}
+                          </label>
+                          {on && accOptions.length > 0 && (
+                            <select aria-label={`${v.title} 的伴奏`} value={form.unitAcc[v.id] || ""} onChange={(e) => setUnitAcc(v.id, e.target.value)} style={{ fontSize: 12 }}>
+                              <option value="">學員自選</option>
+                              {accOptions.map((o) => <option key={o.value} value={o.value}>只用{o.label}</option>)}
+                            </select>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -250,8 +375,8 @@ export default function ScoresManagePage({ showToast = () => {} }) {
           </div>
           {preview && model && (
             <div style={{ border: "1px dashed #cbd5e1", borderRadius: 12, padding: 10, background: "#F5F5F7" }}>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>預覽（學員看到的畫面；尚未儲存）</div>
-              <InteractiveScore xml={form.musicxml} title={form.title || model.title} subtitle={form.subtitle} />
+              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>預覽（學員看到的畫面；尚未儲存）{form.defaultAcc ? `　預設伴奏：${accLabel(form.defaultAcc)}` : ""}</div>
+              <InteractiveScore key={form.musicxml.length + form.defaultAcc} xml={form.musicxml} title={form.title || model.title} subtitle={form.subtitle} defaultAccompaniment={form.defaultAcc || null} />
             </div>
           )}
         </div>
@@ -275,24 +400,32 @@ export default function ScoresManagePage({ showToast = () => {} }) {
               <tbody>
                 {rows.map((row) => {
                   const abc = row.format !== "musicxml";
+                  const ua = row.meta?.unitAccompaniment || {};
+                  const accName = (v) => (v === "original" ? "原譜左手" : ACCOMPANIMENTS.find((a) => a.id === v)?.label);
                   return (
                     <tr key={row.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                       <td style={td}>
                         <div style={{ fontWeight: 700, color: "#0f172a" }}>
                           {row.title} {abc && <span style={tag("#f1f5f9", "#64748b")}>舊版 ABC</span>}
+                          {!abc && row.meta?.jianpu && <span style={tag("#eef2ff", "#4338ca")}>簡譜輸入</span>}
                           {!abc && row.version > 1 && <span style={{ fontSize: 11, color: "#94a3b8" }}> v{row.version}</span>}
                         </div>
                         {row.subtitle && <div style={{ fontSize: 12, color: "#94a3b8" }}>{row.subtitle}</div>}
                       </td>
                       <td style={td}>{DIFF[row.difficulty] || "—"}</td>
                       <td style={td}>{row.published ? <span style={tag("#dcfce7", "#15803d")}>已發布</span> : <span style={tag("#fef3c7", "#b45309")}>草稿</span>}</td>
-                      <td style={td}>{(row.units || []).map((u) => u.title || u.video_id).join("、") || "—"}</td>
+                      <td style={td}>
+                        {(row.units || []).map((u) => (
+                          <div key={u.video_id}>{u.title || u.video_id}{ua[u.video_id] ? <span style={{ color: "#64748b" }}>（只用{accName(ua[u.video_id])}）</span> : ""}</div>
+                        ))}
+                        {!(row.units || []).length && "—"}
+                      </td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(row.updated_at)}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           {!abc && <button className={styles.btnSmall} onClick={() => openEdit(row)}>編輯</button>}
                           <button className={styles.btnSmall} onClick={() => setPublished(row, !row.published)}>{row.published ? "下架" : "發布"}</button>
-                          {!abc && !row.published && <button className={styles.btnDanger} onClick={() => remove(row)}>刪除</button>}
+                          <button className={styles.btnDanger} onClick={() => remove(row)}>刪除</button>
                         </div>
                       </td>
                     </tr>

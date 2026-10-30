@@ -38,7 +38,13 @@ async function replaceUnits(supabase, scoreId, unitIds) {
   return error || null;
 }
 
-const badInput = (errors) => NextResponse.json({ error: errors[0], errors }, { status: 400 });
+const badInput = (errors, message) => NextResponse.json({ error: errors[0], errors, ...(message ? { message } : {}) }, { status: 400 });
+// 單元指定伴奏只留還掛著的單元
+const pruneUnits = (meta, unitIds) => {
+  if (!meta?.unitAccompaniment || !unitIds) return meta;
+  const keep = new Set(unitIds);
+  return { ...meta, unitAccompaniment: Object.fromEntries(Object.entries(meta.unitAccompaniment).filter(([k]) => keep.has(k))) };
+};
 
 export async function GET(req) {
   if (!(await verifyAdminToken(req))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -73,12 +79,13 @@ export async function POST(req) {
   if (!supabase) return NextResponse.json({ error: "db_not_configured" }, { status: 503 });
 
   const body = await req.json().catch(() => ({}));
-  const { fields, unitIds, errors } = normalizeScoreInput(body, { partial: false });
-  if (errors.length) return badInput(errors);
+  const { fields, unitIds, errors, metaPatch, message } = normalizeScoreInput(body, { partial: false });
+  if (errors.length) return badInput(errors, message);
+  const meta = pruneUnits({ ...fields.meta, ...metaPatch }, unitIds || []);
 
   const { data, error } = await supabase
     .from("scores")
-    .insert({ ...fields, format: "musicxml", published: false, version: 1 })
+    .insert({ ...fields, meta, format: "musicxml", published: false, version: 1 })
     .select("id")
     .single();
   if (error) return serverError(error);
@@ -105,7 +112,7 @@ export async function PATCH(req) {
 
   const { data: cur, error: curErr } = await supabase
     .from("scores")
-    .select("id,format,version,published,musicxml")
+    .select("id,format,version,published,musicxml,meta")
     .eq("id", id)
     .maybeSingle();
   if (curErr) return serverError(curErr);
@@ -115,11 +122,17 @@ export async function PATCH(req) {
   if (cur.format === "abc" && Object.keys(rest).some((k) => k !== "published"))
     return NextResponse.json({ error: "abc_readonly" }, { status: 400 });
 
-  const { fields, unitIds, errors } = normalizeScoreInput(rest, { partial: true });
-  if (errors.length) return badInput(errors);
+  const { fields, unitIds, errors, metaPatch, message } = normalizeScoreInput(rest, { partial: true });
+  if (errors.length) return badInput(errors, message);
 
   const update = { ...fields, updated_at: new Date().toISOString() };
-  if (fields.musicxml !== undefined && fields.musicxml !== cur.musicxml) update.version = (cur.version || 1) + 1;
+  const changedXml = fields.musicxml !== undefined && fields.musicxml !== cur.musicxml;
+  if (changedXml) update.version = (cur.version || 1) + 1;
+  if (fields.meta || Object.keys(metaPatch).length) {
+    const merged = { ...(cur.meta || {}), ...(fields.meta || {}), ...metaPatch };
+    if (fields.musicxml !== undefined && !metaPatch.jianpu) delete merged.jianpu; // 換成上傳檔，內容已不是簡譜打的
+    update.meta = pruneUnits(merged, unitIds);
+  }
   const { error } = await supabase.from("scores").update(update).eq("id", id);
   if (error) return serverError(error);
   if (unitIds !== undefined && cur.format === "musicxml") {
@@ -146,14 +159,13 @@ export async function DELETE(req) {
 
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
+  // 草稿、已發布、舊 ABC 都能刪（後台會先跳確認框）；掛單元的 score_units 由外鍵 CASCADE 一併刪
   const { data: cur, error: curErr } = await supabase.from("scores").select("id,format,published,title").eq("id", id).maybeSingle();
   if (curErr) return serverError(curErr);
   if (!cur) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (cur.format !== "musicxml") return NextResponse.json({ error: "cannot_delete_abc" }, { status: 409 });
-  if (cur.published) return NextResponse.json({ error: "published" }, { status: 409 });
 
   const { error } = await supabase.from("scores").delete().eq("id", id);
   if (error) return serverError(error);
-  await logAudit(supabase, { actor: payload.email, action: "score.delete", targetType: "score", targetId: id, meta: { title: cur.title }, req });
+  await logAudit(supabase, { actor: payload.email, action: "score.delete", targetType: "score", targetId: id, meta: { title: cur.title, format: cur.format, published: cur.published }, req });
   return NextResponse.json({ ok: true });
 }
