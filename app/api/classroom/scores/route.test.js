@@ -10,7 +10,7 @@ import { makeSupabaseMock } from "@/lib/test-helpers/supabase-mock";
 const VID = "11111111-1111-4111-8111-111111111111";
 const ABC_ROW = { id: "a1", video_id: VID, title: "小蜜蜂", subtitle: "右手旋律", abc: "X:1", sort_order: 0 };
 const V2_ROW = { id: "s1", title: "小蜜蜂雙手", subtitle: null, format: "musicxml", musicxml: "<x/>", version: 1, sort_order: 1, published: true,
-  meta: { defaultAccompaniment: "arp", unitAccompaniment: { [VID]: "bass", other: "block" }, warnings: [] } };
+  meta: { defaultAccompaniment: "wave", unitAccompaniment: { [VID]: "root", other: "block" }, warnings: [] } };
 const req = (qs = `?video_id=${VID}`) => new Request("http://x/api/classroom/scores" + qs, { headers: { authorization: "Bearer t" } });
 
 function db(v2) {
@@ -47,8 +47,8 @@ describe("GET /api/classroom/scores", () => {
     const { scores } = await (await GET(req())).json();
     expect(scores.map((s) => [s.id, s.format])).toEqual([["a1", "abc"], ["s1", "musicxml"]]);
     expect(scores[1].musicxml).toBe("<x/>");
-    expect(scores[1].defaultAccompaniment).toBe("arp");
-    expect(scores[1].lockedAccompaniment).toBe("bass"); // 這個單元指定根音＋和弦
+    expect(scores[1].defaultAccompaniment).toBe("wave");
+    expect(scores[1].lockedAccompaniment).toBe("root"); // 這個單元指定 8-2 根音伴奏
     expect(scores[1].meta).toBe(undefined); // 不外流整份 meta
     const legacy = sb.calls.find((c) => c.table === "scores");
     expect(sb.arg(legacy, "select")).not.toMatch(/format/);

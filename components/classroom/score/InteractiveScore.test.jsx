@@ -58,26 +58,26 @@ describe("InteractiveScore", () => {
   it("左手伴奏選單：有原譜左手時多「原譜左手」並當預設", () => {
     render(<InteractiveScore xml={BEE} title="小蜜蜂" />);
     const sel = screen.getByLabelText("左手伴奏");
-    expect([...sel.options].map((o) => o.textContent)).toEqual(["原譜左手", "柱式", "根音＋和弦", "分解", "琶音"]);
+    expect([...sel.options].map((o) => o.textContent)).toEqual(["原譜左手", "柱式", "8-2 根音伴奏", "8-3 經典波浪", "8-4 交錯律動", "8-5 折返分解", "8-6 五度伴奏", "8-7 五八度伴奏", "8-8 先八度後五度"]);
     expect(sel.value).toBe("original");
   });
 
   it("只有右手的曲子：預設柱式（或後台指定的預設），切換會換左手", () => {
-    const { container } = render(<InteractiveScore xml={MELODY} title="小蜜蜂" defaultAccompaniment="arp" />);
+    const { container } = render(<InteractiveScore xml={MELODY} title="小蜜蜂" defaultAccompaniment="wave" />);
     const sel = screen.getByLabelText("左手伴奏");
-    expect([...sel.options].map((o) => o.value)).toEqual(["block", "bass", "broken", "arp"]);
-    expect(sel.value).toBe("arp");
+    expect([...sel.options].map((o) => o.value)).toEqual(["block", "root", "wave", "rocking", "arch", "power", "r158", "r185"]);
+    expect(sel.value).toBe("wave");
     fireEvent.click(screen.getByRole("button", { name: "簡譜" }));
     fireEvent.click(screen.getByRole("button", { name: "顯示左手" }));
-    const arp = lhIds(container);
+    const wave = lhIds(container);
     fireEvent.change(sel, { target: { value: "block" } });
-    expect(lhIds(container)).toBeLessThan(arp);
+    expect(lhIds(container)).toBeLessThan(wave);
   });
 
   it("單元鎖定伴奏：不能切換，顯示固定型態", () => {
-    render(<InteractiveScore xml={MELODY} title="小蜜蜂" lockedAccompaniment="bass" />);
+    render(<InteractiveScore xml={MELODY} title="小蜜蜂" lockedAccompaniment="root" />);
     const sel = screen.getByLabelText("左手伴奏");
-    expect(sel.value).toBe("bass");
+    expect(sel.value).toBe("root");
     expect(sel.disabled).toBe(true);
   });
 

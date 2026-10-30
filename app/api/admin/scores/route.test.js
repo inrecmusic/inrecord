@@ -118,11 +118,11 @@ describe("/api/admin/scores", () => {
     const sb = makeSupabaseMock((table, ops) => (isOp(ops, "insert") ? { data: { id: "s1" }, error: null } : { data: null, error: null }));
     getSupabaseAdmin.mockReturnValue(sb);
     const jianpu = { key: "C", beats: 4, beatType: 4, tempo: 96, melody: "5 3 3 - | 4 2 2 -", chords: "C | G7" };
-    const res = await POST(req("POST", { title: "小蜜蜂", jianpu, default_accompaniment: "bass" }));
+    const res = await POST(req("POST", { title: "小蜜蜂", jianpu, default_accompaniment: "root" }));
     expect(res.status).toBe(200);
     const row = sb.arg(sb.calls.find((c) => c.table === "scores" && sb.has(c, "insert")), "insert");
     expect(row.musicxml).toContain("<score-partwise");
-    expect(row.meta).toMatchObject({ measureCount: 2, hasLeftHand: false, jianpu, defaultAccompaniment: "bass" });
+    expect(row.meta).toMatchObject({ measureCount: 2, hasLeftHand: false, jianpu, defaultAccompaniment: "root" });
   });
 
   it("PATCH 單元伴奏：保留原本 meta、只留還掛著的單元", async () => {
@@ -131,21 +131,21 @@ describe("/api/admin/scores", () => {
         ? { data: { id: "s1", format: "musicxml", version: 1, published: true, musicxml: BEE, meta: { measureCount: 8, jianpu: { melody: "1" } } }, error: null }
         : { data: null, error: null });
     getSupabaseAdmin.mockReturnValue(sb);
-    await PATCH(req("PATCH", { id: "s1", unitIds: [U1], unit_accompaniment: { [U1]: "arp", [U2]: "bass" } }));
+    await PATCH(req("PATCH", { id: "s1", unitIds: [U1], unit_accompaniment: { [U1]: "wave", [U2]: "root" } }));
     const upd = sb.arg(sb.calls.find((c) => c.table === "scores" && sb.has(c, "update")), "update");
-    expect(upd.meta).toEqual({ measureCount: 8, jianpu: { melody: "1" }, unitAccompaniment: { [U1]: "arp" } });
+    expect(upd.meta).toEqual({ measureCount: 8, jianpu: { melody: "1" }, unitAccompaniment: { [U1]: "wave" } });
   });
 
   it("PATCH 換上傳檔：簡譜來源移除（內容已不是簡譜打的）", async () => {
     const sb = makeSupabaseMock((table, ops) =>
       isOp(ops, "maybeSingle")
-        ? { data: { id: "s1", format: "musicxml", version: 1, published: false, musicxml: "<old/>", meta: { jianpu: { melody: "1" }, defaultAccompaniment: "arp" } }, error: null }
+        ? { data: { id: "s1", format: "musicxml", version: 1, published: false, musicxml: "<old/>", meta: { jianpu: { melody: "1" }, defaultAccompaniment: "wave" } }, error: null }
         : { data: null, error: null });
     getSupabaseAdmin.mockReturnValue(sb);
     await PATCH(req("PATCH", { id: "s1", musicxml: BEE }));
     const upd = sb.arg(sb.calls.find((c) => c.table === "scores" && sb.has(c, "update")), "update");
     expect(upd.meta.jianpu).toBe(undefined);
-    expect(upd.meta.defaultAccompaniment).toBe("arp");
+    expect(upd.meta.defaultAccompaniment).toBe("wave");
     expect(upd.meta.measureCount).toBe(8);
   });
 

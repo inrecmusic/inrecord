@@ -16,6 +16,7 @@ import { ACCOMPANIMENTS } from "@/lib/score/accompaniment";
 import InteractiveScore from "@/components/classroom/score/InteractiveScore";
 
 const DIFF = { 1: "入門", 2: "初級", 3: "中級" };
+const ACC_IDS = new Set(["original", ...ACCOMPANIMENTS.map((a) => a.id)]);
 const KEY_NAMES = ["C♭", "G♭", "D♭", "A♭", "E♭", "B♭", "F", "C", "G", "D", "A", "E", "B", "F♯", "C♯"];
 const KEYS = ["C", "G", "D", "A", "E", "F", "Bb", "Eb", "Ab"];
 const TIMES = ["4/4", "3/4", "2/4", "6/8"];
@@ -129,7 +130,9 @@ export default function ScoresManagePage({ showToast = () => {} }) {
         musicxml: data.musicxml || "", file_name: data.file_name || "", unitIds: (data.units || []).map((u) => u.video_id),
         version: data.version || 1, published: !!data.published,
         source: meta.jianpu ? "jianpu" : "file", jp: meta.jianpu ? { ...EMPTY_JP, ...meta.jianpu } : EMPTY_JP,
-        defaultAcc: meta.defaultAccompaniment || "", unitAcc: meta.unitAccompaniment || {},
+        // 已下架的型態（2026-10-31 前的分解、琶音等）當作沒設，存檔才不會被擋
+        defaultAcc: ACC_IDS.has(meta.defaultAccompaniment) ? meta.defaultAccompaniment : "",
+        unitAcc: Object.fromEntries(Object.entries(meta.unitAccompaniment || {}).filter(([, v]) => ACC_IDS.has(v))),
       };
       try {
         setModel(parseMusicXml(data.musicxml));
@@ -415,7 +418,7 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                       <td style={td}>{row.published ? <span style={tag("#dcfce7", "#15803d")}>已發布</span> : <span style={tag("#fef3c7", "#b45309")}>草稿</span>}</td>
                       <td style={td}>
                         {(row.units || []).map((u) => (
-                          <div key={u.video_id}>{u.title || u.video_id}{ua[u.video_id] ? <span style={{ color: "#64748b" }}>（只用{accName(ua[u.video_id])}）</span> : ""}</div>
+                          <div key={u.video_id}>{u.title || u.video_id}{accName(ua[u.video_id]) ? <span style={{ color: "#64748b" }}>（只用{accName(ua[u.video_id])}）</span> : ""}</div>
                         ))}
                         {!(row.units || []).length && "—"}
                       </td>

@@ -131,14 +131,14 @@ describe("ScoresManagePage：直接打簡譜、伴奏設定、刪除", () => {
     fireEvent.click(await screen.findByRole("button", { name: "新增曲目" }));
     pickFile("melody.musicxml", fx("twinkle-melody.musicxml"));
     await screen.findByTestId("score-warnings");
-    fireEvent.change(screen.getByLabelText("預設伴奏"), { target: { value: "arp" } });
+    fireEvent.change(screen.getByLabelText("預設伴奏"), { target: { value: "wave" } });
     fireEvent.click(screen.getByLabelText("1-2【跟練】Do 之歌"));
-    fireEvent.change(screen.getByLabelText("1-2【跟練】Do 之歌 的伴奏"), { target: { value: "bass" } });
+    fireEvent.change(screen.getByLabelText("1-2【跟練】Do 之歌 的伴奏"), { target: { value: "root" } });
     fireEvent.click(screen.getByRole("button", { name: "儲存" }));
     await waitFor(() => expect(lastCall("POST")).toBeTruthy());
     const { body } = lastCall("POST");
-    expect(body.default_accompaniment).toBe("arp");
-    expect(body.unit_accompaniment).toEqual({ [V1]: "bass" });
+    expect(body.default_accompaniment).toBe("wave");
+    expect(body.unit_accompaniment).toEqual({ [V1]: "root" });
     expect(body.unitIds).toEqual([V1]);
   });
 

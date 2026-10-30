@@ -1,7 +1,7 @@
 "use client";
 // components/classroom/score/StaffView.jsx — 雙手五線譜（OpenSheetMusicDisplay）
 //
-// OSMD 動態 import（不進首屏、自家打包，不必改 CSP）。畫之前先用 prepareStaffXml 處理「只看右手」與和弦文字；
+// OSMD 動態 import（不進首屏、自家打包，不必改 CSP）。畫之前先用 prepareStaffXml 處理「只看右手」（含節奏斜線）與和弦文字；
 // 畫完用 collectOsmdNotes＋matchStaffNotes 建「模型 id → SVG 元素」對照表，高亮與提示框都靠它。
 // 關掉 OSMD 自己的 autoResize：寬度改變（手機旋轉、側欄開合）時由這裡重畫並「每次重建對照表」，
 // 否則重畫後舊元素已不在畫面上，高亮會亮錯或不亮。
@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { prepareStaffXml, matchStaffNotes } from "@/lib/score/staff-xml";
 import { collectOsmdNotes, OSMD_OPTIONS } from "./osmd-notes";
 
-export default function StaffView({ xml, model, rightHandOnly = false, chordMode = "name", showChords = true, activeIds, onNoteHover }) {
+export default function StaffView({ xml, model, rightHandOnly = false, slashes = false, chordMode = "name", showChords = true, activeIds, onNoteHover }) {
   const hostRef = useRef(null);
   const osmdRef = useRef(null);
   const idToEls = useRef(new Map());
@@ -34,7 +34,7 @@ export default function StaffView({ xml, model, rightHandOnly = false, chordMode
     if (!osmd || !hostRef.current) return;
     lastWidth.current = hostRef.current.clientWidth;
     osmd.render();
-    const map = matchStaffNotes(model, collectOsmdNotes(osmd.GraphicSheet));
+    const map = matchStaffNotes(model, collectOsmdNotes(osmd.GraphicSheet), { slashes: rightHandOnly && slashes });
     idToEls.current = map;
     const rev = new Map();
     for (const [id, els] of map) for (const el of els) if (el && !rev.has(el)) rev.set(el, id);
@@ -58,7 +58,7 @@ export default function StaffView({ xml, model, rightHandOnly = false, chordMode
         if (!osmdRef.current) {
           osmdRef.current = new OpenSheetMusicDisplay(hostRef.current, OSMD_OPTIONS);
         }
-        await osmdRef.current.load(prepareStaffXml(xml, model, { rightHandOnly, chordMode, showChords }));
+        await osmdRef.current.load(prepareStaffXml(xml, model, { rightHandOnly, slashes, chordMode, showChords }));
         if (cancelled) return;
         renderAndMap();
         setStatus("ready");
@@ -72,7 +72,7 @@ export default function StaffView({ xml, model, rightHandOnly = false, chordMode
     };
     // renderAndMap 讀 ref，不放進依賴
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [xml, model, rightHandOnly, chordMode, showChords]);
+  }, [xml, model, rightHandOnly, slashes, chordMode, showChords]);
 
   // 寬度改變 → 重畫＋重建對照表（200ms 防抖）
   useEffect(() => {

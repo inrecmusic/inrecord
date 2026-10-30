@@ -3,9 +3,9 @@
 //
 // 單一來源：parseMusicXml 出的模型同時餵給五線譜（OSMD）、雙行簡譜、播放時間軸，三處共用音符 id，
 // 播放時 activeIdsAt 算出的 id 同時亮五線譜、簡譜與鍵盤。版面、控制列分組、圖示照原型
-// （docs/superpowers/specs/assets/2026-10-29-score-prototype.html）；拿掉「左手伴奏」「節奏斜線」，
-// 預設 Lead Sheet（只顯示右手），按「顯示左手」才出現左手；左手可選原譜或依和弦自動產生的伴奏
-// （柱式／根音＋和弦／分解／琶音，lib/score/accompaniment.js），單元可在後台鎖定一種。
+// （docs/superpowers/specs/assets/2026-10-29-score-prototype.html）。
+// 預設 Lead Sheet（只顯示右手），按「顯示左手」才出現左手；隱藏左手時五線譜與簡譜都在右手下方畫節奏斜線（照左手的節奏）。
+// 左手可選原譜或依和弦自動產生的伴奏（柱式＋第 8 章 8-2～8-8，lib/score/accompaniment.js），單元可在後台鎖定一種。
 // 任何設定改變都先停止播放，聲音與畫面才不會對不上。
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parseMusicXml } from "@/lib/score/musicxml";
@@ -279,7 +279,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
         <div className="group">
           <span className="glabel">Lead Sheet</span>
           {hasLH && <Tog on={showLH} onClick={toggleLH} icon="eye">顯示左手</Tog>}
-          <Tog on={slashes} onClick={() => setSlashes((v) => !v)} icon="slash">節奏斜線</Tog>
+          {hasLH && <Tog on={slashes} onClick={() => setSlashes((v) => !v)} icon="slash">節奏斜線</Tog>}
         </div>
         {accOptions.length > 0 && (
           <div className="group">
@@ -343,7 +343,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
         <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg}</div>
         {(view === "staff" || view === "both") && (
           <div className="sv2-section">
-            <StaffView xml={staffXml} model={model} {...chordProps} onNoteHover={onNoteHover} />
+            <StaffView xml={staffXml} model={model} {...chordProps} slashes={slashes} onNoteHover={onNoteHover} />
           </div>
         )}
         {(view === "jianpu" || view === "both") && (
