@@ -61,6 +61,16 @@ export function createPianoSampler({ base = "/score-piano/" } = {}) {
     await Promise.all(names.map(loadOne));
   }
 
+  // 這個音的取樣已解碼好（可以立刻用真鋼琴聲）
+  function loaded(midi) {
+    const b = buffers.get(nearestSample(midi).name);
+    return !!(b && typeof b === "object" && "duration" in b);
+  }
+  // 一次預載全部 21 個取樣（鍵盤第一次被按時呼叫，之後每個鍵都是真鋼琴聲）
+  function loadAll() {
+    return load(SAMPLES.map((x) => x.midi));
+  }
+
   function track(node, until) {
     const item = { node, until };
     live.add(item);
@@ -148,5 +158,5 @@ export function createPianoSampler({ base = "/score-piano/" } = {}) {
     }
   }
 
-  return { ensure, load, play, click, stopAll, close, get context() { return ctx; } };
+  return { ensure, load, loadAll, loaded, play, click, stopAll, close, get context() { return ctx; } };
 }

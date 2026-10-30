@@ -54,16 +54,18 @@ export const SCORE_V2_CSS = `
 .score-v2 .sh-right{grid-column:3;text-align:right;font-size:12px;color:#6E6E73;align-self:end}
 .score-v2 .sv2-msg{text-align:center;font-size:12px;color:#0060DF;min-height:18px;margin:4px 0 2px}
 .score-v2 .sv2-msg.err{color:#C4291F}
-.score-v2 .sv2-section+.sv2-section{margin-top:14px;padding-top:12px;border-top:1px solid #E5E5EA}
+.score-v2 .sv2-section+.sv2-section{margin-top:14px}
 .score-v2 .sv2-staff{min-height:60px}
 .score-v2 .sv2-staff svg{display:block;max-width:100%;height:auto}
-.score-v2 .sv2-staff g.is-now path,.score-v2 .sv2-staff g.is-now rect{fill:#007AFF;stroke:#007AFF}
+.score-v2 .sv2-staff g.is-now path,.score-v2 .sv2-staff g.is-now rect{fill:var(--rh);stroke:var(--rh)}
+.score-v2 .sv2-staff g.is-now.lh path,.score-v2 .sv2-staff g.is-now.lh rect{fill:var(--lh);stroke:var(--lh)}
 .score-v2 .sv2-status{font-size:13px;color:#6E6E73;padding:12px 4px}
 .score-v2 .sv2-status.sv2-err{color:#C4291F}
 .score-v2 .sv2-jianpu svg{display:block;max-width:100%;user-select:none;-webkit-user-select:none}
 .score-v2 .sv2-jianpu .jp-note,.score-v2 .sv2-jianpu .jp-chord{cursor:pointer}
 .score-v2 .sv2-jianpu .jp-chord text{fill:#007AFF}
-.score-v2 .sv2-jianpu .jp-note.is-now text,.score-v2 .sv2-jianpu .jp-note.is-now circle{fill:#007AFF}
+.score-v2 .sv2-jianpu .jp-note.is-now text,.score-v2 .sv2-jianpu .jp-note.is-now circle{fill:var(--rh)}
+.score-v2 .sv2-jianpu .jp-note.is-now.lh text,.score-v2 .sv2-jianpu .jp-note.is-now.lh circle{fill:var(--lh)}
 .score-v2 .sv2-credit{font-size:11px;color:#8E8E93;text-align:right;margin:8px 4px 0}
 
 /* 鍵盤＋和弦辨識 */
@@ -75,6 +77,7 @@ export const SCORE_V2_CSS = `
 .score-v2 .sv2-key.b{height:62%;background:var(--key-b);border-radius:0 0 4px 4px;z-index:2}
 .score-v2 .sv2-key .lab{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:10px;color:var(--key-label)}
 .score-v2 .sv2-key.is-now{background:var(--rh)}
+.score-v2 .sv2-key.is-now.lh{background:var(--lh)}
 .score-v2 .sv2-key.press{background:var(--accent)!important}
 .score-v2 .sv2-detect{background:var(--paper);border-radius:18px;box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:6px;align-content:start}
 .score-v2 .sv2-detect .lbl{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--muted)}

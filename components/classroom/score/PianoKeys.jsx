@@ -13,7 +13,7 @@ const Ic = ({ d }) => (
 const IC_POINTER = '<path d="M6 3.5l12 7-5.3 1.6L9.8 17.5z"/>';
 const IC_X = '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>';
 
-export default function PianoKeys({ low = 36, high = 84, activeMidis, onNote }) {
+export default function PianoKeys({ low = 36, high = 84, activeMidis, activeLH, onNote }) {
   const [latch, setLatch] = useState(false);
   const [held, setHeld] = useState(() => new Set());
 
@@ -93,7 +93,7 @@ export default function PianoKeys({ low = 36, high = 84, activeMidis, onNote }) 
             <div
               key={k.m}
               data-m={k.m}
-              className={`sv2-key ${k.black ? "b" : "w"}${held.has(k.m) ? " press" : ""}${active.has(k.m) ? " is-now" : ""}`}
+              className={`sv2-key ${k.black ? "b" : "w"}${held.has(k.m) ? " press" : ""}${active.has(k.m) ? (activeLH?.has(k.m) ? " is-now lh" : " is-now") : ""}`}
               style={{ left: `${k.left}%`, width: `${k.width}%` }}
               onPointerDown={(e) => {
                 e.preventDefault?.();

@@ -87,11 +87,11 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
   const [view, setView] = useState("staff");
   const [showLH, setShowLH] = useState(false); // Lead Sheet：預設只顯示右手
   const [slashes, setSlashes] = useState(true);
-  const [chordMode, setChordMode] = useState("name");
+  const [chordMode, setChordMode] = useState("both"); // 原型預設「兩者」
   const [showChords, setShowChords] = useState(true);
   const [bpm, setBpm] = useState(() => Math.max(40, Math.min(160, Math.round(model?.tempo ?? DEFAULT_BPM))));
-  const [metronome, setMetronome] = useState(false);
-  const [countIn, setCountIn] = useState(false);
+  const [metronome, setMetronome] = useState(true); // 原型預設節拍器、預備拍都開
+  const [countIn, setCountIn] = useState(true);
   const [hands, setHands] = useState({ rh: true, lh: true });
   const [loopOn, setLoopOn] = useState(false);
   const [loopFrom, setLoopFrom] = useState(0);
@@ -206,6 +206,16 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     }
     return s;
   }, [activeIds, noteById]);
+  // 只有左手在彈的鍵亮橘色（原型右手紫、左手橘）
+  const activeLH = useMemo(() => {
+    const rh = new Set();
+    const lh = new Set();
+    for (const id of activeIds) {
+      const n = noteById.get(id);
+      if (n?.midi != null) (n.staff === 2 ? lh : rh).add(n.midi);
+    }
+    return new Set([...lh].filter((m) => !rh.has(m)));
+  }, [activeIds, noteById]);
 
   const onNoteHover = useCallback(
     (id, rect) => {
@@ -229,8 +239,12 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     const ctx = s?.ensure();
     if (!ctx) return;
     if (ctx.state === "suspended") ctx.resume().catch(() => {});
-    s.load([m]);
-    s.play(m, ctx.currentTime + 0.01, 0.9);
+    // 鍵盤一律用平台鋼琴取樣：還沒載到的音先等它載好再發聲（第一次約零點幾秒），不退回電子合成音；
+    // 同時把其他取樣全部預載，之後每個鍵都即按即響
+    const ready = s.loaded(m);
+    s.loadAll();
+    if (ready) s.play(m, ctx.currentTime + 0.01, 0.9);
+    else s.load([m]).then(() => s.context && s.play(m, s.context.currentTime + 0.01, 0.9));
   }, []);
 
   if (!model) {
@@ -276,18 +290,11 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
           <span className="glabel">譜面</span>
           <Seg value={view} onChange={setViewPersist} items={[["staff", "五線譜", "staff"], ["jianpu", "簡譜", "jianpu"], ["both", "對照", "both"]]} />
         </div>
-        <div className="group">
-          <span className="glabel">Lead Sheet</span>
-          {hasLH && <Tog on={showLH} onClick={toggleLH} icon="eye">顯示左手</Tog>}
-          {hasLH && <Tog on={slashes} onClick={() => setSlashes((v) => !v)} icon="slash">節奏斜線</Tog>}
-        </div>
-        {accOptions.length > 0 && (
+        {hasLH && (
           <div className="group">
-            <label className="glabel" htmlFor="sv2-acc">左手伴奏</label>
-            <select id="sv2-acc" value={accStyle} disabled={!!lockedAccompaniment} onChange={(e) => setAccStyle(e.target.value)}>
-              {accOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            {lockedAccompaniment && <span className="glabel">（本單元指定）</span>}
+            <span className="glabel">Lead Sheet</span>
+            <Tog on={showLH} onClick={toggleLH} icon="eye">顯示左手</Tog>
+            <Tog on={slashes} onClick={() => setSlashes((v) => !v)} icon="slash">節奏斜線</Tog>
           </div>
         )}
         {model.hasChords && (
@@ -295,6 +302,15 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
             <span className="glabel">和弦標示</span>
             <Seg value={chordMode} onChange={setChordMode} items={[["name", "和弦名", "cname"], ["roman", "級數", "roman"], ["both", "兩者", "cboth"]]} />
             <Tog on={showChords} onClick={() => setShowChords((v) => !v)} icon="eye">顯示</Tog>
+          </div>
+        )}
+        {accOptions.length > 0 && (
+          <div className="group">
+            <label className="glabel" htmlFor="sv2-acc">左手伴奏</label>
+            <select id="sv2-acc" value={accStyle} disabled={!!lockedAccompaniment} onChange={(e) => setAccStyle(e.target.value)}>
+              {accOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {lockedAccompaniment && <span className="glabel">（本單元指定）</span>}
           </div>
         )}
         <div className="group">
@@ -335,7 +351,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
         <div className="sv2-head">
           <div className="sh-left">
             <div className="keysig">{keyLabel}</div>
-            <div className="bpm">♩ = {model.tempo ? Math.round(model.tempo) : DEFAULT_BPM}</div>
+            <div className="bpm">♩ = {bpm}</div>
           </div>
           <h2>{title || model.title}</h2>
           <div className="sh-right">{credit}</div>
@@ -354,7 +370,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
         <p className="sv2-credit">鋼琴音色：Salamander Grand Piano（Alexander Holm），CC BY 3.0</p>
       </section>
 
-      <PianoKeys low={36} high={84} activeMidis={activeMidis} onNote={playNote} />
+      <PianoKeys low={36} high={84} activeMidis={activeMidis} activeLH={activeLH} onNote={playNote} />
       <ScoreTip target={tip} />
     </div>
   );

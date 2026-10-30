@@ -15,6 +15,7 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
   const idToEls = useRef(new Map());
   const elToId = useRef(new Map());
   const lit = useRef(new Set());
+  const lhIds = useRef(new Set());
   const warned = useRef(false);
   const lastWidth = useRef(0);
   const [status, setStatus] = useState("loading");
@@ -26,6 +27,8 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
     for (const id of ids || []) for (const el of idToEls.current.get(id) || []) if (el) next.add(el);
     for (const el of lit.current) if (!next.has(el)) el.classList.remove("is-now");
     for (const el of next) if (!lit.current.has(el)) el.classList.add("is-now");
+    // 原型：右手紫、左手橘（節奏斜線也算左手）
+    for (const id of ids || []) for (const el of idToEls.current.get(id) || []) el?.classList.toggle("lh", lhIds.current.has(id));
     lit.current = next;
   }
 
@@ -34,6 +37,7 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
     if (!osmd || !hostRef.current) return;
     lastWidth.current = hostRef.current.clientWidth;
     osmd.render();
+    lhIds.current = new Set(model.notes.filter((n) => n.staff === 2).map((n) => n.id));
     const map = matchStaffNotes(model, collectOsmdNotes(osmd.GraphicSheet), { slashes: rightHandOnly && slashes });
     idToEls.current = map;
     const rev = new Map();
