@@ -351,7 +351,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
             <JianpuView model={model} width={width - 36} {...chordProps} slashes={slashes} onNoteHover={onNoteHover} onChordHover={onChordHover} />
           </div>
         )}
-        <p className="sv2-credit">鋼琴音色：FluidR3_GM（Frank Wen），CC BY 3.0</p>
+        <p className="sv2-credit">鋼琴音色：Salamander Grand Piano（Alexander Holm），CC BY 3.0</p>
       </section>
 
       <PianoKeys low={36} high={84} activeMidis={activeMidis} onNote={playNote} />

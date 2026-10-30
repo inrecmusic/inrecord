@@ -1,9 +1,9 @@
 // components/classroom/score/pianoSampler.js — 鋼琴取樣發聲（Web Audio，瀏覽器端）
 //
-// 取樣：FluidR3_GM acoustic grand（public/score-piano/，授權見同資料夾 LICENSE.txt），
+// 取樣：Salamander Grand Piano（Yamaha C5 平台鋼琴實錄，public/score-piano/，授權 CC BY 3.0，見同資料夾 LICENSE.txt），
 // C2–C7 每小三度一個、共 21 檔；其餘音高取最近的取樣變速（最多差一個半音半）。按需載入、同檔只抓一次。
 // 取樣還沒載到（或載入失敗）時退回簡單合成音，不會整個沒聲音。
-const NAMES = ["C", "Eb", "Gb", "A"];
+const NAMES = ["C", "Ds", "Fs", "A"]; // Salamander 的檔名用升記號（D♯、F♯）
 export const SAMPLES = [];
 for (let midi = 36; midi <= 96; midi += 3) SAMPLES.push({ name: `${NAMES[(midi - 36) / 3 % 4]}${Math.floor(midi / 12) - 1}`, midi });
 
