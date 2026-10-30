@@ -233,7 +233,6 @@ export default function ScoresManagePage({ showToast = () => {} }) {
     : "";
   const td = { padding: "10px 14px", verticalAlign: "top" };
   const tag = (bg, color) => ({ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "1px 8px", borderRadius: 999, background: bg, color });
-  const tabBtn = (on) => ({ border: 0, borderBottom: on ? "2px solid #2563eb" : "2px solid transparent", background: "none", padding: "6px 12px", fontWeight: on ? 700 : 500, color: on ? "#2563eb" : "#475569", cursor: "pointer" });
   const ta = { width: "100%", fontFamily: "ui-monospace,Menlo,monospace", fontSize: 13, padding: 8, border: "1px solid #d5dce6", borderRadius: 8 };
   const accLabel = (v) => accOptions.find((o) => o.value === v)?.label;
 
@@ -271,9 +270,9 @@ export default function ScoresManagePage({ showToast = () => {} }) {
             </div>
           </div>
 
-          <div role="tablist" aria-label="右手旋律來源" style={{ display: "flex", gap: 4, borderBottom: "1px solid #e2e8f0" }}>
-            <button type="button" role="tab" aria-selected={form.source === "file"} style={tabBtn(form.source === "file")} onClick={() => switchSource("file")}>上傳檔案</button>
-            <button type="button" role="tab" aria-selected={form.source === "jianpu"} style={tabBtn(form.source === "jianpu")} onClick={() => switchSource("jianpu")}>直接打簡譜</button>
+          <div role="tablist" aria-label="右手旋律來源" className={styles.tabGroup}>
+            <button type="button" role="tab" aria-selected={form.source === "file"} className={`${styles.tab} ${form.source === "file" ? styles.tabActive : ""}`} onClick={() => switchSource("file")}>上傳檔案</button>
+            <button type="button" role="tab" aria-selected={form.source === "jianpu"} className={`${styles.tab} ${form.source === "jianpu" ? styles.tabActive : ""}`} onClick={() => switchSource("jianpu")}>直接打簡譜</button>
           </div>
 
           {form.source === "file" ? (
@@ -422,10 +421,10 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                       </td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(row.updated_at)}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
-                        <div style={{ display: "flex", gap: 6 }}>
+                        <div className={styles.rowActions}>
                           {!abc && <button className={styles.btnSmall} onClick={() => openEdit(row)}>編輯</button>}
                           <button className={styles.btnSmall} onClick={() => setPublished(row, !row.published)}>{row.published ? "下架" : "發布"}</button>
-                          <button className={styles.btnDanger} onClick={() => remove(row)}>刪除</button>
+                          <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => remove(row)}>刪除</button>
                         </div>
                       </td>
                     </tr>
