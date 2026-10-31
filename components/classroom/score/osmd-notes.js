@@ -36,12 +36,15 @@ export function collectOsmdNotes(graphic) {
 
 // 每小節的位置（像素，相對於 OSMD 的 SVG 左上角）＋和弦文字的可點範圍，給游標、A-B 循環底色、小節號、和弦提示框用。
 // OSMD 內部單位 1＝10px×zoom。xAt(拍)：依該小節右手各音的 x 內插，最後一拍接到小節線前。
+// 分頁模式（A4，每頁一張 SVG）時座標相對於「該頁」SVG 左上角，page＝第幾頁（0 起），StaffView 依此加上各頁位移。
 export const OSMD_UNIT_PX = 10;
 export function osmdGeometry(graphic, model, zoom = 1) {
   const u = OSMD_UNIT_PX * zoom;
   const bars = [];
   const chords = [];
   const seen = new Set();
+  const pages = graphic?.MusicPages || [];
+  const pageOf = (gm) => Math.max(0, pages.indexOf(gm?.ParentMusicSystem?.Parent));
   (graphic?.MeasureList || []).forEach((staves, mi) => {
     const list = (staves || []).filter(Boolean);
     if (!list.length) return;
@@ -67,29 +70,32 @@ export function osmdGeometry(graphic, model, zoom = 1) {
       const [b, xb] = pts[i + 1];
       return b - a > 1e-6 ? xa + ((Math.min(pos, b) - a) / (b - a)) * (xb - xa) : xa;
     };
-    bars[mi] = { x0, x1, top, bottom, xAt, row: Math.round(top) };
+    const page = pageOf(list[0]);
+    bars[mi] = { x0, x1, top, bottom, xAt, page, row: page * 1e6 + Math.round(top) };
     for (const gm of list)
       for (const se of gm.staffEntries || [])
-        for (const cc of se.graphicalChordContainers || []) addChord(mi, (se.relInMeasureTimestamp?.RealValue ?? 0) * 4, cc.PositionAndShape);
+        for (const cc of se.graphicalChordContainers || []) addChord(mi, (se.relInMeasureTimestamp?.RealValue ?? 0) * 4, cc.PositionAndShape, page);
   });
   // prepareStaffXml 把和弦寫成 <words>，OSMD 畫成各行的文字標記（AbstractExpressions），時間點是小節內的全音符單位
-  for (const page of graphic?.MusicPages || [])
-    for (const sys of page.MusicSystems || [])
+  pages.forEach((pg, page) => {
+    for (const sys of pg.MusicSystems || [])
       for (const sl of sys.StaffLines || [])
         for (const e of sl.AbstractExpressions || []) {
           const me = e.sourceMultiExpression;
           const mi = me?.SourceMeasureParent?.measureListIndex;
           if (mi == null) continue;
-          addChord(mi, (me.Timestamp?.RealValue ?? 0) * 4, e.label?.PositionAndShape);
+          addChord(mi, (me.Timestamp?.RealValue ?? 0) * 4, e.label?.PositionAndShape, page);
         }
+  });
   return { bars, chords };
 
-  function addChord(mi, on, ps) {
+  function addChord(mi, on, ps, page = 0) {
     const c = (model?.chords || []).find((ch) => ch.measure === mi && Math.abs(ch.onset - on) < 1e-6 && !seen.has(ch.id));
     if (!c || !ps) return;
     seen.add(c.id);
     chords.push({
       id: c.id,
+      page,
       x: (ps.AbsolutePosition.x + ps.BorderLeft) * u,
       y: (ps.AbsolutePosition.y + ps.BorderTop) * u,
       w: Math.max(18, (ps.BorderRight - ps.BorderLeft) * u),
@@ -105,8 +111,16 @@ export function measuresPerLine(width) {
 }
 
 // 每次畫之前套用的排版規則
-export function applyEngravingRules(rules, width) {
+// paged：A4 分頁模式，每頁上方留空間放曲名列（StaffView 疊上去），左右邊界加寬像真的紙
+export function applyEngravingRules(rules, width, { paged = false } = {}) {
   rules.RenderXMeasuresPerLineAkaSystem = measuresPerLine(width);
+  if (paged) {
+    rules.PageTopMargin = 9;
+    rules.PageTopMarginNarrow = 9;
+    rules.PageBottomMargin = 6;
+    rules.PageLeftMargin = 6;
+    rules.PageRightMargin = 6;
+  }
 }
 
 // 和弦字與下方音符（符頭／符桿／連桿）至少要隔幾 px。

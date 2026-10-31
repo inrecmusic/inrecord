@@ -17,7 +17,9 @@ const stripChords = (abc) => String(abc || "").replace(/"(?![\^_@<>])[^"\n]*"/g,
 
 // 外層：讀這個單元的樂譜，依 format 分流——'musicxml'＝v2 雙手互動樂譜，其餘（'abc'）＝第一階段的舊畫面（原封不動）
 // pickId：側欄點了哪一首（scores.id），載入後直接開那一首；沒給就開第一首
-export default function ScoreTab({ token, video, pickId = null }) {
+// paged：整頁樂譜頁（/classroom/score）用，五線譜排成 A4 紙；onOpenFull：影片下方的分頁才給，顯示「整頁開啟」鈕
+// onPick：換曲時通知外層（整頁模式用來同步網址 ?s=）
+export default function ScoreTab({ token, video, pickId = null, paged = false, onOpenFull = null, onPick = null }) {
   const [scores, setScores] = useState(null);   // null=載入中、[]=這個單元沒有樂譜
   const [pick, setPick] = useState(0);
 
@@ -43,24 +45,30 @@ export default function ScoreTab({ token, video, pickId = null }) {
   if (!scores.length) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>這個單元還沒有樂譜。</p>;
 
   const current = scores[pick] || scores[0];
+  const choose = (i) => { setPick(i); onPick?.(scores[i]?.id); };
   return (
-    <div style={{ fontFamily: F }} className="score-tab">
+    <div style={{ fontFamily: F }} className={"score-tab" + (paged ? " is-paged" : "")}>
       <style>{SCORE_CSS}</style>
-      {scores.length > 1 && (
+      {(scores.length > 1 || onOpenFull) && (
         <div className="sc-pickers">
-          {scores.map((s, i) => (
-            <button key={s.id} type="button" onClick={() => setPick(i)} className={"sc-pick" + (i === pick ? " on" : "")}>{s.title}</button>
+          {scores.length > 1 && scores.map((s, i) => (
+            <button key={s.id} type="button" onClick={() => choose(i)} className={"sc-pick" + (i === pick ? " on" : "")}>{s.title}</button>
           ))}
+          {onOpenFull && (
+            <button type="button" className="sc-full" onClick={() => onOpenFull(current.id)}>📄 整頁開啟（A4）</button>
+          )}
         </div>
       )}
       {current.format === "musicxml"
         ? (
           <Suspense fallback={<p style={{ color: "#64748b", fontSize: 14 }}>樂譜載入中…</p>}>
             <InteractiveScore key={current.id} xml={current.musicxml} title={current.title} subtitle={current.subtitle}
-              defaultAccompaniment={current.defaultAccompaniment} lockedAccompaniment={current.lockedAccompaniment} />
+              defaultAccompaniment={current.defaultAccompaniment} lockedAccompaniment={current.lockedAccompaniment} paged={paged} />
           </Suspense>
         )
-        : <LegacyAbcScore key={current.id} current={current} />}
+        : paged
+          ? <div className="sc-legacy-sheet"><LegacyAbcScore key={current.id} current={current} /></div>
+          : <LegacyAbcScore key={current.id} current={current} />}
     </div>
   );
 }
@@ -207,6 +215,9 @@ const SCORE_CSS = `
 .score-tab .sc-pickers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .score-tab .sc-pick{border:1px solid var(--sc-line);background:#fff;color:#475569;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}
 .score-tab .sc-pick.on{background:var(--sc-accent);border-color:var(--sc-accent);color:#fff;font-weight:700}
+.score-tab .sc-full{margin-left:auto;border:1px solid var(--sc-accent);background:#fff;color:var(--sc-accent);font:inherit;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer}
+.score-tab.is-paged .sc-pickers{max-width:794px;margin:0 auto 12px}
+.score-tab .sc-legacy-sheet{max-width:794px;margin:0 auto;background:#fff;aspect-ratio:210/297;padding:32px 6%;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.10)}
 .score-tab .sc-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .score-tab .sc-title{font-size:16px;font-weight:700;color:var(--sc-ink);margin-right:auto}
 .score-tab .sc-title small{font-weight:400;color:#64748b;font-size:13px;margin-left:8px}

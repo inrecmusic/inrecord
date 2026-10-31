@@ -77,7 +77,8 @@ function createBus() {
   };
 }
 
-export default function InteractiveScore({ xml, title, subtitle, defaultAccompaniment = null, lockedAccompaniment = null }) {
+// paged：整頁樂譜頁（/classroom/score）用——五線譜排成一張張 A4 紙，曲名列印在第一張紙上
+export default function InteractiveScore({ xml, title, subtitle, defaultAccompaniment = null, lockedAccompaniment = null, paged = false }) {
   const parsed = useMemo(() => {
     try {
       return { model: parseMusicXml(xml), error: null };
@@ -386,8 +387,21 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     </option>
   ));
 
+  const head = (
+    <div className="sv2-head">
+      <div className="sh-left">
+        <div className="keysig">{keyLabel}</div>
+        <div className="bpm">♩ = {bpm}</div>
+      </div>
+      <h2>{title || model.title}</h2>
+      <div className="sh-right">{credit}</div>
+    </div>
+  );
+  const showStaff = view === "staff" || view === "both";
+  const showJianpu = view === "jianpu" || view === "both";
+
   return (
-    <div className="score-v2">
+    <div className={`score-v2${paged ? " is-paged" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: SCORE_V2_CSS }} />
 
       <section className="sv2-controls" aria-label="琴譜設定">
@@ -452,28 +466,36 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
         </div>
       </section>
 
-      <section className="sv2-paper" aria-label="琴譜" ref={paperRef}>
-        <div className="sv2-head">
-          <div className="sh-left">
-            <div className="keysig">{keyLabel}</div>
-            <div className="bpm">♩ = {bpm}</div>
-          </div>
-          <h2>{title || model.title}</h2>
-          <div className="sh-right">{credit}</div>
-        </div>
-        <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg || status}</div>
-        {(view === "staff" || view === "both") && (
-          <div className="sv2-section">
-            <StaffView xml={staffXml} model={model} {...chordProps} {...viewProps} slashes={slashes} follow />
-          </div>
-        )}
-        {(view === "jianpu" || view === "both") && (
-          <div className="sv2-section">
-            <JianpuView model={model} width={width - 36} {...chordProps} {...viewProps} slashes={slashes} follow={view === "jianpu"} />
-          </div>
-        )}
-        <p className="sv2-credit">鋼琴音色：Salamander Grand Piano（Alexander Holm），CC BY 3.0</p>
-      </section>
+      {paged ? (
+        // 整頁模式：五線譜每頁一張 A4 紙（OSMD 分頁）；簡譜不分頁，排在一張同寬的白紙上
+        <section className="sv2-sheets" aria-label="琴譜" ref={paperRef}>
+          <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg || status}</div>
+          {showStaff && <StaffView xml={staffXml} model={model} {...chordProps} {...viewProps} slashes={slashes} follow paged pageHeader={head} />}
+          {showJianpu && (
+            <div className="sv2-sheet">
+              {!showStaff && head}
+              <JianpuView model={model} width={width - 64} {...chordProps} {...viewProps} slashes={slashes} follow={view === "jianpu"} />
+            </div>
+          )}
+          <p className="sv2-credit">鋼琴音色：Salamander Grand Piano（Alexander Holm），CC BY 3.0</p>
+        </section>
+      ) : (
+        <section className="sv2-paper" aria-label="琴譜" ref={paperRef}>
+          {head}
+          <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg || status}</div>
+          {showStaff && (
+            <div className="sv2-section">
+              <StaffView xml={staffXml} model={model} {...chordProps} {...viewProps} slashes={slashes} follow />
+            </div>
+          )}
+          {showJianpu && (
+            <div className="sv2-section">
+              <JianpuView model={model} width={width - 36} {...chordProps} {...viewProps} slashes={slashes} follow={view === "jianpu"} />
+            </div>
+          )}
+          <p className="sv2-credit">鋼琴音色：Salamander Grand Piano（Alexander Holm），CC BY 3.0</p>
+        </section>
+      )}
 
       <PianoKeys low={36} high={84} activeMidis={activeMidis} activeLH={activeLH} hoverMidis={hoverMidis} onNote={playNote} onKeyHover={onKeyHover} />
       <ScoreTip target={tip} />

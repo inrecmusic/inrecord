@@ -126,11 +126,27 @@ export const SCORE_V2_CSS = `
   .score-v2 .sh-left{grid-row:2}
   .score-v2 .sh-right{grid-row:2;grid-column:2}
 }
+/* 整頁模式（/classroom/score）：A4 紙一張張往下疊，控制列黏在上方 */
+.score-v2.is-paged{max-width:794px;margin:0 auto}
+.score-v2.is-paged .sv2-controls{position:sticky;top:64px;z-index:20}
+.score-v2 .sv2-sheets{display:grid;gap:12px;min-width:0}
+.score-v2 .sv2-sheets>.sv2-msg{min-height:0;padding:0 4px}
+.score-v2 .sv2-paged .sv2-staff svg{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.10);margin:0 0 24px}
+.score-v2 .sv2-pagehead{position:absolute;padding:26px 6% 0;color:#1D1D1F}
+.score-v2 .sv2-pageno{position:absolute;text-align:center;font-size:11px;color:#8E8E93;font-variant-numeric:tabular-nums}
+.score-v2 .sv2-sheet{background:#fff;color:#1D1D1F;aspect-ratio:210/297;padding:26px 6% 32px;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.10)}
+.score-v2 .sv2-sheet .sv2-head{margin-bottom:18px}
+.score-v2.is-paged .sv2-credit{text-align:center}
 @media (prefers-reduced-motion: reduce){.score-v2 *{transition:none!important}}
 @media print{
   body *{visibility:hidden}
   .score-v2 .sv2-paper,.score-v2 .sv2-paper *{visibility:visible}
   .score-v2 .sv2-paper{position:absolute;inset:0;box-shadow:none;padding:0}
   .score-v2 .sv2-msg,.score-v2 .sv2-credit{display:none}
+  .score-v2 .sv2-sheets,.score-v2 .sv2-sheets *{visibility:visible}
+  .score-v2 .sv2-sheets{position:absolute;inset:0;display:block}
+  .score-v2 .sv2-paged .sv2-staff svg{box-shadow:none;margin:0;break-after:page}
+  .score-v2 .sv2-sheet{box-shadow:none}
+  .score-v2 .sv2-barno,.score-v2 .sv2-pageno{display:none}
 }
 `;

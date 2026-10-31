@@ -9,6 +9,8 @@ import NotesTab from "@/components/classroom/NotesTab";
 import GamesTab from "@/components/classroom/GamesTab";
 import GamePlayerOverlay from "@/components/classroom/GamePlayerOverlay";
 import ScoreTab from "@/components/classroom/ScoreTab";
+import ScoreOpenDialog from "@/components/classroom/ScoreOpenDialog";
+import { getScoreOpenPref, setScoreOpenPref, markFromWatch, scorePageUrl } from "@/components/classroom/score-open";
 import AssignmentTab from "@/components/classroom/AssignmentTab";
 import RatingTab from "@/components/classroom/RatingTab";
 import RatingPrompt from "@/components/classroom/RatingPrompt";
@@ -123,6 +125,8 @@ export default function ClassroomPage() {
   const [pendingGameId, setPendingGameId] = useState(null);
   // 側欄點了哪一首互動樂譜：樂譜分頁直接開那一首（同單元可能掛好幾首）
   const [pickScoreId, setPickScoreId] = useState(null);
+  // 點樂譜時「在下方看／整頁開啟」的選擇視窗：{ videoId, scoreId }；學員勾了記住就不再問
+  const [scoreAsk, setScoreAsk] = useState(null);
   const [sidebarGame, setSidebarGame] = useState(null); // 影片未上架的單元，從側欄直接開的遊戲
   const [itemErr, setItemErr]             = useState("");
   const [videos, setVideos]               = useState([]);
@@ -382,13 +386,26 @@ export default function ClassroomPage() {
     if ((contentItems[v.id] || []).some(i => i.kind === "sheet")) { handleSelect(v); setTab("score"); }
   }
 
+  // 互動樂譜：照學員記住的選擇開，沒記住就跳選擇視窗
+  function askScore(videoId, scoreId = null) {
+    const pref = getScoreOpenPref();
+    if (pref) openScoreAs(pref, videoId, scoreId);
+    else setScoreAsk({ videoId, scoreId });
+  }
+  function openScoreAs(how, videoId, scoreId = null) {
+    setScoreAsk(null);
+    if (how === "page") { markFromWatch(); window.location.assign(scorePageUrl(videoId, scoreId)); return; }
+    setPickScoreId(scoreId);
+    setTab("score");
+  }
+
   // 點展開清單裡的項目：講義樂譜直接下載，遊戲與作業切到對應分頁。
   async function handleItemClick(e, v, item) {
     e.stopPropagation();
     const unitPlayable = !!(v.bunny_video_id || v.vimeo_id);
     if (unitPlayable) handleSelect(v);
     // 樂譜分頁跟著目前單元走：影片未上架也要切到該單元，否則分頁不會出現
-    if (item.kind === "sheet") { if (!unitPlayable) handleSelect(v); setPickScoreId(item.id); setTab("score"); return; }
+    if (item.kind === "sheet") { if (!unitPlayable) handleSelect(v); askScore(v.id, item.id); return; }
     if (item.kind === "game") {
       // 影片還沒上架的單元也可能掛了遊戲：切不到那個單元的分頁，就直接開遊戲視窗
       if (!unitPlayable) { setSidebarGame({ id: item.id, title: item.title }); return; }
@@ -704,7 +721,7 @@ export default function ClassroomPage() {
               { id: "games",      label: "互動遊戲" },
               { id: "notes",      label: "筆記" },
             ].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
+              <button key={t.id} onClick={() => (t.id === "score" && tab !== "score" ? askScore(currentVideo.id, pickScoreId) : setTab(t.id))}
                 style={{
                   minHeight: 44, padding: "12px 16px", fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
                   cursor: "pointer", border: 0, background: "none", fontFamily: F,
@@ -722,7 +739,8 @@ export default function ClassroomPage() {
           <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
             {tab === "rating"     && <RatingTab token={token} rating={rating} onRated={handleRated} />}
             {tab === "assignment" && currentVideo?.assignment_desc?.trim() && <AssignmentTab video={currentVideo} token={token} />}
-            {tab === "score"      && hasSheet && <ScoreTab token={token} video={currentVideo} pickId={pickScoreId} />}
+            {tab === "score"      && hasSheet && <ScoreTab token={token} video={currentVideo} pickId={pickScoreId}
+              onOpenFull={(id) => { markFromWatch(); window.location.assign(scorePageUrl(currentVideo.id, id)); }} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} pendingGameId={pendingGameId} onPendingConsumed={() => setPendingGameId(null)} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
           </div>
@@ -969,6 +987,8 @@ export default function ClassroomPage() {
       )}
 
       <RatingPrompt token={token} rated={rated} ended={endedUnit} onRated={handleRated} />
+      <ScoreOpenDialog open={!!scoreAsk} onClose={() => setScoreAsk(null)} onRemember={setScoreOpenPref}
+        onChoose={(how) => scoreAsk && openScoreAs(how, scoreAsk.videoId, scoreAsk.scoreId)} />
     </div>
   );
 }

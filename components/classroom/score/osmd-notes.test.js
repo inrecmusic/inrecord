@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { collectOsmdNotes, OSMD_HALFTONE_TO_MIDI, OSMD_OPTIONS, osmdGeometry } from "./osmd-notes.js";
+import { collectOsmdNotes, OSMD_HALFTONE_TO_MIDI, OSMD_OPTIONS, osmdGeometry, applyEngravingRules } from "./osmd-notes.js";
 
 // 假的 OSMD GraphicSheet：兩小節 × 兩行譜，含一個和弦、一個休止、一個裝飾音
 const note = (halfTone, el, { rest = false, grace = false } = {}) => ({
@@ -65,7 +65,7 @@ describe("osmdGeometry", () => {
     expect(bars[0].xAt(0)).toBe(30);
     expect(bars[0].xAt(1)).toBe(70);
     expect(bars[0].xAt(4)).toBe(202);
-    expect(chords).toEqual([{ id: "c0", x: 30, y: 10, w: 20, h: 14 }]);
+    expect(chords).toEqual([{ id: "c0", page: 0, x: 30, y: 10, w: 20, h: 14 }]);
   });
 });
 
@@ -77,7 +77,7 @@ describe("osmdGeometry：和弦寫成 words 的文字標記", () => {
       MusicPages: [{ MusicSystems: [{ StaffLines: [{ AbstractExpressions: [{ sourceMultiExpression: { SourceMeasureParent: { measureListIndex: 0 }, Timestamp: { RealValue: 0.5 } }, label: { PositionAndShape: ps } }] }] }] }],
     };
     const { chords } = osmdGeometry(graphic, { measures: [{ length: 4 }], chords: [{ id: "c1", measure: 0, onset: 2 }] }, 1);
-    expect(chords).toEqual([{ id: "c1", x: 30, y: -10, w: 20, h: 20 }]);
+    expect(chords).toEqual([{ id: "c1", page: 0, x: 30, y: -10, w: 20, h: 20 }]);
   });
 });
 
@@ -94,7 +94,7 @@ describe("measuresPerLine", () => {
 describe("chordLifts", () => {
   const R = (left, right, top, bottom) => ({ left, right, top, bottom });
   it("和弦字貼著下方音符就往上抬到至少 6px，離很遠或不在下方的不動", async () => {
-    const { chordLifts, applyEngravingRules } = await import("./osmd-notes");
+    const { chordLifts } = await import("./osmd-notes");
     const text = R(100, 130, 80, 100);
     expect(chordLifts([text], [R(110, 120, 99, 110)])).toEqual([-7]);   // 壓到 1px → 抬 7
     expect(chordLifts([text], [R(110, 120, 103, 110)])).toEqual([-3]);  // 只隔 3px → 補到 6
@@ -104,5 +104,10 @@ describe("chordLifts", () => {
     const rules = {};
     applyEngravingRules(rules, 900);
     expect(rules).toEqual({ RenderXMeasuresPerLineAkaSystem: 4 });
+  });
+  it("A4 分頁模式加寬頁邊、上方留曲名列空間", () => {
+    const rules = {};
+    applyEngravingRules(rules, 794, { paged: true });
+    expect(rules).toMatchObject({ RenderXMeasuresPerLineAkaSystem: 4, PageTopMargin: 9, PageLeftMargin: 6, PageRightMargin: 6 });
   });
 });
