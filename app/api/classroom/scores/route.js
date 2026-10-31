@@ -44,7 +44,8 @@ export async function GET(req) {
       console.error("[classroom/scores] v2 尚未建表，只回舊 ABC：", v2.error.message);
     } else {
       linked = (v2.data || [])
-        .map((r) => (videoId ? r.scores && { ...r.scores, sort_order: r.sort_order ?? r.scores.sort_order } : r))
+        // 順序一律照後台曲目清單（scores.sort_order）；score_units.sort_order 是單首曲子掛單元的順序，同單元多首時會打平
+        .map((r) => (videoId ? r.scores && { ...r.scores, sort_order: r.scores.sort_order ?? r.sort_order } : r))
         .filter((s) => s && s.published === true && s.format === "musicxml");
     }
     return NextResponse.json({ scores: mergeUnitScores(data, linked, videoId) });

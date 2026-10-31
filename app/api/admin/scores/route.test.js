@@ -102,6 +102,24 @@ describe("/api/admin/scores", () => {
     expect(logAudit).toHaveBeenCalledWith(sb, expect.objectContaining({ action: "score.unpublish" }));
   });
 
+  it("PATCH 只調順序：舊 ABC 列也可以，「最後更新」不變", async () => {
+    const sb = makeSupabaseMock((table, ops) =>
+      isOp(ops, "maybeSingle") ? { data: { id: "a1", format: "abc", version: 1, published: true }, error: null } : { data: { id: "a1" }, error: null });
+    getSupabaseAdmin.mockReturnValue(sb);
+    expect((await PATCH(req("PATCH", { id: "a1", sort_order: 3 }))).status).toBe(200);
+    const up = sb.calls.find((c) => c.table === "scores" && sb.has(c, "update"));
+    expect(sb.arg(up, "update")).toEqual({ sort_order: 3 });
+  });
+
+  it("POST 新曲目排在清單最後", async () => {
+    const sb = makeSupabaseMock((table, ops) =>
+      isOp(ops, "insert") ? { data: { id: "s9" }, error: null } : isOp(ops, "maybeSingle") ? { data: { sort_order: 7 }, error: null } : { data: null, error: null });
+    getSupabaseAdmin.mockReturnValue(sb);
+    await POST(req("POST", { title: "卡農", musicxml: BEE }));
+    const ins = sb.calls.find((c) => c.table === "scores" && sb.has(c, "insert"));
+    expect(sb.arg(ins, "insert").sort_order).toBe(8);
+  });
+
   it("DELETE：草稿、已發布、舊 ABC 都能刪；找不到 → 404", async () => {
     const row = { current: { id: "s1", format: "musicxml", published: true } };
     const sb = makeSupabaseMock((table, ops) => (isOp(ops, "maybeSingle") ? { data: row.current, error: null } : { data: null, error: null }));

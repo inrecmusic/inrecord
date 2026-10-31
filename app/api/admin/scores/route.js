@@ -82,6 +82,11 @@ export async function POST(req) {
   const { fields, unitIds, errors, metaPatch, message } = normalizeScoreInput(body, { partial: false });
   if (errors.length) return badInput(errors, message);
   const meta = pruneUnits({ ...fields.meta, ...metaPatch }, unitIds || []);
+  // 新曲目預設排在清單最後（查不到就維持 0，不擋上傳）
+  if (fields.sort_order === undefined) {
+    const last = await supabase.from("scores").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle?.();
+    if (last && !last.error && Number.isInteger(last.data?.sort_order)) fields.sort_order = last.data.sort_order + 1;
+  }
 
   const { data, error } = await supabase
     .from("scores")
@@ -119,13 +124,16 @@ export async function PATCH(req) {
   if (!cur) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const { id: _id, ...rest } = body;
-  if (cur.format === "abc" && Object.keys(rest).some((k) => k !== "published"))
+  // 舊 ABC 列只能發布／下架與調整順序
+  if (cur.format === "abc" && Object.keys(rest).some((k) => k !== "published" && k !== "sort_order"))
     return NextResponse.json({ error: "abc_readonly" }, { status: 400 });
 
   const { fields, unitIds, errors, metaPatch, message } = normalizeScoreInput(rest, { partial: true });
   if (errors.length) return badInput(errors, message);
 
-  const update = { ...fields, updated_at: new Date().toISOString() };
+  // 只調順序不算內容更新：「最後更新」不跟著變
+  const onlyOrder = Object.keys(rest).length > 0 && Object.keys(rest).every((k) => k === "sort_order");
+  const update = onlyOrder ? { ...fields } : { ...fields, updated_at: new Date().toISOString() };
   const changedXml = fields.musicxml !== undefined && fields.musicxml !== cur.musicxml;
   if (changedXml) update.version = (cur.version || 1) + 1;
   if (fields.meta || Object.keys(metaPatch).length) {

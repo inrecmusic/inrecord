@@ -49,6 +49,19 @@ describe("ScoresManagePage（後台曲目）", () => {
     expect(within(v2Row).getByText("入門")).toBeTruthy();
   });
 
+  it("上移／下移：第一首不能上移、最後一首不能下移；下移後重新編號、只送有變的", async () => {
+    render(<ScoresManagePage showToast={() => {}} />);
+    const first = (await screen.findByText("右手旋律")).closest("tr");
+    const last = screen.getByText("小蜜蜂雙手").closest("tr");
+    expect(within(first).getByRole("button", { name: /往上移/ }).disabled).toBe(true);
+    expect(within(last).getByRole("button", { name: /往下移/ }).disabled).toBe(true);
+    fireEvent.click(within(first).getByRole("button", { name: /往下移/ }));
+    await waitFor(() => {
+      const sent = adminFetch.mock.calls.filter(([, o]) => o?.method === "PATCH").map(([, o]) => JSON.parse(o.body));
+      expect(sent).toEqual(expect.arrayContaining([{ id: "s1", sort_order: 0 }, { id: "a1", sort_order: 1 }]));
+    });
+  });
+
   it("選三行以上的譜：顯示錯誤、儲存鈕停用", async () => {
     render(<ScoresManagePage showToast={() => {}} />);
     fireEvent.click(await screen.findByRole("button", { name: "新增曲目" }));

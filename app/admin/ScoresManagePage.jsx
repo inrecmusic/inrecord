@@ -241,6 +241,20 @@ export default function ScoresManagePage({ showToast = () => {} }) {
       fetchAll();
     } else showToast("❌ 更新失敗");
   };
+  // 上移／下移：照清單順序重新編號，只送順序有變的那幾首（學員端同一單元的曲子也照這個順序）
+  const move = async (index, delta) => {
+    const j = index + delta;
+    if (j < 0 || j >= rows.length) return;
+    const next = [...rows];
+    [next[index], next[j]] = [next[j], next[index]];
+    setRows(next);
+    const changed = next.map((r, i) => ({ r, i })).filter(({ r, i }) => r.sort_order !== i);
+    const results = await Promise.all(
+      changed.map(({ r, i }) => api("/api/admin/scores", { method: "PATCH", body: JSON.stringify({ id: r.id, sort_order: i }) })),
+    );
+    if (results.some((x) => !x.ok)) showToast("❌ 順序沒有存好，請重新整理再試一次");
+    fetchAll();
+  };
   const remove = async (row) => {
     const q = row.published ? `「${row.title}」已發布，刪除後學員會立刻看不到，而且無法復原。確定刪除？` : `確定刪除「${row.title}」？刪除後無法復原。`;
     if (typeof window !== "undefined" && !window.confirm(q)) return;
@@ -428,7 +442,7 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => {
+                {rows.map((row, index) => {
                   const abc = row.format !== "musicxml";
                   const ua = row.meta?.unitAccompaniment || {};
                   const accName = (v) => (v === "original" ? "原譜左手" : ACCOMPANIMENTS.find((a) => a.id === v)?.label);
@@ -453,6 +467,8 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                       <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(row.updated_at)}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
                         <div className={styles.rowActions}>
+                          <button className={styles.btnSmall} disabled={index === 0} onClick={() => move(index, -1)} aria-label={`把「${row.title}」往上移`}>上移</button>
+                          <button className={styles.btnSmall} disabled={index === rows.length - 1} onClick={() => move(index, 1)} aria-label={`把「${row.title}」往下移`}>下移</button>
                           {!abc && <button className={styles.btnSmall} onClick={() => openEdit(row)}>編輯</button>}
                           <button className={styles.btnSmall} onClick={() => setPublished(row, !row.published)}>{row.published ? "下架" : "發布"}</button>
                           <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => remove(row)}>刪除</button>
