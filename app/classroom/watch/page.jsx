@@ -120,6 +120,8 @@ export default function ClassroomPage() {
   const [contentItems, setContentItems]   = useState({});
   const [contentStats, setContentStats]   = useState(null);
   const [pendingGameId, setPendingGameId] = useState(null);
+  // 側欄點了哪一首互動樂譜：樂譜分頁直接開那一首（同單元可能掛好幾首）
+  const [pickScoreId, setPickScoreId] = useState(null);
   const [sidebarGame, setSidebarGame] = useState(null); // 影片未上架的單元，從側欄直接開的遊戲
   const [itemErr, setItemErr]             = useState("");
   const [videos, setVideos]               = useState([]);
@@ -363,6 +365,7 @@ export default function ClassroomPage() {
 
   function handleSelect(v) {
     setCurrentVideo(v);
+    setPickScoreId(null); // 換單元回到第一首；點側欄某首樂譜時呼叫端會再設定
     // 切單元就放棄「等清單載好再自動開遊戲」的待辦（點遊戲 icon 的路徑會在呼叫本函式之後再重設），
     // 否則跨單元殘留的 pendingGameId 會在之後回到那個單元時突然全螢幕開遊戲。
     setPendingGameId(null);
@@ -384,7 +387,7 @@ export default function ClassroomPage() {
     const unitPlayable = !!(v.bunny_video_id || v.vimeo_id);
     if (unitPlayable) handleSelect(v);
     // 樂譜分頁跟著目前單元走：影片未上架也要切到該單元，否則分頁不會出現
-    if (item.kind === "sheet") { if (!unitPlayable) handleSelect(v); setTab("score"); return; }
+    if (item.kind === "sheet") { if (!unitPlayable) handleSelect(v); setPickScoreId(item.id); setTab("score"); return; }
     if (item.kind === "game") {
       // 影片還沒上架的單元也可能掛了遊戲：切不到那個單元的分頁，就直接開遊戲視窗
       if (!unitPlayable) { setSidebarGame({ id: item.id, title: item.title }); return; }
@@ -718,7 +721,7 @@ export default function ClassroomPage() {
           <div style={{ padding: "18px 20px", background: "#fff", minHeight: 320 }}>
             {tab === "rating"     && <RatingTab token={token} rating={rating} onRated={handleRated} />}
             {tab === "assignment" && currentVideo?.assignment_desc?.trim() && <AssignmentTab video={currentVideo} token={token} />}
-            {tab === "score"      && hasSheet && <ScoreTab token={token} video={currentVideo} />}
+            {tab === "score"      && hasSheet && <ScoreTab token={token} video={currentVideo} pickId={pickScoreId} />}
             {tab === "games"      && <GamesTab token={token} hasSubscription={hasSubscription} video={currentVideo} gameCache={gameCacheRef} pendingGameId={pendingGameId} onPendingConsumed={() => setPendingGameId(null)} />}
             {tab === "notes"      && <NotesTab token={token} video={currentVideo} playerCtrl={playerCtrlRef} />}
           </div>

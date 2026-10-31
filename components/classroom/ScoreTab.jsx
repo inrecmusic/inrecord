@@ -16,7 +16,8 @@ const RATES = [0.6, 0.8, 1];
 const stripChords = (abc) => String(abc || "").replace(/"(?![\^_@<>])[^"\n]*"/g, "");
 
 // 外層：讀這個單元的樂譜，依 format 分流——'musicxml'＝v2 雙手互動樂譜，其餘（'abc'）＝第一階段的舊畫面（原封不動）
-export default function ScoreTab({ token, video }) {
+// pickId：側欄點了哪一首（scores.id），載入後直接開那一首；沒給就開第一首
+export default function ScoreTab({ token, video, pickId = null }) {
   const [scores, setScores] = useState(null);   // null=載入中、[]=這個單元沒有樂譜
   const [pick, setPick] = useState(0);
 
@@ -31,6 +32,12 @@ export default function ScoreTab({ token, video }) {
       .catch(() => { if (alive) setScores([]); });
     return () => { alive = false; };
   }, [token, video?.id]);
+
+  useEffect(() => {
+    if (!scores || !pickId) return;
+    const i = scores.findIndex((s) => s.id === pickId);
+    if (i >= 0) setPick(i);
+  }, [scores, pickId]);
 
   if (scores === null) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>樂譜載入中…</p>;
   if (!scores.length) return <p style={{ color: "#64748b", fontSize: 14, fontFamily: F }}>這個單元還沒有樂譜。</p>;
