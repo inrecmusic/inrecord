@@ -101,7 +101,7 @@ export function AnnouncementsStrip({ ann }) {
 }
 
 const MD_CSS = `
-.ann-md p{margin:0 0 .95em}.ann-md p:last-child{margin-bottom:0}
+.ann-md{line-height:1.6}.ann-md p{margin:0 0 1.15em}.ann-md p:last-child{margin-bottom:0}
 .ann-md ul{margin:.2em 0 .95em 18px;padding:0}.ann-md li{margin:0 0 .35em}
 .ann-md a{text-decoration:underline;text-underline-offset:3px;word-break:break-all}
 .ann-md.light a{color:#1d4ed8}.ann-md.light strong{color:#0f172a}
