@@ -340,11 +340,14 @@ export function ImportantDialog({ ann, variant = "light" }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "grid", placeItems: "center", padding: 20, zIndex: 1100, fontFamily: F }}>
       <style>{MD_CSS}</style>
-      <div role="alertdialog" aria-label={a.title} style={{ ...card, borderRadius: 16, maxWidth: 440, width: "100%", padding: "26px 28px 22px", boxShadow: "0 30px 80px -30px rgba(15,23,42,0.6)" }}>
+      <div role="alertdialog" aria-label={a.title} style={{ ...card, borderRadius: 16, maxWidth: 440, width: "100%", maxHeight: "86vh", display: "flex", flexDirection: "column", padding: "26px 28px 22px", boxShadow: "0 30px 80px -30px rgba(15,23,42,0.6)" }}>
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: hub ? "var(--cta-ink)" : "#b45309", background: hub ? "var(--gold)" : "#fef3c7", display: "inline-block", padding: "3px 9px", borderRadius: 100 }}>重要公告</span>
         <h3 style={{ margin: "12px 0 4px", fontSize: 19, lineHeight: 1.35, textWrap: "balance" }}>{a.title}</h3>
         <div style={{ fontSize: 12, color: hub ? "var(--ink-faint)" : "#64748b", fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）· InRecord 音樂教室</div>
-        <Md body={a.body} className={hub ? "" : "light"} />
+        {/* 內容長時只捲內文，「知道了」固定在卡片底部 */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", marginTop: 8 }}>
+          <Md body={a.body} className={hub ? "" : "light"} />
+        </div>
         <button type="button" onClick={() => ann.ack(a.id)} style={{ marginTop: 16, width: "100%", background: hub ? "var(--cta-bg)" : "#1d4ed8", color: hub ? "var(--cta-ink)" : "#fff", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: F }}>知道了</button>
         <div style={{ textAlign: "center", fontSize: 11.5, color: hub ? "var(--ink-faint)" : "#94a3b8", marginTop: 8 }}>按下後不會再彈出，之後可在公告清單回看</div>
       </div>
