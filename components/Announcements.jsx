@@ -293,7 +293,8 @@ function AnnouncementModalBox({ ann, list, index, variant }) {
 }
 
 /* ── 播放頁：右側抽屜（全部公告清單） ─────────────────────────────────────── */
-export function AnnouncementsDrawer({ ann }) {
+// withModal=false：頁面上已有別的清單掛著彈窗（儀表板），避免同一則開兩個視窗
+export function AnnouncementsDrawer({ ann, withModal = true }) {
   const ref = useRef(null);
   // 點外面或按 Esc 就收起來（下拉選單的慣例；沒有遮罩，不擋住底下的操作）
   // 彈窗開著時不處理外點／Esc：視窗 portal 在 .hub／body 上，點視窗裡面會被誤判成「點到下拉外面」，
@@ -324,7 +325,7 @@ export function AnnouncementsDrawer({ ann }) {
     </div>
     )}
     {/* 彈窗獨立於下拉：提示條「查看」在下拉收著時也開得了；下拉收起也不會把視窗一起關掉 */}
-    <AnnouncementModal ann={ann} />
+    {withModal && <AnnouncementModal ann={ann} />}
     </>
   );
 }

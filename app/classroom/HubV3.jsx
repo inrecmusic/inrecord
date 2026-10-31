@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import { useAnnouncements, HubAnnouncements, ImportantDialog } from "@/components/Announcements";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAnnouncements, HubAnnouncements, ImportantDialog, AnnouncementsDrawer } from "@/components/Announcements";
 import { supabase } from "@/lib/supabase";
 import { isProfileCoreComplete } from "@/lib/student-profile";
 import { announcementSummary } from "@/lib/announcement-md";
@@ -18,6 +18,24 @@ const WEEKDAY = ["週日", "週一", "週二", "週三", "週四", "週五", "�
 const Play = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>;
 const Lock = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V8a3 3 0 0 0-6 0v2z" fill="currentColor" /></svg>;
 const Cal = () => <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V2zm13 8H4v10h16V10z" fill="currentColor" /></svg>;
+// 頁首公告鈴鐺：有未讀才亮金色＋數字；滑過（桌機）或點一下（手機）展開公告清單，點清單裡的公告開彈窗。
+function BellMenu({ ann }) {
+  const t = useRef(null);
+  const enter = () => { clearTimeout(t.current); if (!ann.open) ann.openDrawer(); };
+  const leave = () => { clearTimeout(t.current); t.current = setTimeout(() => { if (!ann.openId) ann.closeDrawer(); }, 250); };
+  useEffect(() => () => clearTimeout(t.current), []);
+  return (
+    <span className="bellwrap" onMouseEnter={enter} onMouseLeave={leave}>
+      <button type="button" data-ann-bell className={`icon${ann.unread > 0 ? " lit" : ""}`}
+        onClick={() => (ann.open ? ann.closeDrawer() : ann.openDrawer())}
+        aria-expanded={ann.open} aria-label={ann.unread ? `公告，${ann.unread} 則未讀` : "公告"}>
+        <Bell />{ann.unread > 0 && <span className="dot">{ann.unread}</span>}
+      </button>
+      <AnnouncementsDrawer ann={ann} withModal={false} />
+    </span>
+  );
+}
+
 const Bell = () => <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 2a6 6 0 0 0-6 6v4.6L4 16v1h16v-1l-2-3.4V8a6 6 0 0 0-6-6zm0 20a2.5 2.5 0 0 0 2.4-2H9.6A2.5 2.5 0 0 0 12 22z" fill="currentColor" /></svg>;
 const Arrow = () => <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 12h12m-5-6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const Check = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -189,9 +207,7 @@ export default function ClassroomHubV3() {
           </nav>
           <div className="sp" />
           {ann.sorted.length > 0 && (
-            <a className="icon" href="#announcements" aria-label={ann.unread ? `公告，${ann.unread} 則未讀` : "公告"}>
-              <Bell />{ann.unread > 0 && <span className="dot">{ann.unread}</span>}
-            </a>
+            <BellMenu ann={ann} />
           )}
           <button className="icon" onClick={toggleTheme} aria-label={effectiveDark ? "切換為淺色模式" : "切換為深色模式"}>{effectiveDark ? "☾" : "☀"}</button>
           <a className="me" href="/classroom/account"><span className="nm">{name}</span><span className="av" aria-hidden="true">{name.slice(0, 1)}</span></a>

@@ -82,7 +82,9 @@ export const HUB_CSS = `
 .hub .nav .sp{flex:1}
 .hub .nav .icon{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:transparent;color:var(--ink-2);display:grid;place-items:center;position:relative;cursor:pointer;transition:color .2s,border-color .2s}
 .hub .nav .icon:hover{color:var(--ink);border-color:var(--gold-line)}
-.hub .nav .icon .dot{position:absolute;top:6px;right:7px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--gold);color:var(--gold-ink);font-size:10.5px;font-weight:800;line-height:16px;text-align:center;box-shadow:0 0 0 2px var(--bg)}
+.hub .nav .bellwrap{position:relative;display:inline-flex}
+.hub .nav .icon.lit{color:var(--gold);border-color:var(--gold-line)}
+.hub .nav .icon .dot{position:absolute;top:-5px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--gold);color:var(--gold-ink);font-size:10.5px;font-weight:800;line-height:16px;text-align:center;box-shadow:0 0 0 2px var(--bg)}
 .hub .nav .me{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--ink-2)}
 .hub .nav .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,var(--gold-2),var(--gold-deep));color:var(--gold-ink);font-weight:800;font-size:14px;display:grid;place-items:center}
 
