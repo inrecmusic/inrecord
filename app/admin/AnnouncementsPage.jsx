@@ -85,7 +85,7 @@ export default function AnnouncementsPage({ showToast }) {
         {form.body.trim() && (
           <div style={{ border: "1px dashed #cbd5e1", borderRadius: 10, padding: "10px 14px", background: "#fafbfc" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: ".06em", marginBottom: 4 }}>學員看到的樣子</div>
-            <style>{`.ann-prev p{margin:0 0 6px}.ann-prev ul{margin:4px 0 6px 18px;padding:0}.ann-prev a{color:#1d4ed8;text-decoration:underline}.ann-prev strong{color:#0f172a}.ann-prev .ann-box{margin:10px 0;padding:10px 12px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.18);border-left:4px solid #3b82f6}.ann-prev .ann-box-t{font-weight:700;margin:0 0 4px}`}</style>
+            <style>{`.ann-prev p{margin:0 0 .95em}.ann-prev p:last-child{margin-bottom:0}.ann-prev ul{margin:.2em 0 .95em 18px;padding:0}.ann-prev li{margin:0 0 .35em}.ann-prev a{color:#1d4ed8;text-decoration:underline}.ann-prev strong{color:#0f172a}.ann-prev .ann-box{margin:1.2em 0;padding:12px 14px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.18);border-left:4px solid #3b82f6}.ann-prev .ann-box-t{font-weight:700;margin:0 0 .7em}`}</style>
             {/* announcementHtml 已跳脫 HTML、連結只認 http(s) */}
             <div className="ann-prev" style={{ fontSize: 13, color: "#334155", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: announcementHtml(form.body) }} />
           </div>
