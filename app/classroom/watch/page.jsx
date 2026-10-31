@@ -696,7 +696,7 @@ export default function ClassroomPage() {
               // 作業繳交：只有該單元真的設了作業說明才出現（後台填了就自動顯示）
               ...(currentVideo?.assignment_desc?.trim() ? [{ id: "assignment", label: "作業繳交" }] : []),
               // 互動樂譜：單元有掛樂譜才出現（contentItems 由 bootstrap 帶回）
-              ...(hasSheet ? [{ id: "score", label: "樂譜" }] : []),
+              ...(hasSheet ? [{ id: "score", label: "互動樂譜" }] : []),
               { id: "games",      label: "互動遊戲" },
               { id: "notes",      label: "筆記" },
             ].map(t => (

@@ -140,13 +140,13 @@ describe("播放頁（影片未上架的單元掛了互動樂譜）", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("點單元會切過去、顯示即將上架並出現樂譜分頁", async () => {
+  it("點單元會切過去、顯示即將上架並出現互動樂譜分頁", async () => {
     const { container, getByText } = render(<ClassroomPage />);
     await waitFor(() => expect(container.textContent).toContain("5-1 分解和弦"));
     expect(container.textContent).toContain("小星星");
     getByText("5-1 分解和弦").click();
     await waitFor(() => expect(container.textContent).toContain("本單元影片即將上架，可先使用下方的互動樂譜"));
-    expect([...container.querySelectorAll("button")].some(b => b.textContent === "樂譜")).toBe(true);
+    expect([...container.querySelectorAll("button")].some(b => b.textContent === "互動樂譜")).toBe(true);
   });
 });
 
