@@ -8,7 +8,7 @@
 // 每次畫完也用 osmdGeometry 算出各小節位置：底下一層畫 A-B 循環底色與游標，上面一層疊可點的小節號與和弦（OSMD 的和弦文字本身點不到）。
 import { useEffect, useRef, useState } from "react";
 import { prepareStaffXml, matchStaffNotes } from "@/lib/score/staff-xml";
-import { collectOsmdNotes, osmdGeometry, OSMD_OPTIONS, applyEngravingRules } from "./osmd-notes";
+import { collectOsmdNotes, osmdGeometry, OSMD_OPTIONS, applyEngravingRules, liftChordLabels } from "./osmd-notes";
 
 export default function StaffView({
   xml, model, rightHandOnly = false, slashes = false, chordMode = "name", showChords = true, activeIds,
@@ -59,6 +59,12 @@ export default function StaffView({
       const sr = svg.getBoundingClientRect();
       const k = svg.width?.baseVal?.value ? sr.width / svg.width.baseVal.value : 1;
       const g = { ...osmdGeometry(osmd.GraphicSheet, model, osmd.zoom || 1), ox: sr.left - hr.left, oy: sr.top - hr.top, k };
+      // 和弦字太貼音符就往上抬，可點範圍跟著移（以抬之前的字框對位）
+      for (const { rect, dy } of liftChordLabels(svg, k)) {
+        const cx = (rect.left + rect.right) / 2 - sr.left, cy = (rect.top + rect.bottom) / 2 - sr.top;
+        const c = g.chords.find((c) => cx >= c.x * k && cx <= (c.x + c.w) * k && cy >= c.y * k && cy <= (c.y + c.h) * k);
+        if (c) c.y += dy / k;
+      }
       geomRef.current = g;
       setGeom(g);
     }

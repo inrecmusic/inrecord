@@ -104,15 +104,46 @@ export function measuresPerLine(width) {
   return width > 0 && width < 460 ? 2 : 4;
 }
 
-// 和弦記號與音符的間距（OSMD 單位＝一個線間）。OSMD 預設只在最高的音符／連桿上方留 0.2，
-// 高音（如加線上的 G5）或往上的連桿會跟「C I」這類和弦字貼在一起（2026-10-31 Alan 回報）。
-export const CHORD_GAP = 0.9;
-
-// 每次畫之前套用的排版規則：每行小節數、和弦記號間距
+// 每次畫之前套用的排版規則
 export function applyEngravingRules(rules, width) {
   rules.RenderXMeasuresPerLineAkaSystem = measuresPerLine(width);
-  rules.ChordSymbolYOffset = CHORD_GAP;  // 該位置第一個和弦
-  rules.ChordSymbolYPadding = CHORD_GAP; // 同位置疊第二個以後
+}
+
+// 和弦字與下方音符（符頭／符桿／連桿）至少要隔幾 px。
+// 和弦是 prepareStaffXml 改寫成的 <words>，OSMD 以估算的文字框貼著 skyline 放、沒有間距可調，
+// 瀏覽器實際畫出的字比估算的低，高音（加線上的 G5）或往上的連桿就跟「C I」貼在一起（2026-10-31 Alan 回報）。
+// 所以畫完再量：太近的和弦字往上抬。
+export const CHORD_MIN_GAP_PX = 6;
+// 和弦字（和弦名或級數，例：「C I」「G7 (V7)」「vi」）；指法數字不算
+const CHORD_TEXT = /^([A-G][#b♯♭]?|[♭#]?(?:i{1,3}|iv|vi{0,2}|I{1,3}|IV|VI{0,2})\b)/;
+
+// rect 皆為 { left, right, top, bottom }（螢幕 px）。回傳每個和弦字要往上移的量（≤0）。
+export function chordLifts(textRects, inkRects, minGap = CHORD_MIN_GAP_PX) {
+  return textRects.map((t) => {
+    let gap = Infinity;
+    for (const r of inkRects) {
+      if (r.right <= t.left - 1 || r.left >= t.right + 1) continue;     // 水平沒重疊
+      if (r.bottom <= t.top || r.top >= t.bottom + 3 * minGap) continue; // 在字上方、或離很遠
+      gap = Math.min(gap, r.top - t.bottom);
+    }
+    return gap < minGap ? gap - minGap : 0;
+  });
+}
+
+// 在 OSMD 畫好的 SVG 上把太近的和弦字往上抬；回傳 [{ rect（抬之前）, dy（螢幕 px）}] 供 StaffView 同步調整可點範圍
+export function liftChordLabels(svg, k = 1) {
+  const texts = [...svg.querySelectorAll("text")].filter((t) => CHORD_TEXT.test((t.textContent || "").trim()));
+  if (!texts.length) return [];
+  const rects = texts.map((t) => t.getBoundingClientRect());
+  const ink = [...svg.querySelectorAll(".vf-stavenote, .vf-beam")].map((e) => e.getBoundingClientRect());
+  const dys = chordLifts(rects, ink);
+  const out = [];
+  texts.forEach((t, i) => {
+    if (!dys[i]) return;
+    t.setAttribute("y", String(Number(t.getAttribute("y") || 0) + dys[i] / k));
+    out.push({ rect: rects[i], dy: dys[i] });
+  });
+  return out;
 }
 
 // OSMD 設定（StaffView 用）。連桿不用 OSMD 的 autoBeam（它把拍號分母當一拍，6/8 的八分音符連不起來），

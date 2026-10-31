@@ -91,12 +91,18 @@ describe("measuresPerLine", () => {
   });
 });
 
-describe("applyEngravingRules", () => {
-  it("設定每行小節數與和弦記號間距", async () => {
-    const { applyEngravingRules, CHORD_GAP } = await import("./osmd-notes");
+describe("chordLifts", () => {
+  const R = (left, right, top, bottom) => ({ left, right, top, bottom });
+  it("和弦字貼著下方音符就往上抬到至少 6px，離很遠或不在下方的不動", async () => {
+    const { chordLifts, applyEngravingRules } = await import("./osmd-notes");
+    const text = R(100, 130, 80, 100);
+    expect(chordLifts([text], [R(110, 120, 99, 110)])).toEqual([-7]);   // 壓到 1px → 抬 7
+    expect(chordLifts([text], [R(110, 120, 103, 110)])).toEqual([-3]);  // 只隔 3px → 補到 6
+    expect(chordLifts([text], [R(110, 120, 140, 150)])).toEqual([0]);   // 夠遠
+    expect(chordLifts([text], [R(200, 210, 99, 110)])).toEqual([0]);    // 水平沒重疊
+    expect(chordLifts([text], [R(110, 120, 40, 70)])).toEqual([0]);     // 在字上方（上一行的下譜）
     const rules = {};
     applyEngravingRules(rules, 900);
-    expect(rules).toEqual({ RenderXMeasuresPerLineAkaSystem: 4, ChordSymbolYOffset: CHORD_GAP, ChordSymbolYPadding: CHORD_GAP });
-    expect(CHORD_GAP).toBeGreaterThan(0.5);
+    expect(rules).toEqual({ RenderXMeasuresPerLineAkaSystem: 4 });
   });
 });
