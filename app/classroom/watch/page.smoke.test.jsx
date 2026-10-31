@@ -129,6 +129,27 @@ describe("播放頁（非早鳥，9/30 前）", () => {
   });
 });
 
+// 影片還沒上架、但已掛互動樂譜的單元：側欄可點，點了切到該單元並出現「樂譜」分頁（學員可提前練）。
+describe("播放頁（影片未上架的單元掛了互動樂譜）", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn((url) =>
+      String(url).includes("/api/classroom/bootstrap")
+        ? json({ ...BOOTSTRAP, contentItems: { v51: [{ kind: "sheet", id: "s1", title: "小星星" }] } })
+        : json({})
+    ));
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("點單元會切過去、顯示即將上架並出現樂譜分頁", async () => {
+    const { container, getByText } = render(<ClassroomPage />);
+    await waitFor(() => expect(container.textContent).toContain("5-1 分解和弦"));
+    expect(container.textContent).toContain("小星星");
+    getByText("5-1 分解和弦").click();
+    await waitFor(() => expect(container.textContent).toContain("本單元影片即將上架，可先使用下方的互動樂譜"));
+    expect([...container.querySelectorAll("button")].some(b => b.textContent === "樂譜")).toBe(true);
+  });
+});
+
 // 播完一個單元 → 評分邀請彈窗（components/classroom/RatingPrompt）。這裡釘的是播放頁的接線：
 // Bunny player 的 ended → 回報進度 → 後端回 completed → 彈窗；以及 bootstrap 的 rated／rating 有沒有傳下去。
 describe("播放頁（播完單元的評分邀請）", () => {

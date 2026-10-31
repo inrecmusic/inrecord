@@ -371,9 +371,11 @@ export default function ClassroomPage() {
 
   // 手風琴：展開的單元 id。一次只開一個——21 個單元全展開會讓側欄無法掃視。
   // 有影片的單元點了同時切換播放；沒影片的單元只展開（仍可下載講義樂譜）。
+  // 影片還沒上架、但已掛互動樂譜的單元也可選：影片區顯示「即將上架」，下方分頁照常用樂譜（學員可提前練）。
   function handleUnitClick(v) {
     setItemErr("");   // 換單元就清掉上一個單元的下載錯誤，否則會跟著顯示在新展開的面板裡
-    if (v.bunny_video_id || v.vimeo_id) handleSelect(v);
+    if (v.bunny_video_id || v.vimeo_id) { handleSelect(v); return; }
+    if ((contentItems[v.id] || []).some(i => i.kind === "sheet")) { handleSelect(v); setTab("score"); }
   }
 
   // 點展開清單裡的項目：講義樂譜直接下載，遊戲與作業切到對應分頁。
@@ -381,7 +383,8 @@ export default function ClassroomPage() {
     e.stopPropagation();
     const unitPlayable = !!(v.bunny_video_id || v.vimeo_id);
     if (unitPlayable) handleSelect(v);
-    if (item.kind === "sheet") { setTab("score"); return; }
+    // 樂譜分頁跟著目前單元走：影片未上架也要切到該單元，否則分頁不會出現
+    if (item.kind === "sheet") { if (!unitPlayable) handleSelect(v); setTab("score"); return; }
     if (item.kind === "game") {
       // 影片還沒上架的單元也可能掛了遊戲：切不到那個單元的分頁，就直接開遊戲視窗
       if (!unitPlayable) { setSidebarGame({ id: item.id, title: item.title }); return; }
@@ -616,7 +619,8 @@ export default function ClassroomPage() {
                   </svg>
                   <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.28)", letterSpacing: ".02em" }}>
                     {/* 非早鳥 9/30 前全部單元都不可點（影片被摘掉），叫他「選單元」是死路；手機側欄也不在右側 */}
-                    {earlyAccess === false && Date.now() < FULL_RELEASE_MS ? "正課 9/30 開放，敬請期待" : "請從側欄選擇課程單元"}
+                    {currentVideo && hasSheet ? "本單元影片即將上架，可先使用下方的互動樂譜"
+                      : earlyAccess === false && Date.now() < FULL_RELEASE_MS ? "正課 9/30 開放，敬請期待" : "請從側欄選擇課程單元"}
                   </p>
                 </div>
               </div>
@@ -884,7 +888,7 @@ export default function ClassroomPage() {
                             <div style={{
                               fontSize: 13, lineHeight: 1.45,
                               fontWeight: isActive ? 600 : 400,
-                              color: isActive ? "#2563eb" : playable ? "#334155" : "#94a3b8",
+                              color: isActive ? "#2563eb" : (playable || items.some(i => i.kind === "sheet")) ? "#334155" : "#94a3b8",
                               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
                             }}>
                               {v.title}
