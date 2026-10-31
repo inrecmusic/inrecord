@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { sortAnnouncements, countUnread, pickImportant, pickStrip, isUnread, legacyReadIds } from "@/lib/announcements-view";
-import { announcementHtml, announcementSummary, splitLetters } from "@/lib/announcement-md";
+import { announcementHtml, announcementSummary } from "@/lib/announcement-md";
 import { readAnnouncementState, writeRead, writeAck, writeStripDismissed } from "@/lib/announcement-state";
 
 const F = "var(--type-body)";
@@ -16,50 +16,9 @@ const fmtDate = (iso) => { const d = asDate(iso); return d ? `${d.getMonth() + 1
 const fmtWd = (iso) => { const d = asDate(iso); return d ? WD[d.getDay()] : ""; };
 
 // 內容 HTML 已由 announcementHtml 跳脫（只允許受限 Markdown 與 http(s) 連結）
-// :::letter 區塊（lib/announcement-md 的 splitLetters）畫成可點開的留言小卡
 const Md = ({ body, className = "" }) => (
-  <>
-    {splitLetters(body).map((p, i) =>
-      p.type === "letter"
-        ? <LetterCard key={i} title={p.title} body={p.text} />
-        : <div key={i} className={`ann-md ${className}`} dangerouslySetInnerHTML={{ __html: announcementHtml(p.text) }} />,
-    )}
-  </>
+  <div className={`ann-md ${className}`} dangerouslySetInnerHTML={{ __html: announcementHtml(body) }} />
 );
-
-function LetterCard({ title, body }) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); setOpen(false); } };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [open]);
-  return (
-    <>
-      <button type="button" className="ann-letter" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
-        <span className="ann-letter-ic" aria-hidden="true">✉</span>
-        <span className="ann-letter-tx"><b>{title}</b><span>點開閱讀全文</span></span>
-        <span className="ann-letter-go" aria-hidden="true">›</span>
-      </button>
-      {open && typeof document !== "undefined" && createPortal(
-        <div className="ann-letter-bd" onClick={(e) => { e.stopPropagation(); setOpen(false); }}>
-          <style>{MD_CSS}</style>
-          <div className="ann-letter-card" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="ann-letter-x" aria-label="關閉" onClick={() => setOpen(false)}>×</button>
-            <div className="ann-letter-hd">
-              <div className="ann-letter-eyebrow">A Letter · InRecord</div>
-              <h3 className="ann-letter-title">{title}</h3>
-              <div className="ann-letter-orn" aria-hidden="true">♪</div>
-            </div>
-            <div className="ann-letter-body"><div className="ann-md" dangerouslySetInnerHTML={{ __html: announcementHtml(body) }} /></div>
-          </div>
-        </div>,
-        document.body,
-      )}
-    </>
-  );
-}
 
 export function useAnnouncements(items, { storage } = {}) {
   const store = storage !== undefined ? storage : (typeof window !== "undefined" ? window.localStorage : null);
@@ -147,32 +106,6 @@ const MD_CSS = `
 .ann-md a{text-decoration:underline;text-underline-offset:3px;word-break:break-all}
 .ann-md.light a{color:#1d4ed8}.ann-md.light strong{color:#0f172a}
 .ann-md h1,.ann-md h2,.ann-md h3{font-size:1em;margin:8px 0 4px}
-.ann-letter{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0;padding:12px 14px;text-align:left;cursor:pointer;
-  font:inherit;color:#f5e6c4;background:linear-gradient(135deg,#1b2a4a,#0e1730);border:1px solid #c9a35c;border-radius:12px;
-  box-shadow:inset 0 0 0 3px #0e1730,inset 0 0 0 4px rgba(201,163,92,.45),0 8px 20px -12px rgba(14,23,48,.8);transition:transform .12s ease}
-.ann-letter:hover{transform:translateY(-1px)}
-.ann-letter-ic{font-size:20px;color:#d9b56e}.ann-letter-tx{flex:1;display:flex;flex-direction:column;line-height:1.4}
-.ann-letter-tx b{font-size:14.5px;color:#f3dca8;letter-spacing:.02em}.ann-letter-tx span{font-size:12px;color:#c9a35c}
-.ann-letter-go{color:#d9b56e;font-size:18px}
-.ann-letter-bd{position:fixed;inset:0;z-index:1200;background:rgba(5,8,20,.72);display:grid;place-items:center;padding:16px}
-.ann-letter-card{position:relative;width:min(560px,100%);max-height:88vh;display:flex;flex-direction:column;
-  background:radial-gradient(120% 80% at 50% 0%,#22345c 0%,#121d38 55%,#0a1228 100%);color:#ece3cf;
-  border-radius:14px;border:1px solid #c9a35c;box-shadow:inset 0 0 0 6px #0f1a33,inset 0 0 0 7px rgba(201,163,92,.55),0 40px 90px -30px rgba(0,0,0,.85);
-  animation:ann-pop .2s ease-out;font-family:var(--type-body,system-ui)}
-.ann-letter-card::before,.ann-letter-card::after{content:"❦";position:absolute;color:#c9a35c;font-size:18px;opacity:.85;pointer-events:none}
-.ann-letter-card::before{top:12px;left:16px}.ann-letter-card::after{bottom:12px;right:16px;transform:rotate(180deg)}
-.ann-letter-x{position:absolute;top:10px;right:12px;background:none;border:0;font-size:24px;line-height:1;cursor:pointer;color:#d9b56e;z-index:1}
-.ann-letter-hd{text-align:center;padding:30px 28px 6px}
-.ann-letter-eyebrow{font-size:10.5px;letter-spacing:.42em;color:#c9a35c;text-transform:uppercase}
-.ann-letter-title{margin:8px 0 0;font-family:"Noto Serif TC","Songti TC",serif;font-size:21px;font-weight:700;color:#f3dca8;letter-spacing:.06em}
-.ann-letter-orn{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px auto 0;color:#c9a35c;font-size:14px}
-.ann-letter-orn::before,.ann-letter-orn::after{content:"";width:70px;height:1px;background:linear-gradient(90deg,transparent,#c9a35c)}
-.ann-letter-orn::after{background:linear-gradient(90deg,#c9a35c,transparent)}
-.ann-letter-body{overflow:auto;padding:14px 34px 34px;font-size:15px;line-height:1.95}
-.ann-letter-body .ann-md{color:#ece3cf}
-.ann-letter-body .ann-md strong{color:#f3dca8}.ann-letter-body .ann-md a{color:#e8c47e}
-.ann-letter-body .ann-md p:last-child{text-align:right;margin-top:14px;font-family:"Noto Serif TC","Songti TC",serif;font-style:italic;font-size:17px;color:#f3dca8}
-@media (max-width:520px){.ann-letter-body{padding:12px 22px 30px}.ann-letter-title{font-size:19px}}
 `;
 
 // 列表＋彈出視窗共用色票：預設淺色（播放頁）；在儀表板（.hub）改吃音樂廳主題變數，深／淺切換自動跟著走。
