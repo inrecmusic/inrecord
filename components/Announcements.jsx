@@ -106,6 +106,9 @@ const MD_CSS = `
 .ann-md a{text-decoration:underline;text-underline-offset:3px;word-break:break-all}
 .ann-md.light a{color:#1d4ed8}.ann-md.light strong{color:#0f172a}
 .ann-md h1,.ann-md h2,.ann-md h3{font-size:1em;margin:8px 0 4px}
+.ann-md .ann-box{margin:12px 0;padding:12px 14px;border-radius:12px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.18);border-left:4px solid #3b82f6}
+.ann-md .ann-box:last-child{margin-bottom:0}
+.ann-md .ann-box-t{font-weight:700;margin:0 0 6px}
 `;
 
 // 列表＋彈出視窗共用色票：預設淺色（播放頁）；在儀表板（.hub）改吃音樂廳主題變數，深／淺切換自動跟著走。

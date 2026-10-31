@@ -80,12 +80,12 @@ export default function AnnouncementsPage({ showToast }) {
       <form onSubmit={submit} className={styles.panel} style={{ display: "grid", gap: 12, marginBottom: 20 }}>
         <h3 style={{ margin: 0, fontSize: 16 }}>{editingId ? "編輯公告" : "新增公告"}</h3>
         <input className={styles.input} placeholder="公告標題" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
-        <textarea className={styles.input} rows={6} placeholder="公告內容" value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} />
+        <textarea className={styles.input} rows={6} placeholder={"公告內容\n\n要把一段框起來：上一行寫「::: 區塊標題」，下一行寫「:::」"} value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} />
         <p style={{ margin: "-4px 0 0", fontSize: 12, color: "#64748b" }}>支援 **粗體**、- 條列、[文字](網址)；網址會自動變成可點連結，其餘照純文字顯示。</p>
         {form.body.trim() && (
           <div style={{ border: "1px dashed #cbd5e1", borderRadius: 10, padding: "10px 14px", background: "#fafbfc" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: ".06em", marginBottom: 4 }}>學員看到的樣子</div>
-            <style>{`.ann-prev p{margin:0 0 6px}.ann-prev ul{margin:4px 0 6px 18px;padding:0}.ann-prev a{color:#1d4ed8;text-decoration:underline}.ann-prev strong{color:#0f172a}`}</style>
+            <style>{`.ann-prev p{margin:0 0 6px}.ann-prev ul{margin:4px 0 6px 18px;padding:0}.ann-prev a{color:#1d4ed8;text-decoration:underline}.ann-prev strong{color:#0f172a}.ann-prev .ann-box{margin:10px 0;padding:10px 12px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.18);border-left:4px solid #3b82f6}.ann-prev .ann-box-t{font-weight:700;margin:0 0 4px}`}</style>
             {/* announcementHtml 已跳脫 HTML、連結只認 http(s) */}
             <div className="ann-prev" style={{ fontSize: 13, color: "#334155", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: announcementHtml(form.body) }} />
           </div>
