@@ -7,7 +7,7 @@
 // 新建一律草稿（後端強制 published:false），按「發布」學員才看得到（且要 INTERACTIVE_SCORES=on 的站台）。
 // 刪除：草稿、已發布、舊版 ABC 都能刪，刪前跳確認框。
 // 上傳的曲目可隨時改和弦（lib/score/chord-edit.js）：只重寫改過的小節，音符不動，存檔即成新版。
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GripVertical } from "lucide-react";
 import styles from "./admin.module.css";
 import { adminFetch as api } from "@/lib/admin-client";
@@ -55,6 +55,7 @@ export default function ScoresManagePage({ showToast = () => {} }) {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null); // null＝沒有在編輯
+  const fileRef = useRef(null);
   const [fileErr, setFileErr] = useState("");
   const [model, setModel] = useState(null);
   const [preview, setPreview] = useState(false);
@@ -329,8 +330,14 @@ export default function ScoresManagePage({ showToast = () => {} }) {
           {form.source === "file" ? (
             <div className={styles.formGroup}>
               <label htmlFor="score-file">樂譜檔（.musicxml／.mxl，右手一行或雙手兩行）{form.id ? "：選新檔＝替換新版" : ""}</label>
-              <input id="score-file" type="file" accept=".musicxml,.mxl,.xml" onChange={onFile} />
-              {form.file_name && !fileErr && <span style={{ fontSize: 12, color: "#64748b" }}>{form.file_name}{form.id && form.fileChanged ? `　→ 儲存後變成 v${form.version + 1}` : ""}</span>}
+              {/* 原生檔案鈕樣式跟後台不搭：藏起來，用後台按鈕代點（同 MaterialsManager） */}
+              <input id="score-file" type="file" accept=".musicxml,.mxl,.xml" onChange={onFile} ref={fileRef} style={{ display: "none" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button type="button" className={styles.btnSmall} onClick={() => fileRef.current?.click()} style={{ flexShrink: 0 }}>選擇樂譜檔</button>
+                <span style={{ fontSize: 13, color: form.file_name && !fileErr ? "#0f172a" : "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                  {form.file_name && !fileErr ? `${form.file_name}${form.id && form.fileChanged ? `　→ 儲存後變成 v${form.version + 1}` : ""}` : "尚未選擇檔案"}
+                </span>
+              </div>
               {form.baseXml && (
                 <>
                   <label htmlFor="score-file-chords" style={{ marginTop: 8 }}>和弦（每小節用 | 分開；只會改你動到的小節，音符不變）</label>
@@ -342,17 +349,17 @@ export default function ScoresManagePage({ showToast = () => {} }) {
             <div style={{ display: "grid", gap: 10 }}>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <label style={{ fontSize: 13 }}>調號{" "}
-                  <select aria-label="調號" value={form.jp.key} onChange={(e) => setJp({ key: e.target.value })}>
+                  <select aria-label="調號" className={styles.input} style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} value={form.jp.key} onChange={(e) => setJp({ key: e.target.value })}>
                     {KEYS.map((k) => <option key={k} value={k}>1={k.replace("b", "♭")}</option>)}
                   </select>
                 </label>
                 <label style={{ fontSize: 13 }}>拍號{" "}
-                  <select aria-label="拍號" value={`${form.jp.beats}/${form.jp.beatType}`} onChange={(e) => { const [b, t] = e.target.value.split("/").map(Number); setJp({ beats: b, beatType: t }); }}>
+                  <select aria-label="拍號" className={styles.input} style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} value={`${form.jp.beats}/${form.jp.beatType}`} onChange={(e) => { const [b, t] = e.target.value.split("/").map(Number); setJp({ beats: b, beatType: t }); }}>
                     {TIMES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </label>
                 <label style={{ fontSize: 13 }}>速度 ♩={" "}
-                  <input aria-label="速度" type="number" min="40" max="200" value={form.jp.tempo ?? ""} style={{ width: 64 }} onChange={(e) => setJp({ tempo: e.target.value ? Number(e.target.value) : null })} />
+                  <input aria-label="速度" type="number" min="40" max="200" value={form.jp.tempo ?? ""} className={styles.input} style={{ width: 72, padding: "6px 10px", fontSize: 13 }} onChange={(e) => setJp({ tempo: e.target.value ? Number(e.target.value) : null })} />
                 </label>
               </div>
               <div className={styles.formGroup}>
@@ -408,7 +415,7 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                             {v.title}
                           </label>
                           {on && accOptions.length > 0 && (
-                            <select aria-label={`${v.title} 的伴奏`} value={form.unitAcc[v.id] || ""} onChange={(e) => setUnitAcc(v.id, e.target.value)} style={{ fontSize: 12 }}>
+                            <select aria-label={`${v.title} 的伴奏`} value={form.unitAcc[v.id] || ""} onChange={(e) => setUnitAcc(v.id, e.target.value)} className={styles.input} style={{ width: "auto", padding: "4px 8px", fontSize: 12 }}>
                               <option value="">學員自選</option>
                               {accOptions.map((o) => <option key={o.value} value={o.value}>只用{o.label}</option>)}
                             </select>
