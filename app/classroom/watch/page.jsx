@@ -16,6 +16,7 @@ import CommentsSection from "@/components/classroom/CommentsSection";
 import MaterialsSection from "@/components/classroom/MaterialsSection";
 import { freshToken, openMaterialById, getDeviceId, F } from "@/components/classroom/shared";
 import { comingSoonLabel, releaseBatchFor } from "@/lib/coming-soon";
+import { isHandoutUnit } from "@/lib/handout-unit";
 import { CHAPTER_RELEASE_DATES, PLANNED_CHAPTER_GAMES, mdLabel, unitNo } from "@/lib/release-schedule";
 import { FULL_RELEASE_MS } from "@/lib/early-access";
 
@@ -470,7 +471,7 @@ export default function ClassroomPage() {
 
   const progMap         = Object.fromEntries(progress.map(p => [p.video_id, p]));
   const doneCount       = progress.filter(p => p.completed).length;
-  const totalCount      = videos.length;
+  const totalCount      = videos.filter(v => !isHandoutUnit(v)).length; // 純講義單元沒有影片可看完，不算進度
   const pct             = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const chap            = chapters.find(c => c.id === currentVideo?.chapter_id);
   const currentProgEntry = currentVideo ? progMap[currentVideo.id] : null;
@@ -848,6 +849,7 @@ export default function ClassroomPage() {
                     const isWatching = !done && watchPct > 0;
                     const items      = contentItems[v.id] || [];
                     const playable   = !!(v.bunny_video_id || v.vimeo_id);
+                    const handout    = isHandoutUnit(v); // 純講義單元：不是「影片還沒上架」，照一般單元顯示
                     // 沒影片的單元：講義樂譜可下載，遊戲也照列（遊戲不依賴影片，點了就地開視窗）；
                     // 只有作業要擋，它得在播放頁的分頁裡交。
                     const visibleItems = playable ? items : items.filter(i => i.kind !== "assignment");
@@ -859,7 +861,7 @@ export default function ClassroomPage() {
                       <div key={v.id}>
                         <div className="unit-row"
                           role="button" tabIndex={0}
-                          title={!playable ? comingSoonFor(v.title, chNum, earlyAccess) : undefined}
+                          title={!playable && !handout ? comingSoonFor(v.title, chNum, earlyAccess) : undefined}
                           onClick={() => handleUnitClick(v)}
                           onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleUnitClick(v); } }}
                           style={{
@@ -891,12 +893,14 @@ export default function ClassroomPage() {
                             <div style={{
                               fontSize: 13, lineHeight: 1.45,
                               fontWeight: isActive ? 600 : 400,
-                              color: isActive ? "#2563eb" : (playable || items.some(i => i.kind === "sheet")) ? "#334155" : "#94a3b8",
+                              color: isActive ? "#2563eb" : (playable || handout || items.some(i => i.kind === "sheet")) ? "#334155" : "#94a3b8",
                               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
                             }}>
                               {v.title}
                             </div>
-                            {!playable ? (
+                            {handout ? (
+                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>📎 講義{visibleItems.length > 0 ? ` · ${visibleItems.length} 項` : ""}</div>
+                            ) : !playable ? (
                               <div className="cs-hint" style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{comingSoonFor(v.title, chNum, earlyAccess)}</div>
                             ) : isWatching ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>

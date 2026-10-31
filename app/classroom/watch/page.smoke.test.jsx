@@ -150,6 +150,29 @@ describe("播放頁（影片未上架的單元掛了互動樂譜）", () => {
   });
 });
 
+describe("播放頁（純講義單元）", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn((url) =>
+      String(url).includes("/api/classroom/bootstrap")
+        ? json({ ...BOOTSTRAP,
+            videos: [...VIDEOS, { id: "v50", chapter_id: "c5", title: "5-0 和弦總整理", duration: "講義" }],
+            contentItems: { v50: [{ kind: "handout", id: "m1", title: "和弦表.pdf" }] } })
+        : json({})
+    ));
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("顯示講義、不顯示預計上架，也不算進總單元數", async () => {
+    const { container, getByText } = render(<ClassroomPage />);
+    await waitFor(() => expect(container.textContent).toContain("5-0 和弦總整理"));
+    const row = getByText("5-0 和弦總整理").closest(".unit-row");
+    expect(row.textContent).toContain("📎 講義 · 1 項");
+    expect(row.textContent).not.toContain("上架");
+    expect(row.getAttribute("title")).toBeNull();
+    expect(container.textContent).toContain(`0 / ${VIDEOS.length} 完成`);
+  });
+});
+
 // 播完一個單元 → 評分邀請彈窗（components/classroom/RatingPrompt）。這裡釘的是播放頁的接線：
 // Bunny player 的 ended → 回報進度 → 後端回 completed → 彈窗；以及 bootstrap 的 rated／rating 有沒有傳下去。
 describe("播放頁（播完單元的評分邀請）", () => {

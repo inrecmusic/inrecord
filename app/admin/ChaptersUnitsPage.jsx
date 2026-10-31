@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import styles from "./admin.module.css";
-import { GripVertical, X, Check, ChevronDown, ChevronRight, Video } from "lucide-react";
+import { GripVertical, X, Check, ChevronDown, ChevronRight, Video, FileText } from "lucide-react";
 import MaterialsManager from "./MaterialsManager";
 import { adminFetch as api } from "@/lib/admin-client";
+import { HANDOUT_UNIT_MARK, isHandoutUnit } from "@/lib/handout-unit";
 
 export default function ChaptersUnitsPage({ showToast }) {
   const [chapters, setChapters] = useState([]);
@@ -32,7 +33,7 @@ export default function ChaptersUnitsPage({ showToast }) {
 
   // unit modal
   const [videoModal, setVideoModal] = useState(null); // null | "create:{chapId}" | video object
-  const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", assignment_due: "", published: false });
+  const [videoForm, setVideoForm] = useState({ chapter_id: "", title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", assignment_due: "", published: false, handout: false });
   const [videoFormErr, setVideoFormErr] = useState("");
 
   // materials modal
@@ -104,13 +105,13 @@ export default function ChaptersUnitsPage({ showToast }) {
   }
 
   /* ── Video CRUD ── */
-  function openVideoCreate(chapId) {
-    setVideoForm({ chapter_id: chapId, title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", assignment_due: "", published: false });
+  function openVideoCreate(chapId, handout = false) {
+    setVideoForm({ chapter_id: chapId, title: "", bunny_video_id: "", vimeo_url: "", vimeo_id: "", duration: "", assignment_desc: "", assignment_due: "", published: false, handout });
     setVideoFormErr(""); setVideoModal("create");
   }
 
   function openVideoEdit(v) {
-    setVideoForm({ chapter_id: v.chapter_id || "", title: v.title || "", bunny_video_id: v.bunny_video_id || "", vimeo_url: v.vimeo_id ? `https://vimeo.com/${v.vimeo_id}` : "", vimeo_id: v.vimeo_id || "", duration: v.duration || "", assignment_desc: v.assignment_desc || "", assignment_due: v.assignment_due || "", published: v.published || false });
+    setVideoForm({ chapter_id: v.chapter_id || "", title: v.title || "", bunny_video_id: v.bunny_video_id || "", vimeo_url: v.vimeo_id ? `https://vimeo.com/${v.vimeo_id}` : "", vimeo_id: v.vimeo_id || "", duration: v.duration || "", assignment_desc: v.assignment_desc || "", assignment_due: v.assignment_due || "", published: v.published || false, handout: isHandoutUnit(v) });
     setVideoFormErr(""); setVideoModal(v);
   }
 
@@ -122,12 +123,19 @@ export default function ChaptersUnitsPage({ showToast }) {
     try {
       const isEdit = videoModal && videoModal !== "create";
       const vimeo_id = videoForm.vimeo_url.match(/vimeo\.com\/(\d+)/)?.[1] || videoForm.vimeo_id;
-      const body = { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), bunny_video_id: videoForm.bunny_video_id.trim() || null, vimeo_id: vimeo_id || null, duration: videoForm.duration, assignment_desc: videoForm.assignment_desc, assignment_due: videoForm.assignment_due || null, published: videoForm.published };
+      // 純講義單元：沒有影片與作業，時長欄存標記（見 lib/handout-unit.js）
+      const body = videoForm.handout
+        ? { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), bunny_video_id: null, vimeo_id: null, duration: HANDOUT_UNIT_MARK, assignment_desc: null, assignment_due: null, published: videoForm.published }
+        : { chapter_id: videoForm.chapter_id, title: videoForm.title.trim(), bunny_video_id: videoForm.bunny_video_id.trim() || null, vimeo_id: vimeo_id || null, duration: videoForm.duration, assignment_desc: videoForm.assignment_desc, assignment_due: videoForm.assignment_due || null, published: videoForm.published };
       if (isEdit) body.id = videoModal.id;
       else body.sort_order = videos.filter(v => v.chapter_id === videoForm.chapter_id).length;
       const r = await api("/api/admin/videos", { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(body) });
-      if (!r.ok) throw new Error((await r.json()).error);
-      showToast(isEdit ? "✅ 單元已更新" : "✅ 單元已新增"); setVideoModal(null); fetchAll();
+      const res = await r.json();
+      if (!r.ok) throw new Error(res.error);
+      const noun = videoForm.handout ? "講義" : "單元";
+      showToast(isEdit ? `✅ ${noun}已更新` : `✅ ${noun}已新增`); setVideoModal(null); fetchAll();
+      // 新建的講義單元直接接著上傳檔案
+      if (!isEdit && videoForm.handout && res.data?.id) setMatModal({ videoId: res.data.id, title: res.data.title });
     } catch (e) { setVideoFormErr(e.message); }
     finally { setSaving(false); }
   }
@@ -241,6 +249,7 @@ export default function ChaptersUnitsPage({ showToast }) {
                     {editingChapId !== chap.id && (
                       <div className={styles.rowActions} style={{ flexShrink: 0 }}>
                         <button className={styles.btnSmall} onClick={() => openVideoCreate(chap.id)}>新增單元</button>
+                        <button className={styles.btnSmall} onClick={() => openVideoCreate(chap.id, true)}>新增講義</button>
                         <button className={styles.btnSmall} onClick={() => { setEditingChapId(chap.id); setEditChapTitle(chap.title); }}>編輯</button>
                         <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => setDeleteChapId(chap.id)}>刪除</button>
                       </div>
@@ -266,7 +275,9 @@ export default function ChaptersUnitsPage({ showToast }) {
                           }}
                         >
                           <span style={{ color: "#e2e8f0", cursor: "grab", flexShrink: 0 }}><GripVertical size={14} /></span>
-                          <Video size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                          {isHandoutUnit(v)
+                            ? <FileText size={13} color="#0891b2" style={{ flexShrink: 0 }} />
+                            : <Video size={13} color="#7c3aed" style={{ flexShrink: 0 }} />}
                           <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#334155", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</span>
                           {v.bunny_video_id && (
                             <span style={{ fontSize: 11, color: "#ea580c", fontWeight: 700, background: "#fff7ed", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>Bunny</span>
@@ -274,7 +285,9 @@ export default function ChaptersUnitsPage({ showToast }) {
                           {v.vimeo_id && (
                             <a href={`https://vimeo.com/${v.vimeo_id}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 700, background: "#eff6ff", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>{v.vimeo_id}</a>
                           )}
-                          {v.duration && <span style={{ fontSize: 12, color: "#94a3b8", flexShrink: 0 }}>{v.duration}</span>}
+                          {isHandoutUnit(v)
+                            ? <span style={{ fontSize: 11, color: "#0e7490", fontWeight: 700, background: "#ecfeff", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>純講義</span>
+                            : v.duration && <span style={{ fontSize: 12, color: "#94a3b8", flexShrink: 0 }}>{v.duration}</span>}
                           <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999, flexShrink: 0, background: v.published ? "#dcfce7" : "#f1f5f9", color: v.published ? "#166534" : "#475569" }}>
                             {v.published ? "已發布" : "草稿"}
                           </span>
@@ -330,7 +343,7 @@ export default function ChaptersUnitsPage({ showToast }) {
         <div className={styles.modalOverlay} onClick={() => setVideoModal(null)}>
           <div className={styles.modalCard} style={{ width: "min(560px,100%)" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18 }}>{videoModal === "create" ? "新增單元" : "編輯單元"}</h3>
+              <h3 style={{ margin: 0, fontSize: 18 }}>{`${videoModal === "create" ? "新增" : "編輯"}${videoForm.handout ? "講義" : "單元"}`}</h3>
               <button className={styles.iconBtn} onClick={() => setVideoModal(null)}><X size={18} /></button>
             </div>
             <form onSubmit={saveVideo} style={{ display: "grid", gap: 14 }}>
@@ -343,10 +356,23 @@ export default function ChaptersUnitsPage({ showToast }) {
                   </select>
                 </div>
                 <div className={styles.formGroup} style={{ flex: 2 }}>
-                  <label>單元名稱 *</label>
-                  <input className={styles.input} value={videoForm.title} onChange={e => setVideoForm(p => ({ ...p, title: e.target.value }))} placeholder="例：第 1 課：認識鍵盤" />
+                  <label>{videoForm.handout ? "講義名稱 *" : "單元名稱 *"}</label>
+                  <input className={styles.input} value={videoForm.title} onChange={e => setVideoForm(p => ({ ...p, title: e.target.value }))} placeholder={videoForm.handout ? "例：5-0 和弦總整理" : "例：第 1 課：認識鍵盤"} />
                 </div>
               </div>
+              {videoForm.handout ? (
+              <>
+                <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>只放講義、沒有影片。{videoModal === "create" ? "建立後會接著開啟上傳講義檔案。" : "講義檔案請在單元列按「講義」管理。"}</p>
+                <div className={styles.formGroup}>
+                  <label>發布狀態</label>
+                  <select className={styles.selectInput} style={{ width: "100%" }} value={videoForm.published ? "1" : "0"} onChange={e => setVideoForm(p => ({ ...p, published: e.target.value === "1" }))}>
+                    <option value="0">草稿</option>
+                    <option value="1">已發布</option>
+                  </select>
+                </div>
+              </>
+              ) : (
+              <>
               <div className={styles.formGroup}>
                 <label>Bunny Stream Video ID（主要）</label>
                 <input
@@ -388,10 +414,12 @@ export default function ChaptersUnitsPage({ showToast }) {
                 <label>作業截止日期（選填）</label>
                 <input type="date" className={styles.input} value={videoForm.assignment_due || ""} onChange={e => setVideoForm(p => ({ ...p, assignment_due: e.target.value }))} />
               </div>
+              </>
+              )}
               {videoFormErr && <p style={{ color: "#dc2626", fontSize: 13, margin: 0, fontWeight: 700 }}>{videoFormErr}</p>}
               <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSmall} onClick={() => setVideoModal(null)}>取消</button>
-                <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? "儲存中…" : videoModal === "create" ? "新增單元" : "儲存變更"}</button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? "儲存中…" : videoModal === "create" ? (videoForm.handout ? "新增講義" : "新增單元") : "儲存變更"}</button>
               </div>
             </form>
           </div>
