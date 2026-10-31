@@ -49,13 +49,14 @@ describe("ScoresManagePage（後台曲目）", () => {
     expect(within(v2Row).getByText("入門")).toBeTruthy();
   });
 
-  it("上移／下移：第一首不能上移、最後一首不能下移；下移後重新編號、只送有變的", async () => {
+  it("拖曳排序：放開後重新編號、只送有變的；沒有上移／下移按鈕", async () => {
     render(<ScoresManagePage showToast={() => {}} />);
     const first = (await screen.findByText("右手旋律")).closest("tr");
     const last = screen.getByText("小蜜蜂雙手").closest("tr");
-    expect(within(first).getByRole("button", { name: /往上移/ }).disabled).toBe(true);
-    expect(within(last).getByRole("button", { name: /往下移/ }).disabled).toBe(true);
-    fireEvent.click(within(first).getByRole("button", { name: /往下移/ }));
+    expect(screen.queryByRole("button", { name: /移/ })).toBe(null);
+    fireEvent.dragStart(first);
+    fireEvent.dragOver(last);
+    fireEvent.dragEnd(screen.getByText("右手旋律").closest("tr"));
     await waitFor(() => {
       const sent = adminFetch.mock.calls.filter(([, o]) => o?.method === "PATCH").map(([, o]) => JSON.parse(o.body));
       expect(sent).toEqual(expect.arrayContaining([{ id: "s1", sort_order: 0 }, { id: "a1", sort_order: 1 }]));

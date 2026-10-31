@@ -8,6 +8,7 @@
 // 刪除：草稿、已發布、舊版 ABC 都能刪，刪前跳確認框。
 // 上傳的曲目可隨時改和弦（lib/score/chord-edit.js）：只重寫改過的小節，音符不動，存檔即成新版。
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { GripVertical } from "lucide-react";
 import styles from "./admin.module.css";
 import { adminFetch as api } from "@/lib/admin-client";
 import { readScoreFile } from "@/lib/score/mxl";
@@ -241,19 +242,30 @@ export default function ScoresManagePage({ showToast = () => {} }) {
       fetchAll();
     } else showToast("❌ 更新失敗");
   };
-  // 上移／下移：照清單順序重新編號，只送順序有變的那幾首（學員端同一單元的曲子也照這個順序）
-  const move = async (index, delta) => {
-    const j = index + delta;
-    if (j < 0 || j >= rows.length) return;
-    const next = [...rows];
-    [next[index], next[j]] = [next[j], next[index]];
-    setRows(next);
-    const changed = next.map((r, i) => ({ r, i })).filter(({ r, i }) => r.sort_order !== i);
-    const results = await Promise.all(
-      changed.map(({ r, i }) => api("/api/admin/scores", { method: "PATCH", body: JSON.stringify({ id: r.id, sort_order: i }) })),
-    );
-    if (results.some((x) => !x.ok)) showToast("❌ 順序沒有存好，請重新整理再試一次");
-    fetchAll();
+  // 拖曳排序（照「章節與單元」頁的做法：左邊握把、拖曳中變淡）；放開時照清單順序重新編號，只送順序有變的
+  // （學員端同一單元的曲子也照這個順序）
+  const [dragIdx, setDragIdx] = useState(null);
+  const onRowDragOver = (e, i) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === i) return;
+    const arr = [...rows];
+    const [m] = arr.splice(dragIdx, 1);
+    arr.splice(i, 0, m);
+    setDragIdx(i);
+    setRows(arr);
+  };
+  const onRowDragEnd = async () => {
+    setDragIdx(null);
+    const changed = rows.map((r, i) => ({ r, i })).filter(({ r, i }) => r.sort_order !== i);
+    if (!changed.length) return;
+    try {
+      const rs = await Promise.all(changed.map(({ r, i }) => api("/api/admin/scores", { method: "PATCH", body: JSON.stringify({ id: r.id, sort_order: i }) })));
+      if (rs.some((x) => !x.ok)) throw new Error("reorder_failed");
+      fetchAll();
+    } catch {
+      showToast("❌ 排序儲存失敗，已還原");
+      fetchAll();
+    }
   };
   const remove = async (row) => {
     const q = row.published ? `「${row.title}」已發布，刪除後學員會立刻看不到，而且無法復原。確定刪除？` : `確定刪除「${row.title}」？刪除後無法復原。`;
@@ -447,9 +459,17 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                   const ua = row.meta?.unitAccompaniment || {};
                   const accName = (v) => (v === "original" ? "原譜左手" : ACCOMPANIMENTS.find((a) => a.id === v)?.label);
                   return (
-                    <tr key={row.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <tr
+                      key={row.id}
+                      draggable
+                      onDragStart={() => setDragIdx(index)}
+                      onDragOver={(e) => onRowDragOver(e, index)}
+                      onDragEnd={onRowDragEnd}
+                      style={{ borderBottom: "1px solid #f1f5f9", opacity: dragIdx === index ? 0.4 : 1 }}
+                    >
                       <td style={td}>
                         <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                          <span title="拖曳調整順序" style={{ color: "#cbd5e1", cursor: "grab", marginRight: 6, verticalAlign: "-2px" }}><GripVertical size={15} /></span>
                           {row.title} {abc && <span style={tag("#f1f5f9", "#64748b")}>舊版 ABC</span>}
                           {!abc && row.meta?.jianpu && <span style={tag("#eef2ff", "#4338ca")}>簡譜輸入</span>}
                           {!abc && row.version > 1 && <span style={{ fontSize: 11, color: "#94a3b8" }}> v{row.version}</span>}
@@ -467,8 +487,6 @@ export default function ScoresManagePage({ showToast = () => {} }) {
                       <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(row.updated_at)}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>
                         <div className={styles.rowActions}>
-                          <button className={styles.btnSmall} disabled={index === 0} onClick={() => move(index, -1)} aria-label={`把「${row.title}」往上移`}>上移</button>
-                          <button className={styles.btnSmall} disabled={index === rows.length - 1} onClick={() => move(index, 1)} aria-label={`把「${row.title}」往下移`}>下移</button>
                           {!abc && <button className={styles.btnSmall} onClick={() => openEdit(row)}>編輯</button>}
                           <button className={styles.btnSmall} onClick={() => setPublished(row, !row.published)}>{row.published ? "下架" : "發布"}</button>
                           <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => remove(row)}>刪除</button>
