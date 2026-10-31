@@ -242,7 +242,7 @@ describe("導購文案與追蹤", () => {
     await renderReady();
     await emit("ended");
     const txt = screen.getByRole("dialog").textContent;
-    expect(txt).toContain("10 章節 ＋ 2 附錄，約 6 小時");
+    expect(txt).toContain("10 章節 ＋ 3 附錄，約 6 小時");
     expect(txt).toContain("24 個三和弦（12 個大三和弦 ＋ 12 個小三和弦）");
     expect(txt).toContain("10 首曲目實戰");
     expect(txt).not.toContain("流行曲目");
