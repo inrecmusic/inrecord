@@ -104,6 +104,17 @@ export function measuresPerLine(width) {
   return width > 0 && width < 460 ? 2 : 4;
 }
 
+// 和弦記號與音符的間距（OSMD 單位＝一個線間）。OSMD 預設只在最高的音符／連桿上方留 0.2，
+// 高音（如加線上的 G5）或往上的連桿會跟「C I」這類和弦字貼在一起（2026-10-31 Alan 回報）。
+export const CHORD_GAP = 0.9;
+
+// 每次畫之前套用的排版規則：每行小節數、和弦記號間距
+export function applyEngravingRules(rules, width) {
+  rules.RenderXMeasuresPerLineAkaSystem = measuresPerLine(width);
+  rules.ChordSymbolYOffset = CHORD_GAP;  // 該位置第一個和弦
+  rules.ChordSymbolYPadding = CHORD_GAP; // 同位置疊第二個以後
+}
+
 // OSMD 設定（StaffView 用）。連桿不用 OSMD 的 autoBeam（它把拍號分母當一拍，6/8 的八分音符連不起來），
 // 改由 lib/score/staff-xml.js 的 prepareStaffXml 依樂理補 <beam>；原檔寫好的連桿照原檔。
 // autoResize 關掉：寬度改變由 StaffView 自己重畫並重建音符對照表。

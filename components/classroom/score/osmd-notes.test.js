@@ -90,3 +90,13 @@ describe("measuresPerLine", () => {
     expect(measuresPerLine(0)).toBe(4);
   });
 });
+
+describe("applyEngravingRules", () => {
+  it("設定每行小節數與和弦記號間距", async () => {
+    const { applyEngravingRules, CHORD_GAP } = await import("./osmd-notes");
+    const rules = {};
+    applyEngravingRules(rules, 900);
+    expect(rules).toEqual({ RenderXMeasuresPerLineAkaSystem: 4, ChordSymbolYOffset: CHORD_GAP, ChordSymbolYPadding: CHORD_GAP });
+    expect(CHORD_GAP).toBeGreaterThan(0.5);
+  });
+});

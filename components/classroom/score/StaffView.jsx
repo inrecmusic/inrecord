@@ -8,7 +8,7 @@
 // 每次畫完也用 osmdGeometry 算出各小節位置：底下一層畫 A-B 循環底色與游標，上面一層疊可點的小節號與和弦（OSMD 的和弦文字本身點不到）。
 import { useEffect, useRef, useState } from "react";
 import { prepareStaffXml, matchStaffNotes } from "@/lib/score/staff-xml";
-import { collectOsmdNotes, osmdGeometry, OSMD_OPTIONS, measuresPerLine } from "./osmd-notes";
+import { collectOsmdNotes, osmdGeometry, OSMD_OPTIONS, applyEngravingRules } from "./osmd-notes";
 
 export default function StaffView({
   xml, model, rightHandOnly = false, slashes = false, chordMode = "name", showChords = true, activeIds,
@@ -44,7 +44,7 @@ export default function StaffView({
     const osmd = osmdRef.current;
     if (!osmd || !hostRef.current) return;
     lastWidth.current = hostRef.current.clientWidth;
-    osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = measuresPerLine(lastWidth.current);
+    applyEngravingRules(osmd.EngravingRules, lastWidth.current);
     osmd.render();
     lhIds.current = new Set(model.notes.filter((n) => n.staff === 2).map((n) => n.id));
     const map = matchStaffNotes(model, collectOsmdNotes(osmd.GraphicSheet), { slashes: rightHandOnly && slashes });
