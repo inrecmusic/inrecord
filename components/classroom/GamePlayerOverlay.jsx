@@ -95,11 +95,13 @@ export default function GamePlayerOverlay({ game, token, onClose, cache }) {
           }} />
         </div>
       ) : (
-        /* key 綁內容：內容一變就換一個全新的 iframe，不在同一個 iframe 上改 srcdoc（理由見上方 useState） */
+        /* key 綁內容：內容一變就換一個全新的 iframe，不在同一個 iframe 上改 srcdoc（理由見上方 useState）。
+           microphone／allow-downloads：Ch10 自由創作坊要錄音、下載作品音檔。 */
         <iframe
           key={content?.html_content ? `game-${gameId}` : "empty"}
           srcDoc={content?.html_content || "<div style='display:grid;place-items:center;height:100vh;font-family:system-ui;color:#cbd5e1'>遊戲內容即將上線</div>"}
-          sandbox="allow-scripts allow-forms"
+          allow="microphone; autoplay; fullscreen"
+          sandbox="allow-scripts allow-forms allow-downloads"
           style={{ flex: 1, border: 0, display: "block", width: "100%" }}
           title={game.title}
         />
