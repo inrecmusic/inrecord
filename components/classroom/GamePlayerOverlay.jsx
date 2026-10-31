@@ -65,6 +65,12 @@ export default function GamePlayerOverlay({ game, token, onClose, cache }) {
           ← 返回
         </button>
         <span style={{ color: "#f5f5f7", fontSize: 14, fontWeight: 600, fontFamily: F }}>🎮 {game.title}</span>
+        {!isUrlGame && (
+          /* 3D 遊戲的鋼琴音源授權（CC-BY 3.0）要求標註出處 */
+          <span style={{ marginLeft: "auto", color: "#8e8e93", fontSize: 11, fontFamily: F }}>
+            鋼琴音源：<a href="https://archive.org/details/SalamanderGrandPianoV3" target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>Salamander Grand Piano</a>（Alexander Holm，CC-BY 3.0）
+          </span>
+        )}
         {isUrlGame && (
           <span style={{ marginLeft: 8, fontSize: 11, background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 980, fontWeight: 600 }}>試玩</span>
         )}
