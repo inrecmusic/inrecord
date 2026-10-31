@@ -98,6 +98,12 @@ export function osmdGeometry(graphic, model, zoom = 1) {
   }
 }
 
+// 一行幾小節：固定 4 小節換行（OSMD 預設是排滿才換，每行小節數不一、看起來不整齊；2026-10-31 Alan 定）。
+// 手機寬度（<460px）4 小節會擠到音符疊在一起，改 2 小節——與簡譜（lib/score/jianpu*.js）同一個門檻。
+export function measuresPerLine(width) {
+  return width > 0 && width < 460 ? 2 : 4;
+}
+
 // OSMD 設定（StaffView 用）。連桿不用 OSMD 的 autoBeam（它把拍號分母當一拍，6/8 的八分音符連不起來），
 // 改由 lib/score/staff-xml.js 的 prepareStaffXml 依樂理補 <beam>；原檔寫好的連桿照原檔。
 // autoResize 關掉：寬度改變由 StaffView 自己重畫並重建音符對照表。

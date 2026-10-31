@@ -80,3 +80,13 @@ describe("osmdGeometry：和弦寫成 words 的文字標記", () => {
     expect(chords).toEqual([{ id: "c1", x: 30, y: -10, w: 20, h: 20 }]);
   });
 });
+
+describe("measuresPerLine", () => {
+  it("一般寬度固定 4 小節換行，手機 2 小節", async () => {
+    const { measuresPerLine } = await import("./osmd-notes");
+    expect(measuresPerLine(1200)).toBe(4);
+    expect(measuresPerLine(600)).toBe(4);
+    expect(measuresPerLine(375)).toBe(2);
+    expect(measuresPerLine(0)).toBe(4);
+  });
+});
