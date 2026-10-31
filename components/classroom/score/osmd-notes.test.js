@@ -103,7 +103,7 @@ describe("chordLifts", () => {
     expect(chordLifts([text], [R(110, 120, 40, 70)])).toEqual([0]);     // 在字上方（上一行的下譜）
     const rules = {};
     applyEngravingRules(rules, 900);
-    expect(rules).toEqual({ RenderXMeasuresPerLineAkaSystem: 4 });
+    expect(rules).toEqual({ RenderXMeasuresPerLineAkaSystem: 4, FixedMeasureWidth: true, FixedMeasureWidthUseForPickupMeasures: false });
   });
   it("A4 分頁模式加寬頁邊、上方留曲名列空間", () => {
     const rules = {};

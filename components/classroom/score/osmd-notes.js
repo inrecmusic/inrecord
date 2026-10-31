@@ -112,8 +112,12 @@ export function measuresPerLine(width) {
 
 // 每次畫之前套用的排版規則
 // paged：A4 分頁模式，每頁上方留空間放曲名列（StaffView 疊上去），左右邊界加寬像真的紙
+// 小節一律等寬（OSMD 預設依音符多寡分配寬度，各行小節線上下對不齊；2026-10-31 Alan 要求對齊整齊）。
+// 弱起小節不套用，否則一兩個音會被拉滿整小節；每行第一小節仍會多出譜號（第一行還有拍號）的寬度。
 export function applyEngravingRules(rules, width, { paged = false } = {}) {
   rules.RenderXMeasuresPerLineAkaSystem = measuresPerLine(width);
+  rules.FixedMeasureWidth = true;
+  rules.FixedMeasureWidthUseForPickupMeasures = false;
   if (paged) {
     rules.PageTopMargin = 9;
     rules.PageTopMarginNarrow = 9;
