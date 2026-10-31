@@ -5,11 +5,16 @@
 // 畫完用 collectOsmdNotes＋matchStaffNotes 建「模型 id → SVG 元素」對照表，高亮與提示框都靠它。
 // 關掉 OSMD 自己的 autoResize：寬度改變（手機旋轉、側欄開合）時由這裡重畫並「每次重建對照表」，
 // 否則重畫後舊元素已不在畫面上，高亮會亮錯或不亮。
+// 每次畫完也用 osmdGeometry 算出各小節位置：底下一層畫 A-B 循環底色與游標，上面一層疊可點的小節號與和弦（OSMD 的和弦文字本身點不到）。
 import { useEffect, useRef, useState } from "react";
 import { prepareStaffXml, matchStaffNotes } from "@/lib/score/staff-xml";
-import { collectOsmdNotes, OSMD_OPTIONS } from "./osmd-notes";
+import { collectOsmdNotes, osmdGeometry, OSMD_OPTIONS } from "./osmd-notes";
 
-export default function StaffView({ xml, model, rightHandOnly = false, slashes = false, chordMode = "name", showChords = true, activeIds, onNoteHover }) {
+export default function StaffView({
+  xml, model, rightHandOnly = false, slashes = false, chordMode = "name", showChords = true, activeIds,
+  loop = null, cursorBus = null, follow = false,
+  onNoteHover, onChordHover, onNoteClick, onChordClick, onBarClick,
+}) {
   const hostRef = useRef(null);
   const osmdRef = useRef(null);
   const idToEls = useRef(new Map());
@@ -19,6 +24,9 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
   const warned = useRef(false);
   const lastWidth = useRef(0);
   const [status, setStatus] = useState("loading");
+  const [geom, setGeom] = useState(null); // { bars, chords, ox, oy, k }
+  const geomRef = useRef(null);
+  const curRef = useRef(null);
   const activeRef = useRef(activeIds);
   activeRef.current = activeIds;
 
@@ -44,6 +52,15 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
     for (const [id, els] of map) for (const el of els) if (el && !rev.has(el)) rev.set(el, id);
     elToId.current = rev;
     lit.current = new Set(); // 重畫後舊元素都不在了
+    const svg = hostRef.current.querySelector("svg");
+    if (svg) {
+      const hr = hostRef.current.getBoundingClientRect();
+      const sr = svg.getBoundingClientRect();
+      const k = svg.width?.baseVal?.value ? sr.width / svg.width.baseVal.value : 1;
+      const g = { ...osmdGeometry(osmd.GraphicSheet, model, osmd.zoom || 1), ox: sr.left - hr.left, oy: sr.top - hr.top, k };
+      geomRef.current = g;
+      setGeom(g);
+    }
     if (map.unmatched > 0 && !warned.current) {
       warned.current = true;
       console.warn(`[StaffView] ${map.unmatched} 個五線譜音符對不回模型（裝飾音屬正常）`);
@@ -106,6 +123,36 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
     if (status === "ready") paint(activeIds);
   }, [activeIds, status]);
 
+  // 游標：由 cursorBus 直接改位置，不經 React 重畫（原型 showCursor）
+  useEffect(() => {
+    if (!cursorBus) return undefined;
+    let lastRow = null;
+    return cursorBus.subscribe((p) => {
+      const el = curRef.current;
+      const g = geomRef.current;
+      const b = p && g?.bars[p.measure];
+      if (!el) return;
+      if (!b) {
+        el.style.visibility = "hidden";
+        lastRow = null;
+        return;
+      }
+      el.style.left = `${g.ox + (Math.min(b.xAt(p.pos), b.x1 - 16) - 8) * g.k}px`;
+      el.style.top = `${g.oy + (b.top - 14) * g.k}px`;
+      el.style.width = `${16 * g.k}px`;
+      el.style.height = `${(b.bottom - b.top + 28) * g.k}px`;
+      el.style.visibility = "visible";
+      if (follow && b.row !== lastRow) {
+        lastRow = b.row;
+        const r = el.getBoundingClientRect();
+        if (r.top < 0 || r.bottom > window.innerHeight) {
+          const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+          el.scrollIntoView?.({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+        }
+      }
+    });
+  }, [cursorBus, follow]);
+
   function noteAt(target) {
     for (let n = target; n && n !== hostRef.current; n = n.parentNode) {
       const id = elToId.current.get(n);
@@ -119,17 +166,51 @@ export default function StaffView({ xml, model, rightHandOnly = false, slashes =
     onNoteHover(hit ? hit.id : null, hit ? hit.el.getBoundingClientRect() : null);
   };
 
+  const click = (e) => {
+    hover(e); // 手機沒有滑過，點一下也顯示提示框
+    const hit = noteAt(e.target);
+    if (hit) onNoteClick?.(hit.id);
+  };
+  const box = (x, y, w, h) => (geom ? { left: geom.ox + x * geom.k, top: geom.oy + y * geom.k, width: w * geom.k, height: h * geom.k } : null);
+  const lo = loop ? Math.min(loop.from, loop.to) : null;
+  const hi = loop ? Math.max(loop.from, loop.to) : null;
+  const ready = status === "ready" && geom;
+
   return (
     <div className="sv2-staff-wrap">
       {status === "loading" && <div className="sv2-status">五線譜載入中…</div>}
       {status === "error" && <div className="sv2-status sv2-err">五線譜畫不出來，請改看簡譜，或通知客服。</div>}
-      <div
-        ref={hostRef}
-        className="sv2-staff"
-        onMouseOver={hover}
-        onClick={hover}
-        onMouseLeave={() => onNoteHover?.(null, null)}
-      />
+      <div className="sv2-layer">
+        <div className="sv2-under" aria-hidden="true">
+          {ready && loop && geom.bars.map((b, i) => (b && i >= lo && i <= hi ? <div key={i} className="sv2-band" style={box(b.x0, b.top - 30, b.x1 - b.x0, b.bottom - b.top + 40)} /> : null))}
+          <div ref={curRef} className="sv2-cur" style={{ visibility: "hidden" }} />
+        </div>
+        <div
+          ref={hostRef}
+          className="sv2-staff"
+          onMouseOver={hover}
+          onClick={click}
+          onMouseLeave={() => onNoteHover?.(null, null)}
+        />
+        {ready && (
+          <div className="sv2-over">
+            {geom.bars.map((b, i) =>
+              b ? (
+                <button key={i} type="button" className="sv2-barno" style={{ left: geom.ox + (b.x0 + 2) * geom.k, top: geom.oy + (b.top - 12) * geom.k }}
+                  aria-label={`從第 ${model.measures[i]?.number ?? i + 1} 小節開始播`} onClick={() => onBarClick?.(i)}>
+                  {model.measures[i]?.implicit && i === 0 ? "弱" : model.measures[i]?.number ?? i + 1}
+                </button>
+              ) : null,
+            )}
+            {showChords && geom.chords.map((c) => (
+              <span key={c.id} className="sv2-chordhit" style={box(c.x - 2, c.y - 2, c.w + 4, c.h + 4)}
+                onMouseOver={(e) => onChordHover?.(c.id, e.currentTarget.getBoundingClientRect())}
+                onMouseOut={() => onChordHover?.(null, null)}
+                onClick={(e) => { onChordHover?.(c.id, e.currentTarget.getBoundingClientRect()); onChordClick?.(c.id); }} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

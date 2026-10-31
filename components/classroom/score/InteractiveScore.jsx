@@ -7,10 +7,12 @@
 // 預設 Lead Sheet（只顯示右手），按「顯示左手」才出現左手；隱藏左手時五線譜與簡譜都在右手下方畫節奏斜線（照左手的節奏）。
 // 左手可選原譜或依和弦自動產生的伴奏（柱式＋第 8 章 8-2～8-8，lib/score/accompaniment.js），單元可在後台鎖定一種。
 // 任何設定改變都先停止播放，聲音與畫面才不會對不上。
+// 播放時狀態列寫「預備 N…／第 N 小節 · 第 M 拍／播放完畢」，黃色游標跟著拍點走（cursorBus 直接改 DOM，不讓整頁每 30ms 重畫）；
+// 點音符／和弦發聲、點小節號從那一小節開始播（不打預備拍）、空白鍵切換播放（原型 P:837-843、1099-1105、927）。
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parseMusicXml } from "@/lib/score/musicxml";
-import { buildPlayback, DEFAULT_BPM } from "@/lib/score/timeline";
-import { chordAt } from "@/lib/score/chords";
+import { buildPlayback, positionAt, DEFAULT_BPM } from "@/lib/score/timeline";
+import { chordTones } from "@/lib/score/chords";
 import { ACCOMPANIMENTS, withAccompaniment, accompanimentXml } from "@/lib/score/accompaniment";
 import StaffView from "./StaffView";
 import JianpuView from "./JianpuView";
@@ -61,6 +63,19 @@ const Tog = ({ on, onClick, icon, className = "", children }) => (
   </button>
 );
 const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
+// 游標位置的廣播：播放器每次 tick 發一次，五線譜／簡譜各自訂閱、直接改游標元素
+function createBus() {
+  const fns = new Set();
+  return {
+    subscribe(fn) {
+      fns.add(fn);
+      return () => fns.delete(fn);
+    },
+    emit(p) {
+      for (const fn of fns) fn(p);
+    },
+  };
+}
 
 export default function InteractiveScore({ xml, title, subtitle, defaultAccompaniment = null, lockedAccompaniment = null }) {
   const parsed = useMemo(() => {
@@ -100,11 +115,16 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
   const [activeIds, setActiveIds] = useState(() => new Set());
   const [tip, setTip] = useState(null);
   const [msg, setMsg] = useState("");
+  const [status, setStatus] = useState("");
   const [width, setWidth] = useState(760);
 
   const paperRef = useRef(null);
   const samplerRef = useRef(null);
   const playerRef = useRef(null);
+  const startSeq = useRef(0);
+  const pbRef = useRef(null); // 目前載進播放器的時間軸（點小節號開始播時跟 playback 不同）
+  const modelRef = useRef(null);
+  const cursorBus = useMemo(createBus, []);
 
   useEffect(() => {
     try {
@@ -147,10 +167,23 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     const player = createGrandPlayer(sampler);
     samplerRef.current = sampler;
     playerRef.current = player;
-    const offTick = player.onTick((ids) => setActiveIds((prev) => (sameSet(prev, ids) ? prev : ids)));
+    const offTick = player.onTick((ids, t) => {
+      setActiveIds((prev) => (sameSet(prev, ids) ? prev : ids));
+      const pb = pbRef.current;
+      if (!player.playing || !pb) {
+        cursorBus.emit(null);
+        return;
+      }
+      const p = positionAt(pb, t);
+      cursorBus.emit(p);
+      const m = p && modelRef.current?.measures[p.measure];
+      setStatus(!p ? "" : p.countIn ? `預備 ${p.countIn}…` : m?.implicit && p.measure === 0 ? `弱起小節 · 第 ${p.beat} 拍` : `第 ${m?.number ?? p.measure + 1} 小節 · 第 ${p.beat} 拍`);
+    });
     const offEnd = player.onEnd(() => {
       setPlaying(false);
       setActiveIds(new Set());
+      cursorBus.emit(null);
+      setStatus("播放完畢");
     });
     return () => {
       offTick?.();
@@ -170,31 +203,70 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     [model, bpm, hands, countIn, metronome, loopOn, loopFrom, loopTo],
   );
 
-  // 任何設定改變（速度、手、循環、譜面…）先停止
-  useEffect(() => {
+  modelRef.current = model;
+
+  const stopPlay = useCallback(() => {
+    startSeq.current++;
     playerRef.current?.stop();
     setPlaying(false);
     setActiveIds(new Set());
-  }, [playback, view, showLH]);
+    setStatus("");
+    cursorBus.emit(null);
+  }, [cursorBus]);
 
-  const togglePlay = useCallback(async () => {
-    const p = playerRef.current;
-    if (!p || !playback) return;
-    if (playing) {
-      p.stop();
-      setPlaying(false);
-      setActiveIds(new Set());
-      return;
-    }
-    p.load(playback, { repeat: loopOn });
-    setMsg("");
-    const ok = await p.play();
-    if (!ok) {
-      setMsg("這個瀏覽器不支援播放，樂譜仍可正常觀看");
-      return;
-    }
-    setPlaying(true);
-  }, [playback, playing, loopOn]);
+  // 任何設定改變（速度、手、循環、譜面…）先停止
+  useEffect(() => {
+    stopPlay();
+  }, [playback, view, showLH, stopPlay]);
+
+  const startPlay = useCallback(
+    async (pb, repeat) => {
+      const p = playerRef.current;
+      if (!p || !pb) return;
+      if (!samplerRef.current?.ensure()) {
+        setMsg("這個瀏覽器不支援播放，樂譜仍可正常觀看");
+        return;
+      }
+      p.load(pb, { repeat });
+      pbRef.current = pb;
+      setMsg("");
+      setStatus("");
+      setPlaying(true);
+      const my = ++startSeq.current;
+      const ok = await p.play();
+      if (!ok && my === startSeq.current && !p.playing) setPlaying(false); // 載入中被停止（重按另一個開始則不動）
+    },
+    [],
+  );
+
+  const togglePlay = useCallback(() => {
+    if (playing) return stopPlay();
+    return startPlay(playback, loopOn);
+  }, [playback, playing, loopOn, startPlay, stopPlay]);
+
+  // 點小節號：從那一小節開始播，不打預備拍、不循環（原型 startPlay(bar, true)）
+  const playFromBar = useCallback(
+    (mi) => {
+      if (!model) return;
+      stopPlay();
+      startPlay(buildPlayback(model, { bpm, hands, metronome, countIn: false, from: mi }), false);
+    },
+    [model, bpm, hands, metronome, startPlay, stopPlay],
+  );
+
+  // 空白鍵切換播放（焦點在頁面本身時；原型 P:927）
+  const toggleRef = useRef(togglePlay);
+  toggleRef.current = togglePlay;
+  useEffect(() => {
+    const kd = (e) => {
+      if (e.key !== " " || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target !== document.body) return;
+      e.preventDefault();
+      toggleRef.current();
+    };
+    window.addEventListener("keydown", kd);
+    return () => window.removeEventListener("keydown", kd);
+  }, []);
 
   const noteById = useMemo(() => new Map((model?.notes || []).map((n) => [n.id, n])), [model]);
   const chordById = useMemo(() => new Map((model?.chords || []).map((c) => [c.id, c])), [model]);
@@ -221,7 +293,7 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     (id, rect) => {
       const note = id && noteById.get(id);
       if (!note || !rect) return setTip(null);
-      setTip({ kind: "note", note, chord: chordAt(model, note.measure, note.onset), key: model.measures[note.measure].key, rect });
+      setTip({ kind: "note", note, key: model.measures[note.measure].key, rect });
     },
     [noteById, model],
   );
@@ -234,18 +306,49 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
     [chordById, model],
   );
 
-  const playNote = useCallback((m) => {
+  const onKeyHover = useCallback((m, rect) => {
+    if (m == null || !rect) return setTip((t) => (t?.kind === "key" ? null : t));
+    setTip({ kind: "key", midi: m, rect });
+  }, []);
+
+  // 一律用平台鋼琴取樣：還沒載到的音先等它載好再發聲（第一次約零點幾秒），不退回電子合成音；
+  // 同時把其他取樣全部預載，之後每個音都即按即響
+  const playPitches = useCallback((midis, dur = 0.9) => {
     const s = samplerRef.current;
     const ctx = s?.ensure();
-    if (!ctx) return;
+    if (!ctx || !midis.length) return;
     if (ctx.state === "suspended") ctx.resume().catch(() => {});
-    // 鍵盤一律用平台鋼琴取樣：還沒載到的音先等它載好再發聲（第一次約零點幾秒），不退回電子合成音；
-    // 同時把其他取樣全部預載，之後每個鍵都即按即響
-    const ready = s.loaded(m);
+    const ready = midis.every((m) => s.loaded(m));
     s.loadAll();
-    if (ready) s.play(m, ctx.currentTime + 0.01, 0.9);
-    else s.load([m]).then(() => s.context && s.play(m, s.context.currentTime + 0.01, 0.9));
+    const go = () => {
+      const t = s.context?.currentTime;
+      if (t != null) for (const m of midis) s.play(m, t + 0.01, dur);
+    };
+    if (ready) go();
+    else s.load(midis).then(go);
   }, []);
+  const playNote = useCallback((m) => playPitches([m]), [playPitches]);
+  // 點音符：長度＝min(1.6, 時值×60/速度)；點和弦：1.2 秒（原型 P:1099-1103）
+  const onNoteClick = useCallback(
+    (id) => {
+      const n = noteById.get(id);
+      if (n && !n.rest && n.midi != null) playPitches([n.midi], Math.min(1.6, (n.dur * 60) / bpm));
+    },
+    [noteById, bpm, playPitches],
+  );
+  const onChordClick = useCallback(
+    (id) => {
+      const c = chordById.get(id);
+      if (c) playPitches(chordTones(c), 1.2);
+    },
+    [chordById, playPitches],
+  );
+  // 滑過音符／和弦時，鍵盤上對應的琴鍵加外框
+  const hoverMidis = useMemo(() => {
+    if (tip?.kind === "note" && tip.note.midi != null) return new Set([tip.note.midi]);
+    if (tip?.kind === "chord") return new Set(chordTones(tip.chord));
+    return new Set();
+  }, [tip]);
 
   if (!model) {
     console.error("[InteractiveScore] 解析失敗", parsed.error);
@@ -275,6 +378,8 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
       return !v;
     });
   const chordProps = { rightHandOnly, chordMode, showChords: model.hasChords && showChords, activeIds };
+  const loopRange = loopOn ? { from: loopFrom, to: loopTo } : null;
+  const viewProps = { loop: loopRange, cursorBus, onNoteClick, onChordClick, onBarClick: playFromBar, onNoteHover, onChordHover };
   const measureOptions = model.measures.map((m) => (
     <option key={m.index} value={m.index}>
       {m.implicit && m.index === 0 ? "弱起小節" : `第 ${m.number} 小節`}
@@ -356,21 +461,21 @@ export default function InteractiveScore({ xml, title, subtitle, defaultAccompan
           <h2>{title || model.title}</h2>
           <div className="sh-right">{credit}</div>
         </div>
-        <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg}</div>
+        <div className={`sv2-msg${msg ? " err" : ""}`} aria-live="polite">{msg || status}</div>
         {(view === "staff" || view === "both") && (
           <div className="sv2-section">
-            <StaffView xml={staffXml} model={model} {...chordProps} slashes={slashes} onNoteHover={onNoteHover} />
+            <StaffView xml={staffXml} model={model} {...chordProps} {...viewProps} slashes={slashes} follow />
           </div>
         )}
         {(view === "jianpu" || view === "both") && (
           <div className="sv2-section">
-            <JianpuView model={model} width={width - 36} {...chordProps} slashes={slashes} onNoteHover={onNoteHover} onChordHover={onChordHover} />
+            <JianpuView model={model} width={width - 36} {...chordProps} {...viewProps} slashes={slashes} follow={view === "jianpu"} />
           </div>
         )}
         <p className="sv2-credit">鋼琴音色：Salamander Grand Piano（Alexander Holm），CC BY 3.0</p>
       </section>
 
-      <PianoKeys low={36} high={84} activeMidis={activeMidis} activeLH={activeLH} onNote={playNote} />
+      <PianoKeys low={36} high={84} activeMidis={activeMidis} activeLH={activeLH} hoverMidis={hoverMidis} onNote={playNote} onKeyHover={onKeyHover} />
       <ScoreTip target={tip} />
     </div>
   );

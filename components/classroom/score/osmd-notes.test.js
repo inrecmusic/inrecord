@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { collectOsmdNotes, OSMD_HALFTONE_TO_MIDI, OSMD_OPTIONS } from "./osmd-notes.js";
+import { collectOsmdNotes, OSMD_HALFTONE_TO_MIDI, OSMD_OPTIONS, osmdGeometry } from "./osmd-notes.js";
 
 // 假的 OSMD GraphicSheet：兩小節 × 兩行譜，含一個和弦、一個休止、一個裝飾音
 const note = (halfTone, el, { rest = false, grace = false } = {}) => ({
@@ -49,5 +49,34 @@ describe("OSMD_OPTIONS", () => {
   it("關掉 OSMD 自己的 autoResize（由 StaffView 重畫並重建對照表）", () => {
     expect(OSMD_OPTIONS.autoResize).toBe(false);
     expect(OSMD_OPTIONS.backend).toBe("svg");
+  });
+});
+
+describe("osmdGeometry", () => {
+  const ps = (x, y, w = 0, b = {}) => ({ AbsolutePosition: { x, y }, Size: { width: w }, BorderLeft: 0, BorderRight: 2, BorderTop: -1, BorderBottom: 0, ...b });
+  const se = (on, x, chords) => ({ relInMeasureTimestamp: { RealValue: on / 4 }, PositionAndShape: ps(x, 0), graphicalChordContainers: chords || [] });
+  const graphic = {
+    MeasureList: [[{ PositionAndShape: ps(1, 5, 20), staffEntries: [se(0, 3, [{ PositionAndShape: ps(3, 2) }]), se(2, 11)] }]],
+  };
+  const model = { measures: [{ length: 4 }], chords: [{ id: "c0", measure: 0, onset: 0 }] };
+  it("小節位置、拍點內插、和弦可點範圍（單位換算 10px）", () => {
+    const { bars, chords } = osmdGeometry(graphic, model, 1);
+    expect(bars[0]).toMatchObject({ x0: 10, x1: 210, top: 50, bottom: 90 });
+    expect(bars[0].xAt(0)).toBe(30);
+    expect(bars[0].xAt(1)).toBe(70);
+    expect(bars[0].xAt(4)).toBe(202);
+    expect(chords).toEqual([{ id: "c0", x: 30, y: 10, w: 20, h: 14 }]);
+  });
+});
+
+describe("osmdGeometry：和弦寫成 words 的文字標記", () => {
+  it("從各行 AbstractExpressions 找回模型和弦", () => {
+    const ps = { AbsolutePosition: { x: 4, y: 1 }, Size: { width: 10 }, BorderLeft: -1, BorderRight: 1, BorderTop: -2, BorderBottom: 0 };
+    const graphic = {
+      MeasureList: [[{ PositionAndShape: ps, staffEntries: [] }]],
+      MusicPages: [{ MusicSystems: [{ StaffLines: [{ AbstractExpressions: [{ sourceMultiExpression: { SourceMeasureParent: { measureListIndex: 0 }, Timestamp: { RealValue: 0.5 } }, label: { PositionAndShape: ps } }] }] }] }],
+    };
+    const { chords } = osmdGeometry(graphic, { measures: [{ length: 4 }], chords: [{ id: "c1", measure: 0, onset: 2 }] }, 1);
+    expect(chords).toEqual([{ id: "c1", x: 30, y: -10, w: 20, h: 20 }]);
   });
 });

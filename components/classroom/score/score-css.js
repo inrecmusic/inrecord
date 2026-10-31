@@ -87,6 +87,24 @@ export const SCORE_V2_CSS = `
 .score-v2 .sv2-detect .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .score-v2 .sv2-detect .row .tog,.score-v2 .sv2-detect .row .btn{font-size:12px;padding:5px 11px}
 
+/* 游標、A-B 循環底色、小節號、列名（原型 .cursor／.loopband／.barno／.rowlab） */
+.score-v2 .sv2-layer{position:relative}
+.score-v2 .sv2-under{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.score-v2 .sv2-layer>.sv2-jianpu,.score-v2 .sv2-layer>.sv2-staff{position:relative}
+.score-v2 .sv2-cur{fill:var(--cursor);background:var(--cursor);opacity:.38;border-radius:4px}
+.score-v2 .sv2-band{fill:#007AFF;background:#007AFF;opacity:.06}
+.score-v2 div.sv2-cur,.score-v2 div.sv2-band{position:absolute}
+.score-v2 .sv2-over{position:absolute;inset:0;pointer-events:none}
+.score-v2 .sv2-barno{position:absolute;pointer-events:auto;border:0;background:none;padding:0 2px;font-size:10px;line-height:1;color:#6E6E73;cursor:pointer}
+.score-v2 .sv2-barno:hover,.score-v2 .sv2-jianpu .jp-barno:hover{color:#007AFF;fill:#007AFF}
+.score-v2 .sv2-jianpu .jp-barno{cursor:pointer}
+.score-v2 .sv2-chordhit{position:absolute;pointer-events:auto;cursor:pointer}
+.score-v2 .sv2-staff .vf-stavenote{cursor:pointer}
+.score-v2 .sv2-key.hov{box-shadow:inset 0 0 0 2px var(--accent)}
+.score-v2 .sv2-tip .pair{display:flex;align-items:center;gap:10px;color:#1D1D1F;background:#fff;border-radius:8px;padding:2px 4px}
+.score-v2 .sv2-tip .lbls{display:flex;gap:10px;font-size:10px;color:var(--muted)}
+.score-v2 .sv2-tip .lbls span:last-child{margin-left:auto}
+
 /* 提示框 */
 .score-v2 .sv2-tip{position:fixed;z-index:60;pointer-events:none;background:var(--paper);color:var(--ink);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06);padding:8px 12px 10px;display:grid;gap:4px;min-width:150px;max-width:300px}
 .score-v2 .sv2-tip .tn{font-weight:700;font-size:14px}

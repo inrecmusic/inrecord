@@ -1,10 +1,12 @@
 "use client";
 // components/classroom/score/PianoKeys.jsx — 螢幕虛擬鋼琴＋和弦辨識（照原型的鍵盤區與「和弦辨識」卡）
 // 點按出聲（由 onNote 交給上層播放）；「用滑鼠點選組和弦」時點一下按住、再點一下放開；電腦鍵盤依 KEYMAP 彈奏。
-// 播放中正在響的音由 activeMidis 亮鍵。輔助工具，不參與任何完成判定。
-import { useEffect, useMemo, useState } from "react";
+// 播放中正在響的音由 activeMidis 亮鍵；滑過樂譜上的音或和弦時，對應的琴鍵由 hoverMidis 加外框。
+// 滑過琴鍵顯示提示框（onKeyHover）；窄螢幕時鍵盤一開始捲到中央 C 一帶。輔助工具，不參與任何完成判定。
+import { useEffect, useMemo, useRef, useState } from "react";
 import { KEYMAP } from "@/lib/score/keymap";
-import { recognizeChord, noteName } from "@/lib/score/chords";
+import { recognizeChord } from "@/lib/score/chords";
+import { detectText } from "@/lib/score/tip-content";
 
 const isBlack = (m) => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
 const Ic = ({ d }) => (
@@ -13,8 +15,13 @@ const Ic = ({ d }) => (
 const IC_POINTER = '<path d="M6 3.5l12 7-5.3 1.6L9.8 17.5z"/>';
 const IC_X = '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>';
 
-export default function PianoKeys({ low = 36, high = 84, activeMidis, activeLH, onNote }) {
+export default function PianoKeys({ low = 36, high = 84, activeMidis, activeLH, hoverMidis, onNote, onKeyHover }) {
   const [latch, setLatch] = useState(false);
+  const wrapRef = useRef(null);
+  useEffect(() => {
+    const w = wrapRef.current;
+    if (w) w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2; // 原型：窄螢幕時中央 C 置中
+  }, []);
   const [held, setHeld] = useState(() => new Set());
 
   const keys = useMemo(() => {
@@ -76,24 +83,27 @@ export default function PianoKeys({ low = 36, high = 84, activeMidis, activeLH, 
   }, [latch, onNote]);
 
   const notes = [...held].sort((a, b) => a - b);
-  const r = notes.length >= 3 ? recognizeChord(notes) : null;
-  const big = !notes.length ? "—" : notes.length === 1 ? noteName(notes[0]) : r ? r.name : "?";
-  const sub = !notes.length
-    ? "按下鍵盤上的和弦，這裡會顯示是哪個和弦。"
-    : notes.length === 1 ? "單音"
-    : r ? `${r.zh} · ${r.inv}`
-    : notes.length === 2 ? "再加一個音就能組成和弦" : "這組音不是常見的三和弦或七和弦";
+  const { big, sub, tones } = detectText(notes, notes.length >= 3 ? recognizeChord(notes) : null);
   const active = activeMidis instanceof Set ? activeMidis : new Set(activeMidis || []);
+  const hov = hoverMidis instanceof Set ? hoverMidis : new Set(hoverMidis || []);
 
   return (
     <section className="sv2-kbdzone">
-      <div className="sv2-kbd-wrap">
-        <div className="sv2-kbd" aria-label="虛擬鋼琴鍵盤" onPointerLeave={() => !latch && setHeld(new Set())}>
+      <div className="sv2-kbd-wrap" ref={wrapRef}>
+        <div
+          className="sv2-kbd"
+          aria-label="虛擬鋼琴鍵盤"
+          onPointerLeave={() => {
+            if (!latch) setHeld(new Set());
+            onKeyHover?.(null, null);
+          }}
+        >
           {keys.map((k) => (
             <div
               key={k.m}
               data-m={k.m}
-              className={`sv2-key ${k.black ? "b" : "w"}${held.has(k.m) ? " press" : ""}${active.has(k.m) ? (activeLH?.has(k.m) ? " is-now lh" : " is-now") : ""}`}
+              className={`sv2-key ${k.black ? "b" : "w"}${held.has(k.m) ? " press" : ""}${active.has(k.m) ? (activeLH?.has(k.m) ? " is-now lh" : " is-now") : ""}${hov.has(k.m) ? " hov" : ""}`}
+              onPointerEnter={(e) => onKeyHover?.(k.m, e.currentTarget.getBoundingClientRect())}
               style={{ left: `${k.left}%`, width: `${k.width}%` }}
               onPointerDown={(e) => {
                 e.preventDefault?.();
@@ -110,7 +120,7 @@ export default function PianoKeys({ low = 36, high = 84, activeMidis, activeLH, 
         <div className="lbl">和弦辨識</div>
         <div className="pk-big">{big}</div>
         <div className="sub">{sub}</div>
-        <div className="tones">{notes.map((m) => noteName(m)).join(" ")}</div>
+        <div className="tones">{tones}</div>
         <div className="row">
           <button type="button" className="tog" aria-pressed={latch} onClick={() => { setLatch((v) => !v); setHeld(new Set()); }}>
             <Ic d={IC_POINTER} />用滑鼠點選組和弦

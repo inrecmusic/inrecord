@@ -1,14 +1,13 @@
 "use client";
-// components/classroom/score/ScoreTip.jsx — 音符／和弦提示框（照原型 .tip；和弦附兩個八度的小鍵盤圖，原型 chordTip）
-// target：{ kind:'note', note, chord, key, rect } | { kind:'chord', chord, key, rect } | null
-import { pitchName, jianpuDigit, chordZh, romanOf, chordTones, noteName } from "@/lib/score/chords";
-import { durationLabel } from "@/lib/score/keymap";
+// components/classroom/score/ScoreTip.jsx — 提示框（照原型 .tip）
+// 音符／琴鍵：迷你五線譜＋迷你簡譜，標題「G4 · Sol · 5」、副標「右手 · 四分音符」（原型 evTip／tipHTML）；
+// 和弦：兩個八度的小鍵盤，根音橘色、白鍵圈上寫簡譜數字，底下「原位：… · 簡譜 … ● 根音」（原型 chordTip）。
+// target：{ kind:'note', note, key, rect } | { kind:'key', midi, rect } | { kind:'chord', chord, key, rect } | null
+import { noteTip, keyTip, chordTip, miniStaffSvg, miniJianpuSvg } from "@/lib/score/tip-content";
 
 const isBlack = (m) => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
-const oct = (n) => (Math.abs(n) > 1 ? Math.abs(n) : "");
-const jpText = (d) => `${d.acc}${d.digit}${d.octave > 0 ? `（高${oct(d.octave)}八度）` : d.octave < 0 ? `（低${oct(d.octave)}八度）` : ""}`;
 
-function ChordDiagram({ tones, bassMidi }) {
+function ChordDiagram({ tones, root, digits }) {
   const on = new Set(tones);
   const kw = 17, h = 74, bh = 44, w = kw * 14;
   const whites = [], blacks = [];
@@ -22,21 +21,34 @@ function ChordDiagram({ tones, bassMidi }) {
       {whites.map(([m, i]) => (
         <g key={m}>
           <rect className="wk" x={i * kw} y="0" width={kw} height={h} rx="2" />
-          {on.has(m) && <circle className={m === bassMidi ? "bs" : "on"} cx={i * kw + kw / 2} cy={h - 12} r="6" />}
+          {on.has(m) && (
+            <>
+              <circle className={m === root ? "bs" : "on"} cx={i * kw + kw / 2} cy={h - 12} r="6" />
+              <text x={i * kw + kw / 2} y={h - 8} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">{(digits.get(m) || "").replace(/[♯♭]/g, "")}</text>
+            </>
+          )}
         </g>
       ))}
       {blacks.map(([m, i]) => (
         <g key={m}>
           <rect className="bk" x={i * kw - kw * 0.32} y="0" width={kw * 0.64} height={bh} rx="1.5" />
-          {on.has(m) && <circle className={m === bassMidi ? "bs" : "on"} cx={i * kw} cy={bh - 8} r="4.6" />}
+          {on.has(m) && <circle className={m === root ? "bs" : "on"} cx={i * kw} cy={bh - 8} r="4.6" />}
         </g>
       ))}
     </svg>
   );
 }
 
-export function chordLine(chord, key) {
-  return `${chord.name}（${romanOf(chord, key)}）`;
+function Pair({ pitch, clef, keySig }) {
+  return (
+    <>
+      <div className="pair">
+        <span dangerouslySetInnerHTML={{ __html: miniStaffSvg(pitch, clef) }} />
+        <span dangerouslySetInnerHTML={{ __html: miniJianpuSvg(pitch, keySig) }} />
+      </div>
+      <div className="lbls"><span>五線譜</span><span>簡譜</span></div>
+    </>
+  );
 }
 
 export default function ScoreTip({ target }) {
@@ -44,40 +56,33 @@ export default function ScoreTip({ target }) {
   const { rect } = target;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const below = rect.bottom + 150 < vh;
+  // 原型：優先放在上方，上面放不下才放下方
+  const above = rect.top > 190 || rect.bottom + 190 > vh;
   const style = {
     left: Math.min(Math.max(rect.left + rect.width / 2, 130), vw - 130),
-    top: below ? rect.bottom + 8 : rect.top - 8,
-    transform: below ? "translateX(-50%)" : "translate(-50%, -100%)",
+    top: above ? rect.top - 10 : rect.bottom + 10,
+    transform: above ? "translate(-50%, -100%)" : "translateX(-50%)",
   };
 
   if (target.kind === "chord") {
-    const { chord, key } = target;
-    // 原位組成音放在 C4 一帶；slash 和弦的低音以橘色標出
-    const raw = chordTones(chord);
-    const hasBass = chord.bass && raw.length > 0 && raw[0] < 48;
-    const upper = (hasBass ? raw.slice(1) : raw).map((m) => m + 12);
-    const bassMidi = hasBass ? 60 + (raw[0] % 12) : null;
-    const shown = hasBass ? [bassMidi, ...upper] : upper;
+    const t = chordTip(target.chord, target.key);
     return (
       <div className="sv2-tip" role="tooltip" style={style}>
-        <div className="tn">{chord.name} {chordZh(chord)} · {romanOf(chord, key)}</div>
-        <ChordDiagram tones={shown} bassMidi={bassMidi} />
-        <div className="ts">組成音：{raw.map((m) => noteName(m, key)).join(" ")}{hasBass ? "　橘色＝低音" : ""}</div>
+        <div className="tn">{t.title}</div>
+        {t.tones.length > 0 && <ChordDiagram tones={t.tones} root={t.root} digits={t.digits} />}
+        <div className="ts">{t.foot}{t.tones.length > 0 && <>　<span style={{ color: "var(--lh)" }}>●</span> 根音</>}</div>
       </div>
     );
   }
 
-  const { note, chord, key } = target;
+  const t = target.kind === "key" ? keyTip(target.midi) : noteTip(target.note, target.key);
+  const clef = target.kind === "key" ? (target.midi >= 60 ? "T" : "B") : target.note.staff === 2 ? "B" : "T";
+  const keySig = target.kind === "key" ? { fifths: 0 } : target.key;
   return (
     <div className="sv2-tip" role="tooltip" style={style}>
-      {note.rest ? (
-        <div className="tn">休止符</div>
-      ) : (
-        <div className="tn">{pitchName(note.pitch)} · 簡譜 {jpText(jianpuDigit(note.pitch, key))}</div>
-      )}
-      <div className="ts">{note.staff === 1 ? "右手" : "左手"} · {durationLabel(note)}</div>
-      {chord && <div className="ts">這一拍的和弦：{chordLine(chord, key)}</div>}
+      {t.pitch && <Pair pitch={t.pitch} clef={clef} keySig={keySig} />}
+      <div className="tn">{t.title}</div>
+      <div className="ts">{t.sub}</div>
     </div>
   );
 }
