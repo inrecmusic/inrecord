@@ -839,11 +839,15 @@ export default function ClassroomPage() {
               const plannedGames = (PLANNED_CHAPTER_GAMES[chNum] || []).filter(g => !uploadedGameTitles.some(t => t.includes(g.name)));
               // 對得上單元的接在該單元下方；對不上的（單元還沒上架）仍放章節最後
               const plannedTail = plannedGames.filter(g => !cv.some(v => unitNo(v.title) === g.after));
+              // Ch0（課程使用說明）加淺藍底色，讓新學員一進教室就注意到
+              const intro = chNum === 0;
               return (
-                <div key={c.id} style={{ marginBottom: 4 }}>
+                <div key={c.id} style={intro
+                  ? { marginBottom: 8, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "0 4px 4px" }
+                  : { marginBottom: 4 }}>
                   {/* Chapter header */}
                   <div style={{
-                    fontSize: 10.5, fontWeight: 600, color: "#94a3b8",
+                    fontSize: 10.5, fontWeight: 600, color: intro ? "#1d4ed8" : "#94a3b8",
                     textTransform: "uppercase", letterSpacing: ".06em",
                     padding: "12px 6px 5px",
                   }}>
