@@ -334,25 +334,48 @@ export function AnnouncementsDrawer({ ann, withModal = true }) {
 }
 
 /* ── 重要公告卡片：進教室先彈，按「知道了」才關；variant="hub" 用音樂廳色票 ───── */
+const PREVIEW_H = 200; // 重要公告預設露出的內文高度（px）
+
 export function ImportantDialog({ ann, variant = "light" }) {
   const a = ann.important;
+  const [expanded, setExpanded] = useState(false);
+  const [long, setLong] = useState(false);
+  const bodyRef = useRef(null);
+  // 內文超過預覽高度才出現「展開內容」；換一則就重新收合
+  useEffect(() => {
+    setExpanded(false);
+    const el = bodyRef.current;
+    setLong(!!el && el.scrollHeight > PREVIEW_H + 24);
+  }, [a?.id]);
   if (!a) return null;
   const hub = variant === "hub";
   const card = hub
     ? { background: "var(--card-a)", color: "var(--ink)", border: "1px solid var(--line)" }
     : { background: "#fff", color: "#0f172a" };
+  const faint = hub ? "var(--ink-faint)" : "#64748b";
+  const fadeBg = hub ? "var(--card-a)" : "#fff";
+  const collapsed = long && !expanded;
+  // 點遮罩／× 也算「知道了」：不能讓公告卡住整個教室、其他功能都按不到
+  const close = () => ann.ack(a.id);
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "grid", placeItems: "center", padding: 20, zIndex: 1100, fontFamily: F }}>
+    <div onClick={close} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "grid", placeItems: "center", padding: 16, zIndex: 1100, fontFamily: F }}>
       <style>{MD_CSS}</style>
-      <div role="alertdialog" aria-label={a.title} style={{ ...card, borderRadius: 16, maxWidth: 440, width: "100%", maxHeight: "86vh", display: "flex", flexDirection: "column", padding: "26px 28px 22px", boxShadow: "0 30px 80px -30px rgba(15,23,42,0.6)" }}>
+      <div role="alertdialog" aria-label={a.title} onClick={(e) => e.stopPropagation()} style={{ ...card, position: "relative", borderRadius: 16, maxWidth: 440, width: "100%", maxHeight: "min(86vh, 86dvh)", display: "flex", flexDirection: "column", padding: "26px 28px 22px", boxShadow: "0 30px 80px -30px rgba(15,23,42,0.6)" }}>
+        <button type="button" onClick={close} aria-label="關閉公告" style={{ position: "absolute", top: 10, right: 10, width: 34, height: 34, border: "none", borderRadius: 10, background: "none", color: faint, fontSize: 20, lineHeight: 1, cursor: "pointer" }}>×</button>
         <span style={{ alignSelf: "flex-start", fontSize: 11, fontWeight: 700, color: "#fff", background: "#2563eb", padding: "2px 9px", borderRadius: 100, lineHeight: 1.5 }}>重要公告</span>
         <h3 style={{ margin: "12px 0 4px", fontSize: 19, lineHeight: 1.35, textWrap: "balance" }}>{a.title}</h3>
-        <div style={{ fontSize: 12, color: hub ? "var(--ink-faint)" : "#64748b", fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）· InRecord 音樂教室</div>
-        {/* 內容長時只捲內文，「知道了」固定在卡片底部 */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", marginTop: 8 }}>
+        <div style={{ fontSize: 12, color: faint, fontVariantNumeric: "tabular-nums" }}>{fmtDate(a.created_at)}（{fmtWd(a.created_at)}）· InRecord 音樂教室</div>
+        {/* 預設只露前段＋置中「展開內容」；展開後內文在卡片內捲，「知道了」固定在底部 */}
+        <div ref={bodyRef} style={{ position: "relative", flex: collapsed ? "none" : 1, minHeight: 0, maxHeight: collapsed ? PREVIEW_H : undefined, overflowY: collapsed ? "hidden" : "auto", overscrollBehavior: "contain", marginTop: 8 }}>
           <Md body={a.body} className={hub ? "" : "light"} />
+          {collapsed && <div aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 64, background: `linear-gradient(to bottom, transparent, ${fadeBg})`, pointerEvents: "none" }} />}
         </div>
-        <button type="button" onClick={() => ann.ack(a.id)} style={{ marginTop: 16, width: "100%", background: hub ? "var(--cta-bg)" : "#1d4ed8", color: hub ? "var(--cta-ink)" : "#fff", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: F }}>知道了</button>
+        {long && (
+          <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} style={{ alignSelf: "center", marginTop: 8, background: "none", border: "none", padding: "6px 12px", color: hub ? "var(--gold)" : "#1d4ed8", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: F }}>
+            {expanded ? "收合內容 ︿" : "展開內容 ﹀"}
+          </button>
+        )}
+        <button type="button" onClick={close} style={{ marginTop: long ? 8 : 16, width: "100%", flexShrink: 0, background: hub ? "var(--cta-bg)" : "#1d4ed8", color: hub ? "var(--cta-ink)" : "#fff", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: F }}>知道了</button>
         <div style={{ textAlign: "center", fontSize: 11.5, color: hub ? "var(--ink-faint)" : "#94a3b8", marginTop: 8 }}>按下後不會再彈出，之後可在公告清單回看</div>
       </div>
     </div>
