@@ -350,14 +350,19 @@ export function ImportantDialog({ ann, variant = "light" }) {
   if (!a) return null;
   const hub = variant === "hub";
   const card = hub
-    ? { background: "var(--card-a)", color: "var(--ink)", border: "1px solid var(--line)" }
+    ? { background: "var(--bg2, #12141c)", color: "var(--ink)", border: "1px solid var(--line)" }
     : { background: "#fff", color: "#0f172a" };
   const faint = hub ? "var(--ink-faint)" : "#64748b";
-  const fadeBg = hub ? "var(--card-a)" : "#fff";
+  // 卡片底色必須不透明（--card-a 是半透明，背景文字會透出來疊在公告上）
+  const fadeBg = hub ? "var(--bg2, #12141c)" : "#fff";
   const collapsed = long && !expanded;
   // 點遮罩／× 也算「知道了」：不能讓公告卡住整個教室、其他功能都按不到
   const close = () => ann.ack(a.id);
-  return (
+  // 跟公告視窗一樣掛進 .hub：主題變數（--bg2／--ink／--gold）定義在 .hub 上，
+  // 掛在外面會全部解析不到 → 卡片底色變透明，後面的頁面文字直接疊在公告上
+  if (typeof document === "undefined") return null;
+  const host = (hub && document.querySelector(".hub")) || document.body;
+  return createPortal(
     <div onClick={close} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "grid", placeItems: "center", padding: 16, zIndex: 1100, fontFamily: F }}>
       <style>{MD_CSS}</style>
       <div role="alertdialog" aria-label={a.title} onClick={(e) => e.stopPropagation()} style={{ ...card, position: "relative", borderRadius: 16, maxWidth: 440, width: "100%", maxHeight: "min(86vh, 86dvh)", display: "flex", flexDirection: "column", padding: "26px 28px 22px", boxShadow: "0 30px 80px -30px rgba(15,23,42,0.6)" }}>
@@ -378,7 +383,8 @@ export function ImportantDialog({ ann, variant = "light" }) {
         <button type="button" onClick={close} style={{ marginTop: long ? 8 : 16, width: "100%", flexShrink: 0, background: hub ? "var(--cta-bg)" : "#1d4ed8", color: hub ? "var(--cta-ink)" : "#fff", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: F }}>知道了</button>
         <div style={{ textAlign: "center", fontSize: 11.5, color: hub ? "var(--ink-faint)" : "#94a3b8", marginTop: 8 }}>按下後不會再彈出，之後可在公告清單回看</div>
       </div>
-    </div>
+    </div>,
+    host
   );
 }
 
