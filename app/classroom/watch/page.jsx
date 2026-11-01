@@ -380,10 +380,37 @@ export default function ClassroomPage() {
   // 手風琴：展開的單元 id。一次只開一個——21 個單元全展開會讓側欄無法掃視。
   // 有影片的單元點了同時切換播放；沒影片的單元只展開（仍可下載講義樂譜）。
   // 影片還沒上架、但已掛互動樂譜的單元也可選：影片區顯示「即將上架」，下方分頁照常用樂譜（學員可提前練）。
+  // 影片還沒上架的單元也點得進去：影片區顯示「課程準備中」，並導去本單元的遊戲／樂譜（沒有就導去最近有的單元）。
   function handleUnitClick(v) {
     setItemErr("");   // 換單元就清掉上一個單元的下載錯誤，否則會跟著顯示在新展開的面板裡
-    if (v.bunny_video_id || v.vimeo_id) { handleSelect(v); return; }
-    if ((contentItems[v.id] || []).some(i => i.kind === "sheet")) { handleSelect(v); setTab("score"); }
+    const items = contentItems[v.id] || [];
+    // 講義單元掛了 HTML 文件（課程使用說明書）：點單元就直接打開它
+    const doc = isHandoutUnit(v) && items.find(i => i.kind === "game");
+    if (doc) { setSidebarGame({ id: doc.id, title: doc.title }); return; }
+    handleSelect(v);
+    if (v.bunny_video_id || v.vimeo_id) return;
+    if (items.some(i => i.kind === "game")) setTab("games");
+    else if (items.some(i => i.kind === "sheet")) setTab("score");
+  }
+
+  // 沒遊戲也沒樂譜的未上架單元：找課程順序上最近（先往前、再往後）有遊戲或樂譜的單元
+  function nearestPracticeUnit(v) {
+    const order = chapters.flatMap(c => videos.filter(x => x.chapter_id === c.id).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
+    const has = x => (contentItems[x.id] || []).some(i => i.kind === "game" || i.kind === "sheet");
+    const i = order.findIndex(x => x.id === v.id);
+    for (let d = 1; d < order.length; d++) {
+      if (i - d >= 0 && has(order[i - d])) return order[i - d];
+      if (i + d < order.length && has(order[i + d])) return order[i + d];
+    }
+    return null;
+  }
+
+  function goPractice(v) {
+    const items = contentItems[v.id] || [];
+    if (v.id !== currentVideo?.id) handleSelect(v);
+    if (items.some(i => i.kind === "game")) setTab("games");
+    else if (items.some(i => i.kind === "sheet")) { askScore(v.id); return; }
+    requestAnimationFrame(() => document.getElementById("unit-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   // 互動樂譜：照學員記住的選擇開，沒記住就跳選擇視窗
@@ -627,6 +654,15 @@ export default function ClassroomPage() {
                   allowFullScreen
                 />
               </div>
+            ) : currentVideo && !isHandoutUnit(currentVideo) ? (
+              <ComingSoonPanel
+                isPhone={isPhone}
+                hint={comingSoonFor(currentVideo.title, Number(((chap?.title || "").match(/^Ch(\d+)/i) || [])[1]), earlyAccess)}
+                items={contentItems[currentVideo.id] || []}
+                fallback={nearestPracticeUnit(currentVideo)}
+                onPractice={goPractice}
+                unit={currentVideo}
+              />
             ) : (
               <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "#0A0A0A" }}>
                 <div style={{
@@ -707,7 +743,7 @@ export default function ClassroomPage() {
           <CommentsSection token={token} video={currentVideo} chapters={chapters} />
 
           {/* Tab bar */}
-          <div style={{
+          <div id="unit-tabs" style={{
             display: "flex", flexShrink: 0, borderBottom: "1px solid rgba(0,0,0,0.07)",
             background: "#fff", padding: "0 10px",
             position: "sticky", top: 0, zIndex: 10,
@@ -945,7 +981,8 @@ export default function ClassroomPage() {
                         {visibleItems.length > 0 && (
                           <div style={{ padding: "2px 8px 8px 37px" }}>
                             {visibleItems.map(item => {
-                              const ic = UNIT_ICONS.find(x => x.key === item.kind);
+                              // 講義單元掛的 HTML（例：課程使用說明書）是文件不是遊戲：用迴紋針、標「講義」
+                              const ic = handout && item.kind === "game" ? { emoji: "📎", label: "講義" } : UNIT_ICONS.find(x => x.key === item.kind);
                               return (
                                 <div key={`${item.kind}-${item.id}`}
                                   role="button" tabIndex={0}
@@ -993,6 +1030,41 @@ export default function ClassroomPage() {
       <RatingPrompt token={token} rated={rated} ended={endedUnit} onRated={handleRated} />
       <ScoreOpenDialog open={!!scoreAsk} onClose={() => setScoreAsk(null)} onRemember={setScoreOpenPref}
         onChoose={(how) => scoreAsk && openScoreAs(how, scoreAsk.videoId, scoreAsk.scoreId)} />
+    </div>
+  );
+}
+
+// 影片還沒上架的單元：影片區顯示「課程準備中」小動畫，並把學員導去先練遊戲／樂譜。
+function ComingSoonPanel({ isPhone, hint, items, fallback, onPractice, unit }) {
+  const hasGame = items.some(i => i.kind === "game");
+  const hasSheet = items.some(i => i.kind === "sheet");
+  const target = hasGame || hasSheet ? unit : fallback;
+  const label = hasGame ? "先玩本單元的互動遊戲 →"
+    : hasSheet ? "先練本單元的互動樂譜 →"
+    : target ? `先去「${target.title}」的遊戲與曲子 →` : null;
+  const sub = hasGame || hasSheet ? "等待期間，先從本單元的遊戲開始學習吧！" : target ? "本單元沒有遊戲，先到鄰近單元的遊戲或曲子練習吧！" : "";
+  return (
+    <div style={{ paddingTop: isPhone ? "56.25%" : "44%", position: "relative", background: "linear-gradient(135deg,#0f172a,#1e293b)" }}>
+      <style>{`
+        @keyframes cs-bounce{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-8px);opacity:1}}
+        .cs-note{display:inline-block;font-size:26px;animation:cs-bounce 1.4s ease-in-out infinite}
+        .cs-note:nth-child(2){animation-delay:.2s}.cs-note:nth-child(3){animation-delay:.4s}
+        @media (prefers-reduced-motion:reduce){.cs-note{animation:none;opacity:.8}}
+      `}</style>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: isPhone ? 8 : 12, padding: "0 20px", textAlign: "center" }}>
+        <div aria-hidden="true" style={{ color: "#93c5fd", display: "flex", gap: 10 }}>
+          <span className="cs-note">♪</span><span className="cs-note">♫</span><span className="cs-note">♪</span>
+        </div>
+        <div style={{ color: "#f8fafc", fontSize: isPhone ? 15 : 18, fontWeight: 700 }}>課程準備中，我們將盡快上架</div>
+        {hint && <div style={{ color: "#94a3b8", fontSize: 12 }}>{hint}</div>}
+        {sub && <div style={{ color: "#cbd5e1", fontSize: isPhone ? 12.5 : 13.5 }}>{sub}</div>}
+        {label && (
+          <button type="button" onClick={() => onPractice(target)}
+            style={{ marginTop: 4, minHeight: 40, padding: "9px 18px", borderRadius: 999, border: "none", background: "#2563eb", color: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {label}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

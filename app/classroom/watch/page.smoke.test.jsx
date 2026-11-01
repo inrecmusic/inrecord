@@ -115,7 +115,7 @@ describe("播放頁（非早鳥，9/30 前）", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("Ch1～Ch3 一律 9/30、Ch4 以後一律 10/31；空狀態顯示正課 9/30 開放", async () => {
+  it("Ch1～Ch3 一律 9/30、Ch4 以後一律 10/31；未上架單元顯示課程準備中", async () => {
     const { container } = render(<ClassroomPage />);
     await waitFor(() => expect(container.textContent).toContain("1-1 認識鍵盤"));
     const text = container.textContent;
@@ -124,7 +124,7 @@ describe("播放頁（非早鳥，9/30 前）", () => {
     expect(text).not.toContain("預計 10/7 上架");
     expect(text).toContain("預計 9/30 上架");
     expect(text).toContain("預計 10/31 上架");
-    expect(text).toContain("正課 9/30 開放，敬請期待");
+    expect(text).toContain("課程準備中，我們將盡快上架");
     expect(text).not.toContain("請從右側選擇課程單元");
   });
 });
@@ -145,7 +145,7 @@ describe("播放頁（影片未上架的單元掛了互動樂譜）", () => {
     await waitFor(() => expect(container.textContent).toContain("5-1 分解和弦"));
     expect(container.textContent).toContain("小星星");
     getByText("5-1 分解和弦").click();
-    await waitFor(() => expect(container.textContent).toContain("本單元影片即將上架，可先使用下方的互動樂譜"));
+    await waitFor(() => expect(container.textContent).toContain("先練本單元的互動樂譜"));
     expect([...container.querySelectorAll("button")].some(b => b.textContent === "互動樂譜")).toBe(true);
   });
 });
